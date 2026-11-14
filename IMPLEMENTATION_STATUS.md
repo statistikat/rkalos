@@ -19,3 +19,8 @@ Updated: 2026-11-14. Repository extraction in progress.
 The inherited numerical implementation extends through fixed additive initial X-11 tables
 (22b.2). Full native seasonal-adjustment fitting remains unavailable. The historical
 baseline and numerical contracts belong to Kalos; R boundary tests belong to rkalos.
+
+## Provider boundary
+
+Added the R-declared BLAS/LAPACK adapter outside the generated core snapshot.
+Its package build and regression qualification follow the preparation port.
