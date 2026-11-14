@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/x11_mean_endpoints.hpp"
+#include "kalos/x11_mean_endpoints.hpp"
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -14,7 +14,7 @@ Rcpp::List native_x11_mean_filter(SEXP values,SEXP frequency) {
         !Rf_isNull(Rf_getAttrib(values,R_DimSymbol)) || Rf_xlength(values)>std::numeric_limits<int>::max()-12)
         throw std::invalid_argument("X-11 response must be a real numeric vector within the supported length");
     const auto y=Rcpp::as<Rcpp::NumericVector>(values);const auto n=static_cast<std::size_t>(y.size());
-    persephone::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
+    kalos::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
     for(std::size_t i=0;i<n;++i) {
         if((i&4095U)==0)Rcpp::checkUserInterrupt();
         const auto value=y[static_cast<R_xlen_t>(i)];
@@ -22,7 +22,7 @@ Rcpp::List native_x11_mean_filter(SEXP values,SEXP frequency) {
         else if(!std::isfinite(value))throw std::invalid_argument("X-11 response must be finite or missing");
         else input.values[i]=value;
     }
-    const auto filtered=persephone::x11_mean_endpoints(input,static_cast<int>(f),[] {Rcpp::checkUserInterrupt();});
+    const auto filtered=kalos::x11_mean_endpoints(input,static_cast<int>(f),[] {Rcpp::checkUserInterrupt();});
     Rcpp::NumericVector output(n);Rcpp::LogicalVector missing(n);
     for(std::size_t i=0;i<n;++i) {
         if((i&4095U)==0)Rcpp::checkUserInterrupt();

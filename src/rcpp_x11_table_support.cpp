@@ -1,14 +1,14 @@
 #include "rcpp_x11_table_support.hpp"
 #include <stdexcept>
-namespace persephone_x11_rcpp {
+namespace kalos_x11_rcpp {
 std::string filter_name(int length) {return length==0 ? "stable" : "s3x"+std::to_string(length);}
 const char* convention(int length) {
     if(length==0)return "phase_mean";
     if(length==15)return "x11_decimal_5";
     return length==3 || length==5 ? "virtual_values_rational" : "published_fixed_weights";
 }
-const char* rule(persephone::X11NormalizationRule value) {
-    using R=persephone::X11NormalizationRule;
+const char* rule(kalos::X11NormalizationRule value) {
+    using R=kalos::X11NormalizationRule;
     switch(value) {
     case R::nearest:return "nearest_central_mean";
     case R::requested_stable:return "requested_stable";
@@ -17,7 +17,7 @@ const char* rule(persephone::X11NormalizationRule value) {
     }
     throw std::logic_error("unknown normalization rule");
 }
-Rcpp::NumericVector values(const persephone::MaskedSeries& x) {
+Rcpp::NumericVector values(const kalos::MaskedSeries& x) {
     Rcpp::NumericVector out(x.values.size());
     for(std::size_t j=0;j<x.values.size();++j) {
         if((j&4095U)==0)Rcpp::checkUserInterrupt();
@@ -32,7 +32,7 @@ Rcpp::IntegerVector sources(const std::vector<std::size_t>& x) {
     }
     return out;
 }
-Rcpp::List seasonal_result(const persephone::X11SeasonalProcessing& result,int f,const std::vector<int>& choices) {
+Rcpp::List seasonal_result(const kalos::X11SeasonalProcessing& result,int f,const std::vector<int>& choices) {
     const auto n=result.values.values.size();
     Rcpp::NumericVector output(n);Rcpp::LogicalVector missing(n);
     Rcpp::CharacterVector methods(n);Rcpp::IntegerVector available(n);
@@ -59,17 +59,17 @@ Rcpp::List seasonal_result(const persephone::X11SeasonalProcessing& result,int f
         Rcpp::_["coefficient_conventions"]=conventions,Rcpp::_["row_methods"]=methods,Rcpp::_["available"]=available);
 }
 
-Rcpp::List normalization_result(const persephone::X11SeasonalNormalization& result,int f,const std::vector<int>& choices,int extension) {
+Rcpp::List normalization_result(const kalos::X11SeasonalNormalization& result,int f,const std::vector<int>& choices,int extension) {
     Rcpp::CharacterVector requested(f);
     for(int j=0;j<f;++j)requested[j]=filter_name(choices[static_cast<std::size_t>(j)]);
     Rcpp::CharacterVector reasons(f),endpoints(f);
     for(int j=0;j<f;++j) {
         const auto value=result.rules[static_cast<std::size_t>(j)];reasons[j]=rule(value);
-        endpoints[j]=value==persephone::X11NormalizationRule::nearest ? "nearest_central_mean" : "annual_copy";
+        endpoints[j]=value==kalos::X11NormalizationRule::nearest ? "nearest_central_mean" : "annual_copy";
     }
     return Rcpp::List::create(Rcpp::_["values"]=values(result.values),Rcpp::_["normalization"]=values(result.normalization),
         Rcpp::_["requested_filters"]=requested,Rcpp::_["endpoint_policies"]=endpoints,Rcpp::_["endpoint_reasons"]=reasons,
         Rcpp::_["normalization_source_rows"]=sources(result.normalization_sources),Rcpp::_["source_rows"]=sources(result.output_sources),
         Rcpp::_["frequency"]=f,Rcpp::_["extend"]=extension);
 }
-} // namespace persephone_x11_rcpp
+} // namespace kalos_x11_rcpp

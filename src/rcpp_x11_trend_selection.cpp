@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/x11_trend_selection.hpp"
+#include "kalos/x11_trend_selection.hpp"
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -18,8 +18,8 @@ int integer(SEXP value,const char* label) {
     if(x!=std::floor(x) || x>std::numeric_limits<int>::max())throw std::invalid_argument(std::string(label)+" must be a supported integer");
     return static_cast<int>(x);
 }
-const char* status(persephone::X11TrendSelectionStatus value) {
-    using S=persephone::X11TrendSelectionStatus;
+const char* status(kalos::X11TrendSelectionStatus value) {
+    using S=kalos::X11TrendSelectionStatus;
     switch(value) {
     case S::available:return "available";
     case S::insufficient_observations:return "insufficient_observations";
@@ -39,8 +39,8 @@ Rcpp::List native_x11_trend_policy(SEXP frequency,SEXP ic_ratio,SEXP length) {
     if(Rf_isNull(ic_ratio)==Rf_isNull(length))throw std::invalid_argument("supply exactly one of comparison I/C ratio and Henderson length");
     const bool automatic=Rf_isNull(length);
     const double ratio=automatic ? scalar(ic_ratio,"comparison I/C ratio",true) : NA_REAL;
-    const auto span=automatic ? persephone::x11_henderson_select(f,ratio) : integer(length,"Henderson length");
-    const auto endpoint=persephone::x11_henderson_default_ratio(f,span);
+    const auto span=automatic ? kalos::x11_henderson_select(f,ratio) : integer(length,"Henderson length");
+    const auto endpoint=kalos::x11_henderson_default_ratio(f,span);
     return Rcpp::List::create(Rcpp::_["frequency"]=f,Rcpp::_["selection"]=automatic ? "automatic_ic" : "fixed_length",
         Rcpp::_["comparison_ic_ratio"]=ratio,Rcpp::_["selected_length"]=span,
         Rcpp::_["endpoint_ic_ratio"]=endpoint,Rcpp::_["pilot_length"]=f+1);
@@ -57,15 +57,15 @@ Rcpp::List native_x11_trend_select(SEXP values,SEXP frequency,SEXP mode,SEXP bac
         !Rf_isNull(Rf_getAttrib(values,R_DimSymbol)) || Rf_xlength(values)>std::numeric_limits<int>::max())
         throw std::invalid_argument("X-11 response must be a real numeric vector within the supported length");
     const auto y=Rcpp::as<Rcpp::NumericVector>(values);const auto n=static_cast<std::size_t>(y.size());
-    persephone::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
+    kalos::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
     for(std::size_t j=0;j<n;++j) {
         if((j&4095U)==0)Rcpp::checkUserInterrupt();const auto value=y[static_cast<R_xlen_t>(j)];
         if(std::isnan(value))input.missing[j]=1;
         else if(!std::isfinite(value))throw std::invalid_argument("X-11 response must be finite or missing");
         else input.values[j]=value;
     }
-    const auto result=persephone::x11_trend_select(input,f,
-        relative ? persephone::X11ChangeMode::relative : persephone::X11ChangeMode::additive,
+    const auto result=kalos::x11_trend_select(input,f,
+        relative ? kalos::X11ChangeMode::relative : kalos::X11ChangeMode::additive,
         static_cast<std::size_t>(back),static_cast<std::size_t>(fore),[] {Rcpp::checkUserInterrupt();});
     return Rcpp::List::create(Rcpp::_["status"]=status(result.status),
         Rcpp::_["selected_length"]=result.selected_length ? result.selected_length : NA_INTEGER,

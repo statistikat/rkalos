@@ -1,8 +1,8 @@
 #include <Rcpp.h>
-#include "core/x11_seasonal_plan.hpp"
+#include "kalos/x11_seasonal_plan.hpp"
 #include <stdexcept>
 namespace {
-using Request=persephone::X11SeasonalRequest;using Stage=persephone::X11SeasonalStage;
+using Request=kalos::X11SeasonalRequest;using Stage=kalos::X11SeasonalStage;
 Request request(const std::string& name) {
     if(name=="stable")return Request::stable;
     if(name=="s3x1")return Request::s3x1;
@@ -38,7 +38,7 @@ Rcpp::List native_x11_seasonal_plan(SEXP frequency,SEXP filters,SEXP requested_s
         if(item==NA_STRING)throw std::invalid_argument("seasonal requests cannot be missing");
         requested[period]=item;requests.push_back(request(Rcpp::as<std::string>(item)));
     }
-    const auto result=persephone::x11_seasonal_plan(f,requests,stage(Rcpp::as<std::string>(requested_stage)));
+    const auto result=kalos::x11_seasonal_plan(f,requests,stage(Rcpp::as<std::string>(requested_stage)));
     const char* reasons[]{"fixed_choice","x11default_initial","x11default_final","msr_initial",
         "msr_preliminary_final","msr_mixed_request","requires_msr"};
     Rcpp::CharacterVector base(f),resolved(f),resolution(f);

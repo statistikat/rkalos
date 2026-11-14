@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/linear_algebra.hpp"
+#include "kalos/linear_algebra.hpp"
 
 #include <limits>
 #include <stdexcept>
@@ -9,7 +9,7 @@
 // model, do not infer coefficient covariance, and retain no external pointers.
 namespace {
 
-persephone::Interrupt linear_interrupt() {
+kalos::Interrupt linear_interrupt() {
     // All LAPACK calls and callbacks run synchronously on R's main thread.
     return [] { Rcpp::checkUserInterrupt(); };
 }
@@ -24,7 +24,7 @@ double rank_threshold(SEXP input) {
     return Rf_asReal(input);
 }
 
-persephone::DenseMatrix owned_matrix(SEXP input, const char* name, bool allow_vector) {
+kalos::DenseMatrix owned_matrix(SEXP input, const char* name, bool allow_vector) {
     if ((TYPEOF(input) != REALSXP && TYPEOF(input) != INTSXP) || Rf_isFactor(input)) {
         throw std::invalid_argument(std::string(name) + " must be a real numeric matrix or vector");
     }
@@ -43,7 +43,7 @@ persephone::DenseMatrix owned_matrix(SEXP input, const char* name, bool allow_ve
         columns = static_cast<std::size_t>(dims[1]);
     }
     // Validate dimensions before allocating or copying input values.
-    persephone::DenseMatrix result(rows, columns);
+    kalos::DenseMatrix result(rows, columns);
     if (static_cast<std::size_t>(Rf_xlength(input)) != result.values().size()) {
         throw std::invalid_argument(std::string(name) + " storage does not match its dimensions");
     }
@@ -56,7 +56,7 @@ persephone::DenseMatrix owned_matrix(SEXP input, const char* name, bool allow_ve
     return result;
 }
 
-Rcpp::NumericMatrix as_matrix(const persephone::DenseMatrix& matrix) {
+Rcpp::NumericMatrix as_matrix(const kalos::DenseMatrix& matrix) {
     Rcpp::NumericMatrix result(static_cast<int>(matrix.rows()), static_cast<int>(matrix.columns()));
     for (std::size_t i = 0; i < matrix.values().size(); ++i) {
         if ((i & 4095U) == 0) Rcpp::checkUserInterrupt();
@@ -71,8 +71,8 @@ Rcpp::NumericMatrix as_matrix(const persephone::DenseMatrix& matrix) {
 Rcpp::List native_cholesky_solve(SEXP matrix, SEXP rhs) {
     const auto a = owned_matrix(matrix, "matrix", false);
     const auto b = owned_matrix(rhs, "right-hand side", true);
-    const auto factor = persephone::cholesky_factor(a, linear_interrupt());
-    const auto solution = persephone::cholesky_solve(factor, b, linear_interrupt());
+    const auto factor = kalos::cholesky_factor(a, linear_interrupt());
+    const auto solution = kalos::cholesky_solve(factor, b, linear_interrupt());
     return Rcpp::List::create(
         Rcpp::Named("solution") = as_matrix(solution),
         Rcpp::Named("upper") = as_matrix(factor.upper),
@@ -86,7 +86,7 @@ Rcpp::List native_qr_solve(SEXP matrix, SEXP rhs, SEXP rank_tolerance = R_NilVal
     const double tolerance = rank_threshold(rank_tolerance);
     const auto a = owned_matrix(matrix, "matrix", false);
     const auto b = owned_matrix(rhs, "right-hand side", true);
-    const auto result = persephone::qr_least_squares(a, b, tolerance, linear_interrupt());
+    const auto result = kalos::qr_least_squares(a, b, tolerance, linear_interrupt());
     return Rcpp::List::create(
         Rcpp::Named("coefficients") = as_matrix(result.coefficients),
         Rcpp::Named("residuals") = as_matrix(result.residuals),

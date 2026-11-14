@@ -1,0 +1,17 @@
+regex:^R/native.*[.]R$
+R/RcppExports.R
+R/backend.R
+regex:^src/rcpp_.*[.](cpp|hpp)$
+src/RcppExports.cpp
+src/Makevars.in
+src/Makevars.win.in
+configure
+configure.win
+cleanup
+cleanup.win
+regex:^inst/tinytest/test-native.*[.]R$
+inst/tinytest/fixtures/
+tests/tinytest.R
+DESCRIPTION
+LICENSE
+LICENSE.md

@@ -1,5 +1,5 @@
 #include "rcpp_x11_table_support.hpp"
-#include "core/x11_seasonal_processing.hpp"
+#include "kalos/x11_seasonal_processing.hpp"
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -45,7 +45,7 @@ Rcpp::List native_x11_seasonal_process(SEXP values,SEXP frequency,SEXP start_per
         !Rf_isNull(Rf_getAttrib(values,R_DimSymbol)) || Rf_xlength(values)>std::numeric_limits<int>::max())
         throw std::invalid_argument("seasonal response must be a real numeric vector within the supported length");
     const auto y=Rcpp::as<Rcpp::NumericVector>(values);const auto n=static_cast<std::size_t>(y.size());
-    persephone::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
+    kalos::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
     for(std::size_t i=0;i<n;++i) {
         if((i&4095U)==0)Rcpp::checkUserInterrupt();
         const auto value=y[static_cast<R_xlen_t>(i)];
@@ -53,8 +53,8 @@ Rcpp::List native_x11_seasonal_process(SEXP values,SEXP frequency,SEXP start_per
         else if(!std::isfinite(value))throw std::invalid_argument("seasonal response must be finite or missing");
         else input.values[i]=value;
     }
-    const auto result=persephone::x11_seasonal_process(input,f,start,choices,
-        policy=="reject" ? persephone::X11ShortSeriesPolicy::reject : persephone::X11ShortSeriesPolicy::x11,
+    const auto result=kalos::x11_seasonal_process(input,f,start,choices,
+        policy=="reject" ? kalos::X11ShortSeriesPolicy::reject : kalos::X11ShortSeriesPolicy::x11,
         [] {Rcpp::checkUserInterrupt();});
     return persephone_x11_rcpp::seasonal_result(result,f,choices);
 }

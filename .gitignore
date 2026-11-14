@@ -1,0 +1,10 @@
+build*/
+*.o
+*.so
+*.dylib
+*.dll
+.Rhistory
+.Rcheck/
+*.tar.gz
+__pycache__/
+.venv/

@@ -1,5 +1,5 @@
 #include "rcpp_x11_table_support.hpp"
-#include "core/x11_normalization.hpp"
+#include "kalos/x11_normalization.hpp"
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -34,13 +34,13 @@ Rcpp::List native_x11_seasonal_normalize(SEXP input,SEXP frequency,SEXP first_pe
         choices[static_cast<std::size_t>(j)]=filter;
     }
     const auto y=Rcpp::as<Rcpp::NumericVector>(input);const auto n=static_cast<std::size_t>(y.size());
-    persephone::MaskedSeries data{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
+    kalos::MaskedSeries data{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
     for(std::size_t j=0;j<n;++j) {
         if((j&4095U)==0)Rcpp::checkUserInterrupt();const auto value=y[static_cast<R_xlen_t>(j)];
         if(std::isnan(value))data.missing[j]=1;
         else if(!std::isfinite(value))throw std::invalid_argument("normalization input must be finite or missing");
         else data.values[j]=value;
     }
-    const auto result=persephone::x11_seasonal_normalize(data,f,first,choices,static_cast<std::size_t>(extension),[]{Rcpp::checkUserInterrupt();});
+    const auto result=kalos::x11_seasonal_normalize(data,f,first,choices,static_cast<std::size_t>(extension),[]{Rcpp::checkUserInterrupt();});
     return persephone_x11_rcpp::normalization_result(result,f,choices,extension);
 }

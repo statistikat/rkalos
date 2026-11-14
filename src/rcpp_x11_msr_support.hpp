@@ -1,12 +1,12 @@
-#ifndef PERSEPHONE_RCPP_X11_MSR_SUPPORT_HPP
-#define PERSEPHONE_RCPP_X11_MSR_SUPPORT_HPP
+#ifndef KALOS_RCPP_X11_MSR_SUPPORT_HPP
+#define KALOS_RCPP_X11_MSR_SUPPORT_HPP
 // Binding helpers only. No core header includes this Rcpp-dependent adapter.
 #include <Rcpp.h>
-#include "core/x11_msr.hpp"
-namespace persephone_msr_rcpp {
+#include "kalos/x11_msr.hpp"
+namespace kalos_msr_rcpp {
 int integer(SEXP value,const char* label);
-persephone::MaskedSeries series(SEXP value);
-persephone::X11MsrMode mode(SEXP value);
-Rcpp::List table_result(const persephone::X11MsrTable& result,int frequency,persephone::X11MsrMode mode);
+kalos::MaskedSeries series(SEXP value);
+kalos::X11MsrMode mode(SEXP value);
+Rcpp::List table_result(const kalos::X11MsrTable& result,int frequency,kalos::X11MsrMode mode);
 }
 #endif

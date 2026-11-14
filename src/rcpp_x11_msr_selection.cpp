@@ -1,10 +1,10 @@
 #include "rcpp_x11_msr_support.hpp"
-#include "core/x11_msr_selection.hpp"
+#include "kalos/x11_msr_selection.hpp"
 #include <cmath>
 #include <stdexcept>
 namespace {
-const char* band(persephone::X11MsrBand value) {
-    using B=persephone::X11MsrBand;
+const char* band(kalos::X11MsrBand value) {
+    using B=kalos::X11MsrBand;
     switch(value) {
     case B::unavailable:return "unavailable";
     case B::s3x3:return "s3x3";
@@ -15,8 +15,8 @@ const char* band(persephone::X11MsrBand value) {
     }
     throw std::logic_error("unknown MSR band");
 }
-const char* status(persephone::X11MsrPilotStatus value) {
-    using S=persephone::X11MsrPilotStatus;
+const char* status(kalos::X11MsrPilotStatus value) {
+    using S=kalos::X11MsrPilotStatus;
     switch(value) {
     case S::available:return "available";
     case S::insufficient_observations:return "insufficient_observations";
@@ -26,8 +26,8 @@ const char* status(persephone::X11MsrPilotStatus value) {
     }
     throw std::logic_error("unknown MSR pilot status");
 }
-const char* status(persephone::X11MsrSelectionStatus value) {
-    using S=persephone::X11MsrSelectionStatus;
+const char* status(kalos::X11MsrSelectionStatus value) {
+    using S=kalos::X11MsrSelectionStatus;
     switch(value) {
     case S::available:return "available";
     case S::missing_observations:return "missing_observations";
@@ -39,8 +39,8 @@ const char* status(persephone::X11MsrSelectionStatus value) {
     }
     throw std::logic_error("unknown MSR selection status");
 }
-const char* reason(persephone::X11MsrSelectionReason value) {
-    using R=persephone::X11MsrSelectionReason;
+const char* reason(kalos::X11MsrSelectionReason value) {
+    using R=kalos::X11MsrSelectionReason;
     switch(value) {
     case R::unavailable:return "unavailable";
     case R::decisive_ratio:return "decisive_ratio";
@@ -55,11 +55,11 @@ Rcpp::CharacterVector choice(int filter) {
     return filter==0 ? Rcpp::CharacterVector::create(NA_STRING) :
         Rcpp::CharacterVector::create(std::string("s3x")+std::to_string(filter));
 }
-Rcpp::List pilot_result(const persephone::X11MsrPilot& value,int f,persephone::X11MsrMode mode) {
+Rcpp::List pilot_result(const kalos::X11MsrPilot& value,int f,kalos::X11MsrMode mode) {
     Rcpp::List out=Rcpp::List::create(Rcpp::_["status"]=status(value.status),Rcpp::_["frequency"]=f,
         Rcpp::_["seasonal"]=R_NilValue,Rcpp::_["irregular"]=R_NilValue,
-        Rcpp::_["component_rule"]=mode==persephone::X11MsrMode::relative ? "ratio" : "centered_difference");
-    if(value.status==persephone::X11MsrPilotStatus::available) {
+        Rcpp::_["component_rule"]=mode==kalos::X11MsrMode::relative ? "ratio" : "centered_difference");
+    if(value.status==kalos::X11MsrPilotStatus::available) {
         out["seasonal"]=Rcpp::wrap(value.seasonal.values);out["irregular"]=Rcpp::wrap(value.irregular.values);
     }
     return out;
@@ -69,22 +69,22 @@ Rcpp::List pilot_result(const persephone::X11MsrPilot& value,int f,persephone::X
 Rcpp::List native_x11_msr_policy(SEXP ratio) {
     if((TYPEOF(ratio)!=REALSXP && TYPEOF(ratio)!=INTSXP) || Rf_isFactor(ratio) || Rf_xlength(ratio)!=1 ||
         !Rf_isNull(Rf_getAttrib(ratio,R_DimSymbol)))throw std::invalid_argument("MSR ratio must be one real number");
-    const auto value=Rcpp::as<double>(ratio);const auto selected=persephone::x11_msr_band(value);
-    const auto filter=selected==persephone::X11MsrBand::s3x3 ? 3 : (selected==persephone::X11MsrBand::s3x5 ? 5 :
-        (selected==persephone::X11MsrBand::s3x9 ? 9 : 0));
+    const auto value=Rcpp::as<double>(ratio);const auto selected=kalos::x11_msr_band(value);
+    const auto filter=selected==kalos::X11MsrBand::s3x3 ? 3 : (selected==kalos::X11MsrBand::s3x5 ? 5 :
+        (selected==kalos::X11MsrBand::s3x9 ? 9 : 0));
     return Rcpp::List::create(Rcpp::_["ratio"]=value,Rcpp::_["band"]=band(selected),Rcpp::_["selected_filter"]=choice(filter),
         Rcpp::_["status"]=filter ? "available" : "ambiguous");
 }
 // [[Rcpp::export(name = ".native_x11_msr_pilot")]]
 Rcpp::List native_x11_msr_pilot(SEXP values,SEXP frequency,SEXP mode) {
-    using namespace persephone_msr_rcpp;
+    using namespace kalos_msr_rcpp;
     const auto f=integer(frequency,"frequency");const auto measure=persephone_msr_rcpp::mode(mode);
-    return pilot_result(persephone::x11_msr_pilot(series(values),f,measure,[]{Rcpp::checkUserInterrupt();}),f,measure);
+    return pilot_result(kalos::x11_msr_pilot(series(values),f,measure,[]{Rcpp::checkUserInterrupt();}),f,measure);
 }
 // [[Rcpp::export(name = ".native_x11_msr_select")]]
 Rcpp::List native_x11_msr_select(SEXP values,SEXP frequency,SEXP first_period,SEXP mode,SEXP iteration_policy,
     SEXP backcasts,SEXP forecasts,SEXP max_iterations) {
-    using namespace persephone_msr_rcpp;
+    using namespace kalos_msr_rcpp;
     const auto f=integer(frequency,"frequency"),first=integer(first_period,"first period"),back=integer(backcasts,"backcasts"),
         fore=integer(forecasts,"forecasts"),maximum=integer(max_iterations,"max_iterations");
     const auto measure=persephone_msr_rcpp::mode(mode);
@@ -92,8 +92,8 @@ Rcpp::List native_x11_msr_select(SEXP values,SEXP frequency,SEXP first_period,SE
         !Rf_isNull(Rf_getAttrib(iteration_policy,R_DimSymbol)))throw std::invalid_argument("provide one supported MSR iteration policy");
     const auto name=Rcpp::as<std::string>(iteration_policy);
     if(name!="jdplus" && name!="x11_five_year_cap")throw std::invalid_argument("unsupported MSR iteration policy");
-    const auto policy=name=="jdplus" ? persephone::X11MsrIterationPolicy::jdplus : persephone::X11MsrIterationPolicy::x11_five_year_cap;
-    const auto result=persephone::x11_msr_select(series(values),f,first,measure,policy,
+    const auto policy=name=="jdplus" ? kalos::X11MsrIterationPolicy::jdplus : kalos::X11MsrIterationPolicy::x11_five_year_cap;
+    const auto result=kalos::x11_msr_select(series(values),f,first,measure,policy,
         static_cast<std::size_t>(back),static_cast<std::size_t>(fore),static_cast<std::size_t>(maximum),[]{Rcpp::checkUserInterrupt();});
     const auto n=static_cast<R_xlen_t>(result.attempts.size());
     Rcpp::IntegerVector iterations(n),counts(n),removed(n),last(n);Rcpp::NumericVector ratios(n);

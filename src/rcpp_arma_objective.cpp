@@ -1,11 +1,11 @@
 #include <Rcpp.h>
-#include "core/arma_objective.hpp"
-#include "core/arma_optimizer.hpp"
-#include "core/arma_identification.hpp"
-#include "core/arma_information.hpp"
-#include "core/arma_residuals.hpp"
-#include "core/interpolation_information.hpp"
-#include "core/forecast_information.hpp"
+#include "kalos/arma_objective.hpp"
+#include "kalos/arma_optimizer.hpp"
+#include "kalos/arma_identification.hpp"
+#include "kalos/arma_information.hpp"
+#include "kalos/arma_residuals.hpp"
+#include "kalos/interpolation_information.hpp"
+#include "kalos/forecast_information.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -68,10 +68,10 @@ Rcpp::List named_list(SEXP value, const char* name, bool required) {
     if (required && result.size() != 4) throw std::invalid_argument("ARMA specification must contain all four factors");
     return result;
 }
-persephone::ArmaParameterMap parameter_map(SEXP specification, SEXP initial, SEXP margin) {
+kalos::ArmaParameterMap parameter_map(SEXP specification, SEXP initial, SEXP margin) {
     const auto specs = named_list(specification, "specification", true);
     const auto starts = named_list(initial, "initial", false);
-    std::array<persephone::ArmaParameterBlock, 4> blocks;
+    std::array<kalos::ArmaParameterBlock, 4> blocks;
     for (std::size_t b = 0; b < blocks.size(); ++b) {
         const auto& name = block_names[b];
         const auto spec = vector(specs[name], "ARMA specification");
@@ -91,9 +91,9 @@ persephone::ArmaParameterMap parameter_map(SEXP specification, SEXP initial, SEX
             block.initial[static_cast<std::size_t>(j)] = free ? start[j] : spec[j];
         }
     }
-    return persephone::ArmaParameterMap(std::move(blocks), scalar(margin, "reflection margin", 1e-8));
+    return kalos::ArmaParameterMap(std::move(blocks), scalar(margin, "reflection margin", 1e-8));
 }
-Rcpp::List decoded(const persephone::ArmaDecoded& result) {
+Rcpp::List decoded(const kalos::ArmaDecoded& result) {
     return Rcpp::List::create(Rcpp::_["status"] = result.status,
         Rcpp::_["admissible"] = result.status == "admissible",
         Rcpp::_["failed_block"] = result.failed_block < 0 ? Rcpp::CharacterVector::create(NA_STRING) :
@@ -103,12 +103,12 @@ Rcpp::List decoded(const persephone::ArmaDecoded& result) {
         Rcpp::_["reflections"] = named_blocks(result.reflections));
 }
 struct ObjectiveData {
-    persephone::MaskedSeries input;
-    persephone::RegressionDesign regression;
+    kalos::MaskedSeries input;
+    kalos::RegressionDesign regression;
 };
 ObjectiveData objective_data(SEXP values, SEXP design, SEXP coefficients) {
     const auto response = vector(values, "values", std::numeric_limits<int>::max());
-    persephone::MaskedSeries input{std::vector<double>(response.size(), 0), std::vector<std::uint8_t>(response.size(), 0)};
+    kalos::MaskedSeries input{std::vector<double>(response.size(), 0), std::vector<std::uint8_t>(response.size(), 0)};
     for (R_xlen_t i = 0; i < response.size(); ++i) {
         if ((i & 4095) == 0) Rcpp::checkUserInterrupt();
         if (std::isnan(response[i])) input.missing[static_cast<std::size_t>(i)] = 1;
@@ -123,7 +123,7 @@ ObjectiveData objective_data(SEXP values, SEXP design, SEXP coefficients) {
     const auto coeff = vector(coefficients, "regression coefficients", 32);
     if (coeff.size() != shape[1]) throw std::invalid_argument("regression coefficients must match design columns");
     const auto x = Rcpp::as<Rcpp::NumericVector>(design);
-    persephone::RegressionDesign regression{static_cast<std::size_t>(shape[1]),
+    kalos::RegressionDesign regression{static_cast<std::size_t>(shape[1]),
         std::vector<double>(x.begin(), x.end()), std::vector<double>(coeff.size(), 0), std::vector<std::uint8_t>(coeff.size(), 0)};
     for (R_xlen_t i = 0; i < coeff.size(); ++i) {
         if (R_IsNA(coeff[i])) continue;
@@ -132,7 +132,7 @@ ObjectiveData objective_data(SEXP values, SEXP design, SEXP coefficients) {
     }
     return {std::move(input),std::move(regression)};
 }
-Rcpp::List objective_output(const persephone::ArmaObjective& result, std::size_t free_parameters) {
+Rcpp::List objective_output(const kalos::ArmaObjective& result, std::size_t free_parameters) {
     Rcpp::List output = Rcpp::List::create(Rcpp::_["schema_version"] = 1,
         Rcpp::_["status"] = result.status, Rcpp::_["message"] = result.message,
         Rcpp::_["available"] = result.status == "available", Rcpp::_["value"] = optional(result.value),
@@ -150,7 +150,7 @@ Rcpp::List objective_output(const persephone::ArmaObjective& result, std::size_t
     } else output["likelihood"] = R_NilValue;
     return output;
 }
-Rcpp::List identification_output(const persephone::ArmaIdentification& result) {
+Rcpp::List identification_output(const kalos::ArmaIdentification& result) {
     Rcpp::List out = Rcpp::List::create(Rcpp::_["schema_version"] = 1,
         Rcpp::_["status"] = result.status, Rcpp::_["parameter_status"] = result.parameter_status,
         Rcpp::_["scope"] = "local_transfer_sensitivity", Rcpp::_["statistical_identification"] = "not_assessed",
@@ -208,7 +208,7 @@ Rcpp::List native_arma_decode(SEXP specification, SEXP initial, SEXP coordinates
 Rcpp::List native_arma_identification(SEXP specification, SEXP initial, SEXP coordinates, SEXP period,
     SEXP margin = R_NilValue, SEXP rank_tolerance = R_NilValue, SEXP near_tolerance = R_NilValue) {
     const auto map = parameter_map(specification, initial, margin);
-    return identification_output(persephone::arma_identification(map,
+    return identification_output(kalos::arma_identification(map,
         Rcpp::as<std::vector<double>>(vector(coordinates, "ARMA coordinates", 64)),
         integer(period, "period", 0, 12), scalar(rank_tolerance, "identification rank tolerance", 1e-10),
         scalar(near_tolerance, "identification near tolerance", 1e-4), [] { Rcpp::checkUserInterrupt(); }));
@@ -220,7 +220,7 @@ Rcpp::List native_arma_admissibility(SEXP coefficients, SEXP moving_average, SEX
         !Rf_isNull(Rf_getAttrib(moving_average, R_DimSymbol)) || LOGICAL(moving_average)[0] == NA_LOGICAL) {
         throw std::invalid_argument("moving_average must be one nonmissing logical value");
     }
-    const auto result = persephone::arma_admissibility(Rcpp::as<std::vector<double>>(vector(coefficients, "coefficients")),
+    const auto result = kalos::arma_admissibility(Rcpp::as<std::vector<double>>(vector(coefficients, "coefficients")),
         LOGICAL(moving_average)[0] != 0, scalar(margin, "reflection margin", 1e-8));
     return Rcpp::List::create(Rcpp::_["status"] = result.status,
         Rcpp::_["reflections"] = numeric(result.reflections), Rcpp::_["failed_order"] = static_cast<int>(result.failed_order));
@@ -235,7 +235,7 @@ Rcpp::List native_arma_objective(SEXP values, SEXP design, SEXP coefficients,
     auto data = objective_data(values, design, coefficients);
     const auto& input = data.input;
     const auto& regression = data.regression;
-    const auto result = persephone::evaluate_arma_objective(input, regression, map,
+    const auto result = kalos::evaluate_arma_objective(input, regression, map,
         Rcpp::as<std::vector<double>>(vector(coordinates, "ARMA coordinates", 64)),
         integer(period, "period", 0, 12), integer(d, "d", 0, 2), integer(seasonal_d, "seasonal_d", 0, 2),
         scalar(mean, "mean", 0), scalar(rank_tolerance, "rank tolerance", 1e-10), scalar(log_jacobian, "log Jacobian", 0),
@@ -244,8 +244,8 @@ Rcpp::List native_arma_objective(SEXP values, SEXP design, SEXP coefficients,
 }
 
 namespace {
-persephone::OptimizerControl optimizer_control(SEXP values) {
-    persephone::OptimizerControl c;
+kalos::OptimizerControl optimizer_control(SEXP values) {
+    kalos::OptimizerControl c;
     if(Rf_isNull(values)) return c;
     if(TYPEOF(values)!=VECSXP || !Rf_isNull(Rf_getAttrib(values,R_DimSymbol))) throw std::invalid_argument("optimizer control must be a named list");
     const Rcpp::List list(values);
@@ -272,15 +272,15 @@ persephone::OptimizerControl optimizer_control(SEXP values) {
     }
     c.validate(); return c;
 }
-Rcpp::List control_output(const persephone::OptimizerControl& c) {
+Rcpp::List control_output(const kalos::OptimizerControl& c) {
     return Rcpp::List::create(Rcpp::_["max_iterations"]=c.max_iterations,Rcpp::_["max_evaluations"]=c.max_evaluations,
         Rcpp::_["max_line_search"]=c.max_line_search,Rcpp::_["difference_refinements"]=c.difference_refinements,
         Rcpp::_["gradient_tolerance"]=c.gradient_tolerance,Rcpp::_["step_tolerance"]=c.step_tolerance,
         Rcpp::_["function_tolerance"]=c.function_tolerance,Rcpp::_["difference_step"]=c.difference_step,
         Rcpp::_["armijo"]=c.armijo,Rcpp::_["max_step"]=c.max_step);
 }
-persephone::InformationControl information_control(SEXP values) {
-    persephone::InformationControl c;
+kalos::InformationControl information_control(SEXP values) {
+    kalos::InformationControl c;
     if(Rf_isNull(values)) return c;
     if(TYPEOF(values)!=VECSXP || !Rf_isNull(Rf_getAttrib(values,R_DimSymbol))) throw std::invalid_argument("information control must be a named list");
     const Rcpp::List list(values);
@@ -305,7 +305,7 @@ persephone::InformationControl information_control(SEXP values) {
     }
     c.validate(); return c;
 }
-Rcpp::RObject matrix_or_null(const std::optional<persephone::DenseMatrix>& a) {
+Rcpp::RObject matrix_or_null(const std::optional<kalos::DenseMatrix>& a) {
     if(!a) return R_NilValue;
     return Rcpp::NumericMatrix(static_cast<int>(a->rows()),static_cast<int>(a->columns()),a->values().begin());
 }
@@ -315,7 +315,7 @@ std::string information_option(SEXP value, const char* name, const std::string& 
         !Rf_isNull(Rf_getAttrib(value,R_DimSymbol))) throw std::invalid_argument(std::string(name)+" must be one nonmissing string");
     return Rcpp::as<std::string>(value);
 }
-std::optional<persephone::LegacyCovarianceState> legacy_covariance_state(SEXP input) {
+std::optional<kalos::LegacyCovarianceState> legacy_covariance_state(SEXP input) {
     if(Rf_isNull(input)) return std::nullopt;
     const std::vector<std::string> required{"final_coefficients","working_coefficients","difference_steps",
         "damping","normalized_sum_squares","effective_count"};
@@ -331,7 +331,7 @@ std::optional<persephone::LegacyCovarianceState> legacy_covariance_state(SEXP in
         }
         seen.push_back(name);
     }
-    persephone::LegacyCovarianceState state;
+    kalos::LegacyCovarianceState state;
     state.final_coefficients=Rcpp::as<std::vector<double>>(vector(list["final_coefficients"],"legacy final coefficients",64));
     state.working_coefficients=Rcpp::as<std::vector<double>>(vector(list["working_coefficients"],"legacy working coefficients",64));
     state.difference_steps=Rcpp::as<std::vector<double>>(vector(list["difference_steps"],"legacy difference steps",64));
@@ -340,10 +340,10 @@ std::optional<persephone::LegacyCovarianceState> legacy_covariance_state(SEXP in
     state.effective_count=static_cast<std::size_t>(integer(list["effective_count"],"legacy effective count",0,std::numeric_limits<int>::max()));
     return state;
 }
-Rcpp::List arma_information_output(const persephone::ArmaInformation& result,
-    const persephone::InformationControl& c, const std::string& selected, SEXP legacy_state) {
+Rcpp::List arma_information_output(const kalos::ArmaInformation& result,
+    const kalos::InformationControl& c, const std::string& selected, SEXP legacy_state) {
     const bool conditional=selected=="conditional_residual_df",residual=selected=="tramo_residual";
-    const std::string covariance_mode=result.covariance_mode==persephone::ArmaCovarianceMode::Legacy ? "legacy" : "accurate";
+    const std::string covariance_mode=result.covariance_mode==kalos::ArmaCovarianceMode::Legacy ? "legacy" : "accurate";
     const auto& info=result.information;
     Rcpp::List out;
     out["schema_version"]=1; out["status"]=info.status;
@@ -405,7 +405,7 @@ Rcpp::List arma_information_output(const persephone::ArmaInformation& result,
     out["parameter_diagnostics"]=identification_output(result.structural);
     const auto center=result.estimation_center;
     out["center"]=center ? static_cast<SEXP>(objective_output(*center,result.coefficients.size())) : R_NilValue;
-    const auto regression=persephone::conditional_regression_information(result,[] { Rcpp::checkUserInterrupt(); });
+    const auto regression=kalos::conditional_regression_information(result,[] { Rcpp::checkUserInterrupt(); });
     Rcpp::IntegerVector free_columns;
     for(const auto j:regression.free_columns) free_columns.push_back(static_cast<int>(j+1));
     Rcpp::List regression_output=Rcpp::List::create(Rcpp::_["schema_version"]=1,
@@ -447,14 +447,14 @@ Rcpp::List native_arma_information(SEXP values, SEXP design, SEXP coefficients,
     if(selected!="profile_ml" && selected!="conditional_residual_df" && selected!="tramo_residual") throw std::invalid_argument("unknown information method");
     const bool conditional=selected=="conditional_residual_df";
     const bool residual=selected=="tramo_residual";
-    const auto result=persephone::arma_information(data.input,data.regression,map,
+    const auto result=kalos::arma_information(data.input,data.regression,map,
         Rcpp::as<std::vector<double>>(vector(coordinates,"ARMA coordinates",64)),
         integer(period,"period",0,12),integer(d,"d",0,2),integer(seasonal_d,"seasonal_d",0,2),
         scalar(mean,"mean",0),scalar(rank_tolerance,"rank tolerance",1e-10),scalar(log_jacobian,"log Jacobian",0),
-        c,[] { Rcpp::checkUserInterrupt(); }, residual ? persephone::ArmaInformationMode::TramoResidual :
-            conditional ? persephone::ArmaInformationMode::ConditionalResidualDF :
-            persephone::ArmaInformationMode::ProfileML,
-        covariance_mode=="legacy" ? persephone::ArmaCovarianceMode::Legacy : persephone::ArmaCovarianceMode::Accurate,
+        c,[] { Rcpp::checkUserInterrupt(); }, residual ? kalos::ArmaInformationMode::TramoResidual :
+            conditional ? kalos::ArmaInformationMode::ConditionalResidualDF :
+            kalos::ArmaInformationMode::ProfileML,
+        covariance_mode=="legacy" ? kalos::ArmaCovarianceMode::Legacy : kalos::ArmaCovarianceMode::Accurate,
         legacy_covariance_state(legacy_state));
     return arma_information_output(result,c,selected,legacy_state);
 }
@@ -468,7 +468,7 @@ Rcpp::List native_joint_regression_information(SEXP values, SEXP design, SEXP co
     const auto c=information_control(control);
     const auto map=parameter_map(specification,initial,margin);
     const auto data=objective_data(values,design,coefficients);
-    const auto result=persephone::joint_regression_information(data.input,data.regression,map,
+    const auto result=kalos::joint_regression_information(data.input,data.regression,map,
         Rcpp::as<std::vector<double>>(vector(coordinates,"ARMA coordinates",64)),
         integer(period,"period",0,12),integer(d,"d",0,2),integer(seasonal_d,"seasonal_d",0,2),
         scalar(mean,"mean",0),scalar(rank_tolerance,"rank tolerance",1e-10),scalar(log_jacobian,"log Jacobian",0),
@@ -530,11 +530,11 @@ Rcpp::List native_arma_residuals(SEXP values, SEXP design, SEXP coefficients,
     if(transform!="none" && transform!="log")throw std::invalid_argument("transformation must be none or log");
     const auto map=parameter_map(specification,initial,margin);
     const auto data=objective_data(values,design,coefficients);
-    const auto result=persephone::arma_residuals(data.input,data.regression,map,
+    const auto result=kalos::arma_residuals(data.input,data.regression,map,
         Rcpp::as<std::vector<double>>(vector(coordinates,"ARMA coordinates",64)),
         integer(period,"period",0,12),integer(d,"d",0,2),integer(seasonal_d,"seasonal_d",0,2),
         scalar(mean,"mean",0),scalar(rank_tolerance,"rank tolerance",1e-10),scalar(log_jacobian,"log Jacobian",0),
-        selected=="ml" ? persephone::ResidualScale::ML : persephone::ResidualScale::ResidualDF,
+        selected=="ml" ? kalos::ResidualScale::ML : kalos::ResidualScale::ResidualDF,
         [] { Rcpp::checkUserInterrupt(); });
     Rcpp::IntegerVector rows,basis_rows,missing;
     for(const auto i:result.rows) rows.push_back(static_cast<int>(i+1));
@@ -567,10 +567,10 @@ Rcpp::List native_arma_residuals(SEXP values, SEXP design, SEXP coefficients,
         Rcpp::_["basis"]="complete_span_missing_coordinate_projection");
     out["reporting"]=mode;
     if(mode=="legacy") {
-        const auto legacy=persephone::legacy_arma_residuals(data.input,data.regression,result,
+        const auto legacy=kalos::legacy_arma_residuals(data.input,data.regression,result,
             integer(period,"period",0,12),integer(d,"d",0,2),integer(seasonal_d,"seasonal_d",0,2),
             scalar(mean,"mean",0),scalar(rank_tolerance,"rank tolerance",1e-10),
-            transform=="log" ? persephone::Transform::logarithm : persephone::Transform::none,
+            transform=="log" ? kalos::Transform::logarithm : kalos::Transform::none,
             [] {Rcpp::checkUserInterrupt();});
         Rcpp::IntegerVector calendar;
         for(const auto i:legacy.calendar_rows)calendar.push_back(static_cast<int>(i+1));
@@ -600,11 +600,11 @@ Rcpp::List native_interpolation_information(SEXP values,SEXP design,SEXP coeffic
     const auto c=information_control(control);
     const auto map=parameter_map(specification,initial,margin);
     const auto data=objective_data(values,design,coefficients);
-    const auto result=persephone::interpolation_information(data.input,data.regression,map,
+    const auto result=kalos::interpolation_information(data.input,data.regression,map,
         Rcpp::as<std::vector<double>>(vector(coordinates,"ARMA coordinates",64)),
         integer(period,"period",0,12),integer(d,"d",0,2),integer(seasonal_d,"seasonal_d",0,2),
         scalar(mean,"mean",0),scalar(rank_tolerance,"rank tolerance",1e-10),scalar(log_jacobian,"log Jacobian",0),
-        selected=="ml" ? persephone::ResidualScale::ML : persephone::ResidualScale::ResidualDF,
+        selected=="ml" ? kalos::ResidualScale::ML : kalos::ResidualScale::ResidualDF,
         [] {Rcpp::checkUserInterrupt();});
     const auto& fit=result.fit;
     const bool points=fit.complete.status=="available";
@@ -628,7 +628,7 @@ Rcpp::List native_interpolation_information(SEXP values,SEXP design,SEXP coeffic
     out["method"]="conditional_ARMA_with_estimated_regression";
     out["propagates_ARMA_uncertainty"]=false;
     if(mode=="delta_profile_ml") {
-        const auto propagated=persephone::interpolation_arma_information(result,data.input,data.regression,map,
+        const auto propagated=kalos::interpolation_arma_information(result,data.input,data.regression,map,
             Rcpp::as<std::vector<double>>(vector(coordinates,"ARMA coordinates",64)),
             integer(period,"period",0,12),integer(d,"d",0,2),integer(seasonal_d,"seasonal_d",0,2),
             scalar(mean,"mean",0),scalar(rank_tolerance,"rank tolerance",1e-10),scalar(log_jacobian,"log Jacobian",0),
@@ -675,13 +675,13 @@ Rcpp::List native_arma_optimize(SEXP values, SEXP design, SEXP coefficients,
     const auto c=optimizer_control(control);
     const auto map=parameter_map(specification,initial,margin);
     const auto data=objective_data(values,design,coefficients);
-    const auto result=persephone::optimize_arma_objective(data.input,data.regression,map,
+    const auto result=kalos::optimize_arma_objective(data.input,data.regression,map,
         Rcpp::as<std::vector<double>>(vector(coordinates,"ARMA coordinates",64)),
         integer(period,"period",0,12),integer(d,"d",0,2),integer(seasonal_d,"seasonal_d",0,2),
         scalar(mean,"mean",0),scalar(rank_tolerance,"rank tolerance",1e-10),scalar(log_jacobian,"log Jacobian",0),
         c,[] { Rcpp::checkUserInterrupt(); });
-    const auto first=std::static_pointer_cast<const persephone::ArmaOptimizationPoint>(result.initial.detail);
-    const auto last=std::static_pointer_cast<const persephone::ArmaOptimizationPoint>(result.final.detail);
+    const auto first=std::static_pointer_cast<const kalos::ArmaOptimizationPoint>(result.initial.detail);
+    const auto last=std::static_pointer_cast<const kalos::ArmaOptimizationPoint>(result.final.detail);
     if(!first || !last) throw std::logic_error("optimizer lost its accepted ARMA point");
     Rcpp::List out;
     out["schema_version"]=1; out["status"]=result.status; out["converged"]=result.converged;
@@ -711,7 +711,7 @@ Rcpp::List native_arma_optimize(SEXP values, SEXP design, SEXP coefficients,
     out["trace"]=history; out["control"]=control_output(c);
     out["method"]="bfgs_feasible_armijo";
     out["gradient_coordinates"]="unit_reflection_or_free_coefficient";
-    out["parameter_diagnostics"]=identification_output(persephone::arma_identification(map,
+    out["parameter_diagnostics"]=identification_output(kalos::arma_identification(map,
         last->coordinates, integer(period,"period",0,12), 1e-10, 1e-4,
         [] { Rcpp::checkUserInterrupt(); }));
     return out;
@@ -737,15 +737,15 @@ Rcpp::List native_forecast_information(SEXP values,SEXP design,SEXP coefficients
     Rcpp::NumericVector extended(response.size()+b+f,NA_REAL);
     std::copy(response.begin(),response.end(),extended.begin()+b);
     const auto data=objective_data(extended,design,coefficients);
-    persephone::MaskedSeries input{
+    kalos::MaskedSeries input{
         std::vector<double>(data.input.values.begin()+b,data.input.values.end()-f),
         std::vector<std::uint8_t>(data.input.missing.begin()+b,data.input.missing.end()-f)};
     const auto map=parameter_map(specification,initial,margin);
-    const auto result=persephone::forecast_information(input,data.regression,static_cast<std::size_t>(b),static_cast<std::size_t>(f),map,
+    const auto result=kalos::forecast_information(input,data.regression,static_cast<std::size_t>(b),static_cast<std::size_t>(f),map,
         Rcpp::as<std::vector<double>>(vector(coordinates,"ARMA coordinates",64)),
         integer(period,"period",0,12),integer(d,"d",0,2),integer(seasonal_d,"seasonal_d",0,2),
         scalar(mean,"mean",0),scalar(rank_tolerance,"rank tolerance",1e-10),scalar(log_jacobian,"log Jacobian",0),
-        selected=="ml" ? persephone::ResidualScale::ML : persephone::ResidualScale::ResidualDF,
+        selected=="ml" ? kalos::ResidualScale::ML : kalos::ResidualScale::ResidualDF,
         [] {Rcpp::checkUserInterrupt();});
     Rcpp::IntegerVector rows;for(const auto row:result.rows)rows.push_back(static_cast<int>(row+1));
     Rcpp::List out=Rcpp::List::create(Rcpp::_["schema_version"]=1,Rcpp::_["status"]=result.status,
@@ -770,7 +770,7 @@ Rcpp::List native_forecast_information(SEXP values,SEXP design,SEXP coefficients
     out["method"]="conditional_ARMA_with_estimated_regression";
     out["propagates_ARMA_uncertainty"]=false;
     if(mode=="delta_profile_ml") {
-        const auto propagated=persephone::forecast_arma_information(result,input,data.regression,static_cast<std::size_t>(b),static_cast<std::size_t>(f),map,
+        const auto propagated=kalos::forecast_arma_information(result,input,data.regression,static_cast<std::size_t>(b),static_cast<std::size_t>(f),map,
             Rcpp::as<std::vector<double>>(vector(coordinates,"ARMA coordinates",64)),
             integer(period,"period",0,12),integer(d,"d",0,2),integer(seasonal_d,"seasonal_d",0,2),
             scalar(mean,"mean",0),scalar(rank_tolerance,"rank tolerance",1e-10),scalar(log_jacobian,"log Jacobian",0),

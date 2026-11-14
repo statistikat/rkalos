@@ -2,7 +2,7 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
-namespace persephone_msr_rcpp {
+namespace kalos_msr_rcpp {
 int integer(SEXP value,const char* label) {
     if((TYPEOF(value)!=REALSXP && TYPEOF(value)!=INTSXP) || Rf_isFactor(value) || Rf_xlength(value)!=1 ||
         !Rf_isNull(Rf_getAttrib(value,R_DimSymbol)))throw std::invalid_argument(std::string(label)+" must be one integer");
@@ -11,12 +11,12 @@ int integer(SEXP value,const char* label) {
         throw std::invalid_argument(std::string(label)+" must be one supported integer");
     return static_cast<int>(x);
 }
-persephone::MaskedSeries series(SEXP value) {
+kalos::MaskedSeries series(SEXP value) {
     if((TYPEOF(value)!=REALSXP && TYPEOF(value)!=INTSXP) || Rf_isFactor(value) ||
         !Rf_isNull(Rf_getAttrib(value,R_DimSymbol)) || Rf_xlength(value)>std::numeric_limits<int>::max())
         throw std::invalid_argument("MSR component must be a real numeric vector within the supported length");
     const auto y=Rcpp::as<Rcpp::NumericVector>(value);const auto n=static_cast<std::size_t>(y.size());
-    persephone::MaskedSeries out{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
+    kalos::MaskedSeries out{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
     for(std::size_t j=0;j<n;++j) {
         if((j&4095U)==0)Rcpp::checkUserInterrupt();const auto v=y[static_cast<R_xlen_t>(j)];
         if(std::isnan(v))out.missing[j]=1;
@@ -25,8 +25,8 @@ persephone::MaskedSeries series(SEXP value) {
     }
     return out;
 }
-const char* status(persephone::X11MsrStatus value) {
-    using S=persephone::X11MsrStatus;
+const char* status(kalos::X11MsrStatus value) {
+    using S=kalos::X11MsrStatus;
     switch(value) {
     case S::available:return "available";
     case S::insufficient_observations:return "insufficient_observations";
@@ -44,20 +44,20 @@ Rcpp::NumericVector numbers(const std::vector<double>& values) {
     for(std::size_t j=0;j<values.size();++j)out[static_cast<R_xlen_t>(j)]=optional(values[j]);
     return out;
 }
-Rcpp::CharacterVector statuses(const std::vector<persephone::X11MsrStatus>& values) {
+Rcpp::CharacterVector statuses(const std::vector<kalos::X11MsrStatus>& values) {
     Rcpp::CharacterVector out(values.size());
     for(std::size_t j=0;j<values.size();++j)out[static_cast<R_xlen_t>(j)]=status(values[j]);
     return out;
 }
-persephone::X11MsrMode mode(SEXP value) {
+kalos::X11MsrMode mode(SEXP value) {
     if(TYPEOF(value)!=STRSXP || Rf_xlength(value)!=1 || STRING_ELT(value,0)==NA_STRING ||
         !Rf_isNull(Rf_getAttrib(value,R_DimSymbol)))throw std::invalid_argument("provide one supported X-11 mode");
     const auto name=Rcpp::as<std::string>(value);const bool relative=name=="multiplicative";
     if(!relative && name!="additive" && name!="log_additive" && name!="pseudo_additive")throw std::invalid_argument("unsupported X-11 mode");
-    return relative ? persephone::X11MsrMode::relative : persephone::X11MsrMode::absolute;
+    return relative ? kalos::X11MsrMode::relative : kalos::X11MsrMode::absolute;
 }
-Rcpp::List table_result(const persephone::X11MsrTable& result,int f,persephone::X11MsrMode mode) {
-    const bool relative=mode==persephone::X11MsrMode::relative;
+Rcpp::List table_result(const kalos::X11MsrTable& result,int f,kalos::X11MsrMode mode) {
+    const bool relative=mode==kalos::X11MsrMode::relative;
     Rcpp::IntegerVector counts(f),changes(f);
     for(int p=0;p<f;++p) {counts[p]=static_cast<int>(result.observations[static_cast<std::size_t>(p)]);
         changes[p]=static_cast<int>(result.changes[static_cast<std::size_t>(p)]);}
@@ -71,11 +71,11 @@ Rcpp::List table_result(const persephone::X11MsrTable& result,int f,persephone::
         Rcpp::_["global_seasonal_mean"]=optional(result.seasonal.global_mean),Rcpp::_["global_irregular_mean"]=optional(result.irregular.global_mean),
         Rcpp::_["change_measure"]=relative ? "relative_absolute_change" : "absolute_change",Rcpp::_["phases"]=phases);
 }
-} // namespace persephone_msr_rcpp
+} // namespace kalos_msr_rcpp
 // [[Rcpp::export(name = ".native_x11_msr_table")]]
 Rcpp::List native_x11_msr_table(SEXP seasonal,SEXP irregular,SEXP frequency,SEXP first_period,SEXP mode) {
-    using namespace persephone_msr_rcpp;
+    using namespace kalos_msr_rcpp;
     const auto f=integer(frequency,"frequency"),first=integer(first_period,"first period");
     const auto measure=persephone_msr_rcpp::mode(mode);const auto s=series(seasonal),i=series(irregular);
-    return table_result(persephone::x11_msr_table(s,i,f,first,measure,[]{Rcpp::checkUserInterrupt();}),f,measure);
+    return table_result(kalos::x11_msr_table(s,i,f,first,measure,[]{Rcpp::checkUserInterrupt();}),f,measure);
 }

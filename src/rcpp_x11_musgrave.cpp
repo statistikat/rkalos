@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/x11_musgrave.hpp"
+#include "kalos/x11_musgrave.hpp"
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -26,8 +26,8 @@ Rcpp::List native_x11_musgrave_spec(SEXP frequency,SEXP length,SEXP available,SE
     if(name!="left" && name!="right")throw std::invalid_argument("Musgrave side must be left or right");
     const auto period=integer(frequency,"frequency"),span=integer(length,"Henderson length"),q=integer(available,"available observations");
     const auto ratio=scalar(ic_ratio,"I/C ratio");
-    const auto filter=persephone::x11_musgrave_definition(period,span,q,
-        name=="left" ? persephone::X11EndpointSide::left : persephone::X11EndpointSide::right,
+    const auto filter=kalos::x11_musgrave_definition(period,span,q,
+        name=="left" ? kalos::X11EndpointSide::left : kalos::X11EndpointSide::right,
         ratio,[] {Rcpp::checkUserInterrupt();});
     Rcpp::IntegerVector offsets;for(const auto offset:filter.offsets)offsets.push_back(static_cast<int>(offset));
     return Rcpp::List::create(Rcpp::_["schema_version"]=1,Rcpp::_["type"]="henderson",
@@ -45,7 +45,7 @@ Rcpp::List native_x11_musgrave_filter(SEXP values,SEXP frequency,SEXP length,SEX
         !Rf_isNull(Rf_getAttrib(values,R_DimSymbol)) || Rf_xlength(values)>std::numeric_limits<int>::max())
         throw std::invalid_argument("X-11 response must be a real numeric vector within the supported length");
     const auto y=Rcpp::as<Rcpp::NumericVector>(values);const auto n=static_cast<std::size_t>(y.size());
-    persephone::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
+    kalos::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
     for(std::size_t i=0;i<n;++i) {
         if((i&4095U)==0)Rcpp::checkUserInterrupt();
         const auto value=y[static_cast<R_xlen_t>(i)];
@@ -53,7 +53,7 @@ Rcpp::List native_x11_musgrave_filter(SEXP values,SEXP frequency,SEXP length,SEX
         else if(!std::isfinite(value))throw std::invalid_argument("X-11 response must be finite or missing");
         else input.values[i]=value;
     }
-    const auto filtered=persephone::x11_musgrave_filter(input,period,span,ratio,[] {Rcpp::checkUserInterrupt();});
+    const auto filtered=kalos::x11_musgrave_filter(input,period,span,ratio,[] {Rcpp::checkUserInterrupt();});
     Rcpp::NumericVector output(n);Rcpp::LogicalVector missing(n);
     for(std::size_t i=0;i<n;++i) {
         if((i&4095U)==0)Rcpp::checkUserInterrupt();

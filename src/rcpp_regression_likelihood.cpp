@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/regression_likelihood.hpp"
+#include "kalos/regression_likelihood.hpp"
 
 #include <cmath>
 #include <limits>
@@ -73,7 +73,7 @@ Rcpp::IntegerVector indices(const std::vector<std::size_t>& values) {
     return result;
 }
 
-Rcpp::NumericVector series(const persephone::MaskedSeries& values) {
+Rcpp::NumericVector series(const kalos::MaskedSeries& values) {
     auto result = numeric(values.values);
     for (std::size_t i = 0; i < values.values.size(); ++i) if (values.missing[i]) result[static_cast<R_xlen_t>(i)] = NA_REAL;
     return result;
@@ -88,7 +88,7 @@ Rcpp::List native_regression_likelihood(SEXP values, SEXP design, SEXP coefficie
     SEXP mean = R_NilValue, SEXP variance = R_NilValue,
     SEXP rank_tolerance = R_NilValue) {
     const auto response = vector(values, "values", std::numeric_limits<int>::max());
-    persephone::MaskedSeries input{std::vector<double>(response.size(), 0),
+    kalos::MaskedSeries input{std::vector<double>(response.size(), 0),
                                   std::vector<std::uint8_t>(response.size(), 0)};
     for (R_xlen_t i = 0; i < response.size(); ++i) {
         if ((i & 4095) == 0) Rcpp::checkUserInterrupt();
@@ -107,7 +107,7 @@ Rcpp::List native_regression_likelihood(SEXP values, SEXP design, SEXP coefficie
     const auto coefficient_values = vector(coefficients, "coefficients", 32);
     if (coefficient_values.size() != shape[1]) throw std::invalid_argument("coefficients must match every design column; NA denotes a free coefficient");
     const auto design_values = Rcpp::as<Rcpp::NumericVector>(design);
-    persephone::RegressionDesign specification{static_cast<std::size_t>(shape[1]),
+    kalos::RegressionDesign specification{static_cast<std::size_t>(shape[1]),
         std::vector<double>(design_values.begin(), design_values.end()),
         std::vector<double>(static_cast<std::size_t>(shape[1]), 0),
         std::vector<std::uint8_t>(static_cast<std::size_t>(shape[1]), 0)};
@@ -122,7 +122,7 @@ Rcpp::List native_regression_likelihood(SEXP values, SEXP design, SEXP coefficie
     const auto regular = order(d, "d"), seasonal = order(seasonal_d, "seasonal_d");
     const auto level = scalar(mean, "mean", 0), scale = scalar(variance, "variance", 1);
     const auto tolerance = scalar(rank_tolerance, "rank_tolerance", 1e-10);
-    const auto fit = persephone::sarima_regression_likelihood(input, specification,
+    const auto fit = kalos::sarima_regression_likelihood(input, specification,
         Rcpp::as<std::vector<double>>(vector(ar, "AR coefficients", 16)),
         Rcpp::as<std::vector<double>>(vector(ma, "MA coefficients", 16)),
         Rcpp::as<std::vector<double>>(vector(seasonal_ar, "seasonal AR coefficients", 16)),

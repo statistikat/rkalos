@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/prediction_moments.hpp"
+#include "kalos/prediction_moments.hpp"
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -20,13 +20,13 @@ Rcpp::List native_prediction_moments(SEXP location,SEXP covariance,SEXP transfor
         throw std::invalid_argument("prediction transformation must be none or log");
     const auto name=Rcpp::as<std::string>(transformation);
     if(name!="none" && name!="log")throw std::invalid_argument("prediction transformation must be none or log");
-    persephone::PredictionMoments result;
+    kalos::PredictionMoments result;
     if(m.size()) {
         const Rcpp::NumericVector values=Rcpp::as<Rcpp::NumericVector>(covariance);
-        persephone::DenseMatrix matrix(static_cast<std::size_t>(m.size()),static_cast<std::size_t>(m.size()));
+        kalos::DenseMatrix matrix(static_cast<std::size_t>(m.size()),static_cast<std::size_t>(m.size()));
         matrix.values().assign(values.begin(),values.end());
-        result=persephone::prediction_moments(std::vector<double>(m.begin(),m.end()),matrix,
-            name=="log" ? persephone::Transform::logarithm : persephone::Transform::none,
+        result=kalos::prediction_moments(std::vector<double>(m.begin(),m.end()),matrix,
+            name=="log" ? kalos::Transform::logarithm : kalos::Transform::none,
             [] {Rcpp::checkUserInterrupt();});
     } else result.median_status=result.mean_status=result.covariance_status=result.standard_error_status="available";
     const auto vector=[](const std::vector<double>& values) {

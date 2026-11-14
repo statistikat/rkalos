@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/x11_filters.hpp"
+#include "kalos/x11_filters.hpp"
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -13,22 +13,22 @@ int integer(SEXP value,const char* label) {
         throw std::invalid_argument(std::string(label)+" is outside its supported range");
     return static_cast<int>(x);
 }
-struct Settings {persephone::X11FilterKind kind;int frequency,length;std::string type;};
+struct Settings {kalos::X11FilterKind kind;int frequency,length;std::string type;};
 Settings settings(SEXP type,SEXP frequency,SEXP length) {
     if(TYPEOF(type)!=STRSXP || Rf_xlength(type)!=1 || STRING_ELT(type,0)==NA_STRING ||
         !Rf_isNull(Rf_getAttrib(type,R_DimSymbol)))throw std::invalid_argument("X-11 filter type must be one string");
     const auto name=Rcpp::as<std::string>(type);const auto period=integer(frequency,"frequency");
-    if(name=="henderson")return {persephone::X11FilterKind::henderson,period,integer(length,"Henderson length"),name};
+    if(name=="henderson")return {kalos::X11FilterKind::henderson,period,integer(length,"Henderson length"),name};
     if(!Rf_isNull(length))throw std::invalid_argument("length is only supplied for Henderson filters");
-    if(name=="trend")return {persephone::X11FilterKind::trend,period,0,name};
+    if(name=="trend")return {kalos::X11FilterKind::trend,period,0,name};
     const std::vector<std::string> options{"s3x1","s3x3","s3x5","s3x9","s3x15"};
     const int lengths[]{1,3,5,9,15};
     for(std::size_t i=0;i<options.size();++i)if(name==options[i])
-        return {persephone::X11FilterKind::seasonal,period,lengths[i],name};
+        return {kalos::X11FilterKind::seasonal,period,lengths[i],name};
     throw std::invalid_argument("unsupported symmetric X-11 filter type");
 }
 Rcpp::List specification(const Settings& s) {
-    const auto filter=persephone::x11_filter_definition(s.kind,s.frequency,s.length,[] {Rcpp::checkUserInterrupt();});
+    const auto filter=kalos::x11_filter_definition(s.kind,s.frequency,s.length,[] {Rcpp::checkUserInterrupt();});
     Rcpp::IntegerVector offsets;for(const auto offset:filter.offsets)offsets.push_back(static_cast<int>(offset));
     return Rcpp::List::create(Rcpp::_["schema_version"]=1,Rcpp::_["type"]=s.type,
         Rcpp::_["frequency"]=s.frequency,Rcpp::_["length_parameter"]=s.length,
@@ -49,7 +49,7 @@ Rcpp::List native_x11_filter(SEXP values,SEXP type,SEXP frequency,SEXP length=R_
         !Rf_isNull(Rf_getAttrib(values,R_DimSymbol)) || Rf_xlength(values)>std::numeric_limits<int>::max())
         throw std::invalid_argument("X-11 response must be a real numeric vector within the supported length");
     const auto y=Rcpp::as<Rcpp::NumericVector>(values);const auto n=static_cast<std::size_t>(y.size());
-    persephone::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
+    kalos::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
     for(std::size_t i=0;i<n;++i) {
         if((i&4095U)==0)Rcpp::checkUserInterrupt();
         const auto value=y[static_cast<R_xlen_t>(i)];
@@ -57,7 +57,7 @@ Rcpp::List native_x11_filter(SEXP values,SEXP type,SEXP frequency,SEXP length=R_
         else if(!std::isfinite(value))throw std::invalid_argument("X-11 response must be finite or missing");
         else input.values[i]=value;
     }
-    const auto filtered=persephone::x11_symmetric_filter(input,s.kind,s.frequency,s.length,[] {Rcpp::checkUserInterrupt();});
+    const auto filtered=kalos::x11_symmetric_filter(input,s.kind,s.frequency,s.length,[] {Rcpp::checkUserInterrupt();});
     Rcpp::NumericVector output(n);Rcpp::LogicalVector missing(n);
     for(std::size_t i=0;i<n;++i) {
         if((i&4095U)==0)Rcpp::checkUserInterrupt();

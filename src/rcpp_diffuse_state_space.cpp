@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/diffuse_state_space.hpp"
+#include "kalos/diffuse_state_space.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -10,7 +10,7 @@
 // conversion so complex values, factors and array dimensions are never lost.
 namespace {
 
-persephone::Interrupt diffuse_interrupt() { return [] { Rcpp::checkUserInterrupt(); }; }
+kalos::Interrupt diffuse_interrupt() { return [] { Rcpp::checkUserInterrupt(); }; }
 
 void numeric_type(SEXP input, const char* name) {
     if ((TYPEOF(input) != REALSXP && TYPEOF(input) != INTSXP) || Rf_isFactor(input)) {
@@ -64,22 +64,22 @@ Rcpp::IntegerVector dimensions(SEXP input, const char* name, bool empty_columns 
     return result;
 }
 
-persephone::DenseMatrix matrix(SEXP input, const char* name) {
+kalos::DenseMatrix matrix(SEXP input, const char* name) {
     const auto dim = dimensions(input, name);
     const auto values = Rcpp::as<Rcpp::NumericVector>(input);
-    return persephone::DenseMatrix(static_cast<std::size_t>(dim[0]), static_cast<std::size_t>(dim[1]),
+    return kalos::DenseMatrix(static_cast<std::size_t>(dim[0]), static_cast<std::size_t>(dim[1]),
                                    std::vector<double>(values.begin(), values.end()));
 }
 
-Rcpp::NumericMatrix matrix(const persephone::DenseMatrix& input) {
+Rcpp::NumericMatrix matrix(const kalos::DenseMatrix& input) {
     Rcpp::NumericMatrix result(static_cast<int>(input.rows()), static_cast<int>(input.columns()));
     std::copy(input.values().begin(), input.values().end(), result.begin());
     return result;
 }
 
-persephone::MaskedSeries series(SEXP input) {
+kalos::MaskedSeries series(SEXP input) {
     const auto values = vector(input, "values");
-    persephone::MaskedSeries result{std::vector<double>(values.size(), 0),
+    kalos::MaskedSeries result{std::vector<double>(values.size(), 0),
                                     std::vector<std::uint8_t>(values.size(), 0)};
     for (R_xlen_t i = 0; i < values.size(); ++i) {
         if ((i & 4095) == 0) Rcpp::checkUserInterrupt();
@@ -90,7 +90,7 @@ persephone::MaskedSeries series(SEXP input) {
     return result;
 }
 
-Rcpp::NumericVector series(const persephone::MaskedSeries& input) {
+Rcpp::NumericVector series(const kalos::MaskedSeries& input) {
     Rcpp::NumericVector result(input.values.size());
     for (std::size_t i = 0; i < input.values.size(); ++i) {
         if ((i & 4095U) == 0) Rcpp::checkUserInterrupt();
@@ -110,8 +110,8 @@ Rcpp::IntegerVector ranks(const std::vector<std::size_t>& input) {
     return result;
 }
 
-Rcpp::List result(const persephone::DiffuseLikelihood& value,
-                   const persephone::DiffuseStateSpace& model,
+Rcpp::List result(const kalos::DiffuseLikelihood& value,
+                   const kalos::DiffuseStateSpace& model,
                    double mean, double variance) {
     return Rcpp::List::create(
         Rcpp::Named("schema_version") = 1,
@@ -182,7 +182,7 @@ Rcpp::List native_diffuse_likelihood(SEXP values, SEXP transition, SEXP observat
                                     SEXP mean = R_NilValue, SEXP variance = R_NilValue) {
     const double mean_value = scalar(mean, "mean", 0);
     const double variance_value = scalar(variance, "variance", 1);
-    const persephone::DiffuseStateSpace model{
+    const kalos::DiffuseStateSpace model{
         matrix(transition, "transition"),
         Rcpp::as<std::vector<double>>(vector(observation, "observation", 32)),
         matrix(noise_loading, "noise loading"),
@@ -192,11 +192,11 @@ Rcpp::List native_diffuse_likelihood(SEXP values, SEXP transition, SEXP observat
         throw std::invalid_argument("initial diffuse loading rows must match the state dimension");
     }
     const auto diffuse = Rcpp::as<Rcpp::NumericVector>(diffuse_loading);
-    const persephone::DiffuseInitialState initial{
+    const kalos::DiffuseInitialState initial{
         Rcpp::as<std::vector<double>>(vector(initial_state, "initial state", 32)),
         matrix(finite_loading, "initial finite loading"),
         std::vector<double>(diffuse.begin(), diffuse.end()), static_cast<std::size_t>(dim[1])};
-    const auto likelihood = persephone::diffuse_innovations(series(values), model, initial,
+    const auto likelihood = kalos::diffuse_innovations(series(values), model, initial,
         mean_value, variance_value, diffuse_interrupt());
     auto output = result(likelihood, model, mean_value, variance_value);
     output["initial_state"] = Rcpp::wrap(initial.state);
@@ -216,7 +216,7 @@ Rcpp::List native_sarima_likelihood(SEXP values, SEXP ar, SEXP ma,
     const int seasonal_order = difference_order(seasonal_d, "seasonal_d");
     const double mean_value = scalar(mean, "mean", 0);
     const double variance_value = scalar(variance, "variance", 1);
-    const auto fit = persephone::sarima_innovations(series(values),
+    const auto fit = kalos::sarima_innovations(series(values),
         Rcpp::as<std::vector<double>>(vector(ar, "AR coefficients", 16)),
         Rcpp::as<std::vector<double>>(vector(ma, "MA coefficients", 16)),
         Rcpp::as<std::vector<double>>(vector(seasonal_ar, "seasonal AR coefficients", 16)),

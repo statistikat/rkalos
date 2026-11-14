@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/numerics.hpp"
+#include "kalos/numerics.hpp"
 
 #include <cmath>
 #include <limits>
@@ -29,7 +29,7 @@ int small_integer(double value, const char* name) {
     return static_cast<int>(integer);
 }
 
-persephone::Interrupt interrupt() {
+kalos::Interrupt interrupt() {
     // Called synchronously on the R thread, never from background workers.
     return [] { Rcpp::checkUserInterrupt(); };
 }
@@ -38,9 +38,9 @@ Rcpp::NumericVector period(const std::pair<std::int64_t, int>& value) {
     return Rcpp::NumericVector::create(static_cast<double>(value.first), value.second);
 }
 
-persephone::MaskedSeries masked_series(const Rcpp::NumericVector& values) {
+kalos::MaskedSeries masked_series(const Rcpp::NumericVector& values) {
     const auto size = static_cast<std::size_t>(values.size());
-    persephone::MaskedSeries result{std::vector<double>(size, 0.0),
+    kalos::MaskedSeries result{std::vector<double>(size, 0.0),
                                     std::vector<std::uint8_t>(size, 0)};
     for (R_xlen_t i = 0; i < values.size(); ++i) {
         if ((i & 4095) == 0) Rcpp::checkUserInterrupt();
@@ -69,7 +69,7 @@ Rcpp::List native_time_domain(double year, double start_period, double frequency
                   std::abs(year) * f + std::abs(length) + f > exact_limit)) {
         throw std::invalid_argument("time-domain ordinals exceed R's exact integer range");
     }
-    const persephone::TimeDomain domain(y, small_integer(start_period, "start_period"), f, n);
+    const kalos::TimeDomain domain(y, small_integer(start_period, "start_period"), f, n);
     Rcpp::List result = Rcpp::List::create(
         Rcpp::Named("start") = period(domain.at(0)),
         Rcpp::Named("end") = R_NilValue,
@@ -83,14 +83,14 @@ Rcpp::List native_time_domain(double year, double start_period, double frequency
 // [[Rcpp::export(name = ".native_difference_polynomial")]]
 Rcpp::NumericVector native_difference_polynomial(double d = 1, double seasonal_d = 0,
                                                double frequency = 12) {
-    return Rcpp::wrap(persephone::difference_polynomial(
+    return Rcpp::wrap(kalos::difference_polynomial(
         small_integer(d, "d"), small_integer(seasonal_d, "seasonal_d"),
         small_integer(frequency, "frequency"), interrupt()));
 }
 
 // [[Rcpp::export(name = ".native_convolve")]]
 Rcpp::NumericVector native_convolve(Rcpp::NumericVector left, Rcpp::NumericVector right) {
-    return Rcpp::wrap(persephone::convolve(Rcpp::as<std::vector<double>>(left),
+    return Rcpp::wrap(kalos::convolve(Rcpp::as<std::vector<double>>(left),
                                           Rcpp::as<std::vector<double>>(right), interrupt()));
 }
 
@@ -103,7 +103,7 @@ Rcpp::List native_filter(Rcpp::NumericVector values, Rcpp::NumericVector weights
         if ((i & 4095) == 0) Rcpp::checkUserInterrupt();
         positions.push_back(scalar_integer(offsets[i], "offsets"));
     }
-    const auto result = persephone::finite_filter(masked_series(values),
+    const auto result = kalos::finite_filter(masked_series(values),
         Rcpp::as<std::vector<double>>(weights), positions, interrupt());
     Rcpp::NumericVector output(result.values.size());
     Rcpp::LogicalVector missing(result.values.size());

@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/state_space.hpp"
+#include "kalos/state_space.hpp"
 
 #include <cmath>
 #include <limits>
@@ -8,7 +8,7 @@
 
 namespace {
 
-persephone::Interrupt interrupt() { return [] { Rcpp::checkUserInterrupt(); }; }
+kalos::Interrupt interrupt() { return [] { Rcpp::checkUserInterrupt(); }; }
 
 void numeric_type(SEXP input, const char* name) {
     if ((TYPEOF(input) != REALSXP && TYPEOF(input) != INTSXP) || Rf_isFactor(input)) {
@@ -39,7 +39,7 @@ double scalar(SEXP input, const char* name, double default_value) {
     return Rf_isNull(input) ? default_value : scalar(input, name);
 }
 
-persephone::DenseMatrix matrix(SEXP input, const char* name) {
+kalos::DenseMatrix matrix(SEXP input, const char* name) {
     numeric_type(input, name);
     SEXP dimensions = Rf_getAttrib(input, R_DimSymbol);
     if (Rf_isNull(dimensions) || TYPEOF(dimensions) != INTSXP || Rf_xlength(dimensions) != 2) {
@@ -50,18 +50,18 @@ persephone::DenseMatrix matrix(SEXP input, const char* name) {
         throw std::invalid_argument(std::string(name) + " must have positive dimensions of at most 16");
     }
     Rcpp::NumericVector values = Rcpp::as<Rcpp::NumericVector>(input);
-    return persephone::DenseMatrix(static_cast<std::size_t>(dims[0]), static_cast<std::size_t>(dims[1]),
+    return kalos::DenseMatrix(static_cast<std::size_t>(dims[0]), static_cast<std::size_t>(dims[1]),
                                    std::vector<double>(values.begin(), values.end()));
 }
 
-Rcpp::NumericMatrix matrix(const persephone::DenseMatrix& input) {
+Rcpp::NumericMatrix matrix(const kalos::DenseMatrix& input) {
     Rcpp::NumericMatrix result(input.rows(), input.columns());
     std::copy(input.values().begin(), input.values().end(), result.begin());
     return result;
 }
 
-persephone::MaskedSeries series(const Rcpp::NumericVector& input) {
-    persephone::MaskedSeries result{std::vector<double>(input.size(), 0),
+kalos::MaskedSeries series(const Rcpp::NumericVector& input) {
+    kalos::MaskedSeries result{std::vector<double>(input.size(), 0),
                                     std::vector<std::uint8_t>(input.size(), 0)};
     for (R_xlen_t i = 0; i < input.size(); ++i) {
         if ((i & 4095) == 0) Rcpp::checkUserInterrupt();
@@ -72,7 +72,7 @@ persephone::MaskedSeries series(const Rcpp::NumericVector& input) {
     return result;
 }
 
-Rcpp::NumericVector series(const persephone::MaskedSeries& input) {
+Rcpp::NumericVector series(const kalos::MaskedSeries& input) {
     Rcpp::NumericVector result(input.values.size());
     for (std::size_t i = 0; i < input.values.size(); ++i) {
         if ((i & 4095U) == 0) Rcpp::checkUserInterrupt();
@@ -81,8 +81,8 @@ Rcpp::NumericVector series(const persephone::MaskedSeries& input) {
     return result;
 }
 
-Rcpp::List result(const persephone::InnovationsLikelihood& value,
-                   const persephone::StationaryStateSpace& model,
+Rcpp::List result(const kalos::InnovationsLikelihood& value,
+                   const kalos::StationaryStateSpace& model,
                    double mean, double variance) {
     return Rcpp::List::create(
         Rcpp::Named("schema_version") = 1,
@@ -125,10 +125,10 @@ Rcpp::List native_stationary_likelihood(SEXP values, SEXP transition,
                                        SEXP mean = R_NilValue, SEXP variance = R_NilValue) {
     const double mean_value = scalar(mean, "mean", 0);
     const double variance_value = scalar(variance, "variance", 1);
-    const persephone::StationaryStateSpace model{matrix(transition, "transition"),
+    const kalos::StationaryStateSpace model{matrix(transition, "transition"),
         Rcpp::as<std::vector<double>>(vector(observation, "observation", true)),
         matrix(noise_loading, "noise loading"), scalar(observation_variance, "observation variance", 0)};
-    const auto likelihood = persephone::stationary_innovations(series(vector(values, "values")), model,
+    const auto likelihood = kalos::stationary_innovations(series(vector(values, "values")), model,
                                                                mean_value, variance_value, interrupt());
     return result(likelihood, model, mean_value, variance_value);
 }
@@ -144,13 +144,13 @@ Rcpp::List native_arma_likelihood(SEXP values, SEXP ar, SEXP ma,
         period_value > std::numeric_limits<int>::max()) {
         throw std::invalid_argument("seasonal period must be a positive supported integer");
     }
-    const auto model = persephone::stationary_arma(
+    const auto model = kalos::stationary_arma(
         Rcpp::as<std::vector<double>>(vector(ar, "AR coefficients", true)),
         Rcpp::as<std::vector<double>>(vector(ma, "MA coefficients", true)),
         Rcpp::as<std::vector<double>>(vector(seasonal_ar, "seasonal AR coefficients", true)),
         Rcpp::as<std::vector<double>>(vector(seasonal_ma, "seasonal MA coefficients", true)),
         static_cast<int>(period_value), interrupt());
-    const auto likelihood = persephone::stationary_innovations(series(vector(values, "values")), model.state_space,
+    const auto likelihood = kalos::stationary_innovations(series(vector(values, "values")), model.state_space,
                                                                mean_value, variance_value, interrupt());
     auto output = result(likelihood, model.state_space, mean_value, variance_value);
     output["expanded_ar"] = Rcpp::wrap(model.ar);

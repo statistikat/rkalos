@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "core/x11_seasonal_endpoints.hpp"
+#include "kalos/x11_seasonal_endpoints.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -37,14 +37,14 @@ Rcpp::List native_x11_seasonal_spec(SEXP type,SEXP frequency,SEXP available,SEXP
     const auto name=string(type,"seasonal filter type"),direction=string(side,"seasonal endpoint side");
     if(direction!="left" && direction!="right")throw std::invalid_argument("seasonal endpoint side must be left or right");
     const auto period=integer(frequency,"frequency"),q=integer(available,"available seasonal observations"),length=length_for(name);
-    const auto filter=persephone::x11_seasonal_endpoint_definition(period,length,q,
-        direction=="left" ? persephone::X11SeasonalSide::left : persephone::X11SeasonalSide::right,
+    const auto filter=kalos::x11_seasonal_endpoint_definition(period,length,q,
+        direction=="left" ? kalos::X11SeasonalSide::left : kalos::X11SeasonalSide::right,
         [] {Rcpp::checkUserInterrupt();});
     Rcpp::IntegerVector offsets;for(const auto offset:filter.offsets)offsets.push_back(static_cast<int>(offset));
     return Rcpp::List::create(Rcpp::_["schema_version"]=1,Rcpp::_["type"]=name,
         Rcpp::_["frequency"]=period,Rcpp::_["length_parameter"]=length,
         Rcpp::_["terms"]=static_cast<int>(filter.weights.size()),Rcpp::_["radius"]=static_cast<int>(filter.radius),
-        Rcpp::_["minimum_phase_length"]=persephone::x11_seasonal_minimum_phase_length(length),
+        Rcpp::_["minimum_phase_length"]=kalos::x11_seasonal_minimum_phase_length(length),
         Rcpp::_["coefficient_convention"]=convention(length),Rcpp::_["annual_radius"]=(length+1)/2,Rcpp::_["weights"]=filter.weights,Rcpp::_["offsets"]=offsets,
         Rcpp::_["side"]=direction,Rcpp::_["available"]=q,Rcpp::_["endpoint_policy"]="seasonal_x11",
         Rcpp::_["scope"]="seasonal_endpoint_filter_only",Rcpp::_["backend"]="native");
@@ -56,7 +56,7 @@ Rcpp::List native_x11_seasonal_filter(SEXP values,SEXP type,SEXP frequency) {
         !Rf_isNull(Rf_getAttrib(values,R_DimSymbol)) || Rf_xlength(values)>std::numeric_limits<int>::max())
         throw std::invalid_argument("X-11 response must be a real numeric vector within the supported length");
     const auto y=Rcpp::as<Rcpp::NumericVector>(values);const auto n=static_cast<std::size_t>(y.size());
-    persephone::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
+    kalos::MaskedSeries input{std::vector<double>(n,0),std::vector<std::uint8_t>(n,0)};
     for(std::size_t i=0;i<n;++i) {
         if((i&4095U)==0)Rcpp::checkUserInterrupt();
         const auto value=y[static_cast<R_xlen_t>(i)];
@@ -64,7 +64,7 @@ Rcpp::List native_x11_seasonal_filter(SEXP values,SEXP type,SEXP frequency) {
         else if(!std::isfinite(value))throw std::invalid_argument("X-11 response must be finite or missing");
         else input.values[i]=value;
     }
-    const auto filtered=persephone::x11_seasonal_endpoints(input,period,length,[] {Rcpp::checkUserInterrupt();});
+    const auto filtered=kalos::x11_seasonal_endpoints(input,period,length,[] {Rcpp::checkUserInterrupt();});
     Rcpp::NumericVector output(n);Rcpp::LogicalVector missing(n);
     for(std::size_t i=0;i<n;++i) {
         if((i&4095U)==0)Rcpp::checkUserInterrupt();
@@ -72,6 +72,6 @@ Rcpp::List native_x11_seasonal_filter(SEXP values,SEXP type,SEXP frequency) {
         missing[static_cast<R_xlen_t>(i)]=filtered.missing[i]!=0;
     }
     return Rcpp::List::create(Rcpp::_["values"]=output,Rcpp::_["missing"]=missing,
-        Rcpp::_["minimum_phase_length"]=persephone::x11_seasonal_minimum_phase_length(length),
+        Rcpp::_["minimum_phase_length"]=kalos::x11_seasonal_minimum_phase_length(length),
         Rcpp::_["coefficient_convention"]=convention(length));
 }
