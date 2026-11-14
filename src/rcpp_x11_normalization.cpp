@@ -42,5 +42,5 @@ Rcpp::List native_x11_seasonal_normalize(SEXP input,SEXP frequency,SEXP first_pe
         else data.values[j]=value;
     }
     const auto result=kalos::x11_seasonal_normalize(data,f,first,choices,static_cast<std::size_t>(extension),[]{Rcpp::checkUserInterrupt();});
-    return persephone_x11_rcpp::normalization_result(result,f,choices,extension);
+    return kalos_x11_rcpp::normalization_result(result,f,choices,extension);
 }

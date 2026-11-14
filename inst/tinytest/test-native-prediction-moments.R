@@ -1,8 +1,8 @@
 local({
-  moments <- getFromNamespace('native_prediction_moments','persephone3')
-  setup <- getFromNamespace('native_arma_objective_setup','persephone3')
-  interpolate <- getFromNamespace('native_interpolation_information','persephone3')
-  forecast <- getFromNamespace('native_arma_forecasts','persephone3')
+  moments <- getFromNamespace('native_prediction_moments','rkalos')
+  setup <- getFromNamespace('native_arma_objective_setup','rkalos')
+  interpolate <- getFromNamespace('native_interpolation_information','rkalos')
+  forecast <- getFromNamespace('native_arma_forecasts','rkalos')
   m <- c(1,2,-.3);V <- matrix(c(.2,-.05,.03,-.05,.3,-.01,.03,-.01,.1),3)
   dimnames(V) <- rep(list(c('a','b','c')),2)
   for(transform in c('none','log')) {
@@ -60,7 +60,7 @@ local({
   expect_error(moments(1,matrix(1),'unknown'))
   # Model identity mapping retains an already qualified kernel covariance even
   # if its small process diagonal was rounded below the shared component.
-  trusted <- getFromNamespace('native_model_prediction_moments','persephone3')(
+  trusted <- getFromNamespace('native_model_prediction_moments','rkalos')(
     c(0,0),matrix(1e16,2,2),'none')
   expect_true(trusted$available)
   expect_identical(trusted$covariance,matrix(1e16,2,2))

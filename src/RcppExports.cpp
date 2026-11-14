@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // native_arma_parameter_map
 Rcpp::List native_arma_parameter_map(SEXP specification, SEXP initial, SEXP margin);
-RcppExport SEXP _persephone3_native_arma_parameter_map(SEXP specificationSEXP, SEXP initialSEXP, SEXP marginSEXP) {
+RcppExport SEXP _rkalos_native_arma_parameter_map(SEXP specificationSEXP, SEXP initialSEXP, SEXP marginSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -25,7 +25,7 @@ END_RCPP
 }
 // native_arma_decode
 Rcpp::List native_arma_decode(SEXP specification, SEXP initial, SEXP coordinates, SEXP margin);
-RcppExport SEXP _persephone3_native_arma_decode(SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP marginSEXP) {
+RcppExport SEXP _rkalos_native_arma_decode(SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP marginSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -39,7 +39,7 @@ END_RCPP
 }
 // native_arma_identification
 Rcpp::List native_arma_identification(SEXP specification, SEXP initial, SEXP coordinates, SEXP period, SEXP margin, SEXP rank_tolerance, SEXP near_tolerance);
-RcppExport SEXP _persephone3_native_arma_identification(SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP marginSEXP, SEXP rank_toleranceSEXP, SEXP near_toleranceSEXP) {
+RcppExport SEXP _rkalos_native_arma_identification(SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP marginSEXP, SEXP rank_toleranceSEXP, SEXP near_toleranceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -56,7 +56,7 @@ END_RCPP
 }
 // native_arma_admissibility
 Rcpp::List native_arma_admissibility(SEXP coefficients, SEXP moving_average, SEXP margin);
-RcppExport SEXP _persephone3_native_arma_admissibility(SEXP coefficientsSEXP, SEXP moving_averageSEXP, SEXP marginSEXP) {
+RcppExport SEXP _rkalos_native_arma_admissibility(SEXP coefficientsSEXP, SEXP moving_averageSEXP, SEXP marginSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -69,7 +69,7 @@ END_RCPP
 }
 // native_arma_objective
 Rcpp::List native_arma_objective(SEXP values, SEXP design, SEXP coefficients, SEXP specification, SEXP initial, SEXP coordinates, SEXP period, SEXP d, SEXP seasonal_d, SEXP mean, SEXP rank_tolerance, SEXP margin, SEXP log_jacobian);
-RcppExport SEXP _persephone3_native_arma_objective(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP) {
+RcppExport SEXP _rkalos_native_arma_objective(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -92,7 +92,7 @@ END_RCPP
 }
 // native_arma_information
 Rcpp::List native_arma_information(SEXP values, SEXP design, SEXP coefficients, SEXP specification, SEXP initial, SEXP coordinates, SEXP period, SEXP d, SEXP seasonal_d, SEXP mean, SEXP rank_tolerance, SEXP margin, SEXP log_jacobian, SEXP control, SEXP method, SEXP covariance, SEXP legacy_state);
-RcppExport SEXP _persephone3_native_arma_information(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP controlSEXP, SEXP methodSEXP, SEXP covarianceSEXP, SEXP legacy_stateSEXP) {
+RcppExport SEXP _rkalos_native_arma_information(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP controlSEXP, SEXP methodSEXP, SEXP covarianceSEXP, SEXP legacy_stateSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -119,7 +119,7 @@ END_RCPP
 }
 // native_joint_regression_information
 Rcpp::List native_joint_regression_information(SEXP values, SEXP design, SEXP coefficients, SEXP specification, SEXP initial, SEXP coordinates, SEXP period, SEXP d, SEXP seasonal_d, SEXP mean, SEXP rank_tolerance, SEXP margin, SEXP log_jacobian, SEXP control);
-RcppExport SEXP _persephone3_native_joint_regression_information(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP controlSEXP) {
+RcppExport SEXP _rkalos_native_joint_regression_information(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP controlSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -143,7 +143,7 @@ END_RCPP
 }
 // native_arma_residuals
 Rcpp::List native_arma_residuals(SEXP values, SEXP design, SEXP coefficients, SEXP specification, SEXP initial, SEXP coordinates, SEXP period, SEXP d, SEXP seasonal_d, SEXP mean, SEXP rank_tolerance, SEXP margin, SEXP log_jacobian, SEXP scale, SEXP reporting, SEXP transformation);
-RcppExport SEXP _persephone3_native_arma_residuals(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP scaleSEXP, SEXP reportingSEXP, SEXP transformationSEXP) {
+RcppExport SEXP _rkalos_native_arma_residuals(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP scaleSEXP, SEXP reportingSEXP, SEXP transformationSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -169,7 +169,7 @@ END_RCPP
 }
 // native_interpolation_information
 Rcpp::List native_interpolation_information(SEXP values, SEXP design, SEXP coefficients, SEXP specification, SEXP initial, SEXP coordinates, SEXP period, SEXP d, SEXP seasonal_d, SEXP mean, SEXP rank_tolerance, SEXP margin, SEXP log_jacobian, SEXP scale, SEXP method, SEXP control);
-RcppExport SEXP _persephone3_native_interpolation_information(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP scaleSEXP, SEXP methodSEXP, SEXP controlSEXP) {
+RcppExport SEXP _rkalos_native_interpolation_information(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP scaleSEXP, SEXP methodSEXP, SEXP controlSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -195,7 +195,7 @@ END_RCPP
 }
 // native_arma_optimize
 Rcpp::List native_arma_optimize(SEXP values, SEXP design, SEXP coefficients, SEXP specification, SEXP initial, SEXP coordinates, SEXP period, SEXP d, SEXP seasonal_d, SEXP mean, SEXP rank_tolerance, SEXP margin, SEXP log_jacobian, SEXP control);
-RcppExport SEXP _persephone3_native_arma_optimize(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP controlSEXP) {
+RcppExport SEXP _rkalos_native_arma_optimize(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP controlSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -219,7 +219,7 @@ END_RCPP
 }
 // native_forecast_information
 Rcpp::List native_forecast_information(SEXP values, SEXP design, SEXP coefficients, SEXP backcasts, SEXP forecasts, SEXP specification, SEXP initial, SEXP coordinates, SEXP period, SEXP d, SEXP seasonal_d, SEXP mean, SEXP rank_tolerance, SEXP margin, SEXP log_jacobian, SEXP scale, SEXP method, SEXP control);
-RcppExport SEXP _persephone3_native_forecast_information(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP backcastsSEXP, SEXP forecastsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP scaleSEXP, SEXP methodSEXP, SEXP controlSEXP) {
+RcppExport SEXP _rkalos_native_forecast_information(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP backcastsSEXP, SEXP forecastsSEXP, SEXP specificationSEXP, SEXP initialSEXP, SEXP coordinatesSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP rank_toleranceSEXP, SEXP marginSEXP, SEXP log_jacobianSEXP, SEXP scaleSEXP, SEXP methodSEXP, SEXP controlSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -247,7 +247,7 @@ END_RCPP
 }
 // native_diffuse_likelihood
 Rcpp::List native_diffuse_likelihood(SEXP values, SEXP transition, SEXP observation, SEXP noise_loading, SEXP initial_state, SEXP finite_loading, SEXP diffuse_loading, SEXP observation_variance, SEXP mean, SEXP variance);
-RcppExport SEXP _persephone3_native_diffuse_likelihood(SEXP valuesSEXP, SEXP transitionSEXP, SEXP observationSEXP, SEXP noise_loadingSEXP, SEXP initial_stateSEXP, SEXP finite_loadingSEXP, SEXP diffuse_loadingSEXP, SEXP observation_varianceSEXP, SEXP meanSEXP, SEXP varianceSEXP) {
+RcppExport SEXP _rkalos_native_diffuse_likelihood(SEXP valuesSEXP, SEXP transitionSEXP, SEXP observationSEXP, SEXP noise_loadingSEXP, SEXP initial_stateSEXP, SEXP finite_loadingSEXP, SEXP diffuse_loadingSEXP, SEXP observation_varianceSEXP, SEXP meanSEXP, SEXP varianceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -267,7 +267,7 @@ END_RCPP
 }
 // native_sarima_likelihood
 Rcpp::List native_sarima_likelihood(SEXP values, SEXP ar, SEXP ma, SEXP seasonal_ar, SEXP seasonal_ma, SEXP period, SEXP d, SEXP seasonal_d, SEXP mean, SEXP variance);
-RcppExport SEXP _persephone3_native_sarima_likelihood(SEXP valuesSEXP, SEXP arSEXP, SEXP maSEXP, SEXP seasonal_arSEXP, SEXP seasonal_maSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP varianceSEXP) {
+RcppExport SEXP _rkalos_native_sarima_likelihood(SEXP valuesSEXP, SEXP arSEXP, SEXP maSEXP, SEXP seasonal_arSEXP, SEXP seasonal_maSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP varianceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -287,7 +287,7 @@ END_RCPP
 }
 // native_time_domain
 Rcpp::List native_time_domain(double year, double start_period, double frequency, double length);
-RcppExport SEXP _persephone3_native_time_domain(SEXP yearSEXP, SEXP start_periodSEXP, SEXP frequencySEXP, SEXP lengthSEXP) {
+RcppExport SEXP _rkalos_native_time_domain(SEXP yearSEXP, SEXP start_periodSEXP, SEXP frequencySEXP, SEXP lengthSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -301,7 +301,7 @@ END_RCPP
 }
 // native_difference_polynomial
 Rcpp::NumericVector native_difference_polynomial(double d, double seasonal_d, double frequency);
-RcppExport SEXP _persephone3_native_difference_polynomial(SEXP dSEXP, SEXP seasonal_dSEXP, SEXP frequencySEXP) {
+RcppExport SEXP _rkalos_native_difference_polynomial(SEXP dSEXP, SEXP seasonal_dSEXP, SEXP frequencySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -314,7 +314,7 @@ END_RCPP
 }
 // native_convolve
 Rcpp::NumericVector native_convolve(Rcpp::NumericVector left, Rcpp::NumericVector right);
-RcppExport SEXP _persephone3_native_convolve(SEXP leftSEXP, SEXP rightSEXP) {
+RcppExport SEXP _rkalos_native_convolve(SEXP leftSEXP, SEXP rightSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -326,7 +326,7 @@ END_RCPP
 }
 // native_filter
 Rcpp::List native_filter(Rcpp::NumericVector values, Rcpp::NumericVector weights, Rcpp::NumericVector offsets);
-RcppExport SEXP _persephone3_native_filter(SEXP valuesSEXP, SEXP weightsSEXP, SEXP offsetsSEXP) {
+RcppExport SEXP _rkalos_native_filter(SEXP valuesSEXP, SEXP weightsSEXP, SEXP offsetsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -339,7 +339,7 @@ END_RCPP
 }
 // native_cholesky_solve
 Rcpp::List native_cholesky_solve(SEXP matrix, SEXP rhs);
-RcppExport SEXP _persephone3_native_cholesky_solve(SEXP matrixSEXP, SEXP rhsSEXP) {
+RcppExport SEXP _rkalos_native_cholesky_solve(SEXP matrixSEXP, SEXP rhsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -351,7 +351,7 @@ END_RCPP
 }
 // native_qr_solve
 Rcpp::List native_qr_solve(SEXP matrix, SEXP rhs, SEXP rank_tolerance);
-RcppExport SEXP _persephone3_native_qr_solve(SEXP matrixSEXP, SEXP rhsSEXP, SEXP rank_toleranceSEXP) {
+RcppExport SEXP _rkalos_native_qr_solve(SEXP matrixSEXP, SEXP rhsSEXP, SEXP rank_toleranceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -364,7 +364,7 @@ END_RCPP
 }
 // native_parallel_info
 Rcpp::List native_parallel_info();
-RcppExport SEXP _persephone3_native_parallel_info() {
+RcppExport SEXP _rkalos_native_parallel_info() {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -374,7 +374,7 @@ END_RCPP
 }
 // native_prediction_moments
 Rcpp::List native_prediction_moments(SEXP location, SEXP covariance, SEXP transformation);
-RcppExport SEXP _persephone3_native_prediction_moments(SEXP locationSEXP, SEXP covarianceSEXP, SEXP transformationSEXP) {
+RcppExport SEXP _rkalos_native_prediction_moments(SEXP locationSEXP, SEXP covarianceSEXP, SEXP transformationSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -385,9 +385,84 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_estimation_window
+Rcpp::List native_estimation_window(Rcpp::List source, Rcpp::NumericVector endpoints);
+RcppExport SEXP _rkalos_native_estimation_window(SEXP sourceSEXP, SEXP endpointsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type source(sourceSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type endpoints(endpointsSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_estimation_window(source, endpoints));
+    return rcpp_result_gen;
+END_RCPP
+}
+// native_align_regressors
+Rcpp::List native_align_regressors(Rcpp::List observed, Rcpp::List columns, Rcpp::List domains, Rcpp::CharacterVector labels, double backcasts, double forecasts);
+RcppExport SEXP _rkalos_native_align_regressors(SEXP observedSEXP, SEXP columnsSEXP, SEXP domainsSEXP, SEXP labelsSEXP, SEXP backcastsSEXP, SEXP forecastsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type observed(observedSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type columns(columnsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type domains(domainsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type labels(labelsSEXP);
+    Rcpp::traits::input_parameter< double >::type backcasts(backcastsSEXP);
+    Rcpp::traits::input_parameter< double >::type forecasts(forecastsSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_align_regressors(observed, columns, domains, labels, backcasts, forecasts));
+    return rcpp_result_gen;
+END_RCPP
+}
+// native_prepare_regression
+Rcpp::List native_prepare_regression(Rcpp::NumericMatrix values, Rcpp::CharacterVector labels, Rcpp::List observed, Rcpp::List required, int backcasts, Rcpp::NumericVector coefficients, Rcpp::CharacterVector coefficient_names, int d, int seasonal_d, double mean, bool include_mean, bool include_drift, int source_first);
+RcppExport SEXP _rkalos_native_prepare_regression(SEXP valuesSEXP, SEXP labelsSEXP, SEXP observedSEXP, SEXP requiredSEXP, SEXP backcastsSEXP, SEXP coefficientsSEXP, SEXP coefficient_namesSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP include_meanSEXP, SEXP include_driftSEXP, SEXP source_firstSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type labels(labelsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type observed(observedSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type required(requiredSEXP);
+    Rcpp::traits::input_parameter< int >::type backcasts(backcastsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type coefficients(coefficientsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type coefficient_names(coefficient_namesSEXP);
+    Rcpp::traits::input_parameter< int >::type d(dSEXP);
+    Rcpp::traits::input_parameter< int >::type seasonal_d(seasonal_dSEXP);
+    Rcpp::traits::input_parameter< double >::type mean(meanSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_drift(include_driftSEXP);
+    Rcpp::traits::input_parameter< int >::type source_first(source_firstSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_prepare_regression(values, labels, observed, required, backcasts, coefficients, coefficient_names, d, seasonal_d, mean, include_mean, include_drift, source_first));
+    return rcpp_result_gen;
+END_RCPP
+}
+// native_likelihood_adjustment
+Rcpp::List native_likelihood_adjustment(Rcpp::NumericVector values, bool logarithm, int degree, int source_first);
+RcppExport SEXP _rkalos_native_likelihood_adjustment(SEXP valuesSEXP, SEXP logarithmSEXP, SEXP degreeSEXP, SEXP source_firstSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< bool >::type logarithm(logarithmSEXP);
+    Rcpp::traits::input_parameter< int >::type degree(degreeSEXP);
+    Rcpp::traits::input_parameter< int >::type source_first(source_firstSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_likelihood_adjustment(values, logarithm, degree, source_first));
+    return rcpp_result_gen;
+END_RCPP
+}
+// native_core_version
+Rcpp::List native_core_version();
+RcppExport SEXP _rkalos_native_core_version() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(native_core_version());
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_regression_likelihood
 Rcpp::List native_regression_likelihood(SEXP values, SEXP design, SEXP coefficients, SEXP ar, SEXP ma, SEXP seasonal_ar, SEXP seasonal_ma, SEXP period, SEXP d, SEXP seasonal_d, SEXP mean, SEXP variance, SEXP rank_tolerance);
-RcppExport SEXP _persephone3_native_regression_likelihood(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP arSEXP, SEXP maSEXP, SEXP seasonal_arSEXP, SEXP seasonal_maSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP varianceSEXP, SEXP rank_toleranceSEXP) {
+RcppExport SEXP _rkalos_native_regression_likelihood(SEXP valuesSEXP, SEXP designSEXP, SEXP coefficientsSEXP, SEXP arSEXP, SEXP maSEXP, SEXP seasonal_arSEXP, SEXP seasonal_maSEXP, SEXP periodSEXP, SEXP dSEXP, SEXP seasonal_dSEXP, SEXP meanSEXP, SEXP varianceSEXP, SEXP rank_toleranceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -410,7 +485,7 @@ END_RCPP
 }
 // native_stationary_likelihood
 Rcpp::List native_stationary_likelihood(SEXP values, SEXP transition, SEXP observation, SEXP noise_loading, SEXP observation_variance, SEXP mean, SEXP variance);
-RcppExport SEXP _persephone3_native_stationary_likelihood(SEXP valuesSEXP, SEXP transitionSEXP, SEXP observationSEXP, SEXP noise_loadingSEXP, SEXP observation_varianceSEXP, SEXP meanSEXP, SEXP varianceSEXP) {
+RcppExport SEXP _rkalos_native_stationary_likelihood(SEXP valuesSEXP, SEXP transitionSEXP, SEXP observationSEXP, SEXP noise_loadingSEXP, SEXP observation_varianceSEXP, SEXP meanSEXP, SEXP varianceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -427,7 +502,7 @@ END_RCPP
 }
 // native_arma_likelihood
 Rcpp::List native_arma_likelihood(SEXP values, SEXP ar, SEXP ma, SEXP seasonal_ar, SEXP seasonal_ma, SEXP period, SEXP mean, SEXP variance);
-RcppExport SEXP _persephone3_native_arma_likelihood(SEXP valuesSEXP, SEXP arSEXP, SEXP maSEXP, SEXP seasonal_arSEXP, SEXP seasonal_maSEXP, SEXP periodSEXP, SEXP meanSEXP, SEXP varianceSEXP) {
+RcppExport SEXP _rkalos_native_arma_likelihood(SEXP valuesSEXP, SEXP arSEXP, SEXP maSEXP, SEXP seasonal_arSEXP, SEXP seasonal_maSEXP, SEXP periodSEXP, SEXP meanSEXP, SEXP varianceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -445,7 +520,7 @@ END_RCPP
 }
 // native_transform
 Rcpp::List native_transform(SEXP values, SEXP transformation);
-RcppExport SEXP _persephone3_native_transform(SEXP valuesSEXP, SEXP transformationSEXP) {
+RcppExport SEXP _rkalos_native_transform(SEXP valuesSEXP, SEXP transformationSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -457,7 +532,7 @@ END_RCPP
 }
 // native_inverse_transform
 Rcpp::NumericVector native_inverse_transform(SEXP values, SEXP transformation);
-RcppExport SEXP _persephone3_native_inverse_transform(SEXP valuesSEXP, SEXP transformationSEXP) {
+RcppExport SEXP _rkalos_native_inverse_transform(SEXP valuesSEXP, SEXP transformationSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -469,7 +544,7 @@ END_RCPP
 }
 // native_x11_filter_spec
 Rcpp::List native_x11_filter_spec(SEXP type, SEXP frequency, SEXP length);
-RcppExport SEXP _persephone3_native_x11_filter_spec(SEXP typeSEXP, SEXP frequencySEXP, SEXP lengthSEXP) {
+RcppExport SEXP _rkalos_native_x11_filter_spec(SEXP typeSEXP, SEXP frequencySEXP, SEXP lengthSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -482,7 +557,7 @@ END_RCPP
 }
 // native_x11_filter
 Rcpp::List native_x11_filter(SEXP values, SEXP type, SEXP frequency, SEXP length);
-RcppExport SEXP _persephone3_native_x11_filter(SEXP valuesSEXP, SEXP typeSEXP, SEXP frequencySEXP, SEXP lengthSEXP) {
+RcppExport SEXP _rkalos_native_x11_filter(SEXP valuesSEXP, SEXP typeSEXP, SEXP frequencySEXP, SEXP lengthSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -496,7 +571,7 @@ END_RCPP
 }
 // native_x11_initial_additive
 Rcpp::List native_x11_initial_additive(SEXP input, SEXP frequency, SEXP first_period, SEXP filters);
-RcppExport SEXP _persephone3_native_x11_initial_additive(SEXP inputSEXP, SEXP frequencySEXP, SEXP first_periodSEXP, SEXP filtersSEXP) {
+RcppExport SEXP _rkalos_native_x11_initial_additive(SEXP inputSEXP, SEXP frequencySEXP, SEXP first_periodSEXP, SEXP filtersSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -510,7 +585,7 @@ END_RCPP
 }
 // native_x11_mean_filter
 Rcpp::List native_x11_mean_filter(SEXP values, SEXP frequency);
-RcppExport SEXP _persephone3_native_x11_mean_filter(SEXP valuesSEXP, SEXP frequencySEXP) {
+RcppExport SEXP _rkalos_native_x11_mean_filter(SEXP valuesSEXP, SEXP frequencySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -522,7 +597,7 @@ END_RCPP
 }
 // native_x11_msr_table
 Rcpp::List native_x11_msr_table(SEXP seasonal, SEXP irregular, SEXP frequency, SEXP first_period, SEXP mode);
-RcppExport SEXP _persephone3_native_x11_msr_table(SEXP seasonalSEXP, SEXP irregularSEXP, SEXP frequencySEXP, SEXP first_periodSEXP, SEXP modeSEXP) {
+RcppExport SEXP _rkalos_native_x11_msr_table(SEXP seasonalSEXP, SEXP irregularSEXP, SEXP frequencySEXP, SEXP first_periodSEXP, SEXP modeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -537,7 +612,7 @@ END_RCPP
 }
 // native_x11_msr_policy
 Rcpp::List native_x11_msr_policy(SEXP ratio);
-RcppExport SEXP _persephone3_native_x11_msr_policy(SEXP ratioSEXP) {
+RcppExport SEXP _rkalos_native_x11_msr_policy(SEXP ratioSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -548,7 +623,7 @@ END_RCPP
 }
 // native_x11_msr_pilot
 Rcpp::List native_x11_msr_pilot(SEXP values, SEXP frequency, SEXP mode);
-RcppExport SEXP _persephone3_native_x11_msr_pilot(SEXP valuesSEXP, SEXP frequencySEXP, SEXP modeSEXP) {
+RcppExport SEXP _rkalos_native_x11_msr_pilot(SEXP valuesSEXP, SEXP frequencySEXP, SEXP modeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -561,7 +636,7 @@ END_RCPP
 }
 // native_x11_msr_select
 Rcpp::List native_x11_msr_select(SEXP values, SEXP frequency, SEXP first_period, SEXP mode, SEXP iteration_policy, SEXP backcasts, SEXP forecasts, SEXP max_iterations);
-RcppExport SEXP _persephone3_native_x11_msr_select(SEXP valuesSEXP, SEXP frequencySEXP, SEXP first_periodSEXP, SEXP modeSEXP, SEXP iteration_policySEXP, SEXP backcastsSEXP, SEXP forecastsSEXP, SEXP max_iterationsSEXP) {
+RcppExport SEXP _rkalos_native_x11_msr_select(SEXP valuesSEXP, SEXP frequencySEXP, SEXP first_periodSEXP, SEXP modeSEXP, SEXP iteration_policySEXP, SEXP backcastsSEXP, SEXP forecastsSEXP, SEXP max_iterationsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -579,7 +654,7 @@ END_RCPP
 }
 // native_x11_musgrave_spec
 Rcpp::List native_x11_musgrave_spec(SEXP frequency, SEXP length, SEXP available, SEXP ic_ratio, SEXP side);
-RcppExport SEXP _persephone3_native_x11_musgrave_spec(SEXP frequencySEXP, SEXP lengthSEXP, SEXP availableSEXP, SEXP ic_ratioSEXP, SEXP sideSEXP) {
+RcppExport SEXP _rkalos_native_x11_musgrave_spec(SEXP frequencySEXP, SEXP lengthSEXP, SEXP availableSEXP, SEXP ic_ratioSEXP, SEXP sideSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -594,7 +669,7 @@ END_RCPP
 }
 // native_x11_musgrave_filter
 Rcpp::List native_x11_musgrave_filter(SEXP values, SEXP frequency, SEXP length, SEXP ic_ratio);
-RcppExport SEXP _persephone3_native_x11_musgrave_filter(SEXP valuesSEXP, SEXP frequencySEXP, SEXP lengthSEXP, SEXP ic_ratioSEXP) {
+RcppExport SEXP _rkalos_native_x11_musgrave_filter(SEXP valuesSEXP, SEXP frequencySEXP, SEXP lengthSEXP, SEXP ic_ratioSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -608,7 +683,7 @@ END_RCPP
 }
 // native_x11_seasonal_normalize
 Rcpp::List native_x11_seasonal_normalize(SEXP input, SEXP frequency, SEXP first_period, SEXP filters, SEXP extend);
-RcppExport SEXP _persephone3_native_x11_seasonal_normalize(SEXP inputSEXP, SEXP frequencySEXP, SEXP first_periodSEXP, SEXP filtersSEXP, SEXP extendSEXP) {
+RcppExport SEXP _rkalos_native_x11_seasonal_normalize(SEXP inputSEXP, SEXP frequencySEXP, SEXP first_periodSEXP, SEXP filtersSEXP, SEXP extendSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -623,7 +698,7 @@ END_RCPP
 }
 // native_x11_seasonal_spec
 Rcpp::List native_x11_seasonal_spec(SEXP type, SEXP frequency, SEXP available, SEXP side);
-RcppExport SEXP _persephone3_native_x11_seasonal_spec(SEXP typeSEXP, SEXP frequencySEXP, SEXP availableSEXP, SEXP sideSEXP) {
+RcppExport SEXP _rkalos_native_x11_seasonal_spec(SEXP typeSEXP, SEXP frequencySEXP, SEXP availableSEXP, SEXP sideSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -637,7 +712,7 @@ END_RCPP
 }
 // native_x11_seasonal_filter
 Rcpp::List native_x11_seasonal_filter(SEXP values, SEXP type, SEXP frequency);
-RcppExport SEXP _persephone3_native_x11_seasonal_filter(SEXP valuesSEXP, SEXP typeSEXP, SEXP frequencySEXP) {
+RcppExport SEXP _rkalos_native_x11_seasonal_filter(SEXP valuesSEXP, SEXP typeSEXP, SEXP frequencySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -650,7 +725,7 @@ END_RCPP
 }
 // native_x11_seasonal_plan
 Rcpp::List native_x11_seasonal_plan(SEXP frequency, SEXP filters, SEXP requested_stage);
-RcppExport SEXP _persephone3_native_x11_seasonal_plan(SEXP frequencySEXP, SEXP filtersSEXP, SEXP requested_stageSEXP) {
+RcppExport SEXP _rkalos_native_x11_seasonal_plan(SEXP frequencySEXP, SEXP filtersSEXP, SEXP requested_stageSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -663,7 +738,7 @@ END_RCPP
 }
 // native_x11_seasonal_process
 Rcpp::List native_x11_seasonal_process(SEXP values, SEXP frequency, SEXP start_period, SEXP filters, SEXP short_series);
-RcppExport SEXP _persephone3_native_x11_seasonal_process(SEXP valuesSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP filtersSEXP, SEXP short_seriesSEXP) {
+RcppExport SEXP _rkalos_native_x11_seasonal_process(SEXP valuesSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP filtersSEXP, SEXP short_seriesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -678,7 +753,7 @@ END_RCPP
 }
 // native_x11_trend_policy
 Rcpp::List native_x11_trend_policy(SEXP frequency, SEXP ic_ratio, SEXP length);
-RcppExport SEXP _persephone3_native_x11_trend_policy(SEXP frequencySEXP, SEXP ic_ratioSEXP, SEXP lengthSEXP) {
+RcppExport SEXP _rkalos_native_x11_trend_policy(SEXP frequencySEXP, SEXP ic_ratioSEXP, SEXP lengthSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -691,7 +766,7 @@ END_RCPP
 }
 // native_x11_trend_select
 Rcpp::List native_x11_trend_select(SEXP values, SEXP frequency, SEXP mode, SEXP backcasts, SEXP forecasts);
-RcppExport SEXP _persephone3_native_x11_trend_select(SEXP valuesSEXP, SEXP frequencySEXP, SEXP modeSEXP, SEXP backcastsSEXP, SEXP forecastsSEXP) {
+RcppExport SEXP _rkalos_native_x11_trend_select(SEXP valuesSEXP, SEXP frequencySEXP, SEXP modeSEXP, SEXP backcastsSEXP, SEXP forecastsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -706,53 +781,58 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_persephone3_native_arma_parameter_map", (DL_FUNC) &_persephone3_native_arma_parameter_map, 3},
-    {"_persephone3_native_arma_decode", (DL_FUNC) &_persephone3_native_arma_decode, 4},
-    {"_persephone3_native_arma_identification", (DL_FUNC) &_persephone3_native_arma_identification, 7},
-    {"_persephone3_native_arma_admissibility", (DL_FUNC) &_persephone3_native_arma_admissibility, 3},
-    {"_persephone3_native_arma_objective", (DL_FUNC) &_persephone3_native_arma_objective, 13},
-    {"_persephone3_native_arma_information", (DL_FUNC) &_persephone3_native_arma_information, 17},
-    {"_persephone3_native_joint_regression_information", (DL_FUNC) &_persephone3_native_joint_regression_information, 14},
-    {"_persephone3_native_arma_residuals", (DL_FUNC) &_persephone3_native_arma_residuals, 16},
-    {"_persephone3_native_interpolation_information", (DL_FUNC) &_persephone3_native_interpolation_information, 16},
-    {"_persephone3_native_arma_optimize", (DL_FUNC) &_persephone3_native_arma_optimize, 14},
-    {"_persephone3_native_forecast_information", (DL_FUNC) &_persephone3_native_forecast_information, 18},
-    {"_persephone3_native_diffuse_likelihood", (DL_FUNC) &_persephone3_native_diffuse_likelihood, 10},
-    {"_persephone3_native_sarima_likelihood", (DL_FUNC) &_persephone3_native_sarima_likelihood, 10},
-    {"_persephone3_native_time_domain", (DL_FUNC) &_persephone3_native_time_domain, 4},
-    {"_persephone3_native_difference_polynomial", (DL_FUNC) &_persephone3_native_difference_polynomial, 3},
-    {"_persephone3_native_convolve", (DL_FUNC) &_persephone3_native_convolve, 2},
-    {"_persephone3_native_filter", (DL_FUNC) &_persephone3_native_filter, 3},
-    {"_persephone3_native_cholesky_solve", (DL_FUNC) &_persephone3_native_cholesky_solve, 2},
-    {"_persephone3_native_qr_solve", (DL_FUNC) &_persephone3_native_qr_solve, 3},
-    {"_persephone3_native_parallel_info", (DL_FUNC) &_persephone3_native_parallel_info, 0},
-    {"_persephone3_native_prediction_moments", (DL_FUNC) &_persephone3_native_prediction_moments, 3},
-    {"_persephone3_native_regression_likelihood", (DL_FUNC) &_persephone3_native_regression_likelihood, 13},
-    {"_persephone3_native_stationary_likelihood", (DL_FUNC) &_persephone3_native_stationary_likelihood, 7},
-    {"_persephone3_native_arma_likelihood", (DL_FUNC) &_persephone3_native_arma_likelihood, 8},
-    {"_persephone3_native_transform", (DL_FUNC) &_persephone3_native_transform, 2},
-    {"_persephone3_native_inverse_transform", (DL_FUNC) &_persephone3_native_inverse_transform, 2},
-    {"_persephone3_native_x11_filter_spec", (DL_FUNC) &_persephone3_native_x11_filter_spec, 3},
-    {"_persephone3_native_x11_filter", (DL_FUNC) &_persephone3_native_x11_filter, 4},
-    {"_persephone3_native_x11_initial_additive", (DL_FUNC) &_persephone3_native_x11_initial_additive, 4},
-    {"_persephone3_native_x11_mean_filter", (DL_FUNC) &_persephone3_native_x11_mean_filter, 2},
-    {"_persephone3_native_x11_msr_table", (DL_FUNC) &_persephone3_native_x11_msr_table, 5},
-    {"_persephone3_native_x11_msr_policy", (DL_FUNC) &_persephone3_native_x11_msr_policy, 1},
-    {"_persephone3_native_x11_msr_pilot", (DL_FUNC) &_persephone3_native_x11_msr_pilot, 3},
-    {"_persephone3_native_x11_msr_select", (DL_FUNC) &_persephone3_native_x11_msr_select, 8},
-    {"_persephone3_native_x11_musgrave_spec", (DL_FUNC) &_persephone3_native_x11_musgrave_spec, 5},
-    {"_persephone3_native_x11_musgrave_filter", (DL_FUNC) &_persephone3_native_x11_musgrave_filter, 4},
-    {"_persephone3_native_x11_seasonal_normalize", (DL_FUNC) &_persephone3_native_x11_seasonal_normalize, 5},
-    {"_persephone3_native_x11_seasonal_spec", (DL_FUNC) &_persephone3_native_x11_seasonal_spec, 4},
-    {"_persephone3_native_x11_seasonal_filter", (DL_FUNC) &_persephone3_native_x11_seasonal_filter, 3},
-    {"_persephone3_native_x11_seasonal_plan", (DL_FUNC) &_persephone3_native_x11_seasonal_plan, 3},
-    {"_persephone3_native_x11_seasonal_process", (DL_FUNC) &_persephone3_native_x11_seasonal_process, 5},
-    {"_persephone3_native_x11_trend_policy", (DL_FUNC) &_persephone3_native_x11_trend_policy, 3},
-    {"_persephone3_native_x11_trend_select", (DL_FUNC) &_persephone3_native_x11_trend_select, 5},
+    {"_rkalos_native_arma_parameter_map", (DL_FUNC) &_rkalos_native_arma_parameter_map, 3},
+    {"_rkalos_native_arma_decode", (DL_FUNC) &_rkalos_native_arma_decode, 4},
+    {"_rkalos_native_arma_identification", (DL_FUNC) &_rkalos_native_arma_identification, 7},
+    {"_rkalos_native_arma_admissibility", (DL_FUNC) &_rkalos_native_arma_admissibility, 3},
+    {"_rkalos_native_arma_objective", (DL_FUNC) &_rkalos_native_arma_objective, 13},
+    {"_rkalos_native_arma_information", (DL_FUNC) &_rkalos_native_arma_information, 17},
+    {"_rkalos_native_joint_regression_information", (DL_FUNC) &_rkalos_native_joint_regression_information, 14},
+    {"_rkalos_native_arma_residuals", (DL_FUNC) &_rkalos_native_arma_residuals, 16},
+    {"_rkalos_native_interpolation_information", (DL_FUNC) &_rkalos_native_interpolation_information, 16},
+    {"_rkalos_native_arma_optimize", (DL_FUNC) &_rkalos_native_arma_optimize, 14},
+    {"_rkalos_native_forecast_information", (DL_FUNC) &_rkalos_native_forecast_information, 18},
+    {"_rkalos_native_diffuse_likelihood", (DL_FUNC) &_rkalos_native_diffuse_likelihood, 10},
+    {"_rkalos_native_sarima_likelihood", (DL_FUNC) &_rkalos_native_sarima_likelihood, 10},
+    {"_rkalos_native_time_domain", (DL_FUNC) &_rkalos_native_time_domain, 4},
+    {"_rkalos_native_difference_polynomial", (DL_FUNC) &_rkalos_native_difference_polynomial, 3},
+    {"_rkalos_native_convolve", (DL_FUNC) &_rkalos_native_convolve, 2},
+    {"_rkalos_native_filter", (DL_FUNC) &_rkalos_native_filter, 3},
+    {"_rkalos_native_cholesky_solve", (DL_FUNC) &_rkalos_native_cholesky_solve, 2},
+    {"_rkalos_native_qr_solve", (DL_FUNC) &_rkalos_native_qr_solve, 3},
+    {"_rkalos_native_parallel_info", (DL_FUNC) &_rkalos_native_parallel_info, 0},
+    {"_rkalos_native_prediction_moments", (DL_FUNC) &_rkalos_native_prediction_moments, 3},
+    {"_rkalos_native_estimation_window", (DL_FUNC) &_rkalos_native_estimation_window, 2},
+    {"_rkalos_native_align_regressors", (DL_FUNC) &_rkalos_native_align_regressors, 6},
+    {"_rkalos_native_prepare_regression", (DL_FUNC) &_rkalos_native_prepare_regression, 13},
+    {"_rkalos_native_likelihood_adjustment", (DL_FUNC) &_rkalos_native_likelihood_adjustment, 4},
+    {"_rkalos_native_core_version", (DL_FUNC) &_rkalos_native_core_version, 0},
+    {"_rkalos_native_regression_likelihood", (DL_FUNC) &_rkalos_native_regression_likelihood, 13},
+    {"_rkalos_native_stationary_likelihood", (DL_FUNC) &_rkalos_native_stationary_likelihood, 7},
+    {"_rkalos_native_arma_likelihood", (DL_FUNC) &_rkalos_native_arma_likelihood, 8},
+    {"_rkalos_native_transform", (DL_FUNC) &_rkalos_native_transform, 2},
+    {"_rkalos_native_inverse_transform", (DL_FUNC) &_rkalos_native_inverse_transform, 2},
+    {"_rkalos_native_x11_filter_spec", (DL_FUNC) &_rkalos_native_x11_filter_spec, 3},
+    {"_rkalos_native_x11_filter", (DL_FUNC) &_rkalos_native_x11_filter, 4},
+    {"_rkalos_native_x11_initial_additive", (DL_FUNC) &_rkalos_native_x11_initial_additive, 4},
+    {"_rkalos_native_x11_mean_filter", (DL_FUNC) &_rkalos_native_x11_mean_filter, 2},
+    {"_rkalos_native_x11_msr_table", (DL_FUNC) &_rkalos_native_x11_msr_table, 5},
+    {"_rkalos_native_x11_msr_policy", (DL_FUNC) &_rkalos_native_x11_msr_policy, 1},
+    {"_rkalos_native_x11_msr_pilot", (DL_FUNC) &_rkalos_native_x11_msr_pilot, 3},
+    {"_rkalos_native_x11_msr_select", (DL_FUNC) &_rkalos_native_x11_msr_select, 8},
+    {"_rkalos_native_x11_musgrave_spec", (DL_FUNC) &_rkalos_native_x11_musgrave_spec, 5},
+    {"_rkalos_native_x11_musgrave_filter", (DL_FUNC) &_rkalos_native_x11_musgrave_filter, 4},
+    {"_rkalos_native_x11_seasonal_normalize", (DL_FUNC) &_rkalos_native_x11_seasonal_normalize, 5},
+    {"_rkalos_native_x11_seasonal_spec", (DL_FUNC) &_rkalos_native_x11_seasonal_spec, 4},
+    {"_rkalos_native_x11_seasonal_filter", (DL_FUNC) &_rkalos_native_x11_seasonal_filter, 3},
+    {"_rkalos_native_x11_seasonal_plan", (DL_FUNC) &_rkalos_native_x11_seasonal_plan, 3},
+    {"_rkalos_native_x11_seasonal_process", (DL_FUNC) &_rkalos_native_x11_seasonal_process, 5},
+    {"_rkalos_native_x11_trend_policy", (DL_FUNC) &_rkalos_native_x11_trend_policy, 3},
+    {"_rkalos_native_x11_trend_select", (DL_FUNC) &_rkalos_native_x11_trend_select, 5},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_persephone3(DllInfo *dll) {
+RcppExport void R_init_rkalos(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

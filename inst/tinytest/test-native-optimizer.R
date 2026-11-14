@@ -1,7 +1,7 @@
 local({
-  setup <- getFromNamespace("native_arma_objective_setup", "persephone3")
-  optimize_native <- getFromNamespace("native_arma_optimize", "persephone3")
-  evaluate <- getFromNamespace("native_arma_objective", "persephone3")
+  setup <- getFromNamespace("native_arma_objective_setup", "rkalos")
+  optimize_native <- getFromNamespace("native_arma_optimize", "rkalos")
+  evaluate <- getFromNamespace("native_arma_objective", "rkalos")
   old_seed <- if (exists(".Random.seed", .GlobalEnv)) get(".Random.seed", .GlobalEnv) else NULL
   on.exit(if (is.null(old_seed)) {
     if (exists(".Random.seed", .GlobalEnv)) rm(".Random.seed", envir=.GlobalEnv)

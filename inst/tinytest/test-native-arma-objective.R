@@ -1,11 +1,11 @@
 local({
-  mapping <- getFromNamespace("native_arma_parameter_map", "persephone3")
-  decode <- getFromNamespace("native_arma_decode", "persephone3")
-  check <- getFromNamespace(".native_arma_admissibility", "persephone3")
-  setup <- getFromNamespace("native_arma_objective_setup", "persephone3")
-  evaluate <- getFromNamespace("native_arma_objective", "persephone3")
-  regression <- getFromNamespace("native_regression_likelihood", "persephone3")
-  raw <- getFromNamespace(".native_arma_objective", "persephone3")
+  mapping <- getFromNamespace("native_arma_parameter_map", "rkalos")
+  decode <- getFromNamespace("native_arma_decode", "rkalos")
+  check <- getFromNamespace(".native_arma_admissibility", "rkalos")
+  setup <- getFromNamespace("native_arma_objective_setup", "rkalos")
+  evaluate <- getFromNamespace("native_arma_objective", "rkalos")
+  regression <- getFromNamespace("native_regression_likelihood", "rkalos")
+  raw <- getFromNamespace(".native_arma_objective", "rkalos")
   margin <- 1e-8
 
   expect_identical(decode(mapping())$status, "admissible")

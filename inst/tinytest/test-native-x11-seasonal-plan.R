@@ -1,8 +1,9 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  plan<-getFromNamespace('native_x11_seasonal_plan','persephone3')
-  raw<-getFromNamespace('.native_x11_seasonal_plan','persephone3')
-  process<-getFromNamespace('native_x11_seasonal_process','persephone3')
-  source('fixtures/native/x11-seasonal-plan-cases.R',local=TRUE)
+  plan<-getFromNamespace('native_x11_seasonal_plan','rkalos')
+  raw<-getFromNamespace('.native_x11_seasonal_plan','rkalos')
+  process<-getFromNamespace('native_x11_seasonal_process','rkalos')
+  source_fixture('fixtures/native/x11-seasonal-plan-cases.R',local=TRUE)
   frozen<-read.csv('fixtures/native/x11-seasonal-plan/plans.csv',stringsAsFactors=FALSE)
   targets<-split(frozen,frozen$case)
   for(ca in x11_seasonal_plan_cases()) {
@@ -60,5 +61,5 @@ local({
   expect_error(process(ts(1:40,frequency=4),'msr'),'supports')
   expect_error(process(ts(1:40,frequency=4),'x11default'),'supports')
   expect_identical(plan(4,'msr','d_final')$scope,'seasonal_stage_policy_only')
-  expect_true(!backend_capabilities('native')$fit)
+  expect_true(!capabilities()$fit)
 })

@@ -1,11 +1,12 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  setup <- getFromNamespace("native_arma_objective_setup","persephone3")
-  residuals <- getFromNamespace("native_arma_residuals","persephone3")
-  optimize <- getFromNamespace("native_arma_optimize","persephone3")
-  source("fixtures/native/arma-fit-cases.R",local=TRUE)
-  source("fixtures/native/arma-residual-oracle.R",local=TRUE)
-  source("fixtures/native/legacy-residual-cases.R",local=TRUE)
-  source("fixtures/native/legacy-ar1-rounding.R",local=TRUE)
+  setup <- getFromNamespace("native_arma_objective_setup","rkalos")
+  residuals <- getFromNamespace("native_arma_residuals","rkalos")
+  optimize <- getFromNamespace("native_arma_optimize","rkalos")
+  source_fixture("fixtures/native/arma-fit-cases.R",local=TRUE)
+  source_fixture("fixtures/native/arma-residual-oracle.R",local=TRUE)
+  source_fixture("fixtures/native/legacy-residual-cases.R",local=TRUE)
+  source_fixture("fixtures/native/legacy-ar1-rounding.R",local=TRUE)
   # Pinned public-API outputs catch orientation changes at mathematically zero
   # QR pivots. These comparisons run without loading any reference package.
   controls <- legacy_residual_cases()

@@ -1,10 +1,11 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  parameter_map <- getFromNamespace("native_arma_parameter_map", "persephone3")
-  identify <- getFromNamespace("native_arma_identification", "persephone3")
-  setup <- getFromNamespace("native_arma_objective_setup", "persephone3")
-  optimize <- getFromNamespace("native_arma_optimize", "persephone3")
-  fixture <- system.file("tinytest/fixtures/native/arma-fit-cases.R", package = "persephone3")
-  source(fixture, local = TRUE)
+  parameter_map <- getFromNamespace("native_arma_parameter_map", "rkalos")
+  identify <- getFromNamespace("native_arma_identification", "rkalos")
+  setup <- getFromNamespace("native_arma_objective_setup", "rkalos")
+  optimize <- getFromNamespace("native_arma_optimize", "rkalos")
+  fixture <- system.file("tinytest/fixtures/native/arma-fit-cases.R", package = "rkalos")
+  source_fixture(fixture, local = TRUE)
   for (period in c(4L, 12L)) for (a in c(-.6, 0, .4)) for (difference in c(0, 1e-6, .2)) {
     parameters <- parameter_map(ar = NA_real_, ma = NA_real_, initial = list(ar = a, ma = -a + difference))
     result <- identify(parameters, period)

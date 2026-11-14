@@ -1,8 +1,9 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  filter <- getFromNamespace('native_x11_filter','persephone3')
-  raw <- getFromNamespace('.native_x11_mean_filter','persephone3')
-  source('fixtures/native/x11-symmetric-cases.R',local=TRUE)
-  source('fixtures/native/x11-mean-cases.R',local=TRUE)
+  filter <- getFromNamespace('native_x11_filter','rkalos')
+  raw <- getFromNamespace('.native_x11_mean_filter','rkalos')
+  source_fixture('fixtures/native/x11-symmetric-cases.R',local=TRUE)
+  source_fixture('fixtures/native/x11-mean-cases.R',local=TRUE)
   weights <- read.csv('fixtures/native/x11-mean/weights.csv',stringsAsFactors=FALSE)
   points <- read.csv('fixtures/native/x11-mean/points.csv',stringsAsFactors=FALSE)
   for(ca in x11_mean_cases()) {

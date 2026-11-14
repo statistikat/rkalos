@@ -1,9 +1,10 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  spec <- getFromNamespace('native_x11_seasonal_spec','persephone3')
-  filter <- getFromNamespace('native_x11_filter','persephone3')
-  raw <- getFromNamespace('.native_x11_seasonal_filter','persephone3')
-  source('fixtures/native/x11-symmetric-cases.R',local=TRUE)
-  source('fixtures/native/x11-seasonal15-cases.R',local=TRUE)
+  spec <- getFromNamespace('native_x11_seasonal_spec','rkalos')
+  filter <- getFromNamespace('native_x11_filter','rkalos')
+  raw <- getFromNamespace('.native_x11_seasonal_filter','rkalos')
+  source_fixture('fixtures/native/x11-symmetric-cases.R',local=TRUE)
+  source_fixture('fixtures/native/x11-seasonal15-cases.R',local=TRUE)
   weights <- read.csv('fixtures/native/x11-seasonal15/weights.csv',stringsAsFactors=FALSE)
   points <- read.csv('fixtures/native/x11-seasonal15/points.csv',stringsAsFactors=FALSE)
   for(ca in x11_seasonal15_cases()) {

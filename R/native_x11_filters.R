@@ -68,7 +68,7 @@ native_x11_filter <- function(series,type,length=NULL,endpoints="none",ic_ratio=
   result$central_rows <- if(n>2L*r)seq.int(r+1L,n-r)else integer()
   result$boundary_rows <- setdiff(seq_len(n),result$central_rows)
   result$available_rows <- which(!result$missing)
-  result$central_domain <- if(length(result$central_rows))backend_domain(stats::ts(
+  result$central_domain <- if(length(result$central_rows))native_result_domain(stats::ts(
     result$values[result$central_rows],start=stats::time(result$values)[r+1L],frequency=domain$frequency))else NULL
   result$status <- if(length(result$available_rows))"available"else"no_available_outputs"
   structure(result,class="persephone_native_x11_filtered")

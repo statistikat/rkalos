@@ -16,22 +16,6 @@ native_regression_order <- function(value, name) {
   as.integer(value)
 }
 
-native_regression_coefficients <- function(coefficients, labels) {
-  result <- stats::setNames(rep(NA_real_, length(labels)), labels)
-  if (is.null(coefficients)) return(result)
-  if (!is.numeric(coefficients) || is.complex(coefficients) || !is.null(dim(coefficients)) ||
-      any(is.nan(coefficients)) || any(!is.na(coefficients) & !is.finite(coefficients))) {
-    stop("coefficients must be a named numeric vector of finite values or NA for free coefficients.", call. = FALSE)
-  }
-  if (length(coefficients) && (is.null(names(coefficients)) || anyNA(names(coefficients)) ||
-      any(!nzchar(names(coefficients))) || anyDuplicated(names(coefficients)) ||
-      any(!names(coefficients) %in% labels))) {
-    stop("coefficients must have distinct names matching the design columns.", call. = FALSE)
-  }
-  result[names(coefficients)] <- coefficients
-  result
-}
-
 native_regression_inputs <- function(series, regressors = NULL, coefficients = NULL,
     d = 0L, seasonal_d = 0L, mean = 0, transformation = "none",
     estimation_start = NULL, estimation_end = NULL, include_mean = FALSE,
@@ -40,42 +24,30 @@ native_regression_inputs <- function(series, regressors = NULL, coefficients = N
   include_drift <- native_regression_flag(include_drift, "include_drift")
   d <- native_regression_order(d, "d")
   seasonal_d <- native_regression_order(seasonal_d, "seasonal_d")
-  if (include_mean && d + seasonal_d > 0L) {
-    stop("include_mean requires a stationary model; use include_drift for a differenced mean.", call. = FALSE)
+  if (is.null(mean) && !include_mean) mean <- 0
+  if (!is.numeric(mean) || is.complex(mean) || length(mean) != 1L ||
+      is.na(mean) || !is.finite(mean)) stop("mean must be a finite numeric scalar.", call. = FALSE)
+  if (is.null(coefficients)) coefficients <- numeric()
+  if (!is.numeric(coefficients) || is.complex(coefficients) || !is.null(dim(coefficients)) ||
+      any(is.nan(coefficients)) || any(!is.na(coefficients) & !is.finite(coefficients))) {
+    stop("coefficients must be a named numeric vector of finite values or NA for free coefficients.", call. = FALSE)
   }
-  if (include_drift && d + seasonal_d == 0L) {
-    stop("include_drift requires differencing; use include_mean for a stationary model.", call. = FALSE)
-  }
-  if (include_mean && (!is.numeric(mean) || is.complex(mean) || length(mean) != 1L ||
-                      is.na(mean) || mean != 0)) {
-    stop("Use mean = 0 with include_mean to avoid two level-mean specifications.", call. = FALSE)
+  if (length(coefficients) && (is.null(names(coefficients)) || anyNA(names(coefficients)))) {
+    stop("coefficients must have distinct names matching the design columns.", call. = FALSE)
   }
   columns <- native_regressor_columns(regressors)
-  generated <- c(character(), if (include_mean) "mean", if (include_drift) "drift")
-  if (any(generated %in% names(columns))) stop("Generated mean/drift names conflict with supplied regressors.", call. = FALSE)
-  if (length(columns) + length(generated) > 32L) stop("Regression likelihood supports at most 32 design columns.", call. = FALSE)
   window <- native_likelihood_window(series, estimation_start, estimation_end)
   inputs <- native_prepare_inputs(window$series, columns, transformation,
                                    forecast_horizon, backcast_horizon)
-  if (include_mean) inputs$regressors <- cbind(inputs$regressors, mean = 1)
-  if (include_drift) {
-    # Delta(B)x_t=1. Changing the origin adds only a homogeneous component,
-    # which the fixed initial-history diffuse measure absorbs. Retain a single
-    # one-based source index (first input observation t=1) across windows and
-    # requested future/past contexts.
-    time <- seq_len(inputs$required_domain$length) + window$source_rows[1L] -
-      inputs$backcast_horizon - 1
-    order <- d + seasonal_d
-    drift <- time^order / (factorial(order) * inputs$observed_domain$frequency^seasonal_d)
-    if (any(!is.finite(drift))) stop("Generated drift exceeds the finite numeric range.", call. = FALSE)
-    inputs$regressors <- cbind(inputs$regressors, drift = drift)
-  }
   labels <- colnames(inputs$regressors)
   if (is.null(labels)) labels <- character()
-  fixed <- native_regression_coefficients(coefficients, labels)
-  design <- inputs$regressors[inputs$observed_rows, , drop = FALSE]
-  list(window = window, inputs = inputs, labels = labels, fixed = fixed,
-       design = design, generated = generated, d = d, seasonal_d = seasonal_d)
+  prepared <- .native_prepare_regression(inputs$regressors, labels, inputs$observed_domain,
+    inputs$required_domain, inputs$backcast_horizon, as.numeric(coefficients),
+    if (length(coefficients)) names(coefficients) else character(), d, seasonal_d, mean,
+    include_mean, include_drift, window$source_rows[1L])
+  inputs$regressors <- prepared$regressors
+  list(window = window, inputs = inputs, labels = prepared$labels, fixed = prepared$fixed,
+       design = prepared$design, generated = prepared$generated, d = d, seasonal_d = seasonal_d)
 }
 
 native_regression_likelihood <- function(series, regressors = NULL, coefficients = NULL,

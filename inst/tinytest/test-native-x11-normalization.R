@@ -1,7 +1,8 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  normalize<-getFromNamespace('native_x11_seasonal_normalize','persephone3')
-  raw<-getFromNamespace('.native_x11_seasonal_normalize','persephone3')
-  source('fixtures/native/x11-normalization-cases.R',local=TRUE)
+  normalize<-getFromNamespace('native_x11_seasonal_normalize','rkalos')
+  raw<-getFromNamespace('.native_x11_seasonal_normalize','rkalos')
+  source_fixture('fixtures/native/x11-normalization-cases.R',local=TRUE)
   points<-read.csv('fixtures/native/x11-normalization/points.csv');targets<-split(points,points$case)
   close<-function(a,b,label) {
     a<-as.numeric(a);b<-as.numeric(b)
@@ -68,7 +69,7 @@ local({
     # a short endpoint fallback in the separate processor is not substituted.
     short<-ts(seq_len(5*f),frequency=f)
     b<-normalize(short,'s3x9');expect_true(all(b$endpoint_policies=='nearest_central_mean'))
-    expect_true(all(getFromNamespace('native_x11_seasonal_process','persephone3')(short,'s3x9')$selected_filters=='stable'))
+    expect_true(all(getFromNamespace('native_x11_seasonal_process','rkalos')(short,'s3x9')$selected_filters=='stable'))
     for(n in c(0L,1L,2L*f-1L))expect_error(raw(seq_len(n),f,1,'s3x3',0),'two annual cycles')
     # All missing inputs have no available output, including restored rows.
     expect_identical(normalize(y*NA_real_,filters,3L*f)$status,'no_available_outputs')
@@ -96,6 +97,6 @@ local({
   for(mode in list(NULL,NA,'multiplicative','log_additive','pseudo_additive',1,c('additive','additive')))
     expect_error(normalize(ts(1:80,frequency=4),'s3x3',mode=mode),'additive mode only')
   expect_error(normalize(1:80,'s3x3'),'numeric ts')
-  expect_true('x11_additive_normalization' %in% backend_capabilities('native')$primitives)
-  expect_true(!backend_capabilities('native')$fit)
+  expect_true('x11_additive_normalization' %in% capabilities()$primitives)
+  expect_true(!capabilities()$fit)
 })

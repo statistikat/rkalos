@@ -2,8 +2,8 @@
 # These routines use R's LAPACK, so R chol/qr provide an independent boundary
 # oracle, not an independent factorization implementation. Analytic and SVD
 # fixtures also test rank-deficient/underdetermined minimum-norm behavior.
-chol_solve <- getFromNamespace(".native_cholesky_solve", "persephone3")
-qr_solve <- getFromNamespace(".native_qr_solve", "persephone3")
+chol_solve <- getFromNamespace(".native_cholesky_solve", "rkalos")
+qr_solve <- getFromNamespace(".native_qr_solve", "rkalos")
 
 a <- matrix(c(4, 1, 1, 3), 2)
 b <- c(1, 2)
@@ -163,5 +163,5 @@ expect_equal(response, saved_response)
 expect_equal(unserialize(serialize(fit, NULL)), fit)
 
 # Categorical storage codes are not numerical observations.
-expect_error(getFromNamespace(".native_qr_solve", "persephone3")(diag(2), factor(c("a", "b"))), "real numeric")
-expect_error(getFromNamespace(".native_cholesky_solve", "persephone3")(diag(2), factor(c("a", "b"))), "real numeric")
+expect_error(getFromNamespace(".native_qr_solve", "rkalos")(diag(2), factor(c("a", "b"))), "real numeric")
+expect_error(getFromNamespace(".native_cholesky_solve", "rkalos")(diag(2), factor(c("a", "b"))), "real numeric")

@@ -1,8 +1,9 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  source(system.file("tinytest/fixtures/native/arma-fit-cases.R", package = "persephone3"), local = TRUE)
-  setup <- getFromNamespace("native_arma_objective_setup", "persephone3")
-  optimize <- getFromNamespace("native_arma_optimize", "persephone3")
-  evaluate <- getFromNamespace("native_arma_objective", "persephone3")
+  source_fixture(system.file("tinytest/fixtures/native/arma-fit-cases.R", package = "rkalos"), local = TRUE)
+  setup <- getFromNamespace("native_arma_objective_setup", "rkalos")
+  optimize <- getFromNamespace("native_arma_optimize", "rkalos")
+  evaluate <- getFromNamespace("native_arma_objective", "rkalos")
   control <- list(max_iterations = 200L, max_evaluations = 4000L)
   cases <- arma_fit_cases()
   expect_equal(length(cases), 64L)

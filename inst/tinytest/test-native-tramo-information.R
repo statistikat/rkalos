@@ -1,9 +1,10 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  setup <- getFromNamespace("native_arma_objective_setup","persephone3")
-  optimize <- getFromNamespace("native_arma_optimize","persephone3")
-  information <- getFromNamespace("native_arma_information","persephone3")
-  source("fixtures/native/arma-fit-cases.R",local=TRUE)
-  source("fixtures/native/arma-residual-oracle.R",local=TRUE)
+  setup <- getFromNamespace("native_arma_objective_setup","rkalos")
+  optimize <- getFromNamespace("native_arma_optimize","rkalos")
+  information <- getFromNamespace("native_arma_information","rkalos")
+  source_fixture("fixtures/native/arma-fit-cases.R",local=TRUE)
+  source_fixture("fixtures/native/arma-residual-oracle.R",local=TRUE)
   cases <- arma_fit_cases()
   relative <- function(a,b) sqrt(sum((a-b)^2)/sum(b^2))
   for(ca in cases) {
@@ -129,7 +130,7 @@ local({
   expect_identical(result$status,"available")
   expect_equal(length(result$residual_center$missing_rows),38)
   expect_equal(result$residual_center$sum_squares,result$center$likelihood$profiled_variance*result$center$likelihood$finite_count,tolerance=1e-8)
-  if(getFromNamespace(".native_parallel_info","persephone3")()$compiled) {
+  if(getFromNamespace(".native_parallel_info","rkalos")()$compiled) {
     old <- Sys.getenv("PERSEPHONE_NUM_THREADS",unset=NA_character_)
     on.exit(if(is.na(old))Sys.unsetenv("PERSEPHONE_NUM_THREADS")else Sys.setenv(PERSEPHONE_NUM_THREADS=old),add=TRUE)
     Sys.setenv(PERSEPHONE_NUM_THREADS=1)

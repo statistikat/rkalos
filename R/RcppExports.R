@@ -2,174 +2,194 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 .native_arma_parameter_map <- function(specification, initial = NULL, margin = NULL) {
-    .Call(`_persephone3_native_arma_parameter_map`, specification, initial, margin)
+    .Call(`_rkalos_native_arma_parameter_map`, specification, initial, margin)
 }
 
 .native_arma_decode <- function(specification, initial, coordinates, margin = NULL) {
-    .Call(`_persephone3_native_arma_decode`, specification, initial, coordinates, margin)
+    .Call(`_rkalos_native_arma_decode`, specification, initial, coordinates, margin)
 }
 
 .native_arma_identification <- function(specification, initial, coordinates, period, margin = NULL, rank_tolerance = NULL, near_tolerance = NULL) {
-    .Call(`_persephone3_native_arma_identification`, specification, initial, coordinates, period, margin, rank_tolerance, near_tolerance)
+    .Call(`_rkalos_native_arma_identification`, specification, initial, coordinates, period, margin, rank_tolerance, near_tolerance)
 }
 
 .native_arma_admissibility <- function(coefficients, moving_average, margin = NULL) {
-    .Call(`_persephone3_native_arma_admissibility`, coefficients, moving_average, margin)
+    .Call(`_rkalos_native_arma_admissibility`, coefficients, moving_average, margin)
 }
 
 .native_arma_objective <- function(values, design, coefficients, specification, initial, coordinates, period, d = NULL, seasonal_d = NULL, mean = NULL, rank_tolerance = NULL, margin = NULL, log_jacobian = NULL) {
-    .Call(`_persephone3_native_arma_objective`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian)
+    .Call(`_rkalos_native_arma_objective`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian)
 }
 
 .native_arma_information <- function(values, design, coefficients, specification, initial, coordinates, period, d = NULL, seasonal_d = NULL, mean = NULL, rank_tolerance = NULL, margin = NULL, log_jacobian = NULL, control = NULL, method = NULL, covariance = NULL, legacy_state = NULL) {
-    .Call(`_persephone3_native_arma_information`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, control, method, covariance, legacy_state)
+    .Call(`_rkalos_native_arma_information`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, control, method, covariance, legacy_state)
 }
 
 .native_joint_regression_information <- function(values, design, coefficients, specification, initial, coordinates, period, d = NULL, seasonal_d = NULL, mean = NULL, rank_tolerance = NULL, margin = NULL, log_jacobian = NULL, control = NULL) {
-    .Call(`_persephone3_native_joint_regression_information`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, control)
+    .Call(`_rkalos_native_joint_regression_information`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, control)
 }
 
 .native_arma_residuals <- function(values, design, coefficients, specification, initial, coordinates, period, d = NULL, seasonal_d = NULL, mean = NULL, rank_tolerance = NULL, margin = NULL, log_jacobian = NULL, scale = NULL, reporting = NULL, transformation = NULL) {
-    .Call(`_persephone3_native_arma_residuals`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, scale, reporting, transformation)
+    .Call(`_rkalos_native_arma_residuals`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, scale, reporting, transformation)
 }
 
 .native_interpolation_information <- function(values, design, coefficients, specification, initial, coordinates, period, d = NULL, seasonal_d = NULL, mean = NULL, rank_tolerance = NULL, margin = NULL, log_jacobian = NULL, scale = NULL, method = NULL, control = NULL) {
-    .Call(`_persephone3_native_interpolation_information`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, scale, method, control)
+    .Call(`_rkalos_native_interpolation_information`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, scale, method, control)
 }
 
 .native_arma_optimize <- function(values, design, coefficients, specification, initial, coordinates, period, d = NULL, seasonal_d = NULL, mean = NULL, rank_tolerance = NULL, margin = NULL, log_jacobian = NULL, control = NULL) {
-    .Call(`_persephone3_native_arma_optimize`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, control)
+    .Call(`_rkalos_native_arma_optimize`, values, design, coefficients, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, control)
 }
 
 .native_forecast_information <- function(values, design, coefficients, backcasts, forecasts, specification, initial, coordinates, period, d = NULL, seasonal_d = NULL, mean = NULL, rank_tolerance = NULL, margin = NULL, log_jacobian = NULL, scale = NULL, method = NULL, control = NULL) {
-    .Call(`_persephone3_native_forecast_information`, values, design, coefficients, backcasts, forecasts, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, scale, method, control)
+    .Call(`_rkalos_native_forecast_information`, values, design, coefficients, backcasts, forecasts, specification, initial, coordinates, period, d, seasonal_d, mean, rank_tolerance, margin, log_jacobian, scale, method, control)
 }
 
 .native_diffuse_likelihood <- function(values, transition, observation, noise_loading, initial_state, finite_loading, diffuse_loading, observation_variance = NULL, mean = NULL, variance = NULL) {
-    .Call(`_persephone3_native_diffuse_likelihood`, values, transition, observation, noise_loading, initial_state, finite_loading, diffuse_loading, observation_variance, mean, variance)
+    .Call(`_rkalos_native_diffuse_likelihood`, values, transition, observation, noise_loading, initial_state, finite_loading, diffuse_loading, observation_variance, mean, variance)
 }
 
 .native_sarima_likelihood <- function(values, ar, ma, seasonal_ar, seasonal_ma, period, d = NULL, seasonal_d = NULL, mean = NULL, variance = NULL) {
-    .Call(`_persephone3_native_sarima_likelihood`, values, ar, ma, seasonal_ar, seasonal_ma, period, d, seasonal_d, mean, variance)
+    .Call(`_rkalos_native_sarima_likelihood`, values, ar, ma, seasonal_ar, seasonal_ma, period, d, seasonal_d, mean, variance)
 }
 
 .native_time_domain <- function(year, start_period, frequency, length) {
-    .Call(`_persephone3_native_time_domain`, year, start_period, frequency, length)
+    .Call(`_rkalos_native_time_domain`, year, start_period, frequency, length)
 }
 
 .native_difference_polynomial <- function(d = 1, seasonal_d = 0, frequency = 12) {
-    .Call(`_persephone3_native_difference_polynomial`, d, seasonal_d, frequency)
+    .Call(`_rkalos_native_difference_polynomial`, d, seasonal_d, frequency)
 }
 
 .native_convolve <- function(left, right) {
-    .Call(`_persephone3_native_convolve`, left, right)
+    .Call(`_rkalos_native_convolve`, left, right)
 }
 
 .native_filter <- function(values, weights, offsets) {
-    .Call(`_persephone3_native_filter`, values, weights, offsets)
+    .Call(`_rkalos_native_filter`, values, weights, offsets)
 }
 
 .native_cholesky_solve <- function(matrix, rhs) {
-    .Call(`_persephone3_native_cholesky_solve`, matrix, rhs)
+    .Call(`_rkalos_native_cholesky_solve`, matrix, rhs)
 }
 
 .native_qr_solve <- function(matrix, rhs, rank_tolerance = NULL) {
-    .Call(`_persephone3_native_qr_solve`, matrix, rhs, rank_tolerance)
+    .Call(`_rkalos_native_qr_solve`, matrix, rhs, rank_tolerance)
 }
 
 .native_parallel_info <- function() {
-    .Call(`_persephone3_native_parallel_info`)
+    .Call(`_rkalos_native_parallel_info`)
 }
 
 .native_prediction_moments <- function(location, covariance, transformation) {
-    .Call(`_persephone3_native_prediction_moments`, location, covariance, transformation)
+    .Call(`_rkalos_native_prediction_moments`, location, covariance, transformation)
+}
+
+.native_estimation_window <- function(source, endpoints) {
+    .Call(`_rkalos_native_estimation_window`, source, endpoints)
+}
+
+.native_align_regressors <- function(observed, columns, domains, labels, backcasts, forecasts) {
+    .Call(`_rkalos_native_align_regressors`, observed, columns, domains, labels, backcasts, forecasts)
+}
+
+.native_prepare_regression <- function(values, labels, observed, required, backcasts, coefficients, coefficient_names, d, seasonal_d, mean, include_mean, include_drift, source_first) {
+    .Call(`_rkalos_native_prepare_regression`, values, labels, observed, required, backcasts, coefficients, coefficient_names, d, seasonal_d, mean, include_mean, include_drift, source_first)
+}
+
+.native_likelihood_adjustment <- function(values, logarithm, degree, source_first) {
+    .Call(`_rkalos_native_likelihood_adjustment`, values, logarithm, degree, source_first)
+}
+
+.native_core_version <- function() {
+    .Call(`_rkalos_native_core_version`)
 }
 
 .native_regression_likelihood <- function(values, design, coefficients, ar, ma, seasonal_ar, seasonal_ma, period, d = NULL, seasonal_d = NULL, mean = NULL, variance = NULL, rank_tolerance = NULL) {
-    .Call(`_persephone3_native_regression_likelihood`, values, design, coefficients, ar, ma, seasonal_ar, seasonal_ma, period, d, seasonal_d, mean, variance, rank_tolerance)
+    .Call(`_rkalos_native_regression_likelihood`, values, design, coefficients, ar, ma, seasonal_ar, seasonal_ma, period, d, seasonal_d, mean, variance, rank_tolerance)
 }
 
 .native_stationary_likelihood <- function(values, transition, observation, noise_loading, observation_variance = NULL, mean = NULL, variance = NULL) {
-    .Call(`_persephone3_native_stationary_likelihood`, values, transition, observation, noise_loading, observation_variance, mean, variance)
+    .Call(`_rkalos_native_stationary_likelihood`, values, transition, observation, noise_loading, observation_variance, mean, variance)
 }
 
 .native_arma_likelihood <- function(values, ar, ma, seasonal_ar, seasonal_ma, period, mean = NULL, variance = NULL) {
-    .Call(`_persephone3_native_arma_likelihood`, values, ar, ma, seasonal_ar, seasonal_ma, period, mean, variance)
+    .Call(`_rkalos_native_arma_likelihood`, values, ar, ma, seasonal_ar, seasonal_ma, period, mean, variance)
 }
 
 .native_transform <- function(values, transformation = NULL) {
-    .Call(`_persephone3_native_transform`, values, transformation)
+    .Call(`_rkalos_native_transform`, values, transformation)
 }
 
 .native_inverse_transform <- function(values, transformation = NULL) {
-    .Call(`_persephone3_native_inverse_transform`, values, transformation)
+    .Call(`_rkalos_native_inverse_transform`, values, transformation)
 }
 
 .native_x11_filter_spec <- function(type, frequency, length = NULL) {
-    .Call(`_persephone3_native_x11_filter_spec`, type, frequency, length)
+    .Call(`_rkalos_native_x11_filter_spec`, type, frequency, length)
 }
 
 .native_x11_filter <- function(values, type, frequency, length = NULL) {
-    .Call(`_persephone3_native_x11_filter`, values, type, frequency, length)
+    .Call(`_rkalos_native_x11_filter`, values, type, frequency, length)
 }
 
 .native_x11_initial_additive <- function(input, frequency, first_period, filters) {
-    .Call(`_persephone3_native_x11_initial_additive`, input, frequency, first_period, filters)
+    .Call(`_rkalos_native_x11_initial_additive`, input, frequency, first_period, filters)
 }
 
 .native_x11_mean_filter <- function(values, frequency) {
-    .Call(`_persephone3_native_x11_mean_filter`, values, frequency)
+    .Call(`_rkalos_native_x11_mean_filter`, values, frequency)
 }
 
 .native_x11_msr_table <- function(seasonal, irregular, frequency, first_period, mode) {
-    .Call(`_persephone3_native_x11_msr_table`, seasonal, irregular, frequency, first_period, mode)
+    .Call(`_rkalos_native_x11_msr_table`, seasonal, irregular, frequency, first_period, mode)
 }
 
 .native_x11_msr_policy <- function(ratio) {
-    .Call(`_persephone3_native_x11_msr_policy`, ratio)
+    .Call(`_rkalos_native_x11_msr_policy`, ratio)
 }
 
 .native_x11_msr_pilot <- function(values, frequency, mode) {
-    .Call(`_persephone3_native_x11_msr_pilot`, values, frequency, mode)
+    .Call(`_rkalos_native_x11_msr_pilot`, values, frequency, mode)
 }
 
 .native_x11_msr_select <- function(values, frequency, first_period, mode, iteration_policy, backcasts, forecasts, max_iterations) {
-    .Call(`_persephone3_native_x11_msr_select`, values, frequency, first_period, mode, iteration_policy, backcasts, forecasts, max_iterations)
+    .Call(`_rkalos_native_x11_msr_select`, values, frequency, first_period, mode, iteration_policy, backcasts, forecasts, max_iterations)
 }
 
 .native_x11_musgrave_spec <- function(frequency, length, available, ic_ratio, side) {
-    .Call(`_persephone3_native_x11_musgrave_spec`, frequency, length, available, ic_ratio, side)
+    .Call(`_rkalos_native_x11_musgrave_spec`, frequency, length, available, ic_ratio, side)
 }
 
 .native_x11_musgrave_filter <- function(values, frequency, length, ic_ratio) {
-    .Call(`_persephone3_native_x11_musgrave_filter`, values, frequency, length, ic_ratio)
+    .Call(`_rkalos_native_x11_musgrave_filter`, values, frequency, length, ic_ratio)
 }
 
 .native_x11_seasonal_normalize <- function(input, frequency, first_period, filters, extend) {
-    .Call(`_persephone3_native_x11_seasonal_normalize`, input, frequency, first_period, filters, extend)
+    .Call(`_rkalos_native_x11_seasonal_normalize`, input, frequency, first_period, filters, extend)
 }
 
 .native_x11_seasonal_spec <- function(type, frequency, available, side) {
-    .Call(`_persephone3_native_x11_seasonal_spec`, type, frequency, available, side)
+    .Call(`_rkalos_native_x11_seasonal_spec`, type, frequency, available, side)
 }
 
 .native_x11_seasonal_filter <- function(values, type, frequency) {
-    .Call(`_persephone3_native_x11_seasonal_filter`, values, type, frequency)
+    .Call(`_rkalos_native_x11_seasonal_filter`, values, type, frequency)
 }
 
 .native_x11_seasonal_plan <- function(frequency, filters, requested_stage) {
-    .Call(`_persephone3_native_x11_seasonal_plan`, frequency, filters, requested_stage)
+    .Call(`_rkalos_native_x11_seasonal_plan`, frequency, filters, requested_stage)
 }
 
 .native_x11_seasonal_process <- function(values, frequency, start_period, filters, short_series) {
-    .Call(`_persephone3_native_x11_seasonal_process`, values, frequency, start_period, filters, short_series)
+    .Call(`_rkalos_native_x11_seasonal_process`, values, frequency, start_period, filters, short_series)
 }
 
 .native_x11_trend_policy <- function(frequency, ic_ratio, length) {
-    .Call(`_persephone3_native_x11_trend_policy`, frequency, ic_ratio, length)
+    .Call(`_rkalos_native_x11_trend_policy`, frequency, ic_ratio, length)
 }
 
 .native_x11_trend_select <- function(values, frequency, mode, backcasts, forecasts) {
-    .Call(`_persephone3_native_x11_trend_select`, values, frequency, mode, backcasts, forecasts)
+    .Call(`_rkalos_native_x11_trend_select`, values, frequency, mode, backcasts, forecasts)
 }
 

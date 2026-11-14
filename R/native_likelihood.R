@@ -27,13 +27,8 @@ native_likelihood_window <- function(series, estimation_start = NULL,
     native_span_ordinal(estimation_start, source$frequency, "estimation_start")
   end <- if (is.null(estimation_end)) last else
     native_span_ordinal(estimation_end, source$frequency, "estimation_end")
-  if (start < first || end > last || start > last || end < first) {
-    stop("The estimation window must lie entirely inside the input domain.", call. = FALSE)
-  }
-  if (start > end) {
-    stop("estimation_start must not follow estimation_end.", call. = FALSE)
-  }
-  rows <- seq.int(start - first + 1, end - first + 1)
+  selected_domain <- .native_estimation_window(source, c(start, end))
+  rows <- seq.int(selected_domain$first, length.out = selected_domain$length)
   year <- floor(start / source$frequency)
   period <- start - year * source$frequency + 1
   selected <- stats::ts(as.numeric(series)[rows], start = c(year, period),
@@ -52,20 +47,13 @@ native_likelihood_window <- function(series, estimation_start = NULL,
 # Shared adjustment preserves original observations even when regression effects
 # are subsequently removed on the transformed scale.
 native_likelihood_adjustment <- function(inputs, degree, source_rows) {
-  observed <- which(!inputs$missing)
-  selected <- observed
-  if (inputs$transformation == "log" && length(observed)) {
-    selected <- observed[observed - observed[1L] >= degree]
-  }
-  terms <- rep(0, length(inputs$original))
-  terms[selected] <- as.numeric(inputs$log_jacobian)[selected]
-  correction <- sum(terms)
-  if (!is.finite(correction)) stop("The log-Jacobian correction is nonfinite.", call. = FALSE)
+  result <- .native_likelihood_adjustment(as.numeric(inputs$log_jacobian),
+    inputs$transformation == "log", degree, source_rows[1L])
   list(policy = if (inputs$transformation == "log") "jdplus_3.9.0_calendar_window" else "identity",
-       difference_degree = degree, local_rows = selected, source_rows = source_rows[selected],
-       terms = stats::ts(terms, start = inputs$observed_domain$start,
+       difference_degree = degree, local_rows = result$local_rows, source_rows = result$source_rows,
+       terms = stats::ts(result$terms, start = inputs$observed_domain$start,
                          frequency = inputs$observed_domain$frequency),
-       log_jacobian = correction)
+       log_jacobian = result$log_jacobian)
 }
 
 native_likelihood_traces <- function(kernel, domain) {

@@ -1,6 +1,7 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  table<-getFromNamespace('native_x11_msr_table','persephone3');raw<-getFromNamespace('.native_x11_msr_table','persephone3')
-  source('fixtures/native/x11-msr-cases.R',local=TRUE)
+  table<-getFromNamespace('native_x11_msr_table','rkalos');raw<-getFromNamespace('.native_x11_msr_table','rkalos')
+  source_fixture('fixtures/native/x11-msr-cases.R',local=TRUE)
   targets<-split(read.csv('fixtures/native/x11-msr/tables.csv'),read.csv('fixtures/native/x11-msr/tables.csv')$case)
   close<-function(a,b,label) {
     expect_identical(is.na(a),is.na(b),info=label)
@@ -93,6 +94,6 @@ local({
   expect_error(raw(1:20,1:19,4,1,'additive'),'identical lengths')
   expect_error(table(1:20,1:20),'numeric ts')
   expect_identical(table(ts(1:20,frequency=4),ts(1:20,frequency=4))$scope,'msr_change_table_only')
-  expect_true('x11_msr_tables' %in% backend_capabilities('native')$primitives)
-  expect_true(!backend_capabilities('native')$fit)
+  expect_true('x11_msr_tables' %in% capabilities()$primitives)
+  expect_true(!capabilities()$fit)
 })

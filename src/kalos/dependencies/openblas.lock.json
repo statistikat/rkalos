@@ -1,0 +1,19 @@
+{
+  "version": "0.3.34",
+  "url": "https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v0.3.34.tar.gz",
+  "sha256": "cd7e129868320cc2d033afa920e31202dfe0b8066a5b66661900ccc0f197dfed",
+  "verified": "2026-11-14",
+  "integer_abi": "LP64 (32-bit)",
+  "standalone_source_build": "preinstalled compatible OpenBLAS; baseline 0.3.34",
+  "future_private_wheel_build": {
+    "INTERFACE64": 0,
+    "NO_CBLAS": 0,
+    "NO_LAPACK": 0,
+    "NO_LAPACKE": 0,
+    "USE_THREAD": 0,
+    "USE_LOCKING": 1,
+    "DYNAMIC_ARCH": 1,
+    "fortran_lapack": true
+  },
+  "binary_bundling_status": "deferred for minimal Python scaffold"
+}

@@ -76,6 +76,6 @@ Rcpp::List table_result(const kalos::X11MsrTable& result,int f,kalos::X11MsrMode
 Rcpp::List native_x11_msr_table(SEXP seasonal,SEXP irregular,SEXP frequency,SEXP first_period,SEXP mode) {
     using namespace kalos_msr_rcpp;
     const auto f=integer(frequency,"frequency"),first=integer(first_period,"first period");
-    const auto measure=persephone_msr_rcpp::mode(mode);const auto s=series(seasonal),i=series(irregular);
+    const auto measure=kalos_msr_rcpp::mode(mode);const auto s=series(seasonal),i=series(irregular);
     return table_result(kalos::x11_msr_table(s,i,f,first,measure,[]{Rcpp::checkUserInterrupt();}),f,measure);
 }

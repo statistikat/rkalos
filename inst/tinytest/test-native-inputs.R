@@ -1,7 +1,7 @@
 # Transformation and regular-domain contracts are independent of Java.
-transform <- getFromNamespace(".native_transform", "persephone3")
-inverse <- getFromNamespace(".native_inverse_transform", "persephone3")
-prepare <- getFromNamespace("native_prepare_inputs", "persephone3")
+transform <- getFromNamespace(".native_transform", "rkalos")
+inverse <- getFromNamespace(".native_inverse_transform", "rkalos")
+prepare <- getFromNamespace("native_prepare_inputs", "rkalos")
 
 original <- c(1, exp(1), NA_real_, 100, NaN, .Machine$double.xmin)
 logged <- transform(original, "log")

@@ -1,0 +1,9 @@
+^\.git$
+^\.gitignore$
+^\.github$
+^IMPLEMENTATION_STATUS\.md$
+^CHANGELOG\.md$
+^core\.lock\.json$
+^tools/migration$
+^LICENSE\.md$
+^config\.log$

@@ -1,8 +1,8 @@
 # Numerical foundations only: these tests do not claim native model fitting.
-domain <- getFromNamespace(".native_time_domain", "persephone3")
-poly <- getFromNamespace(".native_difference_polynomial", "persephone3")
-convolve <- getFromNamespace(".native_convolve", "persephone3")
-filter <- getFromNamespace(".native_filter", "persephone3")
+domain <- getFromNamespace(".native_time_domain", "rkalos")
+poly <- getFromNamespace(".native_difference_polynomial", "rkalos")
+convolve <- getFromNamespace(".native_convolve", "rkalos")
+filter <- getFromNamespace(".native_filter", "rkalos")
 
 monthly <- domain(2020, 11, 12, 4)
 expect_equal(monthly$start, c(2020, 11))

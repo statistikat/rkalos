@@ -1,7 +1,8 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  setup <- getFromNamespace("native_arma_objective_setup","persephone3")
-  information <- getFromNamespace("native_arma_information","persephone3")
-  source("fixtures/native/arma-fit-cases.R",local=TRUE)
+  setup <- getFromNamespace("native_arma_objective_setup","rkalos")
+  information <- getFromNamespace("native_arma_information","rkalos")
+  source_fixture("fixtures/native/arma-fit-cases.R",local=TRUE)
   cases <- arma_fit_cases()
   recorded <- dget("fixtures/native/tramo-legacy-states.R")
   for(id in names(recorded)) {

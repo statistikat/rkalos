@@ -1,7 +1,7 @@
 # Fixed-parameter preprocessing contract: window selection, dates and explicit
 # pinned-JD+ Jacobian policy. Numerical kernels have their independent suites.
-evaluate <- getFromNamespace("native_fixed_likelihood", "persephone3")
-sarima_kernel <- getFromNamespace(".native_sarima_likelihood", "persephone3")
+evaluate <- getFromNamespace("native_fixed_likelihood", "rkalos")
+sarima_kernel <- getFromNamespace(".native_sarima_likelihood", "rkalos")
 
 # Proper stationary log-Gaussian likelihood has the usual complete Jacobian.
 y <- ts(exp(c(.2, -.4, NA, .8, 1.1, NaN, -.2)), start = c(2003, 4), frequency = 4)

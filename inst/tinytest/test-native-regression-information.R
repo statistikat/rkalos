@@ -1,10 +1,11 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  setup <- getFromNamespace("native_arma_objective_setup","persephone3")
-  optimize <- getFromNamespace("native_arma_optimize","persephone3")
-  information <- getFromNamespace("native_arma_information","persephone3")
-  regression_information <- getFromNamespace("native_regression_information","persephone3")
-  source("fixtures/native/arma-fit-cases.R",local=TRUE)
-  source("fixtures/native/arma-residual-oracle.R",local=TRUE)
+  setup <- getFromNamespace("native_arma_objective_setup","rkalos")
+  optimize <- getFromNamespace("native_arma_optimize","rkalos")
+  information <- getFromNamespace("native_arma_information","rkalos")
+  regression_information <- getFromNamespace("native_regression_information","rkalos")
+  source_fixture("fixtures/native/arma-fit-cases.R",local=TRUE)
+  source_fixture("fixtures/native/arma-residual-oracle.R",local=TRUE)
   cases <- arma_fit_cases()
   for(ca in cases) {
     context <- do.call(setup,ca$arguments)

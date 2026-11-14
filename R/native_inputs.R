@@ -60,46 +60,18 @@ native_prepare_inputs <- function(series, regressors = NULL, transformation = "n
   domain <- native_regular_domain(series)
   forecast_horizon <- native_horizon(forecast_horizon, "forecast_horizon")
   backcast_horizon <- native_horizon(backcast_horizon, "backcast_horizon")
-  count <- length(series) + as.double(forecast_horizon) + as.double(backcast_horizon)
-  if (count > .Machine$integer.max) {
-    stop("Required domain exceeds the supported matrix row range.", call. = FALSE)
-  }
   if (!is.character(transformation) || !is.null(dim(transformation)) ||
       length(transformation) != 1L ||
       is.na(transformation) || !transformation %in% c("none", "log")) {
     stop("transformation must be 'none' or 'log'.", call. = FALSE)
   }
-  start <- domain$start_ordinal - backcast_horizon
-  year <- floor(start / domain$frequency)
-  period <- start - year * domain$frequency + 1
-  required <- .native_time_domain(year, period, domain$frequency, count)
-  required$start_ordinal <- start
   columns <- native_regressor_columns(regressors)
-  if (count * length(columns) > .Machine$integer.max) {
-    stop("Regressor matrix exceeds the supported element range.", call. = FALSE)
-  }
-  values <- matrix(numeric(), nrow = count, ncol = 0L)
-  if (length(columns)) {
-    aligned <- lapply(seq_along(columns), function(i) {
-      column <- columns[[i]]
-      label <- paste0("Regressor '", names(columns)[i], "'")
-      supplied <- native_regular_domain(column, label)
-      if (supplied$frequency != domain$frequency) {
-        stop(label, " frequency does not match the response.", call. = FALSE)
-      }
-      offset <- start - supplied$start_ordinal
-      if (offset < 0 || offset + count > length(column)) {
-        stop(label, " does not cover the complete observed/backcast/forecast domain.", call. = FALSE)
-      }
-      value <- as.numeric(column)[seq_len(count) + offset]
-      if (any(!is.finite(value))) {
-        stop(label, " contains missing or nonfinite values in the required domain.", call. = FALSE)
-      }
-      value
-    })
-    values <- do.call(cbind, aligned)
-    colnames(values) <- names(columns)
-  }
+  supplied <- lapply(seq_along(columns), function(i)
+    native_regular_domain(columns[[i]], paste0("Regressor '", names(columns)[i], "'")))
+  aligned <- .native_align_regressors(domain, lapply(columns, as.numeric), supplied,
+    if (length(columns)) names(columns) else character(), backcast_horizon, forecast_horizon)
+  required <- aligned$required_domain
+  values <- aligned$regressors
   transformed <- .native_transform(as.numeric(series), transformation)
   as_series <- function(value) stats::ts(value, start = domain$start,
                                         frequency = domain$frequency)

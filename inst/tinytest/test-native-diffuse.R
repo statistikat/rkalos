@@ -1,9 +1,9 @@
 # Exact diffuse, fixed-parameter likelihood tests. The primary oracle unrolls
 # the joint Gaussian model and integrates its initial coordinates analytically;
 # it neither calls the native filter nor substitutes a large initial variance.
-diffuse_kernel <- getFromNamespace(".native_diffuse_likelihood", "persephone3")
-sarima_kernel <- getFromNamespace(".native_sarima_likelihood", "persephone3")
-stationary_kernel <- getFromNamespace(".native_stationary_likelihood", "persephone3")
+diffuse_kernel <- getFromNamespace(".native_diffuse_likelihood", "rkalos")
+sarima_kernel <- getFromNamespace(".native_sarima_likelihood", "rkalos")
+stationary_kernel <- getFromNamespace(".native_stationary_likelihood", "rkalos")
 
 diffuse <- function(y, transition = matrix(1), observation = 1,
                     noise_loading = matrix(1), initial_state = 0,

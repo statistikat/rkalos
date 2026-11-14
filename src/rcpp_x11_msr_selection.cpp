@@ -78,7 +78,7 @@ Rcpp::List native_x11_msr_policy(SEXP ratio) {
 // [[Rcpp::export(name = ".native_x11_msr_pilot")]]
 Rcpp::List native_x11_msr_pilot(SEXP values,SEXP frequency,SEXP mode) {
     using namespace kalos_msr_rcpp;
-    const auto f=integer(frequency,"frequency");const auto measure=persephone_msr_rcpp::mode(mode);
+    const auto f=integer(frequency,"frequency");const auto measure=kalos_msr_rcpp::mode(mode);
     return pilot_result(kalos::x11_msr_pilot(series(values),f,measure,[]{Rcpp::checkUserInterrupt();}),f,measure);
 }
 // [[Rcpp::export(name = ".native_x11_msr_select")]]
@@ -87,7 +87,7 @@ Rcpp::List native_x11_msr_select(SEXP values,SEXP frequency,SEXP first_period,SE
     using namespace kalos_msr_rcpp;
     const auto f=integer(frequency,"frequency"),first=integer(first_period,"first period"),back=integer(backcasts,"backcasts"),
         fore=integer(forecasts,"forecasts"),maximum=integer(max_iterations,"max_iterations");
-    const auto measure=persephone_msr_rcpp::mode(mode);
+    const auto measure=kalos_msr_rcpp::mode(mode);
     if(TYPEOF(iteration_policy)!=STRSXP || Rf_xlength(iteration_policy)!=1 || STRING_ELT(iteration_policy,0)==NA_STRING ||
         !Rf_isNull(Rf_getAttrib(iteration_policy,R_DimSymbol)))throw std::invalid_argument("provide one supported MSR iteration policy");
     const auto name=Rcpp::as<std::string>(iteration_policy);

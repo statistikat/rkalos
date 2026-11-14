@@ -56,5 +56,5 @@ Rcpp::List native_x11_seasonal_process(SEXP values,SEXP frequency,SEXP start_per
     const auto result=kalos::x11_seasonal_process(input,f,start,choices,
         policy=="reject" ? kalos::X11ShortSeriesPolicy::reject : kalos::X11ShortSeriesPolicy::x11,
         [] {Rcpp::checkUserInterrupt();});
-    return persephone_x11_rcpp::seasonal_result(result,f,choices);
+    return kalos_x11_rcpp::seasonal_result(result,f,choices);
 }

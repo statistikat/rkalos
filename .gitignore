@@ -8,3 +8,6 @@ build*/
 *.tar.gz
 __pycache__/
 .venv/
+src/Makevars
+src/Makevars.win
+config.log

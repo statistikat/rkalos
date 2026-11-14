@@ -1,14 +1,15 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  setup <- getFromNamespace("native_arma_objective_setup","persephone3")
-  optimize <- getFromNamespace("native_arma_optimize","persephone3")
-  information <- getFromNamespace("native_arma_information","persephone3")
-  regression <- getFromNamespace("native_regression_information","persephone3")
+  setup <- getFromNamespace("native_arma_objective_setup","rkalos")
+  optimize <- getFromNamespace("native_arma_optimize","rkalos")
+  information <- getFromNamespace("native_arma_information","rkalos")
+  regression <- getFromNamespace("native_regression_information","rkalos")
   joint <- function(objective,coordinates=objective$parameters$initial_coordinates,...) {
     regression(objective,coordinates,method="joint_profile_ml",...)
   }
-  source("fixtures/native/arma-fit-cases.R",local=TRUE)
-  source("fixtures/native/arma-residual-oracle.R",local=TRUE)
-  source("fixtures/native/joint-information-oracle.R",local=TRUE)
+  source_fixture("fixtures/native/arma-fit-cases.R",local=TRUE)
+  source_fixture("fixtures/native/arma-residual-oracle.R",local=TRUE)
+  source_fixture("fixtures/native/joint-information-oracle.R",local=TRUE)
   relative <- function(a,b) sqrt(sum((a-b)^2)/sum(b^2))
   cases <- arma_fit_cases()
   for(ca in cases) {

@@ -1,9 +1,9 @@
 # Regression expectations come from dense Gaussian integration and base R QR,
 # never from a native transition, gain, innovation or coefficient estimate.
 local({
-  evaluate <- getFromNamespace("native_regression_likelihood", "persephone3")
-  fixed_likelihood <- getFromNamespace("native_fixed_likelihood", "persephone3")
-  core <- getFromNamespace(".native_regression_likelihood", "persephone3")
+  evaluate <- getFromNamespace("native_regression_likelihood", "rkalos")
+  fixed_likelihood <- getFromNamespace("native_fixed_likelihood", "rkalos")
+  core <- getFromNamespace(".native_regression_likelihood", "rkalos")
 
   gaussian_regression <- function(y, x, fixed = rep(NA_real_, ncol(x)),
       period = 4L, d = 0L, D = 0L, ar = 0, ma = 0, mean = 0, variance = 1,

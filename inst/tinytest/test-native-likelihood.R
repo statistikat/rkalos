@@ -1,7 +1,7 @@
 # Restricted 20a.1 pilot: fixed parameters and exact stationary initialization.
 # No integration/diffuse state, coefficient optimization, or SA engine is tested.
-stationary <- getFromNamespace(".native_stationary_likelihood", "persephone3")
-arma_kernel <- getFromNamespace(".native_arma_likelihood", "persephone3")
+stationary <- getFromNamespace(".native_stationary_likelihood", "rkalos")
+arma_kernel <- getFromNamespace(".native_arma_likelihood", "rkalos")
 arma <- function(y, ar = numeric(), ma = numeric(), sar = numeric(), sma = numeric(),
                  period = 12, mean = 0, variance = 1) {
   arma_kernel(y, ar, ma, sar, sma, period, mean, variance)

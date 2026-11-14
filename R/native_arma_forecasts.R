@@ -98,10 +98,10 @@ native_arma_forecasts <- function(objective,coordinates=objective$parameters$ini
   result$standard_errors_scale <- "transformed"
   result$original_uncertainty_status <- if(inputs$transformation=="none")result$status else
     if(!is.null(result$original_moments))result$original_moments$standard_error_status else "uncertainty_unavailable"
-  result$point_domains <- lapply(result$points_transformed,backend_domain)
-  result$error_domains <- lapply(result$standard_errors,backend_domain)
+  result$point_domains <- lapply(result$points_transformed,native_result_domain)
+  result$error_domains <- lapply(result$standard_errors,native_result_domain)
   result$point_horizons <- c(backcast=b,forecast=f);result$error_horizons <- c(backcast=be,forecast=fe)
-  result$forecasts <- new_forecast_contract(list(y=result$points_original$forecast),
+  result$forecasts <- native_new_forecast_contract(list(y=result$points_original$forecast),
     list(y=result$standard_errors_original$forecast),observed=inputs$original)
   if(!is.null(result$forecasts)) {
     result$forecasts$uncertainty_distribution <- if(inputs$transformation=="log")"lognormal"else"Gaussian"

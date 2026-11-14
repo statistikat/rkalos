@@ -1,0 +1,59 @@
+name: R package
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            serial: false
+          - os: macos-latest
+            serial: false
+          - os: windows-latest
+            serial: false
+          - os: ubuntu-latest
+            serial: true
+    runs-on: ${{ matrix.os }}
+    env:
+      JAVA_HOME: __KALOS_NO_JAVA__
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      R_MAKEVARS_USER: ${{ runner.temp }}/kalos-Makevars
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - name: Compiler mode
+        shell: Rscript {0}
+        run: writeLines(if ("${{ matrix.serial }}" == "true") "SHLIB_OPENMP_CXXFLAGS =" else character(), Sys.getenv("R_MAKEVARS_USER"))
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            local::.
+            any::tinytest
+            any::rcmdcheck
+          dependencies: '"hard"'
+      - run: python tools/sync-core.py --verify
+      - name: Check archive
+        shell: Rscript {0}
+        run: rcmdcheck::rcmdcheck(args="--no-manual", error_on="error", check_dir="check")
+      - name: No Java and thread qualification
+        shell: Rscript {0}
+        run: |
+          library(rkalos)
+          stopifnot(!any(c("rJava", "rjd3toolkit", "rjd3x13", "rjd3tramoseats") %in% loadedNamespaces()))
+          info <- core_version()$parallel
+          if ("${{ matrix.serial }}" == "true") stopifnot(!info$compiled, info$probe_threads == 1L)
+          if (Sys.info()[["sysname"]] == "Linux" && "${{ matrix.serial }}" == "false") stopifnot(info$probe_threads > 1L)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r-check-${{ matrix.os }}-${{ matrix.serial }}
+          path: check

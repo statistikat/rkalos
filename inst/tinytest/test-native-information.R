@@ -1,9 +1,10 @@
+source("helpers/fixtures.R", local = TRUE)
 local({
-  setup <- getFromNamespace("native_arma_objective_setup", "persephone3")
-  optimize_native <- getFromNamespace("native_arma_optimize", "persephone3")
-  information <- getFromNamespace("native_arma_information", "persephone3")
-  parameter_map <- getFromNamespace("native_arma_parameter_map", "persephone3")
-  source("fixtures/native/arma-fit-cases.R", local=TRUE)
+  setup <- getFromNamespace("native_arma_objective_setup", "rkalos")
+  optimize_native <- getFromNamespace("native_arma_optimize", "rkalos")
+  information <- getFromNamespace("native_arma_information", "rkalos")
+  parameter_map <- getFromNamespace("native_arma_parameter_map", "rkalos")
+  source_fixture("fixtures/native/arma-fit-cases.R", local=TRUE)
   cases <- arma_fit_cases()
   # Independent dense Gaussian integration, not native innovations, supplies
   # the curvature oracle. It profiles its own GLS coefficients and scale.

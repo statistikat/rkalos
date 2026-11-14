@@ -1,61 +1,22 @@
-Package: persephone3
+Package: rkalos
 Type: Package
-Title: Object-Oriented Wrappers for the Seasonal Adjustment Functionality of the JDemetra+ R Ecosystem rjdverse
+Title: R Interface to the Kalos Time Series Engine
 Version: 0.1.0
 Authors@R: c(
   person("Angelika", "Meraner", email = "angelika.meraner@statistik.gv.at", role = c("aut","cre")),
   person("Alexander", "Kowarik", email = "alexander.kowarik@statistik.gv.at", role = c("ctb")),
   person("Markus", "Fröhlich", email = "markus.foehlich@statistik.gv.at", role = "ctb")
   )
-Description: This package is an object oriented wrapper around the R Packages rjd3x13 and rjd3tramoseats,
-  which performs time series adjustments with the java library JDemetra+.
+Description: Experimental R bindings to the independent Kalos C++ engine for
+    fixed-order seasonal autoregressive integrated moving-average estimation,
+    inference, prediction and X-11 primitives. Bundled core sources use R's
+    configured numerical libraries. Full seasonal adjustment is not yet supported.
 License: MIT + file LICENSE
-URL: https://github.com/statistikat/persephone3, https://statistikat.github.io/persephone3
-BugReports: https://github.com/statistikat/persephone3/issues
+URL: https://github.com/statistikat/rkalos
+BugReports: https://github.com/statistikat/rkalos/issues
 Encoding: UTF-8
-Language: en-US
-LazyData: true
 Depends: R (>= 4.1.0)
-Imports:
-    R6,
-    Rcpp,
-    highcharter,
-    dygraphs,
-    plotly,
-    ggplot2,
-    forecast,
-    scales,
-    timeDate,
-    magrittr,
-    zoo,
-    lubridate,
-    shiny (>= 1.7.0),
-    httpuv,
-    callr,
-    devtools,
-    DT,
-    shinycssloaders,
-    stringr,
-    base64enc,
-    htmltools,
-    jsonlite,
-    htmlwidgets
+Imports: Rcpp, stats
 LinkingTo: Rcpp
 SystemRequirements: C++17, OpenMP (optional)
-Suggests:
-    RProtoBuf,
-    rjd3toolkit (>= 3.5.0),
-    rjd3x13 (>= 3.5.0),
-    rjd3tramoseats (>= 3.5.0),
-    knitr,
-    rmarkdown,
-    prettydoc,
-    tinytest,
-    bookdown
-Remotes:
-     github::rjdverse/rjd3toolkit,
-     github::rjdverse/rjd3tramoseats,
-     github::rjdverse/rjd3x13
-Roxygen: list(markdown = TRUE)
-VignetteBuilder: knitr
-Config/roxygen2/version: 8.1.1
+Suggests: tinytest
