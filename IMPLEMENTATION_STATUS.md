@@ -35,8 +35,9 @@ dependency. Numerical roadmap and canonical reference evidence belong to
 - R 4.5.2, macOS ARM64, Homebrew Clang 23.1.5, R-configured BLAS/LAPACK,
   two actual OpenMP workers. The same core passes all 37 standalone serial,
   OpenMP and sanitizer programs using OpenBLAS.
-- Final provider-reporting metadata, isolated no-Java/serial packaging and
-  application integration checks are being completed and will be recorded below.
+- The final source archive reports the configured BLAS library and LAPACK
+  version. The serial archive passed **266,545 assertions**, and Persephone
+  passed 35 backend assertions with Java-related packages absent.
 
 ## Compatibility
 
@@ -48,7 +49,7 @@ experimental package does not implement full seasonal-adjustment fitting.
 
 ## Next work
 
-1. Complete publication and application integration evidence for this split.
+1. Track integration and platform checks after the initial GitHub publication.
 2. Add R conversions/tests only as Kalos delivers each next numerical slice.
 3. Keep pinned source/fixture refreshes reviewable, regenerate Rcpp registrations
    when signatures change, and run archive checks and serial/no-Java lanes.
