@@ -21,7 +21,6 @@ jobs:
       JAVA_HOME: __KALOS_NO_JAVA__
       OMP_NUM_THREADS: '2'
       OPENBLAS_NUM_THREADS: '1'
-      R_MAKEVARS_USER: ${{ runner.temp }}/kalos-Makevars
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,7 +31,10 @@ jobs:
           use-public-rspm: true
       - name: Compiler mode
         shell: Rscript {0}
-        run: writeLines(if ("${{ matrix.serial }}" == "true") "SHLIB_OPENMP_CXXFLAGS =" else character(), Sys.getenv("R_MAKEVARS_USER"))
+        run: |
+          makevars <- file.path(Sys.getenv("RUNNER_TEMP"), "kalos-Makevars")
+          writeLines(if ("${{ matrix.serial }}" == "true") "SHLIB_OPENMP_CXXFLAGS =" else character(), makevars)
+          cat(paste0("R_MAKEVARS_USER=", makevars, "\n"), file=Sys.getenv("GITHUB_ENV"), append=TRUE)
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           packages: |
@@ -47,7 +49,7 @@ jobs:
       - name: No Java and thread qualification
         shell: Rscript {0}
         run: |
-          library(rkalos)
+          library(rkalos, lib.loc=file.path("check", "rkalos.Rcheck"))
           stopifnot(!any(c("rJava", "rjd3toolkit", "rjd3x13", "rjd3tramoseats") %in% loadedNamespaces()))
           info <- core_version()$parallel
           if ("${{ matrix.serial }}" == "true") stopifnot(!info$compiled, info$probe_threads == 1L)
