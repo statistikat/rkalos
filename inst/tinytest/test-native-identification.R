@@ -15,7 +15,13 @@ local({
     normalized <- sweep(expected, 2, sqrt(colSums(expected^2)), "/")
     values <- svd(normalized, nu = 0, nv = 0)$d
     expect_equal(unname(result$numerator_jacobian), expected, tolerance = 1e-14)
-    expect_equal(result$singular_values, values, tolerance = 1e-14)
+    # Singular values are only determined to eps * sigma_max; sigma_min of a
+    # near-redundant transfer has relative sensitivity kappa (measured 2.7e6
+    # here, see tools/svd-tolerance-evidence.md), so a fixed relative
+    # tolerance is below the Weyl floor for this case. Compare in the norm
+    # against 64 ULP of sigma_max; DGESVD stays the target.
+    expect_true(max(abs(result$singular_values - values)) <
+      64 * .Machine$double.eps * max(values))
     expect_true(abs(result$singular_ratio - min(values) / max(values)) < 1e-14)
     expect_equal(result$rank, if (difference == 0) 1L else 2L)
     expect_identical(result$status, if (difference == 0) "rank_deficient_transfer" else
