@@ -1,6 +1,6 @@
 # rkalos implementation status
 
-Updated: **2026-11-14**. Initial independent R package implemented and locally
+Updated: **2026-11-15**. Initial independent R package implemented and locally
 qualified. Persephone requires rkalos; this package has no Persephone or Java
 dependency. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
@@ -117,6 +117,122 @@ Blocker (pinned core, not fixed here):
   ar = 0.9999972 with status `gradient_unavailable` at the unit-root
   boundary. Not yet cross-checked against the macOS baseline; tracked as an
   open item.
+
+## Linux (x86_64) M1 groundwork — 2026-11-15
+
+Same host and toolchain as the baseline above (Ubuntu 24.04.4, g++ 13.3.0,
+R 4.5.3, OpenBLAS 0.3.26 providing LAPACK 3.12.0). The pinned core was **not**
+rebuilt or edited here; `src/kalos` is byte-identical to commit
+`4f0625cf44d9cba3c512fdd3d97e1ec4b10132da` and the upstream underflow-guard fix
+is still pending integration. Only what was executed on this host is recorded.
+
+### Archive `R CMD check`
+
+- `R CMD build .` then `R CMD INSTALL` into a scratch library: clean, **zero
+  compiler warnings**. The macOS `-Wfixed-enum-extension` R-header warning does not
+  occur with g++ 13.3, so no warning of any kind is left on this platform.
+- `R CMD check --no-tests` (default options, `_R_CHECK_FORCE_SUGGESTS_=false`, PDF
+  manual built): **Status OK** — zero errors, zero warnings, zero notes; the only
+  non-OK line is the informational installed-size report (58.3 Mb, of which 27.5 Mb
+  are the shipped test fixtures). Documentation, NAMESPACE, Rd usage, examples,
+  portability, `$(BLAS_LIBS)`/`PKG_*FLAGS` and compiled-code checks all pass. **No
+  repository-level check issue had to be fixed.**
+- Full `R CMD check` including tests: **1 error, 0 warnings, 0 notes**. That single
+  error is the known pinned-core blocker: `tests/tinytest.R` stops on the first test
+  file with `Error: finite state factor arithmetic underflows the finite numeric
+  range`, so the check does not reach a per-file report. Known, not new.
+- No check issue introduced by this milestone: the two archived runs differ only by
+  the test phase.
+
+### Java independence
+
+`R CMD check --no-tests` was repeated with `JAVA_HOME` unset in a library set where
+`rJava`, `rjd3*` and `persephone3` are **not installed** (only `Rcpp`, `tinytest`
+and base R): **Status OK**, exit 0. In that same session the boundary, ten X-11 and
+five preparation/native test files run green with `package:rJava` absent from the
+search path. This machine's default `java` is OpenJDK 21.0.11 (17 and 8 also
+installed); neither the check nor the tests consult any JVM.
+
+### Serial (no-OpenMP) lane
+
+- `configure` accepts no arguments and reads no dedicated switch: its single lever
+  is the C++17 OpenMP compile/link/runtime probe, which by design honours user
+  Makevars overrides. The serial lane was therefore selected the supported way — a
+  `R_MAKEVARS_USER` file blanking `SHLIB_OPENMP_CXXFLAGS` — so the probe fails and
+  `configure` prints "OpenMP unavailable for this C++17 toolchain; using serial
+  execution". A `--disable-openmp`/`KALOS_OPENMP` style flag does not exist; adding
+  one is an open usability item.
+- Verification that the lane really is serial: `src/Makevars` gets empty OpenMP
+  flags, no compile line carries `-fopenmp`, the installed shared object has no
+  `libgomp` dependency and no `GOMP_*`/`omp_*` dynamic symbols (the OpenMP build has
+  all three), and `core_version()$parallel` reports `compiled = FALSE`,
+  `openmp_version = 0`. Installed separately in `rlib-b-serial`.
+- Whole suite in the serial lane: **240,565 assertions, 658 failures, 14 of 37 files
+  aborting**; the OpenMP lane re-measured here gives **240,563 / 658 / 14**, matching
+  the baseline above. Failure and abort sets are identical, and so are the abort
+  reasons — the blocker is deterministic extended-precision semantics, not threading.
+  The only per-file difference is `test-native-parallel.R` (37 assertions serial,
+  35 with OpenMP, from its `compiled = FALSE` branch), zero failures in both.
+- X-11 lane plus preparation files (12 X-11 files, plus inputs, primitives,
+  likelihood, linear algebra and prediction moments): **234,968 assertions per lane**
+  (234,320 X-11 + 648 preparation), identical per-file counts, zero failures.
+- Equality stronger than counts: each of those 17 files was re-run under a scratch
+  harness that hashes the serialized bytes of every value an assertion compares. All
+  17 file digests match between the two lanes across 408,959 recorded values, so
+  serial and OpenMP return byte-identical results rather than merely equally-rounded
+  ones. (The harness itself mis-scores 4 argument-validation assertions in
+  `test-native-prediction-moments.R`, identically in both lanes; the official
+  tinytest run reports no failure there.)
+
+### SVD fixture tolerance
+
+`tools/svd-tolerance-evidence.md` (with `tools/svd-tolerance-probe.cpp` and
+`tools/svd-tolerance-probe.R`) analyses the two remaining
+`test-native-identification.R` failures. Summary: they are line 18
+(`expect_equal(result$singular_values, values, tolerance = 1e-14)`) in the
+`ar = -0.6, difference = 1e-6` case at period 4 and 12 — proven by relaxing that one
+line, which takes the file from 2 failures to 0 — and they concern the small
+3x2 near-redundant Jacobians (`kappa_2 = 2.72e6`), not the structured seasonal ones,
+whose `kappa_2` is 2.98 and which pass at 1e-14. R's `svd()`, a direct `DGESVD` and a
+direct `DGESDD` agree **bitwise** on identical inputs here, and the native values are
+bitwise `DGESVD` of the native-normalized Jacobian, so the LAPACK target is excluded.
+The gap is 6.73e-17 absolute — 0.21 ULP of `sigma_max`, inside the Weyl bound from the
+single 0.8-ULP input difference between native and fixture matrices — amplified by the
+conditioning into the reported 1.29e-10 mean *relative* difference, whose theoretical
+floor is `kappa * eps = 6.0e-10`. **Recommendation: change the fixture tolerance**
+(compare singular values against `64 * .Machine$double.eps * max(values)` in the norm,
+or derive the tolerance from `kappa`), **keep `DGESVD` as the target**. The test file
+is rkalos-owned (`core.lock.json` generates only `src/kalos/**` and
+`inst/tinytest/fixtures/**`), so this needs no Kalos round-trip and touches no frozen
+fixture byte. The test was **not** changed in this milestone.
+
+### `arma_optimize` unit-root boundary (README example)
+
+Root-caused on Linux; it is **not** the pinned-core long-double issue. The README fit
+ends at coordinate 6.7469984232914353 (`ar = 0.99999723157599829`, value
+1.1100490271451684) with status `gradient_unavailable`, 257 evaluations, and a
+rejection histogram of `parameter_boundary = 97` — no `numerical_failure` anywhere, no
+underflow or overflow guard message in a 121-point scan of the profile, and identical
+bytes with 1, 2 and 8 threads and in the serial build. Mechanism:
+`arma_optimizer.cpp` searches in `w = tanh(reflection coordinate)`, so the optimizer's
+fixed step `difference_step = 1e-4` is applied in a saturating variable where
+`dc/dw = 1/(1-w^2) = 1.8e5` at that point; every proposal with `w + h >= 1` is rejected
+as `parameter_boundary`, which removes the central stencil, and the surviving
+one-sided stencils span `c = 4.6 … 6.4` — far too wide for the declared accuracy
+budget. All 11 refinement attempts were reproduced exactly: `error` 1.9e1 … 1.0e4
+against budgets of 1.4e0 … 1.4e2, all rejected. The objective itself is smooth and
+available there (its own second difference falls off as `h^2` down to 1e-12, and a
+stencil taken in the reflection coordinate gives `error = 7.7e-8` against a budget of
+`3.9e-5`, i.e. accepted), and the profile minimum is interior: a Newton step from the
+stopping point gives `c = 6.7655` (`ar = 0.99999733`), so the optimizer arrived at the
+optimum but could not certify its gradient. This is boundary/coordinate handling in the
+optimizer wrapper (Kalos side), double-only arithmetic, and expected to reproduce on
+macOS; that cross-check still has to be run there.
+
+### Not run on this machine
+
+Sanitizer lanes, the focused preparation-equivalence set as its own target, Windows,
+macOS, and any run against the fixed core (still upstream).
 
 ## Compatibility
 
