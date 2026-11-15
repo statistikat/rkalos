@@ -20,10 +20,16 @@ constexpr double residual_tolerance = 512 * std::numeric_limits<double>::epsilon
 
 void checkpoint(const Interrupt& interrupt) { if (interrupt) interrupt(); }
 
+// long double is accumulation scratch only; the numeric contract of every
+// guarded quantity is its correctly rounded binary64 value. A nonzero
+// extended-precision intermediate that rounds to zero at binary64 granularity
+// is zero on every platform, matching the double-width platforms on which
+// this library is qualified; see
+// docs/contracts/extended-precision-range-contract.md. Underflow contracts
+// are enforced separately on named binary64 quantities below.
 double checked(long double value) {
     const auto result = static_cast<double>(value);
     if (!std::isfinite(result)) throw std::overflow_error("finite state factor arithmetic produced a non-finite value");
-    if (value != 0 && result == 0) throw std::underflow_error("finite state factor arithmetic underflows the finite numeric range");
     return result;
 }
 

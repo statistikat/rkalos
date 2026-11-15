@@ -21,10 +21,12 @@ constexpr double normalization_tolerance = 512 * std::numeric_limits<double>::ep
 
 void checkpoint(const Interrupt& interrupt) { if (interrupt) interrupt(); }
 
+// long double is accumulation scratch only; the numeric contract is the
+// correctly rounded binary64 value. Underflow contracts are enforced on named
+// binary64 quantities; see docs/contracts/extended-precision-range-contract.md.
 double checked(long double value) {
     const auto result = static_cast<double>(value);
     if (!std::isfinite(result)) throw std::overflow_error("sparse history evaluation produced a non-finite value");
-    if (value != 0 && result == 0) throw std::underflow_error("sparse history evaluation underflows the finite numeric range");
     return result;
 }
 

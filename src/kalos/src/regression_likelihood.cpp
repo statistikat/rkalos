@@ -17,10 +17,15 @@ namespace {
 
 void checkpoint(const Interrupt& interrupt) { if (interrupt) interrupt(); }
 
+// long double is accumulation scratch only; the numeric contract of every
+// guarded quantity is its correctly rounded binary64 value, so a nonzero
+// extended-precision intermediate that rounds to zero at binary64 granularity
+// is zero on every platform. Underflow contracts are enforced separately on
+// named binary64 quantities below; see
+// docs/contracts/extended-precision-range-contract.md.
 double checked(long double value) {
     const auto result = static_cast<double>(value);
     if (!std::isfinite(result)) throw std::overflow_error("regression likelihood arithmetic produced a non-finite value");
-    if (value != 0 && result == 0) throw std::underflow_error("regression likelihood arithmetic underflows");
     return result;
 }
 
@@ -109,8 +114,9 @@ std::vector<double> regression_covariance(const DenseMatrix& design,
             for (std::size_t k = 0; k < columns; ++k) value += static_cast<long double>(inverse[i + columns * k]) * inverse[j + columns * k];
             const auto entry = checked(value);
             // A full-rank triangular inverse has a strictly positive squared
-            // norm in every row. Underflow must not imply exact coefficient
-            // certainty on platforms where long double is only double width.
+            // norm in every row. A diagonal that rounds to zero at binary64
+            // granularity is rejected: underflow must never imply exact
+            // coefficient certainty on any platform.
             if (i == j && entry == 0) throw std::underflow_error("regression coefficient covariance underflows");
             covariance[i + columns * j] = covariance[j + columns * i] = entry;
         }
@@ -429,7 +435,10 @@ static RegressionLikelihood regression_likelihood_impl(
     }
     long double squares = 0;
     for (const auto value : result.whitened_residuals) {
-        const long double term = static_cast<long double>(value) * value;
+        // The guard and the accumulation both observe the binary64 square, so
+        // a nonzero residual with a sub-binary64 exact square is rejected
+        // identically on every platform.
+        const double term = static_cast<double>(static_cast<long double>(value) * value);
         if (value != 0 && term == 0) throw std::underflow_error("regression residual square underflows");
         squares += term;
     }
@@ -441,8 +450,11 @@ static RegressionLikelihood regression_likelihood_impl(
     result.likelihood_status = result.observed_count == 0 ? "no_observations" : "available";
     result.profile_status = "no_finite_innovations";
     if (count > 0) {
-        result.profiled_variance = checked(squares / finite_count);
-        if (squares > 0 && result.profiled_variance == 0) throw std::underflow_error("profiled regression variance underflows");
+        // Same rule as the diffuse profiled variance: a binary64 division of
+        // the named binary64 sum so bit-identical recomputation holds in the
+        // prediction kernels; bounded by the finite sum, cannot overflow.
+        result.profiled_variance = result.sum_squared_standardized / static_cast<double>(count);
+        if (result.sum_squared_standardized > 0 && result.profiled_variance == 0) throw std::underflow_error("profiled regression variance underflows");
         if (result.profiled_variance == 0) {
             result.profile_status = "zero_scale_boundary";
             result.profiled_log_likelihood = std::numeric_limits<double>::infinity();

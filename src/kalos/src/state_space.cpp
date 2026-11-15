@@ -205,7 +205,10 @@ InnovationsLikelihood stationary_innovations(const MaskedSeries& series,
             if (variances[t] == 0) throw std::invalid_argument("observed data require a positive innovation variance; deterministic observation likelihood is unsupported");
             const double innovation = finite(static_cast<long double>(series.values[t]) - prediction);
             const double standardized_value = finite(innovation / std::sqrt(variances[t]));
-            const long double squared = static_cast<long double>(standardized_value) * standardized_value;
+            // The guard and the accumulation both observe the binary64 square,
+            // so a nonzero standardized innovation with a sub-binary64 exact
+            // square is rejected identically on every platform.
+            const double squared = static_cast<double>(static_cast<long double>(standardized_value) * standardized_value);
             if ((innovation != 0 && standardized_value == 0) ||
                 (standardized_value != 0 && squared == 0)) {
                 throw std::underflow_error("standardized innovation square underflows the finite numeric range");

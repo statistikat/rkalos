@@ -22,8 +22,13 @@ std::vector<double> standardized(const std::vector<double>& values, double sd,
     return result;
 }
 double legacy_checked(long double value) {
+    // long double is scratch only; the numeric contract is the correctly
+    // rounded binary64 value, so a nonzero extended-precision intermediate
+    // that rounds to zero is zero on every platform. Named binary64
+    // quantities guard their own underflow separately; see
+    // docs/contracts/extended-precision-range-contract.md.
     const auto result=static_cast<double>(value);
-    if(!std::isfinite(result) || (value!=0 && result==0)) throw std::range_error("legacy residual reporting exceeds the finite numeric range");
+    if(!std::isfinite(result)) throw std::range_error("legacy residual reporting exceeds the finite numeric range");
     return result;
 }
 double rounded_product(double left,double right) {

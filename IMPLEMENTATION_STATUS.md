@@ -234,6 +234,35 @@ macOS; that cross-check still has to be run there.
 Sanitizer lanes, the focused preparation-equivalence set as its own target, Windows,
 macOS, and any run against the fixed core (still upstream).
 
+## Core integration checkpoint — 2026-11-15
+
+The pending upstream fixes have since landed and the pin advanced to
+`cd004b08bcb6cdf1e5b22b2cf34af721ccbaf06c` (via `tools/sync-core.py`, `--verify`
+clean; 88 core + 132 fixture files). Two core commits moved in: `f96603f` (the
+ARIMA(0,1,1) underflow guard, which removes all fourteen suite aborts and the
+658 stale-slope failures) and `cd004b0` (profiled variances published as binary64
+quotients of the named binary64 sum). The second was found through this package:
+on `f96603f` the full suite ran with a single remaining failure class — 15 of 64
+pinned forecasts disagreed in the `mean` attribute at `tolerance = 0` (1 ULP on
+the profiled variance) — a scratch-width redivision in the forecast kernels that
+the core's standalone suite did not cover. Fixed in Kalos (39/39 per lane, both
+lanes), re-synced, re-qualified here.
+
+- SVD comparison: the recommendation above is applied (commit `0696fb1`);
+  `test-native-identification.R` is 196/196.
+- Whole suite, OpenMP lane: **266,549 assertions, 0 failures, 0 skipped, 0 errors**
+  across all 37 files — the first all-green Linux state.
+- Whole suite, serial lane (`compiled = FALSE` recompiled): **266,545 / 0**. The
+  four-assertion difference from the OpenMP lane is `test-native-tramo-information.R`'s
+  six OpenMP-only thread-reproducibility checks versus `test-native-parallel.R`'s
+  two serial-specific checks; both lanes report zero failures, errors and skips.
+- Qualification ran from an `R CMD build` tarball because `sync-core.py --verify`
+  rejects in-tree object files; the serial lane again used the `R_MAKEVARS_USER`
+  probe-override and `LD_LIBRARY_PATH` was unset at test time so the pinned
+  0.3.34 provider (not the system BLAS) served every LAPACK call.
+- pykalos advanced to the same pin; its wheel rebuilt warning-free and smoke-verified
+  (`core_version()` reports `cd004b08…`).
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

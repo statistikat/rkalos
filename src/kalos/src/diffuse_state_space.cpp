@@ -23,10 +23,15 @@ constexpr double projection_tolerance = 512 * std::numeric_limits<double>::epsil
 
 void checkpoint(const Interrupt& interrupt) { if (interrupt) interrupt(); }
 
+// long double is accumulation scratch only; the numeric contract of every
+// guarded quantity is its correctly rounded binary64 value, so a nonzero
+// extended-precision intermediate that rounds to zero at binary64 granularity
+// is zero on every platform. Underflow contracts are enforced separately on
+// named binary64 quantities; see
+// docs/contracts/extended-precision-range-contract.md.
 double checked(long double value) {
     const auto result = static_cast<double>(value);
     if (!std::isfinite(result)) throw std::overflow_error("diffuse state-space arithmetic produced a non-finite value");
-    if (value != 0 && result == 0) throw std::underflow_error("diffuse state-space arithmetic underflows the finite numeric range");
     return result;
 }
 
@@ -37,9 +42,12 @@ double norm(const std::vector<double>& values) {
 }
 
 double square(double value) {
-    const long double product = static_cast<long double>(value) * value;
+    // The guard observes the binary64 product, so a nonzero binary64 value
+    // with a sub-binary64 exact square is rejected identically on every
+    // platform regardless of the scratch precision used for the product.
+    const double product = static_cast<double>(static_cast<long double>(value) * value);
     if (value != 0 && product == 0) throw std::underflow_error("diffuse state-space square underflows the finite numeric range");
-    return checked(product);
+    return product;
 }
 
 struct Basis {
@@ -416,8 +424,15 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
         fixed_loglik = checked(-.5L * (diffuse_logs + finite_logs +
             n_finite * (log_two_pi + std::log(static_cast<long double>(variance))) + squares / variance));
         if (finite_count > 0) {
-            profiled_variance = checked(squares / n_finite);
-            if (squares > 0 && profiled_variance == 0) throw std::underflow_error("profiled diffuse variance underflows");
+            // The named profiled variance must be bit-identical to the binary64
+            // quotient consumers recompute from the named sum (forecast,
+            // interpolation and arma information divide the stored binary64
+            // sum_squared_standardized in binary64), so it is a binary64
+            // division of binary64 operands, not a once-rounded scratch
+            // quotient (extended-precision-range-contract rule 3). The
+            // quotient cannot overflow: it is bounded by the finite sum.
+            profiled_variance = sum_squares / static_cast<double>(finite_count);
+            if (sum_squares > 0 && profiled_variance == 0) throw std::underflow_error("profiled diffuse variance underflows");
             if (profiled_variance == 0) {
                 profile_status = "zero_scale_boundary";
                 profiled_loglik = std::numeric_limits<double>::infinity();

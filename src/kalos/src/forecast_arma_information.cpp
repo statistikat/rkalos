@@ -10,8 +10,12 @@
 namespace kalos {
 namespace {
 double finite_prediction(long double value) {
+    // long double is accumulation scratch only; the numeric contract is the
+    // correctly rounded binary64 value. Named binary64 quantities guard their
+    // own underflow separately; see
+    // docs/contracts/extended-precision-range-contract.md.
     const auto result=static_cast<double>(value);
-    if(!std::isfinite(result) || (value!=0 && result==0))
+    if(!std::isfinite(result))
         throw std::range_error("ARMA prediction uncertainty exceeds the finite numeric range");
     return result;
 }
