@@ -46,10 +46,12 @@ X11CPass x11_c_pass(const MaskedSeries& series,int frequency,int first_period,
     checkpoint(interrupt);
     X11CPass pass;
     pass.c2drop=t;
+    pass.first_period=first_period;
     pass.initial_filters=initial_filters; pass.final_filters=final_filters;
     pass.trend_length=trend_length;
     // X11CStep.process(refSeries, B20, ctx): c1 = remove(refSeries, B20).
     const auto y=to_pinned(series);
+    pass.reference_series=y;
     pass.c1=minus_pinned(y,b.b20,interrupt);
     // c2Step: X11TrendCycleFilterFactory.makeTrendFilter(period) over the
     // central span only (the pinned table has length n - 2*c2drop).

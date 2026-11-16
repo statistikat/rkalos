@@ -133,6 +133,10 @@
     .Call(`_rkalos_native_x11_c_pass`, values, frequency, start_period, policy, initial_filters, final_filters, trend_length, bpass, lower_sigma, upper_sigma)
 }
 
+.native_x11_d_pass <- function(values, frequency, start_period, policy, initial_filters, final_filters, trend_length, cpass, backcast, forecast) {
+    .Call(`_rkalos_native_x11_d_pass`, values, frequency, start_period, policy, initial_filters, final_filters, trend_length, cpass, backcast, forecast)
+}
+
 .native_x11_filter_spec <- function(type, frequency, length = NULL) {
     .Call(`_rkalos_native_x11_filter_spec`, type, frequency, length)
 }
@@ -195,6 +199,10 @@
 
 .native_x11_seasonal_process <- function(values, frequency, start_period, filters, short_series) {
     .Call(`_rkalos_native_x11_seasonal_process`, values, frequency, start_period, filters, short_series)
+}
+
+.native_x11_selection_pass <- function(values, frequency, start_period, requests_vector, trend_length, policy, msr_policy, lower_sigma, upper_sigma, backcast, forecast) {
+    .Call(`_rkalos_native_x11_selection_pass`, values, frequency, start_period, requests_vector, trend_length, policy, msr_policy, lower_sigma, upper_sigma, backcast, forecast)
 }
 
 .native_x11_sigma_weights <- function(values, frequency, start_period, policy, backcasts, forecasts, exclude, lower_sigma, upper_sigma, multiplicative) {

@@ -414,6 +414,103 @@ lanes), re-synced, re-qualified here.
     case list (rkalos reuses `native/x11-bpass-cases.R`); a note in the
     fixture metadata would save integrators from building a second loader.
 
+## Core integration checkpoint, D pass and selection flow at the R boundary — 2026-11-16
+
+- The pin advanced two core commits to `0ad8c59e36351a0a765e98aa0844377555966ec8`
+  (via `tools/sync-core.py`, `--verify` clean offline): `886f4e1` "Qualify
+  the complete fixed additive D pass (22b.4 S3)" and `0ad8c59` "Qualify the
+  pass-level X-11 selection flow (22b.4 S4)"; the fixtures and tests are
+  independent, so one reviewed sync covers both. The lock delta was verified
+  from the diff: 93→97 core files (added `src/x11_d_pass.cpp`,
+  `include/kalos/x11_d_pass.hpp`, `src/x11_selection_pass.cpp` and
+  `include/kalos/x11_selection_pass.hpp`), 143→156 fixture files (the six
+  `native/x11-dpass/` and seven `native/x11-selection/` files); seven
+  pre-existing hashes changed (commit, source manifest, `CMakeLists.txt`,
+  `revision.hpp`, `detail/x11_pinned.hpp` — the S3/S4 commits extended the
+  shared header — plus `x11_c_pass.hpp`/`x11_c_pass.cpp`, where S3 added the
+  `first_period`/`reference_series` echoes). The snapshot matches the core's
+  own source manifest exactly.
+- New native entry point `.native_x11_d_pass` (input, frequency, start
+  period, explicit policy, fixed seasonal requests, Henderson length, the
+  required C-pass companion, backcast/forecast horizons; sigma bounds are
+  deliberately not taken — the D pass performs no extreme-value analysis)
+  with the internal wrapper `native_x11_d_pass()`. The C companion follows
+  the established faithful-rebuild/passthrough pattern: the boundary
+  rebuilds the pinned `kalos::X11CPass` from the caller's
+  `native_x11_c_pass()` result (including the S3 echoes, which is why the
+  raw C result now also carries the `reference_series`) and the pinned core
+  enforces every coupling check; the C pass is never recomputed. Extended
+  calendars are first-class: tables run over the extended series, the
+  wrapper derives the dropped original calendar (row span
+  `[backcast+1, n-forecast]`, first period `(first_period-1+backcast) %% f
+  + 1`) and all four pinned extended fixture cases reproduce the pinned
+  original-calendar MSRE diagnostics bit-exactly. The 16 public tables
+  (with the pinned `D9_g_bis` alias of `D9bis`) come back as `ts` —
+  `D2`/`D4` on the cropped span — and the D9 MSRE table arrives as a
+  per-phase `data.frame` with the count-weighted global ratio.
+- New native entry point `.native_x11_selection_pass` (requests in the
+  seasonal-plan vocabulary `stable`/`s3x1`/`s3x3`/`s3x5`/`s3x9`/`s3x15`/
+  `x11default`/`msr`, one per calendar period; `trend_length` 0 for the
+  pinned automatic selection; required sigma policy; `jdplus` or
+  `x11_five_year_cap` MSR iteration policy; horizons) with the internal
+  wrapper `native_x11_selection_pass()`. Decision records come back intact:
+  the four trend-stage records (status/length/ratio — the qualified records
+  carry a ratio only where the selection engaged, plus the always-computed
+  final `iCRatio`), the global-MSR stage with its bit-exact attempt trace,
+  and both resolved seasonal plans. Unsupported runs pass the explicit
+  `unsupported:<stage>` status straight through with records only — rkalos
+  reproduces no pinned degenerate choice. The nested selected-state `b`/`c`/`d`
+  keep the fixed-pass boundary shapes, so the records chain back into
+  `.native_x11_c_pass`/`.native_x11_d_pass` (tested: bit-exact reproduction
+  of the pre-D-final stages, with the all-MSR seas fill only reaching the
+  nested `D10bis`, exactly as the pinned bytecode semantics describe).
+- `test-native-x11-dpass.R`: all 22 pinned fixed additive D-pass cases
+  reproduce bit-exactly through R — 16 tables per case on their pinned
+  spans (NaN-aware), the extended inputs verified as hand-extensions of
+  their base cases with the pinned original first periods, the per-phase
+  MSRE evolutions/counts/ratios and global ratio, the D9 mask rule and its
+  count identity against the consumed C round, the nine additive identities
+  recomputed in R, determinism, input immutability, the accurate-policy
+  composition, the C-coupling rejections (policy, status, settings,
+  reference-series equality, coverage, malformed companion), the core's
+  validation errors and the wrapper's extended/cropped/original calendars,
+  decorated-companion chaining and named-filter paths (1,638 assertions).
+- `test-native-x11-selection.R`: all 15 pinned selection cases — the four
+  stage records per case against the pinned `selections.csv` (including the
+  inline `ratio >= 1 → period+1` contrast at B7 and the deliberate fixed-
+  mode "no ratio" convention), the engaged decisions and bit-exact attempt
+  traces against `msr.csv` (19-evaluation walk, exhausted and zero-iteration
+  windows, `no_history` markers mapped to zero-attempt statuses), the
+  `seasFilter` fill, `d9msriter` and B20-correction counts, the full 22-table
+  captured selected states of all 13 available cases, the two NaN controls as
+  `unsupported:trend-b7` records-only passthroughs, the five-year-cap
+  truncation of the 19-evaluation trace with the identical-prefix/divergent-
+  `D10bis` invariant, the fixed-chain reproductions, core argument validation
+  and the wrapper records/calendar paths (854 assertions).
+- Full suite after the additions: **275,664 assertions, 0 failures** across
+  all 43 files on the OpenMP lane; serial lane **275,660, 0 failures** from
+  the same `R CMD build` tarball with the `R_MAKEVARS_USER` probe override
+  (`nm` reports no `gomp` symbols) — the same four-assertion conditional
+  lane difference as before.
+- Upstream feedback for the Kalos maintainers from these two boundaries (the
+  four earlier items above stay verbatim; no contract files were touched):
+  - (S3) The S3 commit extended `X11CPass` with the `first_period` and
+    `reference_series` echoes that the D-pass coupling consumes — rkalos'
+    chained result objects carry those members in the C-pass result shape.
+    The contract should state that the pass structs' echo members are part
+    of the composition contract: the S2→S3 growth was a schema change for
+    any downstream C-result view, not just a new getter.
+  - (S3/S4) The selection fixture's `msr.csv` mixes kernel attempt traces
+    with `no_history` termination markers and standalone cross-check rows
+    for non-engaged cases, and its `final_filter`/`using_default` columns
+    restate the final decision on every row; spelling out the row-to-
+    `X11MsrAttempt` mapping in the fixture metadata would save the next
+    integrator from mis-comparing the attempt traces.
+  - (S4) Unsupported selection runs "keep the stage records", but the
+    records for stages past the first refused stage are default-constructed
+    (`fixed`, length 0, NaN ratio); the contract should say so, since only
+    the records up to and including the refused stage carry information.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

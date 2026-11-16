@@ -207,6 +207,9 @@ Rcpp::List native_x11_c_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP p
         Rcpp::_["lower_sigma"]=lower,Rcpp::_["upper_sigma"]=upper,
         Rcpp::_["initial_filters"]=resolved_initial,Rcpp::_["final_filters"]=resolved_final,
         Rcpp::_["tables"]=tables,Rcpp::_["round"]=correction_round(result.round),
+        // The pinned reference-series echo (S3): the exact series this C pass
+        // consumed, which the D pass coupling is checked against.
+        Rcpp::_["reference_series"]=values(result.reference_series),
         Rcpp::_["status"]=result.status,Rcpp::_["scope"]="fixed_additive_c_pass_only",
         Rcpp::_["backend"]="native");
 }

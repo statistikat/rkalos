@@ -1,0 +1,8 @@
+list(schema_version = 1L, captured_utc = "2026-11-16 10:07:45 UTC",
+    source_sha256 = c(`capture-x11-dpass.R` = "33717327b809142eaccd9e46d5da14d9ad9134a23444918e17aa51153c2f048c",
+    `x11-bpass-cases.R` = "f601040ce54cbd6a2dd4d24f1a62448ca5aa0f2ec2cd4f345785847e323ed00c",
+    tables.csv = "5259489f33e8db3a03d8d9663e27d51c258f5a573388884bab0c06a2731c64d7"
+    ), java = list(version = "21.0.11", vendor = "Ubuntu", runtime_version = "21.0.11+10-1-24.04.2-Ubuntu",
+        vm_name = "OpenJDK 64-Bit Server VM", architecture = "amd64",
+        oracle = "rjd3 3.9.0/3.9.1 pinned jars via rjd3jars classpath; X11Kernel composition X11BStep.process(series, ctx) + X11CStep.process(series, B20, ctx, cv) + X11DStep.process(series, C20, ctx, cv) with fixed per-phase SeasonalFilterOption arrays, fixed Henderson trendFilterLength, additive mode; extended cases set backcastHorizon/forecastHorizon with a hand-extended series and shifted firstPeriod; all public D getters D1..D13 (D9g is null in the fixed corrector mode), getD9msr, getSeasFilter, getD2drop and the Henderson lengths"),
+    R = "R version 4.5.3 (2026-03-11)", cases = 22L, public_scope = "Pinned X11DStep fixed additive D-pass tables only (D1, D2, D4, D5, D6, D7, D8, D9, D9bis, D9_g_bis, D10, D10bis, D11, D11bis, D12, D13, the D9 MSRE diagnostic table and the seasFilter echo) composed from the fixed additive B and C passes exactly like X11Kernel, at zero horizon and on four hand-extended calendars with context backcast/forecast horizons; the MSRE filter selection, automatic Henderson (getICRatio is diagnostic-only and not captured), cross-validation, the period-specific corrector (D9g), multiplicative modes and ARIMA-regression inputs are not claimed")

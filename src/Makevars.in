@@ -16,6 +16,7 @@ OBJECTS = RcppExports.o \
   rcpp_transforms.o \
   rcpp_x11_b_pass.o \
   rcpp_x11_c_pass.o \
+  rcpp_x11_d_pass.o \
   rcpp_x11_filters.o \
   rcpp_x11_initial.o \
   rcpp_x11_mean_endpoints.o \
@@ -27,6 +28,7 @@ OBJECTS = RcppExports.o \
   rcpp_x11_seasonal_endpoints.o \
   rcpp_x11_seasonal_plan.o \
   rcpp_x11_seasonal_processing.o \
+  rcpp_x11_selection_pass.o \
   rcpp_x11_sigma.o \
   rcpp_x11_table_support.o \
   rcpp_x11_trend_selection.o \
@@ -58,6 +60,7 @@ OBJECTS = RcppExports.o \
   kalos/src/vector_jacobian.o \
   kalos/src/x11_b_pass.o \
   kalos/src/x11_c_pass.o \
+  kalos/src/x11_d_pass.o \
   kalos/src/x11_filters.o \
   kalos/src/x11_initial.o \
   kalos/src/x11_mean_endpoints.o \
@@ -69,5 +72,6 @@ OBJECTS = RcppExports.o \
   kalos/src/x11_seasonal_endpoints.o \
   kalos/src/x11_seasonal_plan.o \
   kalos/src/x11_seasonal_processing.o \
+  kalos/src/x11_selection_pass.o \
   kalos/src/x11_sigma.o \
   kalos/src/x11_trend_selection.o

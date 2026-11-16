@@ -33,6 +33,8 @@ struct X11CCorrectionRound {
 // span). Missing flags mirror NaN values.
 struct X11CPass {
     std::size_t c2drop=0;
+    int first_period=0; // 1-based echo, checked by the D pass
+    MaskedSeries reference_series; // the pinned refSeries echo (NaN-carrying)
     MaskedSeries c1,c2,c4,c5,c5a,c6,c7,c9,c10,c10a,c11,c13,c17,c20;
     // The final-stage analysis on C13 (pinned IExtremeValuesCorrector state).
     X11CCorrectionRound round;

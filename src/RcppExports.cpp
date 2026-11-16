@@ -581,6 +581,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_x11_d_pass
+Rcpp::List native_x11_d_pass(SEXP values, SEXP frequency, SEXP start_period, SEXP policy, SEXP initial_filters, SEXP final_filters, SEXP trend_length, SEXP cpass, SEXP backcast, SEXP forecast);
+RcppExport SEXP _rkalos_native_x11_d_pass(SEXP valuesSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP policySEXP, SEXP initial_filtersSEXP, SEXP final_filtersSEXP, SEXP trend_lengthSEXP, SEXP cpassSEXP, SEXP backcastSEXP, SEXP forecastSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type frequency(frequencySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type start_period(start_periodSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type policy(policySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type initial_filters(initial_filtersSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type final_filters(final_filtersSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type trend_length(trend_lengthSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type cpass(cpassSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type backcast(backcastSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type forecast(forecastSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_x11_d_pass(values, frequency, start_period, policy, initial_filters, final_filters, trend_length, cpass, backcast, forecast));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_x11_filter_spec
 Rcpp::List native_x11_filter_spec(SEXP type, SEXP frequency, SEXP length);
 RcppExport SEXP _rkalos_native_x11_filter_spec(SEXP typeSEXP, SEXP frequencySEXP, SEXP lengthSEXP) {
@@ -807,6 +827,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_x11_selection_pass
+Rcpp::List native_x11_selection_pass(SEXP values, SEXP frequency, SEXP start_period, SEXP requests_vector, SEXP trend_length, SEXP policy, SEXP msr_policy, SEXP lower_sigma, SEXP upper_sigma, SEXP backcast, SEXP forecast);
+RcppExport SEXP _rkalos_native_x11_selection_pass(SEXP valuesSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP requests_vectorSEXP, SEXP trend_lengthSEXP, SEXP policySEXP, SEXP msr_policySEXP, SEXP lower_sigmaSEXP, SEXP upper_sigmaSEXP, SEXP backcastSEXP, SEXP forecastSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type frequency(frequencySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type start_period(start_periodSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type requests_vector(requests_vectorSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type trend_length(trend_lengthSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type policy(policySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type msr_policy(msr_policySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type lower_sigma(lower_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type upper_sigma(upper_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type backcast(backcastSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type forecast(forecastSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_x11_selection_pass(values, frequency, start_period, requests_vector, trend_length, policy, msr_policy, lower_sigma, upper_sigma, backcast, forecast));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_x11_sigma_weights
 Rcpp::List native_x11_sigma_weights(SEXP values, SEXP frequency, SEXP start_period, SEXP policy, SEXP backcasts, SEXP forecasts, SEXP exclude, SEXP lower_sigma, SEXP upper_sigma, SEXP multiplicative);
 RcppExport SEXP _rkalos_native_x11_sigma_weights(SEXP valuesSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP policySEXP, SEXP backcastsSEXP, SEXP forecastsSEXP, SEXP excludeSEXP, SEXP lower_sigmaSEXP, SEXP upper_sigmaSEXP, SEXP multiplicativeSEXP) {
@@ -890,6 +931,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_inverse_transform", (DL_FUNC) &_rkalos_native_inverse_transform, 2},
     {"_rkalos_native_x11_b_pass", (DL_FUNC) &_rkalos_native_x11_b_pass, 9},
     {"_rkalos_native_x11_c_pass", (DL_FUNC) &_rkalos_native_x11_c_pass, 10},
+    {"_rkalos_native_x11_d_pass", (DL_FUNC) &_rkalos_native_x11_d_pass, 10},
     {"_rkalos_native_x11_filter_spec", (DL_FUNC) &_rkalos_native_x11_filter_spec, 3},
     {"_rkalos_native_x11_filter", (DL_FUNC) &_rkalos_native_x11_filter, 4},
     {"_rkalos_native_x11_initial_additive", (DL_FUNC) &_rkalos_native_x11_initial_additive, 4},
@@ -906,6 +948,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_x11_seasonal_filter", (DL_FUNC) &_rkalos_native_x11_seasonal_filter, 3},
     {"_rkalos_native_x11_seasonal_plan", (DL_FUNC) &_rkalos_native_x11_seasonal_plan, 3},
     {"_rkalos_native_x11_seasonal_process", (DL_FUNC) &_rkalos_native_x11_seasonal_process, 5},
+    {"_rkalos_native_x11_selection_pass", (DL_FUNC) &_rkalos_native_x11_selection_pass, 11},
     {"_rkalos_native_x11_sigma_weights", (DL_FUNC) &_rkalos_native_x11_sigma_weights, 10},
     {"_rkalos_native_x11_trend_policy", (DL_FUNC) &_rkalos_native_x11_trend_policy, 3},
     {"_rkalos_native_x11_trend_select", (DL_FUNC) &_rkalos_native_x11_trend_select, 5},

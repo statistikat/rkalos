@@ -1,13 +1,13 @@
 #ifndef KALOS_DETAIL_X11_PINNED_HPP
 #define KALOS_DETAIL_X11_PINNED_HPP
 // Internal (detail) pinned-sequence machinery shared by the fixed additive
-// B and C passes of items 22b.4 S1/S2. These functions reproduce the pinned
-// JDemetra+ 3.9.0 X11 arithmetic row for row — the qualified public
+// B, C and D passes of items 22b.4 S1/S2/S3. These functions reproduce the
+// pinned JDemetra+ 3.9.0 X11 arithmetic row for row — the qualified public
 // primitives of items 22a/22b.2 document independent endpoint and mean
 // conventions and are deliberately not reused for the seasonal phases or the
 // Henderson endpoints. Nothing here is public API or stable across releases;
-// see docs/contracts/x11-bpass-contract.md and x11-cpass-contract.md for the
-// qualification evidence.
+// see docs/contracts/x11-bpass-contract.md, x11-cpass-contract.md and
+// x11-dpass-contract.md for the qualification evidence.
 #include "../numerics.hpp"
 #include "../parallel.hpp"
 #include "../x11_filters.hpp"
@@ -372,6 +372,157 @@ inline MaskedSeries process_pinned(const MaskedSeries& seq,int frequency,std::si
         for(std::size_t j=0;j<length;++j) {
             out.values[i+j*f]=result[j];
             out.missing[i+j*f]=std::isnan(result[j]);
+        }
+    });
+    return out;
+}
+// X11FilterFactory.makeSymmetricFilter(n): lag-indexed weights w[0..p],
+// lag 0 being the center; all weights are 1/n except the outer lag, which is
+// 0.5/n for even n. For odd n the factory's zero outer tap is trimmed by
+// SymmetricFilter (makeSymmetricFilter(7) has length 7), so p=(n-1)/2 there;
+// the even case has p=n/2. SymmetricFilter.apply(DataBlock,DataBlock)
+// accumulates in the pinned pair form over the radius p:
+// sum = w[0]x_i + SUM_{j=1..p} w[j](x_{i-j}+x_{i+j}).
+inline std::vector<double> pinned_ma_lags(int n) {
+    const auto p=static_cast<std::size_t>(n+1)/2;
+    std::vector<double> w(p+1);
+    const double c=1./static_cast<double>(n);
+    for(std::size_t j=0;j<p;++j)w[j]=c;
+    w[p]=(n%2==0?0.5:0.)/static_cast<double>(n);
+    if(n%2!=0) w.pop_back(); // SymmetricFilter drops the zero outer tap
+    return w;
+}
+// DoubleSeq.average(): plain sum over all values divided by the length.
+// Unlike DataBlock.average() this is NOT NaN-skipping: one missing value
+// poisons the mean, which is what the D-pass MSRE table pins.
+inline double pinned_plain_average(const std::vector<double>& values) {
+    double sum=0;
+    for(const auto value:values)sum=sum+value;
+    return sum/static_cast<double>(values.size());
+}
+// FilteredMeanEndPoints(ma).process over one stride block: both ends padded
+// with the plain averages of the first/last p block values, then the pinned
+// pair-form accumulation over the padded window (requires block.size()>=p).
+inline void pinned_filtered_mean(const std::vector<double>& block,
+        const std::vector<double>& w,std::vector<double>& out) {
+    const auto p=w.size()-1,m=block.size();
+    std::vector<double> padded(m+2*p,nan());
+    for(std::size_t j=0;j<m;++j)padded[p+j]=block[j];
+    const std::vector<double> head(block.begin(),block.begin()+p);
+    const std::vector<double> tail(block.end()-p,block.end());
+    const double left=pinned_plain_average(head),right=pinned_plain_average(tail);
+    for(std::size_t j=0;j<p;++j) { padded[j]=left; padded[m+p+j]=right; }
+    out.assign(m,nan());
+    for(std::size_t k=0;k<m;++k) {
+        const auto i=p+k;
+        auto value=padded[i]*w[0];
+        for(std::size_t j=1;j<=p;++j)
+            value=value+w[j]*(padded[i-j]+padded[i+j]);
+        out[k]=value;
+    }
+}
+// X11Utility.defaultMsrTable in additive mode over the span `x`: the pinned
+// MsrTable difference statistics, indexed per calendar phase (phase numbers
+// are absolute; `position` is the phase of the first row). The additive mode
+// takes the pinned plain-subtract branch of the decomposition switch — the
+// residual is x-mean with no +1 offset (that offset belongs to the other
+// decomposition modes and would quantize tiny residuals around 1.0) — and
+// the seasonal evolution is the differences of the filtered mean itself;
+// both accumulate |difference| in stride order and scale by the pinned
+// fis/cs lookup of MsrTable.of.
+inline void pinned_msr_table(const std::vector<double>& x,int frequency,
+        std::size_t position,std::vector<double>& ri,std::vector<double>& rs,
+        std::vector<std::int64_t>& counts) {
+    const auto f=static_cast<std::size_t>(frequency),m=x.size();
+    static const double ctab[]={1.,1.02584,1.01779,1.01383,1.,3.,1.55291,1.30095};
+    const auto fis=[](long n)->double {
+        if(n<2)return 1.;
+        if(n<6)return ctab[static_cast<std::size_t>(n)-2];
+        const double d=static_cast<double>(n);
+        return 12.247449*d/(73.239334+12.247449*static_cast<double>(n-6));
+    };
+    const auto cs=[](long n)->double {
+        if(n<2)return 1.;
+        if(n<6)return ctab[static_cast<std::size_t>(n)+2];
+        const double d=static_cast<double>(n);
+        return 1.732051*d/(8.485281+1.732051*static_cast<double>(n-6));
+    };
+    const auto w=pinned_ma_lags(7); // p=3 (zero outer tap trimmed)
+    std::vector<double> mean(m,nan());
+    for(std::size_t phase=0;phase<f;++phase) { // stride blocks by row phase
+        const std::size_t count=1+(m-1-phase)/f;
+        std::vector<double> block(count),filtered;
+        for(std::size_t j=0;j<count;++j)block[j]=x[phase+j*f];
+        pinned_filtered_mean(block,w,filtered);
+        for(std::size_t j=0;j<count;++j)mean[phase+j*f]=filtered[j];
+    }
+    std::vector<double> residual(m);
+    for(std::size_t row=0;row<m;++row)residual[row]=x[row]-mean[row];
+    ri.assign(f,nan());rs.assign(f,nan());counts.assign(f,0);
+    for(std::size_t phase=0;phase<f;++phase) {
+        const auto start=(phase+f-position)%f; // pinned (phase-position+f)%f
+        double s_ri=0,s_rs=0;
+        long n=0;
+        // The pinned MsrTable.of takes the MEAN series (not x) against the
+        // residual: seasonal evolutions measure the smoothed series.
+        for(std::size_t i1=start,i2=start+f;i2<m;i1=i2,i2+=f,++n) {
+            s_ri=s_ri+std::fabs(residual[i2]-residual[i1]);
+            s_rs=s_rs+std::fabs(mean[i2]-mean[i1]);
+        }
+        ri[phase]=(s_ri/static_cast<double>(n))*fis(n);
+        rs[phase]=(s_rs/static_cast<double>(n))*cs(n);
+        counts[phase]=n;
+    }
+}
+// AutomaticHenderson.calcICR over one complete window: the pilot Henderson
+// filter of length period + 1 with the pinned symmetric weights applied to
+// the interior span only (the pinned NaN-filled table plus DataBlock.of view
+// leaves the outer `side` rows unwritten, so they never contribute), the
+// irregular as the aligned interior input minus the pilot, the explicit
+// extensions dropped from both windows, and the ratio of the lag-1 mean
+// absolute changes of the irregular over the same statistic of the pilot,
+// multiplied by 3.0 for quarterly and 6.0 for biannual (pinned constants).
+// calcAbsMeanVariation divides the plain sum by length - 1 with no missing
+// handling: degenerate dropped windows reproduce the pinned division
+// outcomes (NaN from 0/0, signed zero from 0/-1) unchanged.
+inline double pinned_ic_ratio(const std::vector<double>& values,int frequency,
+        std::size_t backcast,std::size_t forecast) {
+    const auto f=static_cast<std::size_t>(frequency),n=values.size();
+    const auto length=static_cast<std::size_t>(frequency)+1; // odd: period is even
+    const auto side=length/2;
+    const auto w=pinned_trend_weights(static_cast<int>(length));
+    const auto m=n>2*side?n-2*side:0;
+    std::vector<double> pilot(m),irregular(m);
+    for(std::size_t row=0;row<m;++row) {
+        pilot[row]=anchored_dot(w,values.data()+row);
+        irregular[row]=values[side+row]-pilot[row];
+    }
+    // DoubleSeq.drop(backcast, forecast) = dropFirst then dropLast.
+    const auto first=std::min(backcast,m);
+    const auto rest=m-first;
+    const auto count=rest>forecast?rest-forecast:0;
+    double pilot_change=0,irregular_change=0;
+    for(std::size_t row=1;row<count;++row) {
+        pilot_change=pilot_change+std::fabs(pilot[first+row]-pilot[first+row-1]);
+        irregular_change=irregular_change+std::fabs(irregular[first+row]-irregular[first+row-1]);
+    }
+    const auto divisor=static_cast<double>(count)-1.; // calcAbsMeanVariation's n - 1
+    auto ratio=(irregular_change/divisor)/(pilot_change/divisor);
+    if(f==4)ratio=ratio*3.;
+    else if(f==2)ratio=ratio*6.;
+    return ratio;
+}
+// The D9 mask pair of X11DStep.d9Step with the pinned dcmpg semantics: a NaN
+// difference keeps the D9bis value.
+inline MaskedSeries d9_mask_pinned(const MaskedSeries& d9bis,const MaskedSeries& d8,
+        const Interrupt& interrupt) {
+    const auto n=d9bis.values.size();
+    MaskedSeries out;out.values.assign(n,nan());out.missing.assign(n,1);
+    parallel_for(n,1,interrupt,[&](std::size_t row) {
+        const auto difference=std::fabs(d9bis.values[row]-d8.values[row]);
+        if(std::isnan(difference)||difference>=1e-9) {
+            out.values[row]=d9bis.values[row];
+            out.missing[row]=std::isnan(d9bis.values[row]);
         }
     });
     return out;
