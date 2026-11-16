@@ -125,6 +125,10 @@
     .Call(`_rkalos_native_inverse_transform`, values, transformation)
 }
 
+.native_x11_b_pass <- function(values, frequency, start_period, policy, initial_filters, final_filters, trend_length, lower_sigma, upper_sigma) {
+    .Call(`_rkalos_native_x11_b_pass`, values, frequency, start_period, policy, initial_filters, final_filters, trend_length, lower_sigma, upper_sigma)
+}
+
 .native_x11_filter_spec <- function(type, frequency, length = NULL) {
     .Call(`_rkalos_native_x11_filter_spec`, type, frequency, length)
 }

@@ -542,6 +542,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_x11_b_pass
+Rcpp::List native_x11_b_pass(SEXP values, SEXP frequency, SEXP start_period, SEXP policy, SEXP initial_filters, SEXP final_filters, SEXP trend_length, SEXP lower_sigma, SEXP upper_sigma);
+RcppExport SEXP _rkalos_native_x11_b_pass(SEXP valuesSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP policySEXP, SEXP initial_filtersSEXP, SEXP final_filtersSEXP, SEXP trend_lengthSEXP, SEXP lower_sigmaSEXP, SEXP upper_sigmaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type frequency(frequencySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type start_period(start_periodSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type policy(policySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type initial_filters(initial_filtersSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type final_filters(final_filtersSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type trend_length(trend_lengthSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type lower_sigma(lower_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type upper_sigma(upper_sigmaSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_x11_b_pass(values, frequency, start_period, policy, initial_filters, final_filters, trend_length, lower_sigma, upper_sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_x11_filter_spec
 Rcpp::List native_x11_filter_spec(SEXP type, SEXP frequency, SEXP length);
 RcppExport SEXP _rkalos_native_x11_filter_spec(SEXP typeSEXP, SEXP frequencySEXP, SEXP lengthSEXP) {
@@ -849,6 +868,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_arma_likelihood", (DL_FUNC) &_rkalos_native_arma_likelihood, 8},
     {"_rkalos_native_transform", (DL_FUNC) &_rkalos_native_transform, 2},
     {"_rkalos_native_inverse_transform", (DL_FUNC) &_rkalos_native_inverse_transform, 2},
+    {"_rkalos_native_x11_b_pass", (DL_FUNC) &_rkalos_native_x11_b_pass, 9},
     {"_rkalos_native_x11_filter_spec", (DL_FUNC) &_rkalos_native_x11_filter_spec, 3},
     {"_rkalos_native_x11_filter", (DL_FUNC) &_rkalos_native_x11_filter, 4},
     {"_rkalos_native_x11_initial_additive", (DL_FUNC) &_rkalos_native_x11_initial_additive, 4},

@@ -296,6 +296,53 @@ lanes), re-synced, re-qualified here.
   tarball with the `R_MAKEVARS_USER` probe override (0 warnings,
   `compiled = FALSE`, no `omp_*` symbols).
 
+## Core integration checkpoint and B pass at the R boundary — 2026-11-16
+
+- The pin advanced to `16f27859896cc2c2faae69e72e7c24e088f93153` (via
+  `tools/sync-core.py`, `--verify` clean offline): one core commit,
+  `16f2785` "Qualify the complete fixed additive B pass (22b.4 S1)". The lock
+  delta was verified from the diff: 88→90 core files (added
+  `src/x11_b_pass.cpp` and `include/kalos/x11_b_pass.hpp`), 132→138 fixture
+  files (`native/x11-bpass-cases.R` plus the five `native/x11-bpass/` files);
+  only four pre-existing hashes changed (commit, source manifest,
+  `CMakeLists.txt`, `revision.hpp`). The snapshot matches the core's own
+  source manifest exactly: every `add_library` translation unit,
+  `x11_b_pass.cpp` included, is present in `src/kalos`.
+- New native entry point `.native_x11_b_pass` (input, frequency, start period,
+  explicit `legacy`/`accurate` policy, fixed per-phase initial and final
+  seasonal requests, fixed Henderson length, sigma limits) with the internal
+  wrapper `native_x11_b_pass()` for ts-domain handling: the 19 pinned member
+  tables come back as `ts` on their original calendars (B2..B4g on the
+  cropped span via `.native_time_domain`, as in the initial-table wrapper),
+  named per-phase filters align by calendar period, and the correction
+  history carries 1-based analysis rows with analysis periods plus
+  row-basis/available-row provenance. The policy argument has **no default**.
+  Neither entry point is exported; `rcpp_x11_b_pass`/`x11_b_pass` were added
+  to the `Makevars(.in)/(.win.in)` object lists and the Rcpp registration was
+  regenerated (additive-only diff).
+  Boundary notes: the 20th public table (B9d) is not a struct member but the
+  second round's detection series, so the wrapper exposes 19 member tables
+  plus three rounds carrying detection, analysis position, policy, sigma
+  weights, replacements, correction factors and replacement counts — the
+  final round's sigma weights and correction factors are exactly the pinned
+  B17 and B20. The core's validation vocabulary (monthly/quarterly only,
+  in-range first period, odd Henderson length ≥ 5, span gates, per-period
+  request support) passes through unchanged.
+- `test-native-x11-bpass.R`: all 18 pinned fixed additive B-pass cases
+  reproduce bit-exactly through R under the legacy policy — 20 tables per
+  case on their pinned spans (NaN-aware), correction-round policies, pinned
+  analysis positions, replacement counts cross-checked against the B4/B9
+  correction tables, round-3 flagged-row counts against B17, the detection
+  and B17/B20 correction-history linkages, the additive composition
+  identities recomputed in R, determinism, input immutability, the
+  accurate-policy runs, the wrapper calendar/named-filter/plain-vector paths
+  and the core's validation errors (1,395 assertions).
+- Full suite after the addition: **272,048 assertions, 0 failures** across all
+  40 files on the OpenMP lane; serial lane **272,044, 0 failures** — the same
+  four-assertion conditional lane difference as before. The serial lane was
+  installed from a fresh `R CMD build` tarball with the `R_MAKEVARS_USER`
+  probe override (`nm` reports no `gomp` symbols).
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay
