@@ -5,7 +5,9 @@
 // (filters, seasonal processing, normalization) and 22b.3a/3b (sigma weights
 // with an explicit required policy, replacements and correction factors),
 // with the pinned fixed Henderson trend filter (local-polynomial weights and
-// mmsre asymmetric endpoints) reproduced file-locally.
+// mmsre asymmetric endpoints) and the pinned seasonal processing conventions
+// reproduced in the internal detail/x11_pinned.hpp machinery shared with the
+// C pass (item 22b.4 S2).
 // See docs/contracts/x11-bpass-contract.md.
 // The C/D passes, automatic filter choice, cross-validation, multiplicative
 // and non-seasonal modes, ARIMA-regression inputs and the pinned average
@@ -38,6 +40,7 @@ struct X11BCorrectionRound {
 // correction factors. Missing flags mirror NaN values.
 struct X11BPass {
     std::size_t b2drop=0;
+    int first_period=0; // 1-based echo, checked by the C pass
     MaskedSeries b1,b2,b3,b4,b4a,b4anorm,b4d,b4g,b5,b6,b7,b8,b9,b9g,b10,b11,
         b13,b17,b20;
     // Rounds for the detection series b4d, b9d and b13 in pinned order.

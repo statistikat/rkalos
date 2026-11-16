@@ -343,6 +343,77 @@ lanes), re-synced, re-qualified here.
   installed from a fresh `R CMD build` tarball with the `R_MAKEVARS_USER`
   probe override (`nm` reports no `gomp` symbols).
 
+## Core integration checkpoint and C pass at the R boundary — 2026-11-16
+
+- The pin advanced to `7e8e38dad6d458e5a2827c6feca8dcf3c9326e80` (via
+  `tools/sync-core.py`, `--verify` clean offline): one core commit, `7e8e38d`
+  "Qualify the complete fixed additive C pass (22b.4 S2)". The lock delta was
+  verified from the diff: 90→93 core files (added `src/x11_c_pass.cpp`,
+  `include/kalos/x11_c_pass.hpp` and the new shared internal header
+  `include/kalos/detail/x11_pinned.hpp`, which the S2 commit factored out of
+  the B pass and which the manifest does export into the snapshot), 138→143
+  fixture files (the five `native/x11-cpass/` files); six pre-existing hashes
+  changed (commit, source manifest, `CMakeLists.txt`, `revision.hpp`,
+  `x11_b_pass.hpp`, `x11_b_pass.cpp` — the S2 commit reworked the B-pass
+  sources onto the shared header). The snapshot matches the core's own source
+  manifest exactly.
+- New native entry point `.native_x11_c_pass` (input, frequency, start period,
+  explicit `legacy`/`accurate` policy, fixed per-phase initial and final
+  seasonal requests, fixed Henderson length, **the required B-pass companion**,
+  sigma limits) with the internal wrapper `native_x11_c_pass()`. Design
+  decision on the companion: the wrapper takes the caller's finished
+  `native_x11_b_pass()` result object and rebuilds the pinned
+  `kalos::X11BPass` from it faithfully (NA marks the pinned missing flags,
+  1-based analysis rows back to the 0-based core convention) instead of
+  silently recomputing the B pass. Recomputing would double the cost and
+  could paper over a stale or mismatched B result; passing the caller's object
+  through makes the pinned core's own coupling errors fire exactly as in the
+  pinned `X11Kernel` composition (completed-status, setting-echo, round- and
+  sigma-policy match, B20 coverage, B1-equals-input). The 14 pinned C tables
+  come back as `ts` on their original calendars, `C2`/`C4`/`C5a` on the
+  cropped span (length n−2·`c2drop`, `c2drop` = frequency/2) and every other
+  table on the full span, with the final-stage C13 correction round (analysis
+  position, period, C13/C17/C20 linkage) and row-basis/available-row
+  provenance. The policy argument has **no default**; neither entry point is
+  exported; `rcpp_x11_c_pass`/`x11_c_pass` were added to the
+  `Makevars(.in)/(.win.in)` object lists and the Rcpp registration was
+  regenerated (additive-only diff).
+- `test-native-x11-cpass.R`: all 18 pinned fixed additive C-pass cases
+  reproduce bit-exactly through R under the legacy policy — 14 tables per
+  case on their pinned spans (NaN-aware), echoed settings and `c2drop`, the
+  pinned flagged/corrected row counts, the round policy, position and
+  C13/C17/C20 linkages, the additive composition identities recomputed exactly
+  in R (C1 = Y − B20, C4 = crop(C1) − C2, C6 = C1 − C5, C9 = C1 − C7,
+  C11 = Y − C10, C13 = C11 − C7), determinism, input immutability, the
+  accurate-policy composition, the B-coupling rejections (mismatched round
+  policy, broken status, altered B1 series, non-covering B companion, malformed
+  companion object), the core's validation errors and the wrapper
+  calendar/named-filter/plain-vector/missing-companion paths
+  (1,124 assertions).
+- Full suite after the addition: **273,172 assertions, 0 failures** across all
+  41 files on the OpenMP lane; serial lane **273,168, 0 failures** from the
+  same `R CMD build` tarball with the `R_MAKEVARS_USER` probe override — the
+  same four-assertion conditional lane difference as before.
+- Upstream feedback for the Kalos maintainers (recorded here so the milestone
+  report carries it; no contract files were touched):
+  - (S1) The public B view lists 20 tables but `X11BPass` holds 19 members —
+    B9d lives only as the second round's `detection` series (rounds pinned in
+    b4d, b9d, b13 order); the contract should state that mapping explicitly.
+  - (S1) B17/B20 are bit-identical duplicates of the final round's sigma
+    weights and `replacements.correction_factors` — the replacement values
+    themselves exist only in the round history — so the contract should say
+    plainly that B20 holds correction *factors*, not replacements.
+  - (S1) Gate ordering: the quarterly "three annual radii plus one cycle"
+    threshold (n ≥ 10) is shadowed by the trend gate (n ≥ trend_length) for
+    every quarterly request with `trend_length > 10`, including the pinned
+    fixture default of 13, so that message is only reachable with
+    `trend_length ≤ 9`; the monthly threshold (n ≥ 30) surfaces naturally.
+  - (S2) The cpass fixture's `inputs.csv` is bit-identical to the bpass
+    fixture's (verified with `cmp` against the pinned tree) — the same 18
+    series and case ids — so the cpass cases replay directly on the bpass
+    case list (rkalos reuses `native/x11-bpass-cases.R`); a note in the
+    fixture metadata would save integrators from building a second loader.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

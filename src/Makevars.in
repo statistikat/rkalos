@@ -15,6 +15,7 @@ OBJECTS = RcppExports.o \
   rcpp_state_space.o \
   rcpp_transforms.o \
   rcpp_x11_b_pass.o \
+  rcpp_x11_c_pass.o \
   rcpp_x11_filters.o \
   rcpp_x11_initial.o \
   rcpp_x11_mean_endpoints.o \
@@ -56,6 +57,7 @@ OBJECTS = RcppExports.o \
   kalos/src/transforms.o \
   kalos/src/vector_jacobian.o \
   kalos/src/x11_b_pass.o \
+  kalos/src/x11_c_pass.o \
   kalos/src/x11_filters.o \
   kalos/src/x11_initial.o \
   kalos/src/x11_mean_endpoints.o \
