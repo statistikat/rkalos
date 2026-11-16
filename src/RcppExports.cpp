@@ -696,6 +696,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_x11_replacements
+Rcpp::List native_x11_replacements(SEXP values, SEXP frequency, SEXP weights, SEXP backcasts, SEXP forecasts, SEXP exclude, SEXP multiplicative);
+RcppExport SEXP _rkalos_native_x11_replacements(SEXP valuesSEXP, SEXP frequencySEXP, SEXP weightsSEXP, SEXP backcastsSEXP, SEXP forecastsSEXP, SEXP excludeSEXP, SEXP multiplicativeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type frequency(frequencySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type backcasts(backcastsSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type forecasts(forecastsSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type exclude(excludeSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type multiplicative(multiplicativeSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_x11_replacements(values, frequency, weights, backcasts, forecasts, exclude, multiplicative));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_x11_seasonal_spec
 Rcpp::List native_x11_seasonal_spec(SEXP type, SEXP frequency, SEXP available, SEXP side);
 RcppExport SEXP _rkalos_native_x11_seasonal_spec(SEXP typeSEXP, SEXP frequencySEXP, SEXP availableSEXP, SEXP sideSEXP) {
@@ -748,6 +765,26 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< SEXP >::type filters(filtersSEXP);
     Rcpp::traits::input_parameter< SEXP >::type short_series(short_seriesSEXP);
     rcpp_result_gen = Rcpp::wrap(native_x11_seasonal_process(values, frequency, start_period, filters, short_series));
+    return rcpp_result_gen;
+END_RCPP
+}
+// native_x11_sigma_weights
+Rcpp::List native_x11_sigma_weights(SEXP values, SEXP frequency, SEXP start_period, SEXP policy, SEXP backcasts, SEXP forecasts, SEXP exclude, SEXP lower_sigma, SEXP upper_sigma, SEXP multiplicative);
+RcppExport SEXP _rkalos_native_x11_sigma_weights(SEXP valuesSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP policySEXP, SEXP backcastsSEXP, SEXP forecastsSEXP, SEXP excludeSEXP, SEXP lower_sigmaSEXP, SEXP upper_sigmaSEXP, SEXP multiplicativeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type frequency(frequencySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type start_period(start_periodSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type policy(policySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type backcasts(backcastsSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type forecasts(forecastsSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type exclude(excludeSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type lower_sigma(lower_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type upper_sigma(upper_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type multiplicative(multiplicativeSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_x11_sigma_weights(values, frequency, start_period, policy, backcasts, forecasts, exclude, lower_sigma, upper_sigma, multiplicative));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -823,10 +860,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_x11_musgrave_spec", (DL_FUNC) &_rkalos_native_x11_musgrave_spec, 5},
     {"_rkalos_native_x11_musgrave_filter", (DL_FUNC) &_rkalos_native_x11_musgrave_filter, 4},
     {"_rkalos_native_x11_seasonal_normalize", (DL_FUNC) &_rkalos_native_x11_seasonal_normalize, 5},
+    {"_rkalos_native_x11_replacements", (DL_FUNC) &_rkalos_native_x11_replacements, 7},
     {"_rkalos_native_x11_seasonal_spec", (DL_FUNC) &_rkalos_native_x11_seasonal_spec, 4},
     {"_rkalos_native_x11_seasonal_filter", (DL_FUNC) &_rkalos_native_x11_seasonal_filter, 3},
     {"_rkalos_native_x11_seasonal_plan", (DL_FUNC) &_rkalos_native_x11_seasonal_plan, 3},
     {"_rkalos_native_x11_seasonal_process", (DL_FUNC) &_rkalos_native_x11_seasonal_process, 5},
+    {"_rkalos_native_x11_sigma_weights", (DL_FUNC) &_rkalos_native_x11_sigma_weights, 10},
     {"_rkalos_native_x11_trend_policy", (DL_FUNC) &_rkalos_native_x11_trend_policy, 3},
     {"_rkalos_native_x11_trend_select", (DL_FUNC) &_rkalos_native_x11_trend_select, 5},
     {NULL, NULL, 0}

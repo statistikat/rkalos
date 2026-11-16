@@ -263,6 +263,33 @@ lanes), re-synced, re-qualified here.
 - pykalos advanced to the same pin; its wheel rebuilt warning-free and smoke-verified
   (`core_version()` reports `cd004b08…`).
 
+## Item 22b.3a/3b at the R boundary — 2026-11-16
+
+- New native entry points `.native_x11_sigma_weights` (input, frequency, start
+  period, explicit `legacy`/`accurate` policy, projection counts and exclusion,
+  sigma limits, mode) and `.native_x11_replacements` (input, frequency, final
+  weights, projection handling, mode), with internal R wrappers
+  `native_x11_sigma_weights()`/`native_x11_replacements()` for ts-domain
+  handling, 1-based window/exclusion rows and NA-padded neighbor positions.
+  The policy argument has **no default**: which sigma rule becomes the product
+  default remains an open Kalos maintainer decision, so nothing is promoted.
+  Neither entry point is exported yet; the objects were added to the
+  `Makevars(.in)/(.win.in)` object lists (the two new core translation units
+  were synced but not yet compiled).
+- `test-native-x11-sigma.R`: all 125 pinned JDemetra cases reproduce bit-exactly
+  through R under the legacy policy (final and first-pass weights, both
+  dispersion-window sets, pass counts, exclusion sets, per-row states), with
+  recomputation determinism, state/weight consistency and the accurate-policy
+  invariants (finite, in-range, masked rows weight one, no legacy cutoff state).
+- `test-native-x11-replacement.R`: all 22 pinned cases reproduce bit-exactly
+  including the 22b.3a→3b chain (the computed legacy weights equal the fixture
+  weights), both projection-masking captures (`mode` 0/1), neighbor provenance
+  and counts, period averages, correction factors, the corrected series and the
+  apply-corrections identity, fallback counting, validation errors and
+  wrapper output shapes.
+- Full suite after the addition: **270,653 assertions, 0 failures** across all
+  39 files on the OpenMP lane; serial lane recorded below.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

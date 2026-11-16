@@ -169,6 +169,10 @@
     .Call(`_rkalos_native_x11_seasonal_normalize`, input, frequency, first_period, filters, extend)
 }
 
+.native_x11_replacements <- function(values, frequency, weights, backcasts, forecasts, exclude, multiplicative) {
+    .Call(`_rkalos_native_x11_replacements`, values, frequency, weights, backcasts, forecasts, exclude, multiplicative)
+}
+
 .native_x11_seasonal_spec <- function(type, frequency, available, side) {
     .Call(`_rkalos_native_x11_seasonal_spec`, type, frequency, available, side)
 }
@@ -183,6 +187,10 @@
 
 .native_x11_seasonal_process <- function(values, frequency, start_period, filters, short_series) {
     .Call(`_rkalos_native_x11_seasonal_process`, values, frequency, start_period, filters, short_series)
+}
+
+.native_x11_sigma_weights <- function(values, frequency, start_period, policy, backcasts, forecasts, exclude, lower_sigma, upper_sigma, multiplicative) {
+    .Call(`_rkalos_native_x11_sigma_weights`, values, frequency, start_period, policy, backcasts, forecasts, exclude, lower_sigma, upper_sigma, multiplicative)
 }
 
 .native_x11_trend_policy <- function(frequency, ic_ratio, length) {

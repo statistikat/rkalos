@@ -21,9 +21,11 @@ OBJECTS = RcppExports.o \
   rcpp_x11_msr_selection.o \
   rcpp_x11_musgrave.o \
   rcpp_x11_normalization.o \
+  rcpp_x11_replacement.o \
   rcpp_x11_seasonal_endpoints.o \
   rcpp_x11_seasonal_plan.o \
   rcpp_x11_seasonal_processing.o \
+  rcpp_x11_sigma.o \
   rcpp_x11_table_support.o \
   rcpp_x11_trend_selection.o \
   kalos/src/arma_identification.o \
@@ -59,7 +61,9 @@ OBJECTS = RcppExports.o \
   kalos/src/x11_msr_selection.o \
   kalos/src/x11_musgrave.o \
   kalos/src/x11_normalization.o \
+  kalos/src/x11_replacement.o \
   kalos/src/x11_seasonal_endpoints.o \
   kalos/src/x11_seasonal_plan.o \
   kalos/src/x11_seasonal_processing.o \
+  kalos/src/x11_sigma.o \
   kalos/src/x11_trend_selection.o
