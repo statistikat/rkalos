@@ -139,9 +139,15 @@ involved, so no Kalos round-trip is needed). Suggested replacement for line 18:
 ```r
   # Singular values are only determined to eps * sigma_max; sigma_min of a
   # near-redundant transfer has relative sensitivity kappa. Compare in the norm.
-  expect_lt(max(abs(result$singular_values - values)),
-            64 * .Machine$double.eps * max(values))
+  expect_true(max(abs(result$singular_values - values)) <
+                64 * .Machine$double.eps * max(values))
 ```
+
+`expect_true` rather than a comparison expectation: the installed tinytest (1.4.3)
+exports only `expect_equal`, `expect_identical`, `expect_true`, `expect_false`,
+`expect_null`, `expect_error`, `expect_inherits`, `expect_length`, `expect_match`,
+`expect_message`, `expect_stdout`, `expect_warning`, `expect_silent` and the
+`*_to_reference` variants — there is no `expect_lt`.
 
 Properties of that form on this fixture family: bound 2.0e-14, worst observed gap
 6.7e-17, so ~300x margin on Linux while still failing loudly on any real regression
@@ -153,6 +159,9 @@ form is preferred instead, derive it from the conditioning of the target:
   expect_equal(result$singular_values, values,
                tolerance = max(1e-13, 8 * max(values) / min(values) * .Machine$double.eps))
 ```
+
+Adoption: this recommendation was applied in `0696fb1`, after which
+`test-native-identification.R` runs 196/196 on this host with `DGESVD` unchanged.
 
 Leave alone: line 17/50 (matrix comparisons, passing), line 19 (absolute ratio
 slack, passing and structurally safe), and lines 21-22 (status classification:
