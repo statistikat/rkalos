@@ -170,24 +170,37 @@ local({
       'unsupported:x13 fit fixed seasonal requests only',info='seasonal guard first')
     expect_identical(call(trend=0L)$status,
       'unsupported:x13 fit fixed Henderson trend length')
-    expect_identical(call(trend=0L,sigma=NULL)$status,
-      'unsupported:x13 fit fixed Henderson trend length',info='trend guard before sigma')
-    expect_identical(call(forecast=6L,sigma=NULL)$status,
-      'unsupported:x13 fit requires zero horizons',info='horizon guard before sigma')
+    expect_identical(call(trend=0L)$status,
+      'unsupported:x13 fit fixed Henderson trend length')
     expect_identical(call(backcast=-2L)$status,
       'unsupported:x13 fit requires zero horizons',info='negative horizons too')
-    # The REQUIRED sigma policy has no default anywhere: NULL answers the
-    # pinned fail-closed status, it never stops in R and never picks a rule.
-    no_sig<-tryCatch(call(sigma=NULL),error=function(e) e)
-    expect_false(inherits(no_sig,'error'),info='NULL sigma is the pinned refusal, not an R stop')
-    expect_identical(no_sig$status,'unsupported:x13 fit requires an explicit sigma policy')
-    expect_false(no_sig$sigma_set);expect_null(no_sig$sigma)
-    expect_null(no_sig$preadjustment,info='refused before the preadjust')
-    expect_true(is.character(no_sig$mode_forcing)&&nzchar(no_sig$mode_forcing))
-    # The raw entry takes the NULL through unchanged as well.
+    # The maintainer decision of 2026-11-17: the wrapper applies the product
+    # default "legacy" to NULL/omitted sigma — bit-identical to explicit legacy.
+    no_sig<-call(sigma=NULL)
+    expect_identical(no_sig$status,'available',info='NULL sigma gets the legacy default')
+    expect_true(no_sig$sigma_set);expect_identical(no_sig$sigma,'legacy')
+    explicit<-call(sigma='legacy')
+    for(nm in c('finalSA','finalTrend','finalIrregular'))
+      expect_true(bits(no_sig[[nm]],explicit[[nm]]),info=paste('legacy default is explicit legacy:',nm))
+    for(nm in c('d10','d11','d12','d13','c17'))
+      expect_true(bits(no_sig$results[[nm]],explicit$results[[nm]]),
+        info=paste('legacy default results equal:',nm))
+    expect_identical(no_sig$preadjustment$status,'available')
+    # The core keeps its explicitness contract: through the RAW entry a NULL
+    # policy still answers the pinned fail-closed status, and the core guard
+    # order (seasonal, trend, horizons, sigma) keeps judging it last.
     expect_identical(raw(v,va,FALSE,12L,1L,as.character(req),5L,NULL,1.5,2.5,
       'jdplus','additive',0L,0L)$status,
       'unsupported:x13 fit requires an explicit sigma policy')
+    expect_identical(raw(v,va,FALSE,12L,1L,as.character(req),0L,NULL,1.5,2.5,
+      'jdplus','additive',0L,0L)$status,
+      'unsupported:x13 fit fixed Henderson trend length',info='trend guard before sigma')
+    expect_identical(raw(v,va,FALSE,12L,1L,as.character(req),5L,NULL,1.5,2.5,
+      'jdplus','additive',0L,6L)$status,
+      'unsupported:x13 fit requires zero horizons',info='horizon guard before sigma')
+    expect_identical(raw(v,va,FALSE,12L,1L,rep('msr',12L),0L,NULL,1.5,2.5,
+      'jdplus','additive',0L,0L)$status,
+      'unsupported:x13 fit fixed seasonal requests only',info='seasonal guard first at the core')
   })
   # The X13Fast cross-capture of f_empty (docs: the same pinned run through
   # the X13Kernel export) is byte-identical to the tables the fit reproduces.
@@ -210,14 +223,14 @@ local({
     expect_true(is.list(rf))
     expect_identical(names(rf),c('schema_version','native_x13_fit_restricted',
       'fixed_coefficients_only','fixed_seasonal_requests_only','fixed_trend_length_only',
-      'sigma_policy_required','zero_horizon_only','monthly_only','frequency','modes',
+      'sigma_policy_default','zero_horizon_only','monthly_only','frequency','modes',
       'refusals','entry_points'))
     expect_true(rf$fixed_coefficients_only && rf$fixed_seasonal_requests_only &&
-      rf$fixed_trend_length_only && rf$sigma_policy_required && rf$zero_horizon_only &&
-      rf$monthly_only)
+      rf$fixed_trend_length_only && rf$zero_horizon_only && rf$monthly_only)
+    expect_identical(rf$sigma_policy_default,'legacy',info='maintainer 2026-11-17')
     expect_identical(rf$frequency,12L)
     expect_identical(rf$modes,c('additive','multiplicative','log_additive','pseudo_additive'))
-    expect_identical(rf$schema_version,1L)
+    expect_identical(rf$schema_version,2L)
     expect_true(grepl('restricted',c1$reason))
   })
 })

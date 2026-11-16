@@ -5,9 +5,14 @@
 # native_x11_c_pass() (or .native_x11_c_pass()) and passes it through for the
 # pinned coupling checks (status, setting echoes, round policy, reference-series
 # equality, C20 coverage); the C pass is never silently recomputed here. The
-# sigma policy must be stated explicitly ("legacy" or "accurate") and must
-# match the C pass; the D pass itself performs no extreme-value analysis, so
-# no sigma bounds are taken here. backcast/forecast are the pinned context
+# pinned kernel shares one sigma context across the passes, so an omitted
+# policy INHERITS from the C-pass companion's echo; an explicitly stated
+# policy is a cross-check of that echo, refused at the boundary on a mismatch.
+# Objects predating the companion's policy echo fall back to the maintainer
+# default "legacy" (Kalos decision of 2026-11-17: legacy, bit-exact against
+# the pinned DefaultExtremeValuesCorrector / JDemetra behavior, is the product
+# default); the D pass itself performs no extreme-value analysis, so no sigma
+# bounds are taken here. backcast/forecast are the pinned context horizons of
 # horizons of a hand-extended calendar: the tables run over the extended
 # series and the D9 MSRE diagnostic drops them onto the original calendar
 # (the row span [backcast+1, n-forecast]), exactly like the pinned context.
@@ -15,15 +20,17 @@
 # kernel shares one context); an explicitly stated mode only cross-checks
 # that echo. The MSRE filter selection, automatic Henderson choice,
 # cross-validation and multiplicative modes are not computed here.
-native_x11_d_pass <- function(series,policy,initial_filters,final_filters,trend_length,c,
+native_x11_d_pass <- function(series,policy=NULL,initial_filters,final_filters,trend_length,c,
     backcast=0,forecast=0,frequency=NULL,start_period=NULL,mode=NULL) {
-  if(missing(policy)||is.null(policy))
-    stop("The sigma weight policy ('legacy' or 'accurate') must be stated explicitly.",call.=FALSE)
   if(missing(initial_filters)||missing(final_filters)||missing(trend_length))
     stop("Fixed initial and final seasonal filter requests and the trend filter length must be stated explicitly.",call.=FALSE)
   if(missing(c)||is.null(c)||!is.list(c)||is.null(c$tables)||
      is.null(c$round)||!identical(c$type,"x11_c_pass"))
     stop("The D pass requires a C-pass result object from native_x11_c_pass().",call.=FALSE)
+  if(is.null(policy))policy<-if(is.null(c$policy))"legacy" else c$policy
+  else if(!is.null(c$policy)&&!identical(policy,c$policy))
+    stop("The D pass inherits its sigma weight policy from the C-pass result (",
+      c$policy,").",call.=FALSE)
   inherited<-if(is.null(c$mode))"additive" else c$mode
   if(!is.null(mode)&&!identical(mode,inherited))
     stop("The D pass inherits its decomposition mode from the C-pass result (",

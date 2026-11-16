@@ -11,10 +11,15 @@
 # only"), a fixed Henderson trend_length (an odd length >= 5; the automatic 0
 # answers "unsupported:x13 fit fixed Henderson trend length"), the pinned
 # fixed-path horizon domain backcast=forecast=0 (anything else answers
-# "unsupported:x13 fit requires zero horizons"), and a REQUIRED sigma policy:
-# NULL (or omitted) is passed through untouched — no default is ever applied
-# here — and the core answers "unsupported:x13 fit requires an explicit sigma
-# policy". Every refusal still echoes the full provenance of the request.
+# "unsupported:x13 fit requires zero horizons"), and the sigma policy: NULL
+# (or omitted) receives the maintainer default "legacy" — the Kalos decision
+# of 2026-11-17 promotes legacy (bit-exact against the pinned
+# DefaultExtremeValuesCorrector / JDemetra behavior) to the product default,
+# applied here at the interface, while the core keeps its explicitness
+# contract and the raw entry still answers the pinned "unsupported:x13 fit
+# requires an explicit sigma policy" for a missing policy. An explicitly
+# stated policy always wins. Every refusal still echoes the full provenance
+# of the request.
 # Estimation, missing values, the length-of-period transform, benchmarking,
 # diagnostics and the ARIMA route stay outside; capabilities() reports the
 # restricted_fit scope for callers to gate on.
@@ -23,6 +28,7 @@ native_x13_fit <- function(series,variables=list(),log=FALSE,seasonal,trend_leng
     upper_sigma=2.5,mode="additive",backcast=0,forecast=0) {
   if(missing(seasonal)||missing(trend_length))
     stop("The per-period seasonal requests and the fixed trend filter length must be stated explicitly.",call.=FALSE)
+  if(is.null(sigma))sigma<-"legacy" # the maintainer 2026-11-17 product default
   if(is.null(frequency)||is.null(start_period)) {
     span<-stats::tsp(series)
     if(is.null(span))stop("A plain numeric series needs explicit frequency and start_period.",call.=FALSE)

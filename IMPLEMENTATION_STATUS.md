@@ -749,6 +749,57 @@ lanes), re-synced, re-qualified here.
   (239 allocation + 636 fit), the same four-assertion conditional lane
   difference as before. No core-caused mismatch appeared at the new pin.
 
+## Maintainer sigma-rule default applied at the R interface — 2026-11-17
+
+- Kalos maintainer decision (2026-11-17): the X-11 sigma-rule product
+  default is **legacy** — bit-exact against the pinned
+  `DefaultExtremeValuesCorrector` / JDemetra behavior. The layering follows
+  the agreed split: the core keeps the policy explicit and still refuses a
+  missing policy (unchanged core contract, pin stays `2b93ab0`; the wording
+  here is rkalos-side until the core documents the decision, which it will
+  mirror when it lands), while rkalos applies the default at the R interface.
+  This is pure interface-layer work: no sync, no core change.
+- Defaulted entry points (the maintainer default applies when the policy is
+  omitted or `NULL`; an explicitly stated `"legacy"`/`"accurate"` always
+  wins, validated by the core verbatim; the raw `.native_*` entries are
+  unchanged and still demand an explicit policy):
+  `native_x11_sigma_weights()` (`policy = "legacy"`),
+  `native_x11_b_pass()` (`policy = "legacy"`),
+  `native_x11_selection_pass()` (`policy = "legacy"`) and
+  `native_x13_fit()` (`sigma = NULL` maps to `"legacy"`).
+- Inherited entry points (the pinned kernel shares one sigma context across
+  the passes, so these inherit rather than default): `native_x11_c_pass()`
+  and `native_x11_d_pass()` now take `policy = NULL` meaning INHERIT from
+  the B/C companion result's policy echo (the same mechanism as the
+  decomposition-mode echo); an explicitly stated policy is a cross-check of
+  that echo and a mismatch is refused at the boundary ("inherits its sigma
+  weight policy from the …-pass result"), since the core offers no
+  restatement surface. Objects predating the companion's policy echo fall
+  back to the maintainer default `"legacy"`.
+- `capabilities()`: `restricted_fit$sigma_policy_required = TRUE` is
+  replaced by `restricted_fit$sigma_policy_default = "legacy"` (the
+  restricted_fit block's own `schema_version` bumps 1L→2L to mark the
+  substitution); every other field keeps its meaning. The core-side
+  explicitness is preserved underneath and documented in the field comment.
+- Tests: the wrapper-level "policy must be stated explicitly" refusals in
+  the sigma/B/C/D/selection suites become legacy-default proofs — an
+  omitted-policy run must be bit-identical to the explicit-legacy run on the
+  same pinned fixture (plus the C/D echo-inheritance and mismatch-refusal
+  checks) — while the raw-entry refusals stay. In the fit suite the wrapper
+  `sigma = NULL` case asserts the default is applied (status `available`,
+  bit-identical tables to explicit legacy), the raw entry's verbatim
+  `unsupported:x13 fit requires an explicit sigma policy` stays, and the
+  core guard precedence with a missing policy (seasonal, trend, horizons,
+  sigma — sigma judged last) moved to the raw entry, where `NULL` still
+  reaches the core. The capabilities contract test pins the new field set
+  and block version.
+- Full suite after the change: **290,073 assertions, 0 failures** across all
+  48 files on the OpenMP lane; serial lane **290,069, 0 failures** from the
+  same `R CMD build` tarball with the `R_MAKEVARS_USER` probe override — the
+  M6 totals (290,057/290,053) plus the 16 net new assertions of the reworked
+  default/inherence checks (sigma +2, B +1, C +2, D +2, selection 0, fit +9),
+  the same four-assertion conditional lane difference as before.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

@@ -77,7 +77,10 @@ local({
   expect_identical(names(out$weights),as.character(seq_len(16)))
   expect_identical(ncol(out$windows),5L)
   expect_true(all(out$windows$start>=1&out$windows$start+out$windows$length-1<=16))
-  expect_error(pub(series),'stated explicitly')
+  dflt<-pub(series) # omitted policy: the maintainer 2026-11-17 legacy default
+  expect_identical(dflt$policy,'legacy',info='legacy default echo')
+  expect_true(bits(dflt$weights,out$weights),info='legacy default is the explicit legacy run')
+  expect_identical(dflt$windows,out$windows)
   expect_error(raw(as.numeric(1:12),4,1,'modern',0L,0L,FALSE,1.5,2.5,FALSE),'legacy or accurate')
   expect_error(raw(c(1,2,3,4,5,6,7,8,9,10,11,Inf),4,1,'legacy',0L,0L,FALSE,1.5,2.5,FALSE),
     'finite or missing')

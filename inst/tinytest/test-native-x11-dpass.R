@@ -178,5 +178,10 @@ local({
   expect_identical(plain$original_domain$start,c(2,1),info='plain-vector original calendar')
   expect_error(pubd(series,'legacy',num(ca$initial_filters),num(ca$final_filters),13L),
     'requires a C-pass result object')
-  expect_error(pubd(series),'stated explicitly')
+  dflt<-pubd(series,initial_filters=num(ca$initial_filters),final_filters=num(ca$final_filters),
+    trend_length=13L,c=cc,back=4,forecast=3)
+  expect_identical(dflt$policy,dd$policy,info='omitted policy inherits the C-pass echo')
+  expect_identical(dflt$tables,dd$tables,info='inherited policy is the explicit run')
+  expect_error(pubd(series,'accurate',num(ca$initial_filters),num(ca$final_filters),13L,cc,
+    back=4,forecast=3),'inherits its sigma weight policy')
 })

@@ -210,7 +210,8 @@ local({
   expect_false(bad$selected)
   expect_identical(bad$records_only,
     'the stage records and plans are complete; no tables are delivered for an unsupported run')
-  expect_error(pubs(series,rep('msr',4)),'stated explicitly')
+  dsel<-pubs(input_of('const-fixed'),rep('s3x5',4),trend_length=0L,frequency=4,start_period=1)
+  expect_identical(dsel,bad,info='omitted policy is the explicit legacy run')
   expect_error(pubs(series,policy='legacy',trend_length=13L),
     'requests and the trend filter length')
 })

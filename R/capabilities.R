@@ -12,12 +12,12 @@ capabilities <- function() {
                 status = "unimplemented", fit = FALSE,
                 native_x13_fit_restricted = TRUE,
                 restricted_fit = list(
-                  schema_version = 1L,
+                  schema_version = 2L,     # 2L: sigma_policy_required -> sigma_policy_default (maintainer 2026-11-17)
                   native_x13_fit_restricted = TRUE,
                   fixed_coefficients_only = TRUE,    # variables carry pinned coefficients; nothing is estimated
                   fixed_seasonal_requests_only = TRUE, # one pinned filter per period; x11default/msr are refused
                   fixed_trend_length_only = TRUE,    # odd Henderson >= 5; the automatic 0 is refused
-                  sigma_policy_required = TRUE,      # "legacy"|"accurate"; NULL answers the core's fail-closed status
+                  sigma_policy_default = "legacy",   # maintainer 2026-11-17: NULL/omitted sigma is "legacy" at this interface; the core keeps its explicitness contract (raw entries refuse a missing policy)
                   zero_horizon_only = TRUE,          # backcast = forecast = 0 is the only delivered domain
                   monthly_only = TRUE,               # qualified on the frequency-12 corpus only
                   frequency = 12L,

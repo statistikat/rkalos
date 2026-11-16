@@ -4,9 +4,11 @@
 # final step through the qualified comparison-ratio rule, and the global-MSR
 # D-final seasonal decision through the qualified band rule with the pinned
 # attempt loop, composed onto the fixed-pass arithmetic. The sigma policy
-# must be stated explicitly ("legacy" or "accurate"): which rule becomes the
-# product default remains an open Kalos maintainer decision, so this entry
-# point takes no default policy. trend_length is the fixed Henderson length
+# defaults to "legacy": the Kalos maintainer decision of 2026-11-17 promotes
+# legacy (bit-exact against the pinned DefaultExtremeValuesCorrector /
+# JDemetra behavior) to the product default, applied here at the interface;
+# an explicitly stated policy always wins and the raw entry point keeps the
+# core's explicitness contract. trend_length is the fixed Henderson length
 # or 0 for the pinned automatic selection. Requests are one seasonal request
 # per calendar period ("stable", "s3x1", "s3x3", "s3x5", "s3x9", "s3x15",
 # "x11default" or "msr", as in the seasonal-plan boundary). Nothing new is
@@ -15,11 +17,10 @@
 # "unsupported:<stage>" with records only. Cross-validation, multiplicative
 # and non-seasonal modes, the period-specific corrector and ARIMA-regression
 # inputs are not computed here.
-native_x11_selection_pass <- function(series,requests,policy,trend_length,
+native_x11_selection_pass <- function(series,requests,policy="legacy",trend_length,
     msr_policy="jdplus",frequency=NULL,start_period=NULL,lower_sigma=1.5,
     upper_sigma=2.5,backcast=0,forecast=0,mode="additive") {
-  if(missing(policy)||is.null(policy))
-    stop("The sigma weight policy ('legacy' or 'accurate') must be stated explicitly.",call.=FALSE)
+  if(is.null(policy))policy<-"legacy"
   if(missing(requests)||missing(trend_length))
     stop("The per-period seasonal requests and the trend filter length (0 for automatic) must be stated explicitly.",call.=FALSE)
   if(is.null(frequency)||is.null(start_period)) {

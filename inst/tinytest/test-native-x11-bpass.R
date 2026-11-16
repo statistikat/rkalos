@@ -109,8 +109,11 @@ local({
   expect_identical(stats::tsp(plain$tables$B1),c(1,1+35/4,4),info='plain-vector calendar')
   expect_true(all(vapply(names(out$tables),function(nm)
     bits(plain$tables[[nm]],as.numeric(out$tables[[nm]])),logical(1))),info='plain-vector values')
-  expect_error(pub(series),'stated explicitly')
-  expect_error(pub(series,'legacy',case$initial,case$final),'stated explicitly')
+  dflt<-pub(series,initial_filters=case$initial,final_filters=case$final,trend_length=13L)
+  expect_identical(dflt$policy,'legacy',info='legacy default echo')
+  expect_identical(dflt$tables,out$tables,info='omitted policy is the explicit legacy run')
+  expect_error(pub(series,initial_filters=case$initial,final_filters=case$final),
+    'stated explicitly') # the filters/trend guard is untouched
   expect_error(pub(series,'legacy',case$initial,case$final[-1],13L),'per calendar period')
   expect_error(raw(as.numeric(1:40),4,1,'modern',rep(5L,4),rep(9L,4),13,1.5,2.5),
     'legacy or accurate')

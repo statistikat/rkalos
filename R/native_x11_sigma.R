@@ -1,12 +1,14 @@
 # Item 22b.3a: moving five-year dispersion windows and two-pass sigma weights.
-# The policy must be stated explicitly ("legacy" or "accurate"): which rule
-# becomes the product default remains an open Kalos maintainer decision, so
-# neither is promoted here and this entry point takes no default policy.
-native_x11_sigma_weights <- function(series,policy,frequency=NULL,start_period=NULL,
+# The sigma weight policy defaults to "legacy": the Kalos maintainer decision
+# of 2026-11-17 promotes legacy (bit-exact against the pinned
+# DefaultExtremeValuesCorrector / JDemetra behavior) to the product default.
+# An explicitly stated policy ("legacy" or "accurate") always wins, and the
+# core keeps its explicitness contract: the raw entry point still refuses a
+# missing policy; applying the default is this interface layer's role.
+native_x11_sigma_weights <- function(series,policy="legacy",frequency=NULL,start_period=NULL,
     backcasts=0L,forecasts=0L,exclude_projections=FALSE,
     lower_sigma=1.5,upper_sigma=2.5,multiplicative=FALSE) {
-  if(missing(policy)||is.null(policy))
-    stop("The sigma weight policy ('legacy' or 'accurate') must be stated explicitly.",call.=FALSE)
+  if(is.null(policy))policy<-"legacy"
   if(!is.null(dim(series)))series<-as.vector(series)
   if(!is.numeric(series))series<-as.numeric(series)
   if(is.null(frequency)||is.null(start_period)) {

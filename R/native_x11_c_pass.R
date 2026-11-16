@@ -4,25 +4,32 @@
 # The B pass is a required argument: this wrapper takes the result object of
 # native_x11_b_pass() (or .native_x11_b_pass()) and passes it through for the
 # pinned coupling checks (status, setting echoes, round policies, series
-# equality); the B pass is never silently recomputed here. The sigma policy
-# must be stated explicitly ("legacy" or "accurate") and must match the B
-# pass: which rule becomes the product default remains an open Kalos
-# maintainer decision, so neither is promoted and this entry point takes no
-# default policy. The D pass, automatic filter choice, cross-validation and
-# multiplicative modes are not computed here.
-native_x11_c_pass <- function(series,policy,initial_filters,final_filters,trend_length,b,
+# equality); the B pass is never silently recomputed here. The pinned kernel
+# shares one sigma context across the passes, so an omitted policy INHERITS
+# from the B-pass companion's echo; an explicitly stated policy is a
+# cross-check of that echo, refused at the boundary on a mismatch (the core
+# has no restatement surface). Objects predating the companion's policy echo
+# fall back to the maintainer default "legacy" — the Kalos decision of
+# 2026-11-17 promotes legacy (bit-exact against the pinned
+# DefaultExtremeValuesCorrector / JDemetra behavior) to the product default —
+# and the raw entry point keeps the core's explicitness contract. The D pass,
+# automatic filter choice, cross-validation and multiplicative modes are not
+# computed here.
+native_x11_c_pass <- function(series,policy=NULL,initial_filters,final_filters,trend_length,b,
     frequency=NULL,start_period=NULL,lower_sigma=1.5,upper_sigma=2.5,mode=NULL) {
   # The pinned kernel runs the C step on the B pass's context, so the C pass
   # INHERITS its decomposition mode from the B-pass companion; an explicitly
   # stated mode is a cross-check of that echo, not a selection, and a
   # mismatch is refused at the boundary (the core has no mode argument here).
-  if(missing(policy)||is.null(policy))
-    stop("The sigma weight policy ('legacy' or 'accurate') must be stated explicitly.",call.=FALSE)
   if(missing(initial_filters)||missing(final_filters)||missing(trend_length))
     stop("Fixed initial and final seasonal filter requests and the trend filter length must be stated explicitly.",call.=FALSE)
   if(missing(b)||is.null(b)||!is.list(b)||is.null(b$tables)||
      is.null(b$rounds)||!identical(b$type,"x11_b_pass"))
     stop("The C pass requires a B-pass result object from native_x11_b_pass().",call.=FALSE)
+  if(is.null(policy))policy<-if(is.null(b$policy))"legacy" else b$policy
+  else if(!is.null(b$policy)&&!identical(policy,b$policy))
+    stop("The C pass inherits its sigma weight policy from the B-pass result (",
+      b$policy,").",call.=FALSE)
   inherited<-if(is.null(b$mode))"additive" else b$mode
   if(!is.null(mode)&&!identical(mode,inherited))
     stop("The C pass inherits its decomposition mode from the B-pass result (",

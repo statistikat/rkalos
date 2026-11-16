@@ -133,5 +133,9 @@ local({
   expect_identical(stats::tsp(plain$tables$C1),c(1,1+35/4,4),info='plain-vector calendar')
   expect_error(pub(series,'legacy',case$initial,case$final,13L),
     'requires a B-pass result object')
-  expect_error(pub(series),'stated explicitly')
+  dflt<-pub(series,initial_filters=case$initial,final_filters=case$final,trend_length=13L,b=bb)
+  expect_identical(dflt$policy,out$policy,info='omitted policy inherits the B-pass echo')
+  expect_identical(dflt$tables,out$tables,info='inherited policy is the explicit run')
+  expect_error(pub(series,'accurate',case$initial,case$final,13L,bb),
+    'inherits its sigma weight policy') # explicit statements cross-check the echo
 })

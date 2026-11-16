@@ -1,17 +1,18 @@
 # Item 22b.4 S1: the complete fixed additive B pass on a monthly or quarterly
 # series with fixed per-phase seasonal requests, a fixed Henderson trend filter
-# and three extreme-value correction rounds. The sigma policy must be stated
-# explicitly ("legacy" or "accurate"): which rule becomes the product default
-# remains an open Kalos maintainer decision, so neither is promoted here and
-# this entry point takes no default policy. The C/D passes, automatic filter
-# choice, cross-validation and multiplicative modes are not computed here.
-native_x11_b_pass <- function(series,policy,initial_filters,final_filters,trend_length,
+# and three extreme-value correction rounds. The sigma policy defaults to
+# "legacy" — the Kalos maintainer decision of 2026-11-17 promotes legacy
+# (bit-exact against the pinned DefaultExtremeValuesCorrector / JDemetra
+# behavior) to the product default; an explicitly stated policy always wins
+# and the raw entry point keeps the core's explicitness contract. The C/D
+# passes, automatic filter choice, cross-validation and multiplicative modes
+# are not computed here.
+native_x11_b_pass <- function(series,policy="legacy",initial_filters,final_filters,trend_length,
     frequency=NULL,start_period=NULL,lower_sigma=1.5,upper_sigma=2.5,mode="additive") {
   # The decomposition mode defaults to additive (the qualified default); the
   # core validates the four pinned names and propagates the pinned
   # non-positivity rejection for the multiplicative family verbatim.
-  if(missing(policy)||is.null(policy))
-    stop("The sigma weight policy ('legacy' or 'accurate') must be stated explicitly.",call.=FALSE)
+  if(is.null(policy))policy<-"legacy"
   if(missing(initial_filters)||missing(final_filters)||missing(trend_length))
     stop("Fixed initial and final seasonal filter requests and the trend filter length must be stated explicitly.",call.=FALSE)
   if(is.null(frequency)||is.null(start_period)) {
