@@ -102,6 +102,17 @@ SEXP named(SEXP object,const char* name,const char* label) {
             return VECTOR_ELT(object,i);
     throw std::invalid_argument(std::string(label)+": missing '"+name+"'");
 }
+// Optional variant: an absent field yields R_NilValue (used for the mode
+// echo, which pre-mode companion objects legitimately lack — those are
+// additive by construction).
+SEXP named_opt(SEXP object,const char* name) {
+    const SEXP names=Rf_getAttrib(object,R_NamesSymbol);
+    if(TYPEOF(object)!=VECSXP || TYPEOF(names)!=STRSXP)return R_NilValue;
+    for(R_xlen_t i=0;i<Rf_xlength(names);++i)
+        if(STRING_ELT(names,i)!=NA_STRING && std::string(name)==CHAR(STRING_ELT(names,i)))
+            return VECTOR_ELT(object,i);
+    return R_NilValue;
+}
 // The C pass consumes the caller's finished B-pass result; the pinned core
 // enforces the coupling (status, setting echoes, round policies, series
 // equality) on the reconstructed object, so the boundary only rebuilds it
@@ -129,6 +140,11 @@ kalos::X11BPass rebuild_b(SEXP value) {
     if(TYPEOF(status)!=STRSXP || Rf_xlength(status)!=1 || STRING_ELT(status,0)==NA_STRING)
         throw std::invalid_argument(shape);
     b.status=Rcpp::as<std::string>(status);
+    // The decomposition mode is carried by the B-pass result: the pinned
+    // kernel runs the C step on the same context, so the C mode is exactly
+    // the mode the caller's B pass reported (never restated here; an object
+    // predating the mode echo is additive by construction).
+    b.mode=kalos_x11_rcpp::parse_mode(named_opt(value,"mode"),"B-pass decomposition mode");
     b.trend_length=integer(named(value,"trend_length",shape),"B-pass trend filter length");
     b.initial_filters=requests(named(value,"initial_filters",shape),"B-pass initial filters");
     b.final_filters=requests(named(value,"final_filters",shape),"B-pass final filters");
@@ -210,6 +226,9 @@ Rcpp::List native_x11_c_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP p
         // The pinned reference-series echo (S3): the exact series this C pass
         // consumed, which the D pass coupling is checked against.
         Rcpp::_["reference_series"]=values(result.reference_series),
-        Rcpp::_["status"]=result.status,Rcpp::_["scope"]="fixed_additive_c_pass_only",
-        Rcpp::_["backend"]="native");
+        Rcpp::_["mode"]=kalos_x11_rcpp::mode_name(result.mode),
+        Rcpp::_["mode_source"]="inherited from the B-pass result",
+        Rcpp::_["status"]=result.status,
+        Rcpp::_["scope"]=std::string("fixed_")+kalos_x11_rcpp::mode_name(result.mode)
+            +"_c_pass_only",Rcpp::_["backend"]="native");
 }

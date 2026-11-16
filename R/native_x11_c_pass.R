@@ -11,7 +11,11 @@
 # default policy. The D pass, automatic filter choice, cross-validation and
 # multiplicative modes are not computed here.
 native_x11_c_pass <- function(series,policy,initial_filters,final_filters,trend_length,b,
-    frequency=NULL,start_period=NULL,lower_sigma=1.5,upper_sigma=2.5) {
+    frequency=NULL,start_period=NULL,lower_sigma=1.5,upper_sigma=2.5,mode=NULL) {
+  # The pinned kernel runs the C step on the B pass's context, so the C pass
+  # INHERITS its decomposition mode from the B-pass companion; an explicitly
+  # stated mode is a cross-check of that echo, not a selection, and a
+  # mismatch is refused at the boundary (the core has no mode argument here).
   if(missing(policy)||is.null(policy))
     stop("The sigma weight policy ('legacy' or 'accurate') must be stated explicitly.",call.=FALSE)
   if(missing(initial_filters)||missing(final_filters)||missing(trend_length))
@@ -19,6 +23,10 @@ native_x11_c_pass <- function(series,policy,initial_filters,final_filters,trend_
   if(missing(b)||is.null(b)||!is.list(b)||is.null(b$tables)||
      is.null(b$rounds)||!identical(b$type,"x11_b_pass"))
     stop("The C pass requires a B-pass result object from native_x11_b_pass().",call.=FALSE)
+  inherited<-if(is.null(b$mode))"additive" else b$mode
+  if(!is.null(mode)&&!identical(mode,inherited))
+    stop("The C pass inherits its decomposition mode from the B-pass result (",
+      inherited,").",call.=FALSE)
   if(is.null(frequency)||is.null(start_period)) {
     span<-stats::tsp(series)
     if(is.null(span))stop("A plain numeric series needs explicit frequency and start_period.",call.=FALSE)

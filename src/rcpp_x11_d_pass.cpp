@@ -70,6 +70,17 @@ SEXP named(SEXP object,const char* name,const char* label) {
             return VECTOR_ELT(object,i);
     throw std::invalid_argument(std::string(label)+": missing '"+name+"'");
 }
+// Optional variant: an absent field yields R_NilValue (used for the mode
+// echo, which pre-mode companion objects legitimately lack — those are
+// additive by construction).
+SEXP named_opt(SEXP object,const char* name) {
+    const SEXP names=Rf_getAttrib(object,R_NamesSymbol);
+    if(TYPEOF(object)!=VECSXP || TYPEOF(names)!=STRSXP)return R_NilValue;
+    for(R_xlen_t i=0;i<Rf_xlength(names);++i)
+        if(STRING_ELT(names,i)!=NA_STRING && std::string(name)==CHAR(STRING_ELT(names,i)))
+            return VECTOR_ELT(object,i);
+    return R_NilValue;
+}
 // Rebuild the pinned MaskedSeries from a .native_x11_c_pass table (NA marks
 // the pinned missing flags; ts decorations on the public wrapper's tables
 // are irrelevant here).
@@ -115,6 +126,10 @@ kalos::X11CPass rebuild_c(SEXP value) {
     if(TYPEOF(status)!=STRSXP || Rf_xlength(status)!=1 || STRING_ELT(status,0)==NA_STRING)
         throw std::invalid_argument(shape);
     c.status=Rcpp::as<std::string>(status);
+    // The decomposition mode is carried by the C-pass result (itself
+    // inherited from its B pass); the D pass runs on that same context. An
+    // object predating the mode echo is additive by construction.
+    c.mode=kalos_x11_rcpp::parse_mode(named_opt(value,"mode"),"C-pass decomposition mode");
     c.trend_length=integer(named(value,"trend_length",shape),"C-pass trend filter length");
     c.initial_filters=requests(named(value,"initial_filters",shape),"C-pass initial filters");
     c.final_filters=requests(named(value,"final_filters",shape),"C-pass final filters");
@@ -203,6 +218,9 @@ Rcpp::List native_x11_d_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP p
         Rcpp::_["seas_filter"]=seas,
         Rcpp::_["tables"]=tables,Rcpp::_["msr_table"]=msr_table,
         Rcpp::_["c_coupling"]="checked by the pinned core against the supplied C-pass result",
-        Rcpp::_["status"]=result.status,Rcpp::_["scope"]="fixed_additive_d_pass_only",
-        Rcpp::_["backend"]="native");
+        Rcpp::_["mode"]=kalos_x11_rcpp::mode_name(result.mode),
+        Rcpp::_["mode_source"]="inherited from the C-pass result",
+        Rcpp::_["status"]=result.status,
+        Rcpp::_["scope"]=std::string("fixed_")+kalos_x11_rcpp::mode_name(result.mode)
+            +"_d_pass_only",Rcpp::_["backend"]="native");
 }

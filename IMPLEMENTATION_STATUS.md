@@ -511,6 +511,107 @@ lanes), re-synced, re-qualified here.
     (`fixed`, length 0, NaN ratio); the contract should say so, since only
     the records up to and including the refused stage carry information.
 
+## Core integration checkpoint, decomposition modes at the R boundary — 2026-11-16
+
+- The pin advanced four core commits to `cce71723be7e4dd4e2e8e6458cfecf9c71b080e0`
+  (via `tools/sync-core.py`, `--verify` clean offline): `04b9030` "Version the
+  fixed-pass sweep verifiers with repo-relative fixture roots" (touches only
+  the core's `tools/` verifiers, which the R-kind snapshot does not carry),
+  `db32989` "Qualify the multiplicative decomposition mode (22b.5 M3a)",
+  `4646cca` "Qualify the log-additive decomposition mode (22b.5 M3b-i)" and
+  `cce7172` "Qualify the pseudo-additive decomposition mode (22b.5 M3b-ii)".
+  The lock delta was verified from the diff: 97→98 core files (added
+  `include/kalos/x11_decomposition.hpp`) and 156→226 fixture files — 69 files
+  in the twelve new `native/x11-{bpass,cpass,dpass,selection}-{mult,log,padd}/`
+  directories plus the shared `native/x11-bpass-mult-cases.R` loader; eleven
+  pre-existing core hashes changed (`CMakeLists.txt`, `revision.hpp`,
+  `detail/x11_pinned.hpp` and the four pass header/source pairs, which gained
+  the mode argument and members) plus the commit and manifest hashes. The
+  snapshot matches the core's own source manifest exactly.
+- Mode at the boundary: a shared `parse_mode`/`mode_name` pair in
+  `rcpp_x11_table_support` accepts the four pinned mode names verbatim. The
+  B and selection entry points take the mode as a trailing optional argument
+  (`NULL`/absent means additive, so every pre-mode positional call stays
+  valid); the C and D entry points have no mode argument because the pinned
+  kernel runs them on the B pass's context — their TUs now read the mode
+  from the caller's companion result echo when rebuilding the pinned struct
+  (objects predating the mode echo are treated as additive, which is exactly
+  what they are) and echo `mode` plus a `mode_source` note in the result.
+  The raw results carry the mode and a mode-aware scope label. The public
+  wrappers follow the same shape: `native_x11_b_pass()`/
+  `native_x11_selection_pass()` take `mode = "additive"`, while the C and D
+  wrappers take `mode = NULL` (inherit from the companion) and reject an
+  explicitly stated mode that contradicts the companion's echo at the R
+  boundary — the core offers no restatement surface there, so that
+  mismatch error is the boundary's own, clearly labelled as such. Nothing
+  is exported; the pinned non-positivity rejection ("multiplicative
+  decomposition of non positive series") and the selection pass's separate
+  completeness rejection propagate verbatim.
+- Mode semantics proven at the boundary: the multiplicative and log-additive
+  gates fire on zero or negative rows while flagged-missing rows pass the
+  fixed-pass gate (the masked fixture cases) but not the selection pass;
+  pseudo-additive legally runs zeros and negatives through the whole chain
+  (proven by running a zero-and-negative series through B, C and D while the
+  multiplicative gate refuses the same series). The pinned `makePositivity`
+  repair keeps B7/C7/D7/D12 strictly positive in the mult and log modes
+  (asserted structurally on all cases). `B20` corrections are counted
+  against the mode's own neutral value — `!= 1` on the multiplicative factor
+  scale (mult and pseudo-additive), `!= 0` on the additive/log scale — as
+  the fixtures' `b20nz` column requires. The constant-series degenerate
+  controls are mode-dependent: `const-fixed` stays `unsupported:trend-b7`
+  in all three modes, but `const-msr` becomes available in the
+  multiplicative family, where the ratio-based I/C computation avoids the
+  NaN the additive and log-additive flows refuse. Additive table identities
+  survive recomputation only in the log-additive mode — where the kernel
+  runs the plain additive steps on `log(y)` and relations like
+  C1 = log(Y) − B20, D6 = D1 − D5 and D13 = D11 − D12 hold bit-exactly —
+  while no additive identity holds in the multiplicative or pseudo-additive
+  modes (verified empirically before writing the tests); there the bit-exact
+  fixture comparison is the qualification, as documented in the test files.
+- New test coverage: `test-native-x11-mode-mult.R` (4,461 assertions),
+  `test-native-x11-mode-log.R` (4,701) and `test-native-x11-mode-padd.R`
+  (4,356), sharing a new `helpers/mode-qualification.R`. Each mode replays
+  the complete pinned family through R: all 24 fixed B-pass cases (19 tables
+  NaN-bit-exact on their pinned spans, round replacement counts, positivity
+  where applicable, determinism, input immutability), all 24 C-pass cases
+  (14 tables, round correction count, mode-inheritance echoes, log-domain
+  identities in the log mode), all 28 fixed D-pass cases (16 tables, the
+  extended inputs verified as hand-extensions with the pinned original first
+  periods, per-phase MSRE evolutions/counts/ratios and global ratio — the
+  relative form in the multiplicative modes — the D9 mask count identity,
+  C-companion coupling rejections) and all 15 selection cases (four stage
+  records, the global-MSR attempt traces bit-exact, the captured selected
+  states, nested mode echoes), plus the mode validation and non-positivity
+  paths and the wrapper inherit/reject/default paths. The four additive
+  pass test files pass unchanged: the additive default is bit-identical.
+- Full suite after the additions: **289,182 assertions, 0 failures** across
+  all 46 files on the OpenMP lane; serial lane **289,178, 0 failures** from
+  the same `R CMD build` tarball with the `R_MAKEVARS_USER` probe override
+  (`nm` reports no `gomp` symbols) — the same four-assertion conditional
+  lane difference as before. No core-caused mismatch appeared at the new pin.
+- Upstream feedback for the Kalos maintainers from the mode boundaries (the
+  seven earlier items above stay verbatim; no contract files were touched):
+  - (M3a) `check_decomposition` discards its pass-label argument and reports
+    the same `"multiplicative decomposition of non positive series"` for
+    both gated modes, so a downstream boundary cannot tell which pass or
+    which mode refused the input; folding the label (and mode) into the
+    message would make the verbatim propagation more useful.
+  - (M3a–M3b-ii) The `mode` member added to the fixed-pass structs is
+    composition-contract surface: the C and D passes have no mode argument
+    and inherit the mode solely through `b.mode`/`c.mode`, so any faithful
+    downstream rebuild of a companion must carry the echo (rkalos added it
+    to its result shapes for exactly this reason). The contracts should say
+    so — and `X11SelectionPass` is the only pass result without a mode echo
+    member, which would save integrators from remembering it externally.
+  - (M3a–M3b-ii) Two fixture semantics are mode-conditional and only
+    discoverable by running: `b20nz` counts deviations from the mode's
+    neutral B20 value (1 on the multiplicative scale, 0 on the additive/log
+    scale) while the column name stays identical, and the constant-series
+    `const-msr` control flips from the unsupported degenerate choice to
+    available in the multiplicative family. Stating both in the selection
+    fixture metadata would save the next integrator from reverse-engineering
+    them.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

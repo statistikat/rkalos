@@ -9,8 +9,8 @@
 // The MSRE filter selection, the automatic Henderson (the pinned getICRatio
 // scalar is inert in fixed mode), cross-validation, the period-specific
 // corrector (the pinned D9g is null in the default corrector mode),
-// multiplicative and non-seasonal modes and ARIMA-regression inputs are not
-// delivered or claimed.
+// non-seasonal modes and ARIMA-regression inputs are not delivered or
+// claimed.
 #include "x11_c_pass.hpp"
 #include <cstddef>
 #include <cstdint>
@@ -47,20 +47,24 @@ struct X11DPass {
     int d7_henderson_length=0,final_henderson_length=0;
     int msr_iterations=0; // pinned constant in fixed mode: the MSRE filter
                           // selection never engages, so no filter is chosen
+    X11DecompositionMode mode=X11DecompositionMode::additive;
     std::string status; // "available"
 };
-// Fixed additive D pass over `series` (the pinned reference series, spanning
-// the extended calendar when backcast/forecast rows are present) and its
-// finished fixed additive C pass `c`. The composition mirrors the pinned
-// X11Kernel: D1 = series - c.c20 and both passes must agree on frequency,
-// first period, the fixed seasonal requests, the Henderson length, the sigma
-// policy and the exact series the C pass consumed. The sigma policy is a
-// required argument and nothing is promoted; the D pass itself performs no
-// extreme-value analysis - its correction round is the C pass round carried
-// by `c`. `first_period` is the 1-based calendar position of the first row
-// of `series`; `backcast`/`forecast` are the pinned context horizons whose
-// dropped span is the original calendar (at least one full cycle, used by
-// the MSRE diagnostic exactly like the pinned table).
+// Fixed D pass over `series` (the pinned reference series, spanning the
+// extended calendar when backcast/forecast rows are present) and its
+// finished fixed C pass `c`. The composition mirrors the pinned X11Kernel:
+// D1 = the pinned ctx.remove of c.c20 from the series and both passes must
+// agree on frequency, first period, the fixed seasonal requests, the
+// Henderson length, the sigma policy and the exact series the C pass
+// consumed. The decomposition mode is inherited from `c`; under the
+// multiplicative mode the MSRE diagnostic takes the pinned relative form.
+// The sigma policy is a required argument and nothing is promoted; the D
+// pass itself performs no extreme-value analysis - its correction round is
+// the C pass round carried by `c`. `first_period` is the 1-based calendar
+// position of the first row of `series`; `backcast`/`forecast` are the
+// pinned context horizons whose dropped span is the original calendar (at
+// least one full cycle, used by the MSRE diagnostic exactly like the pinned
+// table).
 X11DPass x11_d_pass(const MaskedSeries& series,int frequency,int first_period,
     const std::vector<int>& initial_filters,const std::vector<int>& final_filters,
     int trend_length,X11SigmaPolicy policy,const X11CPass& c,

@@ -9,10 +9,10 @@
 // reproduced in the internal detail/x11_pinned.hpp machinery shared with the
 // C pass (item 22b.4 S2).
 // See docs/contracts/x11-bpass-contract.md.
-// The C/D passes, automatic filter choice, cross-validation, multiplicative
-// and non-seasonal modes, ARIMA-regression inputs and the pinned average
-// endpoint fallback for series shorter than the trend filter are not
-// delivered or claimed.
+// The C/D passes, automatic filter choice, cross-validation, non-seasonal
+// modes, ARIMA-regression inputs and the pinned average endpoint fallback
+// for series shorter than the trend filter are not delivered or claimed.
+#include "x11_decomposition.hpp"
 #include "x11_filters.hpp"
 #include "x11_replacement.hpp"
 #include "x11_seasonal_processing.hpp"
@@ -47,9 +47,10 @@ struct X11BPass {
     std::array<X11BCorrectionRound,3> rounds;
     std::vector<int> initial_filters,final_filters; // calendar-period order
     int trend_length=0;
+    X11DecompositionMode mode=X11DecompositionMode::additive;
     std::string status; // "available"
 };
-// Fixed additive B pass on the supplied series (the pinned B1 input).
+// Fixed B pass on the supplied series (the pinned B1 input).
 // `initial_filters` and `final_filters` are one fixed request per calendar
 // period (0 stable, N for 3xN), matching the pinned per-phase arrays;
 // `trend_length` is the fixed Henderson length used from B7 onward and
@@ -58,9 +59,22 @@ struct X11BPass {
 // delivered). The sigma policy is a required argument and nothing is
 // promoted: the pinned fixture was qualified with X11SigmaPolicy::legacy.
 // `first_period` is the 1-based calendar position of the first row.
+// `mode` selects the pinned decomposition context: additive reproduces the
+// item 22b.4 tables and multiplicative (item 22b.5 M3a, contract
+// x11-multiplicative-contract.md) runs the pinned ratio arithmetic with the
+// positivity repair and the mode-aware corrector, requiring strictly
+// positive complete input; log_additive (contract
+// x11-log-additive-contract.md) runs the plain additive steps on Math.log of
+// the input under the same positivity requirement, and pseudo_additive
+// (contract x11-pseudo-additive-contract.md) runs the pinned
+// X11{B,C,D}StepPseudoAdd pipeline — the multiplicative context with the
+// PseudoAddUtility forms at the overridden composition sites — with no
+// positivity requirement.
 X11BPass x11_b_pass(const MaskedSeries& series,int frequency,int first_period,
     const std::vector<int>& initial_filters,const std::vector<int>& final_filters,
     int trend_length,X11SigmaPolicy policy,
-    double lower_sigma=1.5,double upper_sigma=2.5,const Interrupt& interrupt={});
+    double lower_sigma=1.5,double upper_sigma=2.5,
+    X11DecompositionMode mode=X11DecompositionMode::additive,
+    const Interrupt& interrupt={});
 } // namespace kalos
 #endif

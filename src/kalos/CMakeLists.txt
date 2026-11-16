@@ -163,11 +163,14 @@ if(KALOS_BUILD_TESTS)
     test_x11_d_pass
     test_x11_filters
     test_x11_initial
+    test_x11_log_additive
     test_x11_mean_endpoints
     test_x11_msr
     test_x11_msr_selection
+    test_x11_multiplicative
     test_x11_musgrave
     test_x11_normalization
+    test_x11_pseudo_additive
     test_x11_selection_pass
     test_x11_seasonal_endpoints
     test_x11_seasonal_plan

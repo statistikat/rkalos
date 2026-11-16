@@ -11,10 +11,12 @@
 # horizons of a hand-extended calendar: the tables run over the extended
 # series and the D9 MSRE diagnostic drops them onto the original calendar
 # (the row span [backcast+1, n-forecast]), exactly like the pinned context.
-# The MSRE filter selection, automatic Henderson choice, cross-validation and
-# multiplicative modes are not computed here.
+# The decomposition mode is inherited from the C-pass companion (the pinned
+# kernel shares one context); an explicitly stated mode only cross-checks
+# that echo. The MSRE filter selection, automatic Henderson choice,
+# cross-validation and multiplicative modes are not computed here.
 native_x11_d_pass <- function(series,policy,initial_filters,final_filters,trend_length,c,
-    backcast=0,forecast=0,frequency=NULL,start_period=NULL) {
+    backcast=0,forecast=0,frequency=NULL,start_period=NULL,mode=NULL) {
   if(missing(policy)||is.null(policy))
     stop("The sigma weight policy ('legacy' or 'accurate') must be stated explicitly.",call.=FALSE)
   if(missing(initial_filters)||missing(final_filters)||missing(trend_length))
@@ -22,6 +24,10 @@ native_x11_d_pass <- function(series,policy,initial_filters,final_filters,trend_
   if(missing(c)||is.null(c)||!is.list(c)||is.null(c$tables)||
      is.null(c$round)||!identical(c$type,"x11_c_pass"))
     stop("The D pass requires a C-pass result object from native_x11_c_pass().",call.=FALSE)
+  inherited<-if(is.null(c$mode))"additive" else c$mode
+  if(!is.null(mode)&&!identical(mode,inherited))
+    stop("The D pass inherits its decomposition mode from the C-pass result (",
+      inherited,").",call.=FALSE)
   if(is.null(frequency)||is.null(start_period)) {
     span<-stats::tsp(series)
     if(is.null(span))stop("A plain numeric series needs explicit frequency and start_period.",call.=FALSE)

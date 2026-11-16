@@ -80,7 +80,8 @@ Rcpp::List correction_round(const kalos::X11BCorrectionRound& round) {
 }
 // [[Rcpp::export(name = ".native_x11_b_pass")]]
 Rcpp::List native_x11_b_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP policy,
-    SEXP initial_filters,SEXP final_filters,SEXP trend_length,SEXP lower_sigma,SEXP upper_sigma) {
+    SEXP initial_filters,SEXP final_filters,SEXP trend_length,SEXP lower_sigma,SEXP upper_sigma,
+    SEXP mode=R_NilValue) {
     if(TYPEOF(policy)!=STRSXP || Rf_xlength(policy)!=1 || STRING_ELT(policy,0)==NA_STRING ||
         !Rf_isNull(Rf_getAttrib(policy,R_DimSymbol)))
         throw std::invalid_argument("B-pass sigma weight policy must be legacy or accurate");
@@ -93,9 +94,10 @@ Rcpp::List native_x11_b_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP p
     const auto initial=requests(initial_filters,"Initial seasonal filters");
     const auto finals=requests(final_filters,"Final seasonal filters");
     const auto series=masked(values);
+    const auto decomp=kalos_x11_rcpp::parse_mode(mode,"B-pass decomposition mode");
     const auto result=kalos::x11_b_pass(series,period,first,initial,finals,trend,
         name=="legacy"?kalos::X11SigmaPolicy::legacy:kalos::X11SigmaPolicy::accurate,
-        lower,upper,[] {Rcpp::checkUserInterrupt();});
+        lower,upper,decomp,[] {Rcpp::checkUserInterrupt();});
     using kalos_x11_rcpp::values;
     Rcpp::IntegerVector resolved_initial(result.initial_filters.begin(),result.initial_filters.end());
     Rcpp::IntegerVector resolved_final(result.final_filters.begin(),result.final_filters.end());
@@ -120,6 +122,8 @@ Rcpp::List native_x11_b_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP p
         Rcpp::_["lower_sigma"]=lower,Rcpp::_["upper_sigma"]=upper,
         Rcpp::_["initial_filters"]=resolved_initial,Rcpp::_["final_filters"]=resolved_final,
         Rcpp::_["tables"]=tables,Rcpp::_["rounds"]=rounds,
-        Rcpp::_["status"]=result.status,Rcpp::_["scope"]="fixed_additive_b_pass_only",
-        Rcpp::_["backend"]="native");
+        Rcpp::_["mode"]=kalos_x11_rcpp::mode_name(result.mode),
+        Rcpp::_["status"]=result.status,
+        Rcpp::_["scope"]=std::string("fixed_")+kalos_x11_rcpp::mode_name(result.mode)
+            +"_b_pass_only",Rcpp::_["backend"]="native");
 }

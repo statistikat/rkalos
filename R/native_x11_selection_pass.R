@@ -17,7 +17,7 @@
 # inputs are not computed here.
 native_x11_selection_pass <- function(series,requests,policy,trend_length,
     msr_policy="jdplus",frequency=NULL,start_period=NULL,lower_sigma=1.5,
-    upper_sigma=2.5,backcast=0,forecast=0) {
+    upper_sigma=2.5,backcast=0,forecast=0,mode="additive") {
   if(missing(policy)||is.null(policy))
     stop("The sigma weight policy ('legacy' or 'accurate') must be stated explicitly.",call.=FALSE)
   if(missing(requests)||missing(trend_length))
@@ -38,7 +38,7 @@ native_x11_selection_pass <- function(series,requests,policy,trend_length,
   if(!is.null(dim(series)))series<-as.vector(series)
   if(!is.numeric(series))series<-as.numeric(series)
   result<-.native_x11_selection_pass(series,f,start_period,as.character(requests),
-    trend_length,policy,msr_policy,lower_sigma,upper_sigma,backcast,forecast)
+    trend_length,policy,msr_policy,lower_sigma,upper_sigma,backcast,forecast,mode)
   ordinal<-if(!is.null(tsp_orig))round(tsp_orig[1L]*f) else f+as.integer(start_period)-1L
   names(result$requests)<-periods
   for(field in c("initial_filters","final_filters"))names(result[[field]])<-periods

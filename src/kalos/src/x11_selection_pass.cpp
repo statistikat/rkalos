@@ -25,7 +25,8 @@ struct MsrWalk {
     std::vector<X11MsrAttempt> attempts;
 };
 MsrWalk pinned_msr_walk(const MaskedSeries& d9bis,int frequency,int first_period,
-        int backcast,int forecast,X11MsrIterationPolicy policy,const Interrupt& interrupt) {
+        int backcast,int forecast,X11MsrIterationPolicy policy,
+        X11DecompositionMode mode,const Interrupt& interrupt) {
     MsrWalk walk;
     const auto f=static_cast<std::size_t>(frequency);
     const auto back=static_cast<std::size_t>(backcast),fc=static_cast<std::size_t>(forecast);
@@ -45,7 +46,7 @@ MsrWalk pinned_msr_walk(const MaskedSeries& d9bis,int frequency,int first_period
         std::vector<double> ri,rs;
         std::vector<std::int64_t> counts;
         pinned_msr_table(std::vector<double>(w.begin(),w.begin()+w.size()-off),
-            frequency,first,ri,rs,counts); // the position argument is unchanged
+            frequency,first,mode,ri,rs,counts); // position unchanged
         double numerator=0,denominator=0;
         for(std::size_t phase=0;phase<f;++phase) {
             numerator=numerator+ri[phase]*static_cast<double>(counts[phase]);
@@ -103,8 +104,11 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
         const std::vector<X11SeasonalRequest>& requests,int trend_length,
         X11SigmaPolicy policy,X11MsrIterationPolicy msr_policy,
         double lower_sigma,double upper_sigma,int backcast,int forecast,
-        const Interrupt& interrupt) {
+        X11DecompositionMode mode,const Interrupt& interrupt) {
     series.validate();
+    check_decomposition("selection pass",mode,series);
+    const auto mult=x11_mode_is_multiplicative(mode);
+    const auto pseudo=mode==X11DecompositionMode::pseudo_additive;
     if(frequency!=4 && frequency!=12)
         throw std::invalid_argument("selection pass supports monthly and quarterly series");
     if(first_period<1 || first_period>frequency)
@@ -149,11 +153,11 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
     const auto automatic=trend_length==0;
     const auto probe=automatic?5:trend_length;
     auto b=x11_b_pass(series,frequency,first_period,b_initial.base_filters,
-        b_final.base_filters,probe,policy,lower_sigma,upper_sigma,interrupt);
+        b_final.base_filters,probe,policy,lower_sigma,upper_sigma,mode,interrupt);
     if(automatic) {
         pass.b7.status=X11TrendStageStatus::selected;
         pass.b7.ic_ratio=pinned_ic_ratio(b.b6.values,frequency,
-            static_cast<std::size_t>(backcast),static_cast<std::size_t>(forecast));
+            static_cast<std::size_t>(backcast),static_cast<std::size_t>(forecast),mult);
         try {
             pass.b7.length=pinned_b7_length(frequency,pass.b7.ic_ratio);
         } catch(const std::invalid_argument&) {
@@ -162,7 +166,8 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
         }
         if(pass.b7.length!=probe)
             b=x11_b_pass(series,frequency,first_period,b_initial.base_filters,
-                b_final.base_filters,pass.b7.length,policy,lower_sigma,upper_sigma,interrupt);
+                b_final.base_filters,pass.b7.length,policy,lower_sigma,upper_sigma,mode,
+                interrupt);
     } else {
         pass.b7.status=X11TrendStageStatus::fixed;
         pass.b7.length=trend_length; // the pinned computes no ratio in fixed mode
@@ -174,28 +179,37 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
     // agree), so the C tables are composed here rather than chained
     // through the fixed C pass, whose validation enforces one length.
     X11CPass c;
+    c.mode=mode;
     c.c2drop=t; c.first_period=first_period;
     c.initial_filters=c_initial.base_filters; c.final_filters=c_final.base_filters;
-    const auto y=to_pinned(series);
+    // The pinned kernel runs the whole pipeline on its (possibly log-
+    // transformed) input, so the manual C composition consumes the very
+    // sequence the steps see — log(y) under LogAdditive (item 22b.5 M3b-i);
+    // the internal fixed-pass calls keep the raw series because those
+    // entries apply the same kernel input transform themselves.
+    const auto y=to_pinned(mode==X11DecompositionMode::log_additive
+        ?log_domain(series):series);
     c.reference_series=y;
-    c.c1=minus_pinned(y,b.b20,interrupt);
+    c.c1=pseudo?pseudo_adjust_ref_series(y,b.b20,b.b7,b.b13,interrupt) // X11CStepPseudoAdd
+        :remove_pinned(y,b.b20,mult,interrupt);
     const auto annual_c=x11_symmetric_filter(repo_view(c.c1),X11FilterKind::trend,frequency,0,interrupt);
     c.c2=to_pinned(MaskedSeries{std::vector<double>(annual_c.values.begin()+t,annual_c.values.begin()+n-t),
         std::vector<std::uint8_t>(annual_c.missing.begin()+t,annual_c.missing.begin()+n-t)});
     MaskedSeries cropped_c;
     cropped_c.values.assign(c.c1.values.begin()+t,c.c1.values.begin()+n-t);
     cropped_c.missing.assign(c.c1.missing.begin()+t,c.c1.missing.begin()+n-t);
-    c.c4=minus_pinned(cropped_c,c.c2,interrupt);
+    c.c4=remove_pinned(cropped_c,c.c2,mult,interrupt);
     const auto center=(first+t)%f; // pinned getPosition(c2drop)
     checkpoint(interrupt);
     c.c5a=process_pinned(c.c4,frequency,center,c_initial.base_filters,interrupt);
-    c.c5=normalize_pinned(c.c5a,frequency,center,0,t,c_final.base_filters,interrupt);
-    c.c6=minus_pinned(c.c1,c.c5,interrupt);
+    c.c5=normalize_pinned(c.c5a,frequency,center,0,t,c_final.base_filters,mult,interrupt);
+    c.c6=pseudo?pseudo_with_borders(c.c1,c.c5,c.c2,t,interrupt) // X11CStepPseudoAdd
+        :remove_pinned(c.c1,c.c5,mult,interrupt);
     checkpoint(interrupt);
     if(automatic) {
         pass.c7.status=X11TrendStageStatus::selected;
         pass.c7.ic_ratio=pinned_ic_ratio(c.c6.values,frequency,
-            static_cast<std::size_t>(backcast),static_cast<std::size_t>(forecast));
+            static_cast<std::size_t>(backcast),static_cast<std::size_t>(forecast),mult);
         try {
             pass.c7.length=x11_henderson_select(frequency,pass.c7.ic_ratio);
         } catch(const std::invalid_argument&) {
@@ -210,21 +224,23 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
         throw std::invalid_argument("selection pass requires at least the selected C7 trend length");
     c.trend_length=pass.c7.length;
     c.c7=pinned_trend_filter(c.c6,frequency,pass.c7.length,interrupt);
-    c.c9=minus_pinned(c.c1,c.c7,interrupt);
+    if(mult) make_positivity(c.c7.values); // pinned c7Step repair
+    c.c9=remove_pinned(c.c1,c.c7,mult,interrupt);
     checkpoint(interrupt);
     c.c10a=process_pinned(c.c9,frequency,first,c_final.base_filters,interrupt);
-    c.c10=normalize_pinned(c.c10a,frequency,first,0,0,c_final.base_filters,interrupt);
-    c.c11=minus_pinned(y,c.c10,interrupt); // remove(refSeries, c10)
-    c.c13=minus_pinned(c.c11,c.c7,interrupt);
+    c.c10=normalize_pinned(c.c10a,frequency,first,0,0,c_final.base_filters,mult,interrupt);
+    c.c11=pseudo?pseudo_remove_seasonal_adjusted(y,c.c10,c.c7,interrupt) // X11CStepPseudoAdd
+        :remove_pinned(y,c.c10,mult,interrupt); // remove(refSeries, c10)
+    c.c13=remove_pinned(c.c11,c.c7,mult,interrupt);
     checkpoint(interrupt);
     auto& round=c.round;
     round.detection=c.c13;
     round.analysis_position=static_cast<std::int64_t>(first);
     round.policy=policy;
     round.sigma=x11_sigma_weights(repo_view(c.c13),frequency,
-        static_cast<int>(first)+1,policy,0,0,false,lower_sigma,upper_sigma,false,interrupt);
+        static_cast<int>(first)+1,policy,0,0,false,lower_sigma,upper_sigma,mult,interrupt);
     round.replacements=x11_replacements(repo_view(c.c13),frequency,round.sigma.weights,
-        0,0,false,false,interrupt);
+        0,0,false,mult,interrupt);
     c.c17=MaskedSeries{round.sigma.weights,missing_of(round.sigma.weights)};
     c.c20=MaskedSeries{round.replacements.correction_factors,
         missing_of(round.replacements.correction_factors)};
@@ -237,26 +253,29 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
     // the final Henderson length from D11bis (the iCRatio is always
     // computed, also in fixed mode).
     X11DPass d;
+    d.mode=mode;
     d.d2drop=t;
     d.backcast=backcast; d.forecast=forecast;
     d.initial_filters=d_initial.base_filters; d.final_filters=d_final.base_filters;
-    d.d1=minus_pinned(y,c.c20,interrupt);
+    d.d1=pseudo?pseudo_adjust_ref_series(y,c.c20,c.c7,c.c13,interrupt) // X11DStepPseudoAdd
+        :remove_pinned(y,c.c20,mult,interrupt);
     const auto annual_d=x11_symmetric_filter(repo_view(d.d1),X11FilterKind::trend,frequency,0,interrupt);
     d.d2=to_pinned(MaskedSeries{std::vector<double>(annual_d.values.begin()+t,annual_d.values.begin()+n-t),
         std::vector<std::uint8_t>(annual_d.missing.begin()+t,annual_d.missing.begin()+n-t)});
     MaskedSeries cropped_d;
     cropped_d.values.assign(d.d1.values.begin()+t,d.d1.values.begin()+n-t);
     cropped_d.missing.assign(d.d1.missing.begin()+t,d.d1.missing.begin()+n-t);
-    d.d4=minus_pinned(cropped_d,d.d2,interrupt);
+    d.d4=remove_pinned(cropped_d,d.d2,mult,interrupt);
     checkpoint(interrupt);
     const auto d5raw=process_pinned(d.d4,frequency,center,d_initial.base_filters,interrupt);
-    d.d5=normalize_pinned(d5raw,frequency,center,0,t,d_final.base_filters,interrupt);
-    d.d6=minus_pinned(d.d1,d.d5,interrupt);
+    d.d5=normalize_pinned(d5raw,frequency,center,0,t,d_final.base_filters,mult,interrupt);
+    d.d6=pseudo?pseudo_with_borders(d.d1,d.d5,d.d2,t,interrupt) // X11DStepPseudoAdd
+        :remove_pinned(d.d1,d.d5,mult,interrupt);
     checkpoint(interrupt);
     if(automatic) {
         pass.d7.status=X11TrendStageStatus::selected;
         pass.d7.ic_ratio=pinned_ic_ratio(d.d6.values,frequency,
-            static_cast<std::size_t>(backcast),static_cast<std::size_t>(forecast));
+            static_cast<std::size_t>(backcast),static_cast<std::size_t>(forecast),mult);
         try {
             pass.d7.length=x11_henderson_select(frequency,pass.d7.ic_ratio);
         } catch(const std::invalid_argument&) {
@@ -270,8 +289,11 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
     if(n<static_cast<std::size_t>(pass.d7.length))
         throw std::invalid_argument("selection pass requires at least the selected D7 trend length");
     d.d7=pinned_trend_filter(d.d6,frequency,pass.d7.length,interrupt);
-    d.d8=minus_pinned(y,d.d7,interrupt); // remove(refSeries, d7)
-    d.d9bis=minus_pinned(d.d1,d.d7,interrupt);
+    if(mult) make_positivity(d.d7.values); // pinned d7Step repair
+    d.d8=pseudo?product_pinned(remove_pinned(d.d1,d.d7,true,interrupt),
+        c.c20,interrupt) // X11DStepPseudoAdd: (D1/D7)*C20
+        :remove_pinned(y,d.d7,mult,interrupt); // remove(refSeries, d7)
+    d.d9bis=remove_pinned(d.d1,d.d7,mult,interrupt);
     d.d9=d9_mask_pinned(d.d9bis,d.d8,interrupt); // pinned dcmpg mask
     checkpoint(interrupt);
     // The pinned dFinalStep: the seasFilter copy of the final requests,
@@ -281,7 +303,7 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
     pass.msr.policy=msr_policy;
     if(pass.msr.engaged) {
         const auto walk=pinned_msr_walk(d.d9bis,frequency,first_period,backcast,forecast,
-            msr_policy,interrupt);
+            msr_policy,mode,interrupt);
         pass.msr.iterations=walk.iterations;
         pass.msr.global_msr=walk.global_msr;
         pass.msr.attempts=walk.attempts;
@@ -300,11 +322,12 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
     // re-derives the provisional array (Msr and X11Default mapping to 3x5):
     // the seasFilter copy filled by doMSR is a private D-step array (the
     // getter returns a fresh array) and never reaches the normalizer.
-    d.d10=normalize_pinned(d.d10bis,frequency,first,0,0,d_final.base_filters,interrupt);
-    d.d11bis=minus_pinned(d.d1,d.d10,interrupt);
+    d.d10=normalize_pinned(d.d10bis,frequency,first,0,0,d_final.base_filters,mult,interrupt);
+    d.d11bis=pseudo?pseudo_remove_seasonal_adjusted(d.d1,d.d10,d.d7,interrupt) // X11DStepPseudoAdd
+        :remove_pinned(d.d1,d.d10,mult,interrupt);
     checkpoint(interrupt);
     pass.final.ic_ratio=pinned_ic_ratio(d.d11bis.values,frequency,
-        static_cast<std::size_t>(backcast),static_cast<std::size_t>(forecast)); // always stored
+        static_cast<std::size_t>(backcast),static_cast<std::size_t>(forecast),mult); // always stored
     if(automatic) {
         pass.final.status=X11TrendStageStatus::selected;
         try {
@@ -320,8 +343,10 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
     if(n<static_cast<std::size_t>(pass.final.length))
         throw std::invalid_argument("selection pass requires at least the selected final trend length");
     d.d12=pinned_trend_filter(d.d11bis,frequency,pass.final.length,interrupt);
-    d.d11=minus_pinned(y,d.d10,interrupt); // remove(refSeries, d10)
-    d.d13=minus_pinned(d.d11,d.d12,interrupt);
+    if(mult) make_positivity(d.d12.values); // pinned dFinalStep repair
+    d.d11=pseudo?pseudo_remove_seasonal_adjusted(y,d.d10,d.d12,interrupt) // X11DStepPseudoAdd
+        :remove_pinned(y,d.d10,mult,interrupt); // remove(refSeries, d10)
+    d.d13=remove_pinned(d.d11,d.d12,mult,interrupt);
     checkpoint(interrupt);
     // The pinned MSRE diagnostic runs on the dropped original calendar at
     // the original-calendar phase getPosition(backcast).
@@ -329,7 +354,8 @@ X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int
         d.d9bis.values.end()-static_cast<std::ptrdiff_t>(forecast));
     std::vector<double> ri,rs;
     std::vector<std::int64_t> counts;
-    pinned_msr_table(original,frequency,(first+static_cast<std::size_t>(backcast))%f,ri,rs,counts);
+    pinned_msr_table(original,frequency,(first+static_cast<std::size_t>(backcast))%f,
+        mode,ri,rs,counts);
     auto& msr=d.msr_table;
     msr.mean_irregular_evolutions=std::move(ri);
     msr.mean_seasonal_evolutions=std::move(rs);

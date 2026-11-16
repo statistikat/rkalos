@@ -198,7 +198,9 @@ Rcpp::List b_result(const kalos::X11BPass& b,const std::string& policy,double lo
         Rcpp::_["initial_filters"]=integers(b.initial_filters),
         Rcpp::_["final_filters"]=integers(b.final_filters),
         Rcpp::_["tables"]=tables,Rcpp::_["rounds"]=rounds,Rcpp::_["status"]=b.status,
-        Rcpp::_["scope"]="selected_state_b_pass",Rcpp::_["backend"]="native");
+        Rcpp::_["mode"]=kalos_x11_rcpp::mode_name(b.mode),
+        Rcpp::_["scope"]=std::string("selected_state_")
+            +kalos_x11_rcpp::mode_name(b.mode)+"_b_pass",Rcpp::_["backend"]="native");
 }
 Rcpp::List c_result(const kalos::X11CPass& c,const std::string& policy,double lower,
         double upper,int frequency) {
@@ -217,7 +219,9 @@ Rcpp::List c_result(const kalos::X11CPass& c,const std::string& policy,double lo
         Rcpp::_["final_filters"]=integers(c.final_filters),Rcpp::_["tables"]=tables,
         Rcpp::_["round"]=correction_round(c.round),
         Rcpp::_["reference_series"]=values(c.reference_series),Rcpp::_["status"]=c.status,
-        Rcpp::_["scope"]="selected_state_c_pass",Rcpp::_["backend"]="native");
+        Rcpp::_["mode"]=kalos_x11_rcpp::mode_name(c.mode),
+        Rcpp::_["scope"]=std::string("selected_state_")
+            +kalos_x11_rcpp::mode_name(c.mode)+"_c_pass",Rcpp::_["backend"]="native");
 }
 Rcpp::List d_result(const kalos::X11DPass& d,const std::string& policy,int frequency,int first) {
     using kalos_x11_rcpp::values;
@@ -239,13 +243,15 @@ Rcpp::List d_result(const kalos::X11DPass& d,const std::string& policy,int frequ
         Rcpp::_["final_filters"]=integers(d.final_filters),
         Rcpp::_["seas_filter"]=integers(d.seas_filter),Rcpp::_["tables"]=tables,
         Rcpp::_["msr_table"]=msr_table(d.msr_table),Rcpp::_["status"]=d.status,
-        Rcpp::_["scope"]="selected_state_d_pass",Rcpp::_["backend"]="native");
+        Rcpp::_["mode"]=kalos_x11_rcpp::mode_name(d.mode),
+        Rcpp::_["scope"]=std::string("selected_state_")
+            +kalos_x11_rcpp::mode_name(d.mode)+"_d_pass",Rcpp::_["backend"]="native");
 }
 }
 // [[Rcpp::export(name = ".native_x11_selection_pass")]]
 Rcpp::List native_x11_selection_pass(SEXP values,SEXP frequency,SEXP start_period,
     SEXP requests_vector,SEXP trend_length,SEXP policy,SEXP msr_policy,
-    SEXP lower_sigma,SEXP upper_sigma,SEXP backcast,SEXP forecast) {
+    SEXP lower_sigma,SEXP upper_sigma,SEXP backcast,SEXP forecast,SEXP mode=R_NilValue) {
     if(TYPEOF(policy)!=STRSXP || Rf_xlength(policy)!=1 || STRING_ELT(policy,0)==NA_STRING ||
         !Rf_isNull(Rf_getAttrib(policy,R_DimSymbol)))
         throw std::invalid_argument("selection-pass sigma weight policy must be legacy or accurate");
@@ -260,9 +266,10 @@ Rcpp::List native_x11_selection_pass(SEXP values,SEXP frequency,SEXP start_perio
     const auto lower=scalar(lower_sigma,"lower sigma limit"),upper=scalar(upper_sigma,"upper sigma limit");
     const auto back=integer(backcast,"backcast horizon"),fc=integer(forecast,"forecast horizon");
     const auto series=masked(values);
+    const auto decomp=kalos_x11_rcpp::parse_mode(mode,"selection-pass decomposition mode");
     const auto result=kalos::x11_selection_pass(series,period,first,requests(requests_vector),
         trend,parse_policy(name,"selection-pass sigma weight policy"),
-        parse_msr_policy(msr_name),lower,upper,back,fc,[] {Rcpp::checkUserInterrupt();});
+        parse_msr_policy(msr_name),lower,upper,back,fc,decomp,[] {Rcpp::checkUserInterrupt();});
     Rcpp::List stages=Rcpp::List::create(Rcpp::_["b7"]=stage(result.b7),
         Rcpp::_["c7"]=stage(result.c7),Rcpp::_["d7"]=stage(result.d7),
         Rcpp::_["final"]=stage(result.final));
@@ -290,6 +297,7 @@ Rcpp::List native_x11_selection_pass(SEXP values,SEXP frequency,SEXP start_perio
         Rcpp::_["frequency"]=period,Rcpp::_["start_period"]=first,
         Rcpp::_["requested_trend_length"]=trend,Rcpp::_["automatic"]=trend==0,
         Rcpp::_["policy"]=name,Rcpp::_["msr_policy"]=msr_name,
+        Rcpp::_["mode"]=kalos_x11_rcpp::mode_name(decomp),
         Rcpp::_["lower_sigma"]=lower,Rcpp::_["upper_sigma"]=upper,
         Rcpp::_["backcast"]=back,Rcpp::_["forecast"]=fc,
         Rcpp::_["requests"]=Rcpp::CharacterVector(requests_vector),

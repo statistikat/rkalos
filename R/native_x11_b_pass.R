@@ -6,7 +6,10 @@
 # this entry point takes no default policy. The C/D passes, automatic filter
 # choice, cross-validation and multiplicative modes are not computed here.
 native_x11_b_pass <- function(series,policy,initial_filters,final_filters,trend_length,
-    frequency=NULL,start_period=NULL,lower_sigma=1.5,upper_sigma=2.5) {
+    frequency=NULL,start_period=NULL,lower_sigma=1.5,upper_sigma=2.5,mode="additive") {
+  # The decomposition mode defaults to additive (the qualified default); the
+  # core validates the four pinned names and propagates the pinned
+  # non-positivity rejection for the multiplicative family verbatim.
   if(missing(policy)||is.null(policy))
     stop("The sigma weight policy ('legacy' or 'accurate') must be stated explicitly.",call.=FALSE)
   if(missing(initial_filters)||missing(final_filters)||missing(trend_length))
@@ -31,7 +34,7 @@ native_x11_b_pass <- function(series,policy,initial_filters,final_filters,trend_
   if(!is.numeric(series))series<-as.numeric(series)
   result<-.native_x11_b_pass(series,f,start_period,policy,
     align(initial_filters,"initial seasonal filters"),align(final_filters,"final seasonal filters"),
-    trend_length,lower_sigma,upper_sigma)
+    trend_length,lower_sigma,upper_sigma,mode)
   # Original-calendar time domains: ts inputs keep their time origin, plain
   # vectors with an explicit start period are placed in year 1. The ordinal
   # follows the native_regular_domain convention year*f+(period-1).

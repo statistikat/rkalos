@@ -72,4 +72,27 @@ Rcpp::List normalization_result(const kalos::X11SeasonalNormalization& result,in
         Rcpp::_["normalization_source_rows"]=sources(result.normalization_sources),Rcpp::_["source_rows"]=sources(result.output_sources),
         Rcpp::_["frequency"]=f,Rcpp::_["extend"]=extension);
 }
+kalos::X11DecompositionMode parse_mode(SEXP mode,const char* label) {
+    if(Rf_isNull(mode))return kalos::X11DecompositionMode::additive;
+    if(TYPEOF(mode)!=STRSXP || Rf_xlength(mode)!=1 || STRING_ELT(mode,0)==NA_STRING ||
+        !Rf_isNull(Rf_getAttrib(mode,R_DimSymbol)))
+        throw std::invalid_argument(std::string(label)+
+            " must be additive, multiplicative, log_additive or pseudo_additive");
+    const auto name=Rcpp::as<std::string>(mode);
+    if(name=="additive")return kalos::X11DecompositionMode::additive;
+    if(name=="multiplicative")return kalos::X11DecompositionMode::multiplicative;
+    if(name=="log_additive")return kalos::X11DecompositionMode::log_additive;
+    if(name=="pseudo_additive")return kalos::X11DecompositionMode::pseudo_additive;
+    throw std::invalid_argument(std::string(label)+
+        " must be additive, multiplicative, log_additive or pseudo_additive");
+}
+const char* mode_name(kalos::X11DecompositionMode mode) {
+    switch(mode) {
+    case kalos::X11DecompositionMode::additive:return "additive";
+    case kalos::X11DecompositionMode::multiplicative:return "multiplicative";
+    case kalos::X11DecompositionMode::log_additive:return "log_additive";
+    case kalos::X11DecompositionMode::pseudo_additive:return "pseudo_additive";
+    }
+    throw std::logic_error("unknown decomposition mode");
+}
 } // namespace kalos_x11_rcpp

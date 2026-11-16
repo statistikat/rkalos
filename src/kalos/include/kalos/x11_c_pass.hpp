@@ -7,9 +7,8 @@
 // stages re-run over it, and the qualified items 22b.3a/3b units perform the
 // final extreme-value analysis on C13 with an explicit required policy.
 // See docs/contracts/x11-cpass-contract.md.
-// The D pass, automatic filter choice, cross-validation, multiplicative and
-// non-seasonal modes and ARIMA-regression inputs are not delivered or
-// claimed.
+// The D pass, automatic filter choice, cross-validation, non-seasonal modes
+// and ARIMA-regression inputs are not delivered or claimed.
 #include "x11_b_pass.hpp"
 #include <cstddef>
 #include <cstdint>
@@ -40,14 +39,17 @@ struct X11CPass {
     X11CCorrectionRound round;
     std::vector<int> initial_filters,final_filters; // calendar-period order
     int trend_length=0;
+    X11DecompositionMode mode=X11DecompositionMode::additive;
     std::string status; // "available"
 };
-// Fixed additive C pass over `series` (the pinned B1 input) and its finished
-// fixed additive B pass `b`. The composition mirrors the pinned X11Kernel:
-// C1 = series - b.b20 and both passes must agree on frequency, first period,
-// the fixed seasonal requests, the Henderson length, the sigma policy and
-// the exact series the B pass consumed. As in the B pass the sigma policy is
-// a required argument and nothing is promoted; the pinned fixture was
+// Fixed C pass over `series` (the pinned B1 input) and its finished fixed
+// B pass `b`. The composition mirrors the pinned X11Kernel: C1 = the pinned
+// ctx.remove of b.b20 from the series and both passes must agree on
+// frequency, first period, the fixed seasonal requests, the Henderson
+// length, the sigma policy and the exact series the B pass consumed. The
+// decomposition mode is inherited from `b` (the pinned kernel shares one
+// context across the passes). As in the B pass the sigma policy is a
+// required argument and nothing is promoted; the pinned fixture was
 // qualified with X11SigmaPolicy::legacy. `first_period` is the 1-based
 // calendar position of the first row.
 X11CPass x11_c_pass(const MaskedSeries& series,int frequency,int first_period,

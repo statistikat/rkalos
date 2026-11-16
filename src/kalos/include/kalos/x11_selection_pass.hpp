@@ -12,10 +12,11 @@
 // and MSR tables, and the pinned degenerate choices (a NaN comparison ratio
 // taking the longest filter, a NaN MSR table selecting 3x9) stay explicit
 // unsupported statuses instead of being reproduced.
-// See docs/contracts/x11-selection-pass-contract.md.
-// Cross-validation, multiplicative and non-seasonal modes, the
-// period-specific corrector and ARIMA-regression inputs are not delivered
-// or claimed.
+// See docs/contracts/x11-selection-pass-contract.md and, for the
+// decomposition modes, docs/contracts/x11-multiplicative-contract.md,
+// x11-log-additive-contract.md and x11-pseudo-additive-contract.md.
+// Cross-validation, non-seasonal modes, the period-specific corrector and
+// ARIMA-regression inputs are not delivered or claimed.
 #include "x11_d_pass.hpp"
 #include "x11_msr_selection.hpp"
 #include "x11_seasonal_plan.hpp"
@@ -70,19 +71,29 @@ struct X11SelectionPass {
     X11TrendStage b7,c7,d7,final;
     X11MsrStage msr;
 };
-// Additive selection run over `series` (the pinned B1 input, complete: the
-// pinned X11Kernel.check refuses missing values). `requests` holds one
-// pinned SeasonalFilterOption request per calendar period; `trend_length`
-// is the fixed Henderson length or 0 for the pinned automatic selection.
-// The sigma policy is required and nothing is promoted. The MSR iteration
-// policy defaults to the pinned jdplus loop; the qualified
-// x11_five_year_cap alternative stops after five year removals.
-// `backcast`/`forecast` are the pinned context horizons of a hand-extended
-// calendar, exactly as in the fixed passes.
+// Selection run over `series` (the pinned B1 input, complete: the pinned
+// X11Kernel.check refuses missing values). `requests` holds one pinned
+// SeasonalFilterOption request per calendar period; `trend_length` is the
+// fixed Henderson length or 0 for the pinned automatic selection. The sigma
+// policy is required and nothing is promoted. The MSR iteration policy
+// defaults to the pinned jdplus loop; the qualified x11_five_year_cap
+// alternative stops after five year removals. `backcast`/`forecast` are the
+// pinned context horizons of a hand-extended calendar, exactly as in the
+// fixed passes. `mode` drives the whole flow (the pinned kernel shares one
+// context): the multiplicative mode runs the ratio arithmetic, positivity
+// repair and the pinned relative-form MSR table over the ratio-composed
+// tables (item 22b.5 M3a) and requires strictly positive complete input;
+// log_additive (item 22b.5 M3b-i) runs the additive flow on Math.log of the
+// input under the same positivity requirement; pseudo_additive (item
+// 22b.5 M3b-ii) runs the pinned X11{B,C,D}StepPseudoAdd pipeline — ratio
+// arithmetic with the PseudoAddUtility composition forms, the makePositivity
+// trend repair and the removeIrregular-form global-MSR walk with the
+// absolute-form MSRE table — with no positivity requirement.
 X11SelectionPass x11_selection_pass(const MaskedSeries& series,int frequency,int first_period,
     const std::vector<X11SeasonalRequest>& requests,int trend_length,
     X11SigmaPolicy policy,X11MsrIterationPolicy msr_policy=X11MsrIterationPolicy::jdplus,
     double lower_sigma=1.5,double upper_sigma=2.5,int backcast=0,int forecast=0,
+    X11DecompositionMode mode=X11DecompositionMode::additive,
     const Interrupt& interrupt={});
 } // namespace kalos
 #endif

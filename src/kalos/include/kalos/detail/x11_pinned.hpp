@@ -10,6 +10,7 @@
 // x11-dpass-contract.md for the qualification evidence.
 #include "../numerics.hpp"
 #include "../parallel.hpp"
+#include "../x11_decomposition.hpp"
 #include "../x11_filters.hpp"
 #include <algorithm>
 #include <cmath>
@@ -52,21 +53,172 @@ inline MaskedSeries repo_view(const MaskedSeries& pinned) {
         if(!std::isfinite(out.values[row])) {out.values[row]=0.;out.missing[row]=1;}
     return out;
 }
-// Elementwise difference mirroring the pinned IEEE arithmetic: the missing
-// flag is the union of the inputs and masked values carry NaN, exactly the
-// NaN the pinned elementwise subtraction produces from NaN-carrying rows.
-inline MaskedSeries minus_pinned(const MaskedSeries& left,const MaskedSeries& right,
-        const Interrupt& interrupt) {
+// X11Context.remove(a, b) for the pinned decomposition switch: the additive
+// branch is the elementwise difference, the multiplicative branch (pinned
+// isMultiplicative: Multiplicative and PseudoAdditive alike) is the element-
+// wise ratio. Both mirror the pinned IEEE arithmetic: the missing flag is
+// the union of the inputs and masked values carry NaN, exactly the NaN the
+// pinned elementwise operation produces from NaN-carrying rows. Every step
+// composition of the pinned additive/multiplicative/log-additive reference
+// goes through this single site; the pseudo-additive overrides decode to
+// the dedicated PseudoAddUtility forms below (item 22b.5 M3b-ii), which
+// carry masked rows through the identical union/NaN pattern.
+inline MaskedSeries remove_pinned(const MaskedSeries& left,const MaskedSeries& right,
+        bool multiplicative,const Interrupt& interrupt) {
     MaskedSeries out;
     out.values.assign(left.values.size(),nan());
     out.missing.assign(left.values.size(),1);
     parallel_for(left.values.size(),1,interrupt,[&](std::size_t row) {
         if(!left.missing[row] && !right.missing[row]) {
-            const auto value=left.values[row]-right.values[row];
+            const auto value=multiplicative?left.values[row]/right.values[row]
+                :left.values[row]-right.values[row];
             out.values[row]=value; out.missing[row]=std::isnan(value);
         }
     });
     return out;
+}
+// PseudoAddUtility (pinned jdplus.x13.base.core.x11.pseudoadd, bytecode
+// PADD_UTIL.txt) — the elementwise forms the X11{B,C,D}StepPseudoAdd
+// overrides apply where the base classes call ctx.remove. The lambda
+// capture orders are bytecode-exact: removeSeasonalAdjusted(a, b, c) is
+// a - c*(b - 1) (the invokedynamic captures (arg0, arg2, arg1)) and
+// adjustRefSeries(a, b, c, d) is a + c*(d/b - d). NaN rows propagate like
+// the pinned DoubleSeq.onMapping, so the missing pattern matches the
+// remove_pinned convention.
+inline MaskedSeries pseudo_remove_irregular(const MaskedSeries& left,
+        const MaskedSeries& right,const Interrupt& interrupt) {
+    MaskedSeries out;
+    out.values.assign(left.values.size(),nan());
+    out.missing.assign(left.values.size(),1);
+    parallel_for(left.values.size(),1,interrupt,[&](std::size_t row) {
+        if(!left.missing[row] && !right.missing[row]) {
+            const auto value=left.values[row]-right.values[row]+1.;
+            out.values[row]=value; out.missing[row]=std::isnan(value);
+        }
+    });
+    return out;
+}
+inline MaskedSeries pseudo_remove_seasonal_adjusted(const MaskedSeries& a,
+        const MaskedSeries& b,const MaskedSeries& c,const Interrupt& interrupt) {
+    MaskedSeries out;
+    out.values.assign(a.values.size(),nan());
+    out.missing.assign(a.values.size(),1);
+    parallel_for(a.values.size(),1,interrupt,[&](std::size_t row) {
+        if(!a.missing[row] && !b.missing[row] && !c.missing[row]) {
+            const auto value=a.values[row]-c.values[row]*(b.values[row]-1.);
+            out.values[row]=value; out.missing[row]=std::isnan(value);
+        }
+    });
+    return out;
+}
+inline MaskedSeries pseudo_adjust_ref_series(const MaskedSeries& ref,
+        const MaskedSeries& corr,const MaskedSeries& s,const MaskedSeries& r,
+        const Interrupt& interrupt) {
+    MaskedSeries out;
+    out.values.assign(ref.values.size(),nan());
+    out.missing.assign(ref.values.size(),1);
+    parallel_for(ref.values.size(),1,interrupt,[&](std::size_t row) {
+        if(!ref.missing[row] && !corr.missing[row] && !s.missing[row]
+                && !r.missing[row]) {
+            const auto value=ref.values[row]
+                +s.values[row]*(r.values[row]/corr.values[row]-r.values[row]);
+            out.values[row]=value; out.missing[row]=std::isnan(value);
+        }
+    });
+    return out;
+}
+inline MaskedSeries product_pinned(const MaskedSeries& left,
+        const MaskedSeries& right,const Interrupt& interrupt) {
+    MaskedSeries out;
+    out.values.assign(left.values.size(),nan());
+    out.missing.assign(left.values.size(),1);
+    parallel_for(left.values.size(),1,interrupt,[&](std::size_t row) {
+        if(!left.missing[row] && !right.missing[row]) {
+            const auto value=left.values[row]*right.values[row];
+            out.values[row]=value; out.missing[row]=std::isnan(value);
+        }
+    });
+    return out;
+}
+// removeSeasonalAdjustedWithBorders(x, s, f, drop): the border rows keep
+// the ratio x/s of the full-length inputs, the interior rows drop(t, t)
+// both full-length inputs and take x - f*(s - 1) — the filter f is NOT
+// dropped (at every pinned call site it already lives on the cropped
+// span), matching the DoubleSeq.drop/get use of the bytecode.
+inline MaskedSeries pseudo_with_borders(const MaskedSeries& x,const MaskedSeries& s,
+        const MaskedSeries& f,std::size_t drop,const Interrupt& interrupt) {
+    MaskedSeries out;
+    out.values.assign(x.values.size(),nan());
+    out.missing.assign(x.values.size(),1);
+    const auto n=x.values.size();
+    parallel_for(n,1,interrupt,[&](std::size_t row) {
+        if(row<drop || row+drop>=n) { // the ratio fallback rows
+            if(!x.missing[row] && !s.missing[row]) {
+                const auto value=x.values[row]/s.values[row];
+                out.values[row]=value; out.missing[row]=std::isnan(value);
+            }
+        } else if(!x.missing[row] && !s.missing[row] && !f.missing[row-drop]) {
+            const auto value=x.values[row]
+                -f.values[row-drop]*(s.values[row]-1.);
+            out.values[row]=value; out.missing[row]=std::isnan(value);
+        }
+    });
+    return out;
+}
+// The pass-level mode gate. Unqualified modes fail explicitly: the pinned
+// The pass-level mode gate. All four decomposition modes are delivered and
+// qualified: additive (item 22b.4), multiplicative (item 22b.5 M3a),
+// log_additive (item 22b.5 M3b-i) and pseudo_additive (item 22b.5 M3b-ii,
+// the pinned X11{B,C,D}StepPseudoAdd pipeline). The positivity requirement
+// mirrors the pinned X11Kernel.check() predicate dcmpg(x, 0) > 0 on the
+// present rows, gated on mode == Multiplicative || mode == LogAdditive
+// (the pinned message is the constant string for BOTH gated modes;
+// Additive and PseudoAdditive have no requirement at all — a non-positive
+// pseudo-additive input is legal). The pinned missing-value error is a
+// kernel-level rule the selection pass applies separately; the steps
+// themselves carry masked rows through the arithmetic as NaN.
+inline void check_decomposition(const char*,X11DecompositionMode mode,
+        const MaskedSeries& series) {
+    if(mode!=X11DecompositionMode::multiplicative&&mode!=X11DecompositionMode::log_additive)
+        return;
+    for(std::size_t row=0;row<series.values.size();++row)
+        if(!series.missing[row]&&!(series.values[row]>0.))
+            throw std::invalid_argument(
+                "multiplicative decomposition of non positive series");
+}
+// The pinned X11Kernel.process input transform for LogAdditive: the steps
+// run the plain additive arithmetic on DoubleSeq.log() = fn(Math::log) of
+// the input (natural log). Masked rows keep their finite placeholders —
+// the internal passes only ever read flagged rows as NaN through
+// to_pinned, mirroring the pinned NaN-carrying sequence where log(NaN) is
+// never consumed by a present-row computation.
+inline MaskedSeries log_domain(const MaskedSeries& series) {
+    auto out=series;
+    for(std::size_t row=0;row<out.values.size();++row)
+        if(!out.missing[row]) out.values[row]=std::log(out.values[row]);
+    return out;
+}
+// X11Context.makePositivity over the raw pinned values: every row with a
+// non-positive value (NaN comparisons are false, so NaN rows are skipped,
+// exactly the pinned dcmpg test) takes the mean of its nearest non-repaired
+// neighbours, or whichever side exists, where the scan again stops at a
+// positive value or a NaN (the pinned dcmpg stops on either). With no
+// positive or NaN neighbour on either side the pinned reference throws its
+// X11Exception "Negative series"; no row is ever left non-positive behind,
+// because each repair happens in ascending order and later scans see the
+// repaired values.
+inline void make_positivity(std::vector<double>& values) {
+    const auto m=values.size();
+    for(std::size_t row=0;row<m;++row) {
+        if(!(values[row]<=0.)) continue; // finite positive or NaN: skipped
+        std::size_t left=m,right=m;
+        for(std::size_t scan=row;scan-- >0;) if(!(values[scan]<=0.)) {left=scan;break;}
+        for(std::size_t scan=row+1;scan<m;++scan) if(!(values[scan]<=0.)) {right=scan;break;}
+        if(left<right&&right<m) values[row]=(values[left]+values[right])/2.;
+        else if(left<right) values[row]=values[left];
+        else if(right<m) values[row]=values[right];
+        else throw std::invalid_argument("negative series");
+    }
 }
 // DefaultSeasonalNormalizer.normalize(seq, drop, ctx, shift) with the pinned
 // coordinates spelled out: `position` is ctx.getPosition(drop), the pinned
@@ -78,7 +230,8 @@ inline MaskedSeries minus_pinned(const MaskedSeries& left,const MaskedSeries& ri
 // the periodic copy-back of CopyPeriodicEndPoints.
 inline MaskedSeries normalize_pinned(const MaskedSeries& seq,int frequency,
         std::size_t position,std::size_t shift,std::size_t extend,
-        const std::vector<int>& final_filters,const Interrupt& interrupt) {
+        const std::vector<int>& final_filters,bool multiplicative=false,
+        const Interrupt& interrupt={}) {
     const auto f=static_cast<std::size_t>(frequency),m=seq.values.size();
     const auto t=f/2;
     if(m<f+t) throw std::invalid_argument("normalization span requires a full cycle plus the annual radius");
@@ -102,7 +255,9 @@ inline MaskedSeries normalize_pinned(const MaskedSeries& seq,int frequency,
         if(restore[(position+row)%f]) { out.values[row]=out.values[row+f]; out.missing[row]=out.missing[row+f]; }
     for(std::size_t row=m-t;row<m;++row)
         if(restore[(position+row)%f]) { out.values[row]=out.values[row-f]; out.missing[row]=out.missing[row-f]; }
-    auto normalized=minus_pinned(seq,out,interrupt);
+    // The one mode-sensitive site of the pinned normalizer: the residual is
+    // taken with ctx.remove, the ratio under a multiplicative context.
+    auto normalized=remove_pinned(seq,out,multiplicative,interrupt);
     if(extend==0) return normalized;
     MaskedSeries padded;
     padded.values.assign(m+2*extend,nan()); padded.missing.assign(m+2*extend,1);
@@ -421,18 +576,31 @@ inline void pinned_filtered_mean(const std::vector<double>& block,
         out[k]=value;
     }
 }
-// X11Utility.defaultMsrTable in additive mode over the span `x`: the pinned
-// MsrTable difference statistics, indexed per calendar phase (phase numbers
-// are absolute; `position` is the phase of the first row). The additive mode
+// X11Utility.defaultMsrTable over the span `x`: the pinned MsrTable
+// difference statistics, indexed per calendar phase (phase numbers are
+// absolute; `position` is the phase of the first row). The additive mode
 // takes the pinned plain-subtract branch of the decomposition switch — the
 // residual is x-mean with no +1 offset (that offset belongs to the other
 // decomposition modes and would quantize tiny residuals around 1.0) — and
 // the seasonal evolution is the differences of the filtered mean itself;
 // both accumulate |difference| in stride order and scale by the pinned
-// fis/cs lookup of MsrTable.of.
+// fis/cs lookup of MsrTable.of. Under the multiplicative mode the pinned
+// switch takes the divide branch (residual = x/mean) with the MsrTable.of
+// relative-form flag set, which divides EVERY phase difference (of both
+// the residual and the filtered mean) by its leading value.
 inline void pinned_msr_table(const std::vector<double>& x,int frequency,
-        std::size_t position,std::vector<double>& ri,std::vector<double>& rs,
+        std::size_t position,X11DecompositionMode mode,
+        std::vector<double>& ri,std::vector<double>& rs,
         std::vector<std::int64_t>& counts) {
+    // The pinned mode switch of the observation residual (X11Utility.
+    // defaultMsrTable / MsrFilterSelection.calcComponents): Multiplicative
+    // takes x/mean and sets the MsrTable.of relative flag; PseudoAdditive
+    // takes x - mean + 1 (the PseudoAddUtility.removeIrregular form, also
+    // used by MsrFilterSelectionPseudoAdd.calcIrregular) with the flag
+    // FALSE — the flag is the strict mode == Multiplicative test;
+    // Additive/LogAdditive keep the plain difference.
+    const bool relative=mode==X11DecompositionMode::multiplicative;
+    const bool pseudo=mode==X11DecompositionMode::pseudo_additive;
     const auto f=static_cast<std::size_t>(frequency),m=x.size();
     static const double ctab[]={1.,1.02584,1.01779,1.01383,1.,3.,1.55291,1.30095};
     const auto fis=[](long n)->double {
@@ -457,7 +625,13 @@ inline void pinned_msr_table(const std::vector<double>& x,int frequency,
         for(std::size_t j=0;j<count;++j)mean[phase+j*f]=filtered[j];
     }
     std::vector<double> residual(m);
-    for(std::size_t row=0;row<m;++row)residual[row]=x[row]-mean[row];
+    for(std::size_t row=0;row<m;++row)
+        residual[row]=relative?x[row]/mean[row]
+            :pseudo?x[row]-mean[row]+1.:x[row]-mean[row];
+    const auto phase_delta=[relative](double first,double second) {
+        const auto delta=second-first;
+        return relative?delta/first:delta;
+    };
     ri.assign(f,nan());rs.assign(f,nan());counts.assign(f,0);
     for(std::size_t phase=0;phase<f;++phase) {
         const auto start=(phase+f-position)%f; // pinned (phase-position+f)%f
@@ -466,8 +640,8 @@ inline void pinned_msr_table(const std::vector<double>& x,int frequency,
         // The pinned MsrTable.of takes the MEAN series (not x) against the
         // residual: seasonal evolutions measure the smoothed series.
         for(std::size_t i1=start,i2=start+f;i2<m;i1=i2,i2+=f,++n) {
-            s_ri=s_ri+std::fabs(residual[i2]-residual[i1]);
-            s_rs=s_rs+std::fabs(mean[i2]-mean[i1]);
+            s_ri=s_ri+std::fabs(phase_delta(residual[i1],residual[i2]));
+            s_rs=s_rs+std::fabs(phase_delta(mean[i1],mean[i2]));
         }
         ri[phase]=(s_ri/static_cast<double>(n))*fis(n);
         rs[phase]=(s_rs/static_cast<double>(n))*cs(n);
@@ -478,15 +652,19 @@ inline void pinned_msr_table(const std::vector<double>& x,int frequency,
 // filter of length period + 1 with the pinned symmetric weights applied to
 // the interior span only (the pinned NaN-filled table plus DataBlock.of view
 // leaves the outer `side` rows unwritten, so they never contribute), the
-// irregular as the aligned interior input minus the pilot, the explicit
-// extensions dropped from both windows, and the ratio of the lag-1 mean
-// absolute changes of the irregular over the same statistic of the pilot,
-// multiplied by 3.0 for quarterly and 6.0 for biannual (pinned constants).
-// calcAbsMeanVariation divides the plain sum by length - 1 with no missing
-// handling: degenerate dropped windows reproduce the pinned division
-// outcomes (NaN from 0/0, signed zero from 0/-1) unchanged.
+// irregular as the aligned interior input with the pinned ctx.remove of the
+// pilot (minus additive, ratio multiplicative), the explicit extensions
+// dropped from both windows, and the ratio of the lag-1 mean absolute
+// changes of the irregular over the same statistic of the pilot, multiplied
+// by 3.0 for quarterly and 6.0 for biannual (pinned constants).
+// X11Utility.calcAbsMeanVariation divides the plain sum by length - 1 with
+// no missing handling; under the multiplicative mode the pinned flag makes
+// every lag-1 change relative, d = (x[i] - x[i-1]) / x[i-1], in BOTH the
+// pilot and the irregular window (pinned X11Utility calcAbsMeanVariations).
+// Degenerate dropped windows reproduce the pinned division outcomes (NaN
+// from 0/0, signed zero from 0/-1) unchanged.
 inline double pinned_ic_ratio(const std::vector<double>& values,int frequency,
-        std::size_t backcast,std::size_t forecast) {
+        std::size_t backcast,std::size_t forecast,bool mult=false) {
     const auto f=static_cast<std::size_t>(frequency),n=values.size();
     const auto length=static_cast<std::size_t>(frequency)+1; // odd: period is even
     const auto side=length/2;
@@ -495,16 +673,22 @@ inline double pinned_ic_ratio(const std::vector<double>& values,int frequency,
     std::vector<double> pilot(m),irregular(m);
     for(std::size_t row=0;row<m;++row) {
         pilot[row]=anchored_dot(w,values.data()+row);
-        irregular[row]=values[side+row]-pilot[row];
+        irregular[row]=mult?values[side+row]/pilot[row]
+            :values[side+row]-pilot[row];
     }
     // DoubleSeq.drop(backcast, forecast) = dropFirst then dropLast.
     const auto first=std::min(backcast,m);
     const auto rest=m-first;
     const auto count=rest>forecast?rest-forecast:0;
     double pilot_change=0,irregular_change=0;
+    const auto variation=[](const std::vector<double>& v,std::size_t first,
+            std::size_t row,bool multiplicative) {
+        const auto difference=v[first+row]-v[first+row-1];
+        return std::fabs(multiplicative?difference/v[first+row-1]:difference);
+    };
     for(std::size_t row=1;row<count;++row) {
-        pilot_change=pilot_change+std::fabs(pilot[first+row]-pilot[first+row-1]);
-        irregular_change=irregular_change+std::fabs(irregular[first+row]-irregular[first+row-1]);
+        pilot_change=pilot_change+variation(pilot,first,row,mult);
+        irregular_change=irregular_change+variation(irregular,first,row,mult);
     }
     const auto divisor=static_cast<double>(count)-1.; // calcAbsMeanVariation's n - 1
     auto ratio=(irregular_change/divisor)/(pilot_change/divisor);
