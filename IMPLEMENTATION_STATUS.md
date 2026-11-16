@@ -288,7 +288,13 @@ lanes), re-synced, re-qualified here.
   apply-corrections identity, fallback counting, validation errors and
   wrapper output shapes.
 - Full suite after the addition: **270,653 assertions, 0 failures** across all
-  39 files on the OpenMP lane; serial lane recorded below.
+  39 files on the OpenMP lane; serial lane **270,649, 0 failures** — the same
+  four-assertion conditional difference as before (six OpenMP-only thread
+  reproducibility checks versus two serial-specific parallel-info checks);
+  both new files contribute identical counts per lane (3,390 sigma + 714
+  replacement). The serial lane was installed from a fresh `R CMD build`
+  tarball with the `R_MAKEVARS_USER` probe override (0 warnings,
+  `compiled = FALSE`, no `omp_*` symbols).
 
 ## Compatibility
 
