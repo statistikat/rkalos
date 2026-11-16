@@ -29,9 +29,13 @@ OBJECTS = RcppExports.o \
   rcpp_x11_seasonal_plan.o \
   rcpp_x11_seasonal_processing.o \
   rcpp_x11_selection_pass.o \
+  rcpp_x11_selection_records.o \
   rcpp_x11_sigma.o \
   rcpp_x11_table_support.o \
   rcpp_x11_trend_selection.o \
+  rcpp_x13_allocation.o \
+  rcpp_x13_fit.o \
+  rcpp_x13_shared.o \
   kalos/src/arma_identification.o \
   kalos/src/arma_information.o \
   kalos/src/arma_objective.o \
@@ -74,4 +78,6 @@ OBJECTS = RcppExports.o \
   kalos/src/x11_seasonal_processing.o \
   kalos/src/x11_selection_pass.o \
   kalos/src/x11_sigma.o \
-  kalos/src/x11_trend_selection.o
+  kalos/src/x11_trend_selection.o \
+  kalos/src/x13_allocation.o \
+  kalos/src/x13_fit.o

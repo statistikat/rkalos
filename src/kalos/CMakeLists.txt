@@ -75,6 +75,8 @@ add_library(kalos STATIC
   src/x11_replacement.cpp
   src/x11_sigma.cpp
   src/x11_trend_selection.cpp
+  src/x13_allocation.cpp
+  src/x13_fit.cpp
   backends/openblas.cpp)
 add_library(kalos::kalos ALIAS kalos)
 set_target_properties(kalos PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -177,7 +179,9 @@ if(KALOS_BUILD_TESTS)
     test_x11_seasonal_processing
     test_x11_replacement
     test_x11_sigma
-    test_x11_trend_selection)
+    test_x11_trend_selection
+    test_x13_allocation
+    test_x13_fit)
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE kalos::kalos)
     # These inherited harnesses use assert; keep assertions in Release builds.

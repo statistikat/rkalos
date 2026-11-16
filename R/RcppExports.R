@@ -217,3 +217,15 @@
     .Call(`_rkalos_native_x11_trend_select`, values, frequency, mode, backcasts, forecasts)
 }
 
+.native_x13_preadjust <- function(values, log, variables_list) {
+    .Call(`_rkalos_native_x13_preadjust`, values, log, variables_list)
+}
+
+.native_x13_restore <- function(preadjustment, d10, d11, d12, d13, c17, mode = NULL) {
+    .Call(`_rkalos_native_x13_restore`, preadjustment, d10, d11, d12, d13, c17, mode)
+}
+
+.native_x13_fit <- function(values, variables_list, log, frequency, start_period, seasonal, trend_length, sigma, lower_sigma, upper_sigma, msr_policy, mode, backcast, forecast) {
+    .Call(`_rkalos_native_x13_fit`, values, variables_list, log, frequency, start_period, seasonal, trend_length, sigma, lower_sigma, upper_sigma, msr_policy, mode, backcast, forecast)
+}
+

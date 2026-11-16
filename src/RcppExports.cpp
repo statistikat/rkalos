@@ -898,6 +898,60 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_x13_preadjust
+Rcpp::List native_x13_preadjust(SEXP values, SEXP log, SEXP variables_list);
+RcppExport SEXP _rkalos_native_x13_preadjust(SEXP valuesSEXP, SEXP logSEXP, SEXP variables_listSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type log(logSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type variables_list(variables_listSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_x13_preadjust(values, log, variables_list));
+    return rcpp_result_gen;
+END_RCPP
+}
+// native_x13_restore
+Rcpp::List native_x13_restore(SEXP preadjustment, SEXP d10, SEXP d11, SEXP d12, SEXP d13, SEXP c17, SEXP mode);
+RcppExport SEXP _rkalos_native_x13_restore(SEXP preadjustmentSEXP, SEXP d10SEXP, SEXP d11SEXP, SEXP d12SEXP, SEXP d13SEXP, SEXP c17SEXP, SEXP modeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type preadjustment(preadjustmentSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type d10(d10SEXP);
+    Rcpp::traits::input_parameter< SEXP >::type d11(d11SEXP);
+    Rcpp::traits::input_parameter< SEXP >::type d12(d12SEXP);
+    Rcpp::traits::input_parameter< SEXP >::type d13(d13SEXP);
+    Rcpp::traits::input_parameter< SEXP >::type c17(c17SEXP);
+    Rcpp::traits::input_parameter< SEXP >::type mode(modeSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_x13_restore(preadjustment, d10, d11, d12, d13, c17, mode));
+    return rcpp_result_gen;
+END_RCPP
+}
+// native_x13_fit
+Rcpp::List native_x13_fit(SEXP values, SEXP variables_list, SEXP log, SEXP frequency, SEXP start_period, SEXP seasonal, SEXP trend_length, SEXP sigma, SEXP lower_sigma, SEXP upper_sigma, SEXP msr_policy, SEXP mode, SEXP backcast, SEXP forecast);
+RcppExport SEXP _rkalos_native_x13_fit(SEXP valuesSEXP, SEXP variables_listSEXP, SEXP logSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP seasonalSEXP, SEXP trend_lengthSEXP, SEXP sigmaSEXP, SEXP lower_sigmaSEXP, SEXP upper_sigmaSEXP, SEXP msr_policySEXP, SEXP modeSEXP, SEXP backcastSEXP, SEXP forecastSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type variables_list(variables_listSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type log(logSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type frequency(frequencySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type start_period(start_periodSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type seasonal(seasonalSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type trend_length(trend_lengthSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type lower_sigma(lower_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type upper_sigma(upper_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type msr_policy(msr_policySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type mode(modeSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type backcast(backcastSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type forecast(forecastSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_x13_fit(values, variables_list, log, frequency, start_period, seasonal, trend_length, sigma, lower_sigma, upper_sigma, msr_policy, mode, backcast, forecast));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_arma_parameter_map", (DL_FUNC) &_rkalos_native_arma_parameter_map, 3},
@@ -954,6 +1008,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_x11_sigma_weights", (DL_FUNC) &_rkalos_native_x11_sigma_weights, 10},
     {"_rkalos_native_x11_trend_policy", (DL_FUNC) &_rkalos_native_x11_trend_policy, 3},
     {"_rkalos_native_x11_trend_select", (DL_FUNC) &_rkalos_native_x11_trend_select, 5},
+    {"_rkalos_native_x13_preadjust", (DL_FUNC) &_rkalos_native_x13_preadjust, 3},
+    {"_rkalos_native_x13_restore", (DL_FUNC) &_rkalos_native_x13_restore, 7},
+    {"_rkalos_native_x13_fit", (DL_FUNC) &_rkalos_native_x13_fit, 14},
     {NULL, NULL, 0}
 };
 

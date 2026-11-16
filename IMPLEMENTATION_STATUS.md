@@ -612,6 +612,143 @@ lanes), re-synced, re-qualified here.
     fixture metadata would save the next integrator from reverse-engineering
     them.
 
+## Core integration checkpoint and the restricted X-13 fit at the R boundary — 2026-11-16
+
+- The pin advanced three core commits to `2b93ab00ab69708b2e5b871f313bed567a04a686`
+  (via `tools/sync-core.py`, `--verify` clean offline): `efd4ce0` "Qualify the
+  X-13 deterministic-effect allocation staging (22c M3c)", `f84489e` "Deliver
+  the restricted fixed-model X-13 fit composition (22c M3-finale)" and
+  `2b93ab0` "Qualify the restricted fixed-model X-13 fit on pinned monthly
+  fixtures (22c M3-finale)". The lock delta was verified from the diff:
+  98→102 core files (added `include/kalos/x13_allocation.hpp`,
+  `x13_fit.hpp` and their sources) and 226→243 fixture files (the 8-file
+  `native/x13-allocation/` and 9-file `native/x13-fit/` corpora); only two
+  pre-existing core hashes changed (`CMakeLists.txt`, `revision.hpp`) plus
+  the commit and manifest hashes. The snapshot matches the core's own
+  source manifest exactly.
+- The allocation seams: `src/rcpp_x13_allocation.cpp` exports
+  `.native_x13_preadjust(values, log, variables)` (the fixed-coefficient
+  initialStep) and `.native_x13_restore(pre, d10, d11, d12, d13, c17, mode)`
+  (the finals) with the pinned allocation vocabulary — one variable list per
+  model variable in pinned model order with `class` (outlier, days_related,
+  moving_holiday, user), exact `effect` bucket (undefined, series, trend,
+  seasonal, seasonally_adjusted, irregular, calendar_effect), one
+  `coefficient` per regression `column` vector over the input calendar.
+  The restore consumes the caller's finished preadjustment object through
+  the established faithful-rebuild/passthrough pattern: the boundary only
+  rebuilds the pinned record and the pinned seam enforces the coupling
+  (available status, shared calendar). The R wrappers
+  `native_x13_preadjust()`/`native_x13_restore()` decorate the stored and
+  final tables on the input calendar (ts start/frequency, `row_basis`,
+  `available_rows`) and refuse objects that did not come from the boundary.
+- The restricted fit: `src/rcpp_x13_fit.cpp` exports `.native_x13_fit()` and
+  the `native_x13_fit()` wrapper composes the qualified pieces exactly as the
+  core composes them, mirroring the core's fail-closed boundary verbatim and
+  never inventing R-side refusals: only fixed seasonal requests ("x11default"
+  or "msr" answer `unsupported:x13 fit fixed seasonal requests only`), a
+  fixed odd Henderson `trend_length` (the automatic 0 answers
+  `unsupported:x13 fit fixed Henderson trend length`), the fixed-path
+  horizon domain `backcast = forecast = 0` (anything else, negatives
+  included, answers `unsupported:x13 fit requires zero horizons`) and the
+  REQUIRED sigma policy: `sigma = NULL` (the default) is passed through
+  untouched — no layer applies a default — and the core answers
+  `unsupported:x13 fit requires an explicit sigma policy`; it is never an
+  R stop. The guards fire in the pinned order (seasonal, trend, horizons,
+  sigma), proven by precedence cases. The provenance echo (frequency,
+  calendar, log, seasonal requests, trend length, `sigma_set`/`sigma`
+  (NULL when unset), sigma cuttings, MSR policy, `mode_requested`/
+  `mode_effective` with the updateSpec forcing note, horizons) is complete
+  whether or not the run completed; `$preadjustment` (with its stored
+  a-tables and `out`) is attached once past the guards, `$selection` (the
+  full selection record of the run over `out`, scope
+  "restricted_fit_selection_run") once the selection stage ran — the
+  selection's own refusals pass through verbatim with the stage records —
+  and `$results` (the D10–D13/C17 exactly as finals consumed them, with the
+  log-additive results-builder stage note), `$finals`, `$finalSA`,
+  `$finalTrend` and `$finalIrregular` only for `status = "available"`.
+- Boundary refactor: the selection serialization moved to a shared TU pair
+  (`rcpp_x11_selection_records.{hpp,cpp}`, namespace `kalos_x11_rcpp`) whose
+  `selection_result()` builder is used verbatim by the pass-level selection
+  entry and by the fit, and the X-13 marshalling moved to
+  `rcpp_x13_shared.{hpp,cpp}` (namespace `kalos_x13_rcpp`); on the R side the
+  selection wrapper's decoration extracted to
+  `.x11_decorate_pass()`/`.x11_decorate_selection_record()` so a fit's
+  `$selection` reads bit-and-shape-identically to the selection wrapper's
+  own result wherever it is chained.
+- Capability honesty (the schema decision): `capabilities()` kept every
+  schema-1 field with its schema-1 meaning and was extended additively —
+  `schema_version` 1→2 marks the extension. **`fit` stays FALSE** and keeps
+  meaning UNRESTRICTED fitting (the ARIMA route: estimation, missing rows,
+  nonzero horizons, LengthOfPeriod transforms, benchmarking): the restricted
+  fit is gated by its own explicit fields, never by `fit`. New top-level
+  `native_x13_fit_restricted = TRUE` (the quick gate) and the
+  `restricted_fit` block: `schema_version = 1L` (the block's own version),
+  `native_x13_fit_restricted = TRUE` (the fit below is qualified end to end
+  on the pinned corpus), `fixed_coefficients_only = TRUE` (every variable
+  carries its coefficient; nothing is estimated),
+  `fixed_seasonal_requests_only = TRUE` (one pinned filter per calendar
+  period; x11default/msr are refused), `fixed_trend_length_only = TRUE`
+  (odd Henderson >= 5; the automatic 0 is refused),
+  `sigma_policy_required = TRUE` ("legacy"/"accurate"; NULL answers the
+  core's fail-closed status and no default exists at any layer),
+  `zero_horizon_only = TRUE` (backcast = forecast = 0 is the only delivered
+  domain; nonzero horizons leave the fixed path through the pinned
+  ExactArimaForecasts route), `monthly_only = TRUE` with `frequency = 12L`
+  (qualified on the frequency-12 corpus; other frequencies are untested
+  here, not rejected — gating is the caller's decision), `modes` (the four
+  qualified decompositions after the updateSpec forcing: additive,
+  multiplicative, log_additive, pseudo_additive), `refusals` and
+  `entry_points`. The `primitives` inventory gained the x13 names plus the
+  two qualified-but-unlisted 22b names (`x11_pass_level_selection`,
+  `x11_decomposition_modes`); `reason` now names the restricted-fit scope.
+  Every existing test only asserts `!fit` and membership, so the extension
+  is safe; persephone3 should gate the restricted path on
+  `identical(capabilities()$native_x13_fit_restricted, TRUE)` (plus the
+  scope fields it cares about) and treat `fit` as unrestricted-fit honesty.
+- Tests: `test-native-x13-allocation.R` (239 assertions) drives all 7 pinned
+  seam cases through the raw entries — status/type/log/length echoes, the
+  a1 series echo, `out` exact (pure algebra in the seam corpus), the twelve
+  buckets bit-exact for non-log models and at the pinned 1e-15 relative
+  transcendental boundary (`std::exp` vs `Math.exp`, exactly as the core's
+  own corpus judges them) under a log model, all nine finals tables exact
+  for every effective mode including the forced ones, input immutability,
+  the broken-coupling refusals — plus the wrapper decoration and refusals on
+  the monthly case. `test-native-x13-fit.R` (636 assertions) drives all 9
+  fixed-route cases end to end (complete provenance and forcing echoes, the
+  preadjustment at its corpus policy — `out` at 1e-15 under a log model —
+  the selection record with named requests and the forced mode, the results
+  tables and finals bit-exact outside the log models and at the pinned
+  1e-12/1e-9 boundaries inside them, the triplet proven identical to the
+  finals tables, the decorated wrapper path on a ts calendar), the two
+  arima-route evidence cases refusing verbatim at their pinned horizons with
+  the horizons.csv routing facts asserted, the guard-precedence matrix and
+  the sigma-required path through both entries without any R stop, the
+  byte-identical X13Fast cross-capture of `f_empty`, and the capabilities
+  contract above.
+- Upstream feedback for the Kalos maintainers from the fit boundary (all
+  earlier items above stay verbatim; no contract files were touched):
+  - (M3-fin) The two corpora judge the same `tables.csv` `out` column under
+    different policies — pure algebra (exact equality) in the allocation
+    seam corpus, but downstream of `backTransform`'s exp (1e-15 relative
+    under a log model) in the fit corpus, where the captured `out` flows
+    into the X-11 run — and the divergence is only visible inside the core's
+    own test code. An integrator extending the seam corpus's bit-exact
+    assertions to the fit corpus hits a surprise 1-ulp failure on one row.
+    Stating the per-corpus comparison policy in the fixture metadata would
+    save the next integrator from rediscovering it empirically.
+  - (M3-fin) `X13FitResult` echoes the complete X-11 spec but consumes the
+    regression side without an echo: after the fact there is no way to audit
+    which variable set a fit actually used (count, per-variable column
+    counts, the coefficient sum or any other fingerprint). A cheap
+    deterministic fingerprint in the provenance would make fit results
+    self-describing for downstream pinning without carrying the columns.
+- Full suite after the additions: **290,057 assertions, 0 failures** across
+  all 48 files on the OpenMP lane; serial lane **290,053, 0 failures** from
+  the same `R CMD build` tarball with the `R_MAKEVARS_USER` probe override —
+  exactly the 289,182/289,178 M5 baselines plus the 875 new assertions
+  (239 allocation + 636 fit), the same four-assertion conditional lane
+  difference as before. No core-caused mismatch appeared at the new pin.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

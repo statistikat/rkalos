@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "repository": "https://github.com/statistikat/kalos",
-  "commit": "cce71723be7e4dd4e2e8e6458cfecf9c71b080e0",
+  "commit": "2b93ab00ab69708b2e5b871f313bed567a04a686",
   "version": "0.1.0",
-  "source_manifest_sha256": "dfb28a344feada9f5c1cd89d8f89e705050faa61d9a9999d38088b8351bc64bd",
+  "source_manifest_sha256": "010a1b24e64942261764afa0c46c1952e707661ae9a3c68a1490cd68cf70ac8b",
   "generated_files": [
     "include/kalos/revision.hpp"
   ],
@@ -11,7 +11,7 @@
     {
       "directory": "src/kalos",
       "files": {
-        "CMakeLists.txt": "6626efe3bdc2f9156f8138bc4228ec0e8420f8b68ad3d1593a7521248585f9fb",
+        "CMakeLists.txt": "a063d63102340a991235b5798c99f07e73ef46056067b7edfc7f83d15544bf4a",
         "LICENSE": "cc049274ec12d4d20db90d6278d88217fd1c8eb8c976b659cebc01f9df7fbed1",
         "LICENSE.md": "ca54c28ead69c289e1a7f08f7b45232a92310d5140b07741329a32895ff7a647",
         "backends/openblas.cpp": "3f1e84d9d3a223125b8e099d3f2aada06041f27b5a801151746415d315bbee12",
@@ -43,7 +43,7 @@
         "include/kalos/prediction_moments.hpp": "8384049bcc7a11f00c0fd99f538771648d853d050dd97b6f7c0eb7dde7bda824",
         "include/kalos/preparation.hpp": "86d4a4319a5d687854cbe48d53ee7e7312fc45823b676f6aa57fb5dfa7a32161",
         "include/kalos/regression_likelihood.hpp": "2fc46cfdaa140bc350e0e414cf7a4e723a864b35faeb21cc2803db791626fc34",
-        "include/kalos/revision.hpp": "b824c9f852824b5cdf30b322a5bc5d7510fb402a7aed8e3c438651cbb26cabe5",
+        "include/kalos/revision.hpp": "e0da3b73b6859769515c86f5298ed583257d5c7e14ba33bc8217f5115b25ac94",
         "include/kalos/sparse_history.hpp": "4a0a34d5f653e6d314fbf2bf72a323c3d72297c18ea39cc3c6f73c98bab13e79",
         "include/kalos/state_space.hpp": "13aa70201814f68da74e82b8b75db8102d51d61ce076b87dd8aa6c1323cd3a5a",
         "include/kalos/transforms.hpp": "914b4fc2902cd6be51b15f32d29adc2939ebb25ce34b985a68febf81ef5e0ca5",
@@ -66,6 +66,8 @@
         "include/kalos/x11_selection_pass.hpp": "f8a52caca5144ed84f29dacf7cc7035a669db3d7f49a829e562d0e647618f464",
         "include/kalos/x11_sigma.hpp": "184585b1d38b47c7d04edd5e2d07ad15eec7b81e3ff810e27b5338604e0948eb",
         "include/kalos/x11_trend_selection.hpp": "ff4092b28d72addbd38ccc39ba9e3a48e93cf43b8e62302505cd6eee9b3209cd",
+        "include/kalos/x13_allocation.hpp": "d144321405cb54d3e47cd6a59ee405fe4302287445c86f2fa6acfda26d3c93a9",
+        "include/kalos/x13_fit.hpp": "38a8517a9707a531ec5ac8528f04ec231c21b4c3b2191ee243f7774c97775448",
         "src/arma_identification.cpp": "aac64e9c0569291459cc3f283d12269679909e83c3c84bd943cbe3673d0514c7",
         "src/arma_information.cpp": "e3937692d1543af6b836c11f441e37f6af8b2dcce111dbf6e44cc9ab1aa10418",
         "src/arma_objective.cpp": "1e0591e8de4fedc78560a2a21473e71c1a419b780e90038246ea72d1325afc2a",
@@ -108,7 +110,9 @@
         "src/x11_seasonal_processing.cpp": "e320852f883d4c618d34dfa9bb3591aeccb9656a644ea6573eb28a5b7fe8124c",
         "src/x11_selection_pass.cpp": "37a8c543fb729454fbbda1a387c3f298357ac328e8b93f61e8b03724b1c08017",
         "src/x11_sigma.cpp": "cf252ab2338d4157189d4fcb03a8beba53807d5d8bacd2786dac2e611f07b792",
-        "src/x11_trend_selection.cpp": "e5177347e427acb15afabd3d59cc4665fc9b1126c572163cb5944b437251f64f"
+        "src/x11_trend_selection.cpp": "e5177347e427acb15afabd3d59cc4665fc9b1126c572163cb5944b437251f64f",
+        "src/x13_allocation.cpp": "602064292ebafbff78e738180a40dced70cf5c7cc0fa8e2c950f9951c535ab77",
+        "src/x13_fit.cpp": "8cd0d746507d47bf3d5726480d1d1b0d6fc46535c45d1be88d713a0ce382fb75"
       }
     },
     {
@@ -339,7 +343,24 @@
         "native/x11-trend-selection/metadata.R": "3485f02631e3a06a8f3eb1ffceee5d933dbfa44deb541dc6a6a5ea528f611558",
         "native/x11-trend-selection/policies.csv": "de2734343b3e2c4ef2c69b8653b7415b418e193103a823105a4b96fb056e3e78",
         "native/x11-trend-selection/ratios.csv": "71ed51e2d29bf3acd32a1d8025d069043aae1ff11cc060440724d2c87583fb6d",
-        "native/x11-trend-selection/weights.csv": "ac712acc6da50724faf857d721096eca707097284185e47e74633f859297e431"
+        "native/x11-trend-selection/weights.csv": "ac712acc6da50724faf857d721096eca707097284185e47e74633f859297e431",
+        "native/x13-allocation/SHA256SUMS.csv": "29e31bd9be9eb9d48e7a5db8ae77991bdcb6ade169123f0fcab49c240a9ed259",
+        "native/x13-allocation/cases.csv": "41cba499ceb268ccb252ac5bc4497cdc3b7ac57af47a38c810769f4bd15d49c9",
+        "native/x13-allocation/columns.csv": "4f2a7fc3e89987fc73d7dfa2cf2d07cba50ac31c3d8622a80b14d920d0911ec9",
+        "native/x13-allocation/inputs.csv": "f30f1f088b71ac8d32dd26325c147fc3c21b1522a1d75278cbd466169fc76589",
+        "native/x13-allocation/logs.csv": "19854c86327216c6388208521ae541ce1c04d4099fab531d1baac7cb2394fcb1",
+        "native/x13-allocation/metadata.R": "457fcc61b05b4b341b89a0cf983a7271ee36b00788b1903eb650d186062b7e9d",
+        "native/x13-allocation/tables.csv": "f5cf9f3c3daf85a412869fbbe412883afc1efd08649347faaee6845cb7218c05",
+        "native/x13-allocation/vars.csv": "d1c43508ce089942d8d2ac8ec65a70ca5d69119278af46569ae6fb74ce35700a",
+        "native/x13-fit/SHA256SUMS.csv": "1d89ee7357cd2edfeeb6ad65dc233bdf682c72533545d090b9bb4ff20962d298",
+        "native/x13-fit/cases.csv": "f0f4d1df186a45411c6d14f24085ead8198019e8278892a06a42f6a4619979e4",
+        "native/x13-fit/columns.csv": "de4e84282f7de28bd961f56d1b6fe51f81e0011f4f3ce02ab6fcbea4dcf6ea83",
+        "native/x13-fit/horizons.csv": "ec1625145b87a0f417c8e476a5f1fd3bd9fb6910f35f5c298b20dd6e5b6cd5c3",
+        "native/x13-fit/inputs.csv": "9e6c2599928ea129cfbee12212b6f3e14a53793b2c6ab56b93123b183419f335",
+        "native/x13-fit/metadata.R": "c4c75e51e92fd9e62184c4f00c508add8850081da7d26ec236e17e53217735cb",
+        "native/x13-fit/tables.csv": "687fc8367f7e2394a10df8c5c3071a1324c7a8ff0b6e9b006e456a4640897ffc",
+        "native/x13-fit/vars.csv": "b2527462277255f29529f43a1ae2a83e3f93b2781b2232a5df5002196091db07",
+        "native/x13-fit/x13fast.csv": "6f5d5ee66ceacbf1fe87a31c1325cb24d24f0a86f95f21b08f257498ab2fc156"
       }
     }
   ]
