@@ -9,6 +9,17 @@ post-prefix paths), so the R test paths never moved; the entries keep their
 section provenance (and source prefix) distinct in the lock. Lock schema 1
 (single fixtures section) stays readable by --verify; schema 2 is rejected by
 older tools rather than silently misverified.
+
+License policy (maintainer decision 2026-11-17): R packages carry the license
+ONLY as the DESCRIPTION field "License: GPL (>= 3)" — no LICENSE files in R
+package repositories. The R-kind export therefore excludes the vendored core
+license texts (R_KIND_EXCLUDED below) from both the export and the lock; the
+upstream kalos manifest is intentionally NOT changed (kalos is a C++ library
+that installs its own license, and pykalos keeps its own LICENSE within the
+same decision scope). Third-party notices that must ship with the vendored
+code they cover (dependencies/OpenBLAS-LICENSE.txt,
+dependencies/lapack-netlib-LICENSE.txt) are retained. The python-kind export
+is not an R package and is unchanged.
 """
 import argparse
 import hashlib
@@ -17,6 +28,11 @@ import json
 from pathlib import Path, PurePosixPath
 import subprocess
 import tarfile
+
+# Maintainer decision 2026-11-17: R packages declare the license solely in
+# DESCRIPTION ("License: GPL (>= 3)"), so the core's own license texts are
+# not vendored into the R package. Exact core-section entry names only.
+R_KIND_EXCLUDED = {"LICENSE", "LICENSE.md"}
 
 
 def sha(data):
@@ -90,7 +106,9 @@ def export(core, revision, kind, destination):
     fixture_sections = [("fixtures", "validation/fixtures/")]
     if "evidence" in inventory:
         fixture_sections.append(("evidence", "validation/evidence/"))
-    selected = inventory["core"] + [name for section, _ in fixture_sections
+    core_allowlist = [name for name in inventory["core"]
+        if kind != "r" or name not in R_KIND_EXCLUDED]
+    selected = core_allowlist + [name for section, _ in fixture_sections
         for name in inventory.get(section, [])] if kind == "r" else list(inventory["core"])
     for name in selected:
         safe_path(name)
@@ -101,7 +119,7 @@ def export(core, revision, kind, destination):
         contents = {m.name: tar.extractfile(m).read() for m in tar.getmembers() if m.isfile()}
     if set(contents) != set(selected):
         raise ValueError("The committed export does not match its allowlist")
-    core_files = {name: contents[name] for name in inventory["core"]}
+    core_files = {name: contents[name] for name in core_allowlist}
     core_files["include/kalos/revision.hpp"] = (
         f'// Generated from core.lock.json; do not edit.\n#define KALOS_CORE_REVISION "{commit}"\n'
     ).encode()

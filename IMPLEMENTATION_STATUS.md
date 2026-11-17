@@ -903,6 +903,41 @@ lanes), re-synced, re-qualified here.
   flat-ridge stops on four pinned cases (decision bit still pinned),
   flagged upstream for a 21-A replay-fidelity pass.
 
+## Maintainer license decision: DESCRIPTION-only licensing — 2026-11-18
+
+- Kalos maintainer decision (2026-11-17, standing): R packages carry the
+  license ONLY as the DESCRIPTION field `License: GPL (>= 3)` — no LICENSE
+  files in R package repositories. The top-level `LICENSE`/`LICENSE.md` were
+  already removed (`372cdf1`); this step removes what remained: the vendored
+  copies `src/kalos/LICENSE` and `src/kalos/LICENSE.md` (the core's own
+  license texts, listed in the upstream manifest's core section).
+- Mechanism: `tools/sync-core.py` gains a documented maintainer-decision
+  exclusion list `R_KIND_EXCLUDED = {"LICENSE", "LICENSE.md"}` applied to the
+  R-kind core allowlist — the excluded entries are neither exported nor
+  locked, and the export's stale-entry pruning deletes existing copies, so
+  the sync tool converges the tree on its own. Lock (schema 2, pin unchanged
+  at `e19df2c`) now records 110 core files instead of 112; `--verify` passes.
+- Retained, deliberately: `dependencies/OpenBLAS-LICENSE.txt` and
+  `dependencies/lapack-netlib-LICENSE.txt` — third-party license notices must
+  ship with the vendored code they cover. The **upstream kalos manifest is
+  intentionally NOT changed**: kalos is a C++ library that installs its own
+  license, and pykalos keeps its own LICENSE within the same decision scope;
+  the exclusion is R-package-shaped, so it lives in the R sync tool. The
+  python-kind export is unchanged (verified at `e19df2c`: 112
+  `vendor/kalos` files, `LICENSE` and `LICENSE.md` included).
+- R-side reference audit: no remaining reference to the deleted files outside
+  `tools/migration/history-paths.txt`, the immutable historical record
+  (left untouched); `.Rbuildignore`'s `^LICENSE\.md$` entry guards the
+  top-level and is retained.
+- Gate: fresh `R CMD build` tarball (contains zero `src/kalos/LICENSE*`
+  entries) installed with `env -u LD_LIBRARY_PATH R CMD INSTALL` into the
+  OpenMP lane; full tinytest suite: **290,073 assertions, 0 failures**
+  (48 files) — bit-identical to the M9 checkpoint. The serial lane was not
+  rerun: this change deletes two inert text files from the vendored tree —
+  observationally inert by construction (no compiled or R-visible content),
+  so the parallelism axis cannot discriminate it; the single lane confirms
+  the expected bit-identical totals.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

@@ -13,8 +13,6 @@
       "section": "core",
       "files": {
         "CMakeLists.txt": "4b519ca08e4f8422844d188ae931f0811b7f2a3030918900b9726f5148672508",
-        "LICENSE": "cc049274ec12d4d20db90d6278d88217fd1c8eb8c976b659cebc01f9df7fbed1",
-        "LICENSE.md": "ca54c28ead69c289e1a7f08f7b45232a92310d5140b07741329a32895ff7a647",
         "backends/openblas.cpp": "a0d604e0a5997fc08d08a8923d7efb23d120bda863aaee812d3fe1044a1770e0",
         "cmake/FindKalosOpenBLAS.cmake": "5e3dd0c414f6532c8994d4e29600862b4909ffca6c4b6f16060564b3aa459b7a",
         "cmake/kalosConfig.cmake.in": "988ab7fd16970096c2b66b251550d3869ffc10202d8dd9e3677efb22d415ad4a",
