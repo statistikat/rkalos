@@ -860,6 +860,49 @@ lanes), re-synced, re-qualified here.
   identical to the M7 totals, as expected for a zero-R-change sync; the 8 new
   fixture files are consumed by the core's own C++ suites, not by R tests.
 
+## Core pin advanced to e19df2c — shared-unit bugfix regression checkpoint — 2026-11-17
+
+- Infrastructure sync (no R or shim code changed): the core pin advances
+  `e490169 → e19df2c7b7ded8fa90424a2945d48a2c43e676b9`, spanning the 21-B
+  log/level transformation decision (`a942dcb`) and the 21-C outlier scoring
+  and forward selection (`e19df2c`). Manifest 105→111 core / 112 fixtures /
+  139→150 evidence: `src/kalos` 106→112 files (added
+  `transformation_decision.{hpp,cpp}`, `outlier_scoring.hpp`,
+  `outlier_scoring.cpp`, `outlier_detail.hpp`, `outlier_scan_engine.cpp`;
+  modified `CMakeLists.txt`, append-only `estimation_control.{hpp,cpp}` —
+  the new `optimize_sarima_from` warm-start entry — and the generated
+  `revision.hpp`); 11 new evidence corpus files under
+  `native/transformation-decision/` and `native/outlier-scoring/`
+  (inst tree 251→262). The new sources are not in `Makevars OBJECTS`
+  (compile-only-what's-bound), so the shared library content is unchanged.
+- **Regression verdict (the point of this checkpoint):** the core range is
+  purely additive — 6,362 insertions, 0 deletions across every file; the
+  already-qualified shared-unit sources (`arma_*`, `linear_algebra`,
+  `x11_*`, `x13_*`) are bit-identical between the pins. The three
+  transcription bugfixes announced with 21-C — the banded `lcholesky`
+  `cnt − 1` update bound, the `Polynomial`/SarimaModel trailing-zero degree
+  strip, and the MaLjungBox `calcg(int)` column-*overwrite* (not `-=`)
+  recursion — are pinned **inside the new, R-unbound 21-C unit**
+  (`outlier_detail.hpp`/`outlier_scan_engine.cpp`, e.g. the
+  "Pinned bound: while (s < k + cnt)" loop): the Ansley/MaLjungBox machinery
+  there is a separate transcription, not code the fixed-order kernels call.
+  The full R suite confirms this observationally: **290,073 assertions,
+  0 failures** (48 files, OpenMP lane) and **290,069, 0 failures** (serial
+  lane, same `R CMD build` tarball with the `R_MAKEVARS_USER` probe
+  override) — bit-identical totals to the M8 checkpoint, with zero
+  previously green fixture shifting. **The three bugfixes have zero
+  observable effect at the R boundary for existing bindings.**
+- Bugfix awareness for the coming 21-G/H R-qualification: those pinned
+  semantics become observable only when the 21-C outlier driver is wired;
+  the future R corpus pinning must then deliberately include cases that
+  discriminate each fixed behavior (fitted MA > 0 for the `calcg` overwrite,
+  trailing-zero/stripped-degree polynomials for the degree normalization,
+  deep banded updates for the `cnt − 1` bound) — none of the existing R
+  fixtures exercise them. Related evidence-grade note from 21-B: the
+  discrete `Multiple` alternate-start sign (+/-0.9) shows basin flips and
+  flat-ridge stops on four pinned cases (decision bit still pinned),
+  flagged upstream for a 21-A replay-fidelity pass.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

@@ -126,5 +126,18 @@ struct SarimaEstimationResult {
 SarimaEstimationResult estimate_sarima_fixed(
     const SarimaEstimationRequest& request, const Interrupt& interrupt = {});
 
+// Warm-start counterpart of estimate_sarima_fixed, transcribed from the
+// pinned SarimaEstimator.optimize path used by the outlier driver's per-
+// iteration re-estimation: the same static validation and objective seam as
+// estimate_sarima_fixed, but NO starting-point policy and NO unit-root-
+// cancellation restarts - one eps-precision optimization run from the given
+// physical coefficients (Kalos convention; fixed entries are re-imposed from
+// the request blocks). The start must cover the request exactly and be
+// admissible for its map; otherwise the request is rejected. The record
+// trace is the single "estimate" pass. A fully fixed model reports the
+// likelihood-only result exactly as estimate_sarima_fixed does.
+SarimaEstimationResult optimize_sarima_from(const SarimaEstimationRequest& request,
+    const std::array<std::vector<double>, 4>& start, const Interrupt& interrupt = {});
+
 } // namespace kalos
 #endif

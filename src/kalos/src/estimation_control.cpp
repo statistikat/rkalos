@@ -454,4 +454,79 @@ SarimaEstimationResult estimate_sarima_fixed(
     return result;
 }
 
+SarimaEstimationResult optimize_sarima_from(const SarimaEstimationRequest& request,
+    const std::array<std::vector<double>, 4>& start, const Interrupt& interrupt) {
+    request.control.validate();
+    for (const auto& block : request.blocks) {
+        if (block.fixed.size() != block.initial.size()) {
+            throw std::invalid_argument(
+                "Sarima coefficient states must match their initial values");
+        }
+    }
+    const ArmaParameterMap map(request.blocks);
+    std::size_t free_count = 0;
+    for (const auto& block : request.blocks) {
+        for (const auto flag : block.fixed) free_count += flag ? 0 : 1;
+    }
+    validate_arma_objective_inputs(request.series, request.design, map, request.period,
+        request.d, request.seasonal_d, 0.0, 1e-10, 0.0, interrupt);
+    for (std::size_t b = 0; b < 4; ++b) {
+        if (start[b].size() != request.blocks[b].initial.size()) {
+            throw std::invalid_argument(
+                "the warm start must match the request coefficient blocks");
+        }
+    }
+
+    // The pinned warm start is the incumbent SarimaModel, so fixed entries
+    // carry their request value and the free entries the given ones; the map
+    // seam keeps them exactly as estimate_sarima_fixed does.
+    std::array<std::vector<double>, 4> physical = start;
+    for (std::size_t b = 0; b < 4; ++b) {
+        for (std::size_t j = 0; j < physical[b].size(); ++j) {
+            if (request.blocks[b].fixed[j]) physical[b][j] = request.blocks[b].initial[j];
+        }
+    }
+
+    SarimaEstimationResult result;
+    if (free_count == 0) { // Pinned parametersCount/dimension guard.
+        std::array<std::vector<double>, 4> fixed_coefficients;
+        for (std::size_t b = 0; b < 4; ++b) fixed_coefficients[b] = request.blocks[b].initial;
+        const auto objective = evaluate_arma_physical_objective(request.series, request.design,
+            map, fixed_coefficients, request.period, request.d, request.seasonal_d, 0.0, 1e-10,
+            0.0, interrupt);
+        result.status = "likelihood_only";
+        result.converged = false;
+        result.coefficients = objective.parameters.coefficients;
+        result.log_likelihood = objective.status == "available" ? objective.adjusted_log_likelihood
+                                                                : unavailable();
+        return result;
+    }
+
+    std::vector<double> coordinates;
+    if (!to_coordinates(map, physical, coordinates)) {
+        throw std::invalid_argument("the warm start is not admissible for this map");
+    }
+    EstimationPassRecord record{};
+    record.stage = "estimate";
+    record.attempted = true;
+    record.gates_passed = true;
+    const auto pass = run_pass(request, map, coordinates, request.control.eps, interrupt);
+    record.optimizer_status = pass.optimizer_status;
+    record.evaluations = pass.evaluations;
+    record.log_likelihood = pass.log_likelihood;
+    record.accepted = pass.available;
+    result.passes.push_back(std::move(record));
+    if (!pass.available) {
+        result.status = pass.optimizer_status;
+        result.converged = false;
+        result.coefficients = std::move(physical);
+        return result; // log_likelihood stays NaN: no candidate was retained.
+    }
+    result.coefficients = std::move(pass.coefficients);
+    result.log_likelihood = pass.log_likelihood;
+    result.converged = pass.optimizer_status == "converged_gradient";
+    result.status = result.converged ? "converged" : std::move(pass.optimizer_status);
+    return result;
+}
+
 } // namespace kalos
