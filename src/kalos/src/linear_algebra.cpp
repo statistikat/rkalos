@@ -178,6 +178,61 @@ std::vector<double> symmetric_eigenvalues(const DenseMatrix& matrix, const Inter
     return values;
 }
 
+std::vector<ComplexRoot> polynomial_roots(const std::vector<double>& coefficients,
+                                          const Interrupt& interrupt) {
+    for (const auto value : coefficients) {
+        if (!std::isfinite(value)) {
+            throw std::invalid_argument("polynomial coefficients must be finite");
+        }
+    }
+    std::size_t degree = coefficients.size();
+    while (degree > 0 && coefficients[degree - 1] == 0.0) --degree;
+    if (degree <= 1) return {};
+    if (degree == 2) return {{-coefficients[0] / coefficients[1], 0.0}};
+    if (degree - 1 > 46340) {
+        throw std::length_error("companion matrix exceeds the supported integer range");
+    }
+    const int n = static_cast<int>(degree - 1);
+    // Column-major companion matrix of x^n + a_1 x^(n-1) + ... + a_n with
+    // a_k = c_(n-k) / c_n: ones on the subdiagonal, last column -[a_n, ..., a_1].
+    const double leading = coefficients[degree - 1];
+    std::vector<double> a(static_cast<std::size_t>(n) * n, 0.0);
+    for (int row = 1; row < n; ++row) a[static_cast<std::size_t>(row) + static_cast<std::size_t>(row - 1) * n] = 1.0;
+    for (int row = 0; row < n; ++row) {
+        a[static_cast<std::size_t>(row) + static_cast<std::size_t>(n - 1) * n] =
+            -coefficients[row] / leading;
+    }
+    for (const auto value : a) {
+        if (!std::isfinite(value)) {
+            throw std::invalid_argument("companion matrix coefficients overflow");
+        }
+    }
+    std::vector<double> real(degree - 1), imaginary(degree - 1);
+    double query = 0;
+    int info = 0, lwork = -1;
+    int one = 1;
+    checkpoint(interrupt);
+    lapack::dgeev("N", "N", &n, a.data(), &n, real.data(), imaginary.data(), nullptr, &one,
+                  nullptr, &one, &query, &lwork, &info);
+    check_info(info, "DGEEV workspace query");
+    lwork = workspace_size(query, 4 * static_cast<std::size_t>(n) + 4);
+    std::vector<double> work(static_cast<std::size_t>(lwork));
+    checkpoint(interrupt);
+    lapack::dgeev("N", "N", &n, a.data(), &n, real.data(), imaginary.data(), nullptr, &one,
+                  nullptr, &one, work.data(), &lwork, &info);
+    check_info(info, "DGEEV");
+    checkpoint(interrupt);
+    std::vector<ComplexRoot> roots;
+    roots.reserve(real.size());
+    for (std::size_t i = 0; i < real.size(); ++i) {
+        if (!std::isfinite(real[i]) || !std::isfinite(imaginary[i])) {
+            throw std::runtime_error("DGEEV returned invalid eigenvalues");
+        }
+        roots.push_back({real[i], imaginary[i]});
+    }
+    return roots;
+}
+
 CholeskyFactor cholesky_factor(const DenseMatrix& matrix, const Interrupt& interrupt) {
     matrix.validate(interrupt);
     if (matrix.rows() != matrix.columns()) {

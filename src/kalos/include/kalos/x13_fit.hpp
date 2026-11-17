@@ -13,9 +13,9 @@
 //
 // The pinned X13Kernel gives no fixed-coefficient entry point (every run
 // estimates the ARIMA part and the missing values), so the fit is qualified
-// against captures of the full pinned run: validation/fixtures/native/
+// against captures of the full pinned run: validation/evidence/native/
 // x13-allocation (zero-horizon seam cases, item 22c M3c) and
-// validation/fixtures/native/x13-fit (monthly fixed-specification
+// validation/evidence/native/x13-fit (monthly fixed-specification
 // end-to-end cases through the x13_fast entry point, jdplus.x13.base.r.
 // X13.process). The capture-side identity guards recompute every stored
 // table from the pinned pieces and refuse on disagreement, proving the

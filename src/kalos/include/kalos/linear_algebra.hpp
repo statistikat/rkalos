@@ -79,5 +79,21 @@ std::vector<double> singular_values(const DenseMatrix& matrix,
 std::vector<double> symmetric_eigenvalues(const DenseMatrix& matrix,
                                          const Interrupt& interrupt = {});
 
+struct ComplexRoot {
+    double real;
+    double imag;
+};
+
+// Zeros of the polynomial c[0] + c[1] x + ... + c[m] x^m given in ascending
+// coefficient order. Trailing zero coefficients are trimmed; a constant or
+// empty polynomial has no zeros and returns empty, while the linear zero is
+// returned in closed form. Higher degrees use the DGEEV eigenvalues of the
+// companion matrix of the monic normalization, so ordering is unspecified and
+// multiplicity-adjacent values carry eigenvalue-conditioning error. A zero
+// constant term is a zero of the polynomial and is returned as (0, 0). All
+// coefficients must be finite.
+std::vector<ComplexRoot> polynomial_roots(const std::vector<double>& coefficients,
+                                          const Interrupt& interrupt = {});
+
 } // namespace kalos
 #endif

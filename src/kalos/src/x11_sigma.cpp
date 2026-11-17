@@ -9,7 +9,7 @@ namespace {
 // stage (item 22b.3a); no upstream source is translated. The pinned reference
 // rules, thresholds and pass structure are documented in
 // docs/contracts/x11-sigma-contract.md and qualified by
-// validation/fixtures/native/x11-sigma.
+// validation/evidence/native/x11-sigma.
 constexpr std::size_t cycles = 5;                    // Five-year moving dispersion.
 constexpr double dispersion_cutoff = 1.0e-5;         // Legacy full-weight dispersion rule.
 constexpr double threshold_slack = 1.0e-15;          // Legacy threshold comparison slack.

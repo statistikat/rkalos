@@ -8,6 +8,9 @@ namespace kalos { namespace lapack {
 void dgelsy(const int* m, const int* n, const int* nrhs, double* a, const int* lda, double* b, const int* ldb, int* jpvt, const double* rcond, int* rank, double* work, const int* lwork, int* info) {
     F77_CALL(dgelsy)(m, n, nrhs, a, lda, b, ldb, jpvt, rcond, rank, work, lwork, info);
 }
+void dgeev(const char* jobvl, const char* jobvr, const int* n, double* a, const int* lda, double* wr, double* wi, double* vl, const int* ldvl, double* vr, const int* ldvr, double* work, const int* lwork, int* info) {
+    F77_CALL(dgeev)(jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, vr, ldvr, work, lwork, info FCONE FCONE);
+}
 void dgeqrf(const int* m, const int* n, double* a, const int* lda, double* tau, double* work, const int* lwork, int* info) {
     F77_CALL(dgeqrf)(m, n, a, lda, tau, work, lwork, info);
 }

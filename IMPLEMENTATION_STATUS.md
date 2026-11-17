@@ -800,6 +800,66 @@ lanes), re-synced, re-qualified here.
   default/inherence checks (sigma +2, B +1, C +2, D +2, selection 0, fit +9),
   the same four-assertion conditional lane difference as before.
 
+## Evidence fixture root adopted, core pin advanced to e490169 — 2026-11-17
+
+- Infrastructure sync (no R test or interface code changed): the core pin
+  advances `2b93ab0 → e490169c95d287c1e66d0b930bf30ddc10a777e8`, spanning the
+  contract-doc slice (`27c1318`/`c2a9772`, whose sigma-default resolution the
+  section above already mirrors at the interface), the item-21 roadmap
+  (`e6ed3a1`), the fixture-root relocation (`d9a5917`: post-split fixtures
+  moved to `validation/evidence/`, historical `validation/fixtures/` root
+  immutable) and the 21-A estimation-control (`188f4ed`) and Hannan-Rissanen
+  (`e490169`) units.
+- `tools/sync-core.py` now handles the core's three-section manifest
+  (`core` / `fixtures` / `evidence`). Both fixture sections export into the
+  SAME `inst/tinytest/fixtures/` tree at their post-prefix paths, so no R
+  test path changed; the export refuses if the two sections ever disagree on
+  a shared path. Lock **schema 2**: one snapshot entry per section with a
+  `section` name and, for fixture sections, the `source_prefix` provenance;
+  entries may share a destination directory and `--verify` merges them with
+  conflict detection. `--verify` reads schema 1 and 2; schema-2 locks are
+  loudly rejected by older tools ("Unsupported source lock version") rather
+  than silently misverified — backward-detectability is honest, not silent.
+  The `python` kind excludes both fixture sections and still exports exactly
+  the 105 core files (106 with the generated `revision.hpp`) — verified into
+  a scratch destination with zero fixture/evidence leakage.
+- Deltas: core 14 paths (manifest 101→105; `src/kalos` 102→106 files) —
+  modified `backends/openblas.cpp`, `CMakeLists.txt`,
+  `include/kalos/detail/lapack.hpp`, `include/kalos/linear_algebra.hpp`,
+  `revision.hpp` (generated), `x13_allocation.hpp`, `x13_fit.hpp`,
+  `src/linear_algebra.cpp`, `src/x11_replacement.cpp`, `src/x11_sigma.cpp`;
+  added `estimation_control.{hpp,cpp}` and `hannan_rissanen.{hpp,cpp}`
+  (polynomial-root/DGEEV machinery lives inside the existing
+  `linear_algebra`/`arma_parameters` surface — no separate roots file).
+  Fixtures section 243→112, evidence section +139, and the inst tree grows
+  243→251: the 243 relocated files land byte-identically at their old
+  inst paths (git sees zero churn) plus the 8 new 21-A/HR corpus files under
+  `native/estimation-control{,-hr}/`. Spot-check: one file per fixture/evidence
+  directory (84 dirs) — 82 byte-identical against the pre-move
+  `2b93ab0:validation/fixtures/…`, the 2 new corpora pristine against
+  `e490169`, lock checksums agreeing throughout; 0 mismatches.
+- One boundary-shim addition (the only non-R source change): the advanced
+  `src/linear_algebra.cpp` calls the newly declared
+  `kalos::lapack::dgeev` (companion-matrix roots) and is compiled into the
+  shared library, so `src/lapack_r.cpp` gains the matching `F77_CALL(dgeev)`
+  definition — link completeness only; no bound code path reaches DGEEV yet.
+  The new 21-A sources are NOT added to `Makevars OBJECTS`: the convention is
+  compile-only-what's-bound (as with `x11_decomposition.cpp`).
+- Orchestrator decision: **no `.native_` bindings for the 21-A intermediate
+  estimator units yet** — estimation control and the Hannan-Rissanen
+  initializer are internal machinery whose pinned semantics only become
+  observable through specification-level outputs; their R-boundary
+  qualification lands with the 21-G/H spec-level slices. Recorded for
+  evidence-grade awareness: the core's 21-A.2 JVM corpus work found a
+  nondeterministic variance-guard case (1e-9-scale guard comparison); any
+  future R-side corpus pinning of these units must either dodge or explicitly
+  widen that case.
+- Full suite after the sync: **290,073 assertions, 0 failures** across all
+  48 files on the OpenMP lane; serial lane **290,069, 0 failures** from the
+  same `R CMD build` tarball with the `R_MAKEVARS_USER` probe override —
+  identical to the M7 totals, as expected for a zero-R-change sync; the 8 new
+  fixture files are consumed by the core's own C++ suites, not by R tests.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

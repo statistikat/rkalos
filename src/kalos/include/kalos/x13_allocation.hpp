@@ -4,7 +4,7 @@
 // pipeline — the fixed-coefficient preadjust (X13Kernel.initialStep) and the
 // finals restore (X13Kernel.finals) — decoded from the pinned rjd3 3.9.0
 // bytecode and qualified bit-exactly against the pinned kernel on the
-// validation/fixtures/native/x13-allocation corpus. The kernel gives no
+// validation/evidence/native/x13-allocation corpus. The kernel gives no
 // fixed-coefficient entry point (every X13Kernel run estimates the ARIMA
 // part), so the contract here is the exact seam the capture proves: given
 // the COMPLETE input series, the pinned model-description variable order

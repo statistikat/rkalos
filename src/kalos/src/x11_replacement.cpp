@@ -9,7 +9,7 @@ namespace {
 // Independent reimplementation of the pinned default corrector replacement
 // stage (item 22b.3b); no upstream source is translated. The rules, walk
 // order and fallbacks are documented in docs/contracts/x11-replacement-
-// contract.md and qualified by validation/fixtures/native/x11-replacement.
+// contract.md and qualified by validation/evidence/native/x11-replacement.
 void checkpoint(const Interrupt& interrupt) { if (interrupt) interrupt(); }
 // The pinned walk compares against exactly one; masked rows keep weight one
 // and are selectable neighbors carrying effective NaN values.

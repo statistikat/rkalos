@@ -18,6 +18,9 @@ CBLAS_TRANSPOSE transpose(char c) {
 void dgelsy(const int* m, const int* n, const int* nrhs, double* a, const int* lda, double* b, const int* ldb, int* jpvt, const double* rcond, int* rank, double* work, const int* lwork, int* info) {
     *info = fortran_info(LAPACKE_dgelsy_work(LAPACK_COL_MAJOR, *m, *n, *nrhs, a, *lda, b, *ldb, jpvt, *rcond, rank, work, *lwork));
 }
+void dgeev(const char* jobvl, const char* jobvr, const int* n, double* a, const int* lda, double* wr, double* wi, double* vl, const int* ldvl, double* vr, const int* ldvr, double* work, const int* lwork, int* info) {
+    *info = fortran_info(LAPACKE_dgeev_work(LAPACK_COL_MAJOR, *jobvl, *jobvr, *n, a, *lda, wr, wi, vl, *ldvl, vr, *ldvr, work, *lwork));
+}
 void dgeqrf(const int* m, const int* n, double* a, const int* lda, double* tau, double* work, const int* lwork, int* info) {
     *info = fortran_info(LAPACKE_dgeqrf_work(LAPACK_COL_MAJOR, *m, *n, a, *lda, tau, work, *lwork));
 }
