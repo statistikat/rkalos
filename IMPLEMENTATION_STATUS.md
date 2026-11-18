@@ -1004,6 +1004,37 @@ lanes), re-synced, re-qualified here.
   checkpoints; no fixture moved. The 21-E unit becomes R-relevant only
   through the 21-G/H specification-level qualification.
 
+## Core pin advanced to 0930c9b — 21-F ARMA refinement, R boundary unchanged — 2026-11-18
+
+- Infrastructure sync (no R or shim code changed): the core pin advances
+  `7200a56 → 0930c9b153928735b80a0f4150373216544aeca7` (item 21-F, the ARMA
+  refinement/comparison unit `refine_arma_model` on the 21-D differencing
+  unit and a new 21-E `select_arma_orders` seam). Manifest core 124→126;
+  `src/kalos` 123→125 (added `arma_refinement.{hpp,cpp}`); evidence
+  162→170 (`native/arma-refinement/`, 8 corpus files; inst tree 274→282).
+- Diff-shape classification: besides the additions, the range modifies the
+  unbound 21-D/21-E units — `differencing_decision.hpp` (+21/−15, the
+  deterministic record-init fix) and `initial_arma_identification.{hpp,cpp}`
+  (+53/−4 / +206/−125, the extracted `select_arma_orders` seam;
+  `identify_initial_arma` keeps its semantics through the shared select
+  engine). All are R-unbound and uncompiled: OBJECTS red-flag count 0, and
+  the include graph of every compiled kernel source and boundary file has
+  zero hits on the touched headers. Full suite on the fresh tarball
+  (built and verified before the lane runs): **290,073 assertions,
+  0 failures** (48 files, OpenMP lane) and **290,069, 0 failures** (serial
+  lane) — bit-identical to the M9–M12 checkpoints, no fixture moved.
+- Awareness note for the 21-G/H qualification: the `differencing_decision.hpp`
+  fix makes the step0 `trial_fit` iteration-record flag deterministic
+  (default-initialized instead of an indeterminate value), so the upstream
+  step0 root-scan tier is now a **six-case list** — `m_i2_144`, `qtr_rw`,
+  `m_ar9995`, `m_double_rw`, `m_trend_seasonal`, `m_n231_rw` (largest drifts
+  on `m_i2_144`: 3.2e-5 `rmax` / 1.31e-4 `rsmax`; the other five ≤1.5e-6) —
+  replacing the previous single-case wording; future R-side tolerance tiers
+  should reference the six-case list and the new 21-F 21-E tight/basin/drift
+  panel bands (worst dBIC2 7.9e-06, no decision affected). The 21-F unit
+  also pins the re-differencing D-polynomial semantics ((1−B^d)(1−B^period)^bd,
+  not (1−B)^d at d=2) — relevant when the refinement stage becomes R-bound.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

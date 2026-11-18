@@ -9,10 +9,13 @@
 // (bp, bq) / (p, q) / (bp, bq) grids with RegArmaBic sorting and merging,
 // and the BIC-margin refinement select(cursor, d, bd) with its eleven
 // ordered acceptance rules. It is a decision unit feeding (not yet wired
-// into) the fit seams; the refinement hill-climb and model comparator of
-// AutoModellingModule (stage M part 2) and the round-structure wiring
-// belong to later slices. There is no Rcpp boundary; the unit is C++-only
-// and every pinned threshold is a transcription constant, not
+// into) the fit seams; the AutoModellingModule refinement of stage M part 2
+// lives in kalos/arma_refinement.hpp and consumes the select_arma_orders
+// seam below (the pinned AutoModellingModule calls ArmaModule.select
+// directly on the re-differenced linearized data, without an OLS cursor);
+// the round-structure wiring belongs to later slices. There is no Rcpp
+// boundary; the unit is C++-only and every pinned threshold is a
+// transcription constant, not
 // configuration (docs/contracts/initial-arma-identification-contract.md).
 #include "numerics.hpp"
 
@@ -95,6 +98,52 @@ struct InitialArmaIdentification {
     std::vector<ArmaPreferredModel> preferred_models; // merged top list
     std::vector<ArmaSelectionStep> refinement; // empty when no refinement ran
 };
+
+// The pinned ArmaModule.select(cursor, period, d, bd) on a caller-owned
+// cursor (the module entry point the 21-F AutoModellingModule transcription
+// drives directly: the pinned module never builds an OLS cursor there). The
+// grid bounds, panel size and refinement flags are the same ArmaModule
+// fields as in InitialArmaIdentificationRequest and stay required request
+// data; the cursor replaces the whole upstream model (no regressors, no
+// mean column: the pinned candidate fits are design-free on the sequence
+// handed to select, exactly as in the initial-identification grid).
+struct ArmaSelectRequest {
+    std::vector<double> cursor;            // response, complete and finite
+    int period;                            // qualified domain {4, 12}
+    int d;                                 // refinement polarity: spec d
+    int seasonal_d;                        // refinement polarity: spec bd
+    int models_count;                      // pinned nmod (estimations slots)
+    int max_p;
+    int max_q;
+    int max_bp;
+    int max_bq;
+    bool balanced;                         // rules 1-7 gate on it
+    bool mixed;                            // false drops p>0&&q>0 candidates
+    bool accept_white_noise;               // stored, never-read (21-E)
+    double eps;                            // candidate estimation precision
+    void validate() const;
+};
+
+// The select outcome: the selected stationary orders, every candidate
+// evaluation of the three stages, the merged estimations[] panel and the
+// refinement trace (the same records the full initial identification
+// produces; the cursor itself stays caller-owned).
+struct ArmaSelectResult {
+    int p, q, bp, bq;
+    std::vector<ArmaCandidateEvaluation> evaluations;
+    std::vector<ArmaPreferredModel> preferred_models;
+    std::vector<ArmaSelectionStep> refinement;
+};
+
+// Runs the pinned select(cursor, period, d, bd) machine on the given cursor.
+// Semantics, tiers and the pinned-abort equivalences are those of the
+// select section of the contract: an empty grid, a candidate the pinned
+// machine rejects (start or landing) or a panel that cannot fill all
+// models_count slots throw std::runtime_error (the module-level callers
+// decide between Failed and the airline fallback); invalid static inputs
+// throw std::invalid_argument. Interrupt exceptions always propagate.
+ArmaSelectResult select_arma_orders(
+    const ArmaSelectRequest& request, const Interrupt& interrupt = {});
 
 // Runs the pinned initial identification. The cursor is the OLS residual of
 // the differenced upstream model (the filtered response regressed on fresh

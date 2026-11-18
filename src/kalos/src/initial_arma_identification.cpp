@@ -15,6 +15,35 @@
 
 namespace kalos {
 
+namespace {
+
+// The ArmaModule grid/panel/refinement scalars, shared by the two public
+// request shapes (initial identification and the 21-F select seam). The
+// prefix names the request the caller validated.
+void validate_module_scalars(const char* prefix, int period, int models_count,
+    int max_p, int max_q, int max_bp, int max_bq, double eps) {
+    if (period != 4 && period != 12) {
+        throw std::invalid_argument(
+            std::string(prefix) + ": the period must be 4 or 12 (the "
+            "qualified estimation-seam domain)");
+    }
+    if (models_count < 1) {
+        throw std::invalid_argument(std::string(prefix)
+            + ": models_count must be >= 1 (the pinned estimations array "
+              "holds nmod slots)");
+    }
+    if (max_p < 0 || max_q < 0 || max_bp < 0 || max_bq < 0) {
+        throw std::invalid_argument(std::string(prefix)
+            + ": the grid bounds must not be negative");
+    }
+    if (!std::isfinite(eps) || !(eps > 0.0)) {
+        throw std::invalid_argument(std::string(prefix)
+            + ": the estimation precision must be finite and positive");
+    }
+}
+
+} // namespace
+
 void InitialArmaIdentificationRequest::validate() const {
     if (series.empty()) {
         throw std::invalid_argument(
@@ -42,26 +71,27 @@ void InitialArmaIdentificationRequest::validate() const {
             "InitialArmaIdentificationRequest: the differencing orders must not "
             "be negative");
     }
-    if (period != 4 && period != 12) {
+    validate_module_scalars("InitialArmaIdentificationRequest", period,
+        models_count, max_p, max_q, max_bp, max_bq, eps);
+}
+
+void ArmaSelectRequest::validate() const {
+    if (cursor.empty()) {
         throw std::invalid_argument(
-            "InitialArmaIdentificationRequest: the period must be 4 or 12 (the "
-            "qualified estimation-seam domain)");
+            "ArmaSelectRequest: the cursor must not be empty (the pinned "
+            "module never selects over an empty sequence)");
     }
-    if (models_count < 1) {
+    if (!std::all_of(cursor.begin(), cursor.end(),
+            [](double v) { return std::isfinite(v); })) {
         throw std::invalid_argument(
-            "InitialArmaIdentificationRequest: models_count must be >= 1 (the "
-            "pinned estimations array holds nmod slots)");
+            "ArmaSelectRequest: the cursor must be finite");
     }
-    if (max_p < 0 || max_q < 0 || max_bp < 0 || max_bq < 0) {
+    if (d < 0 || seasonal_d < 0) {
         throw std::invalid_argument(
-            "InitialArmaIdentificationRequest: the grid bounds must not be "
-            "negative");
+            "ArmaSelectRequest: the differencing orders must not be negative");
     }
-    if (!std::isfinite(eps) || !(eps > 0.0)) {
-        throw std::invalid_argument(
-            "InitialArmaIdentificationRequest: the estimation precision must be "
-            "finite and positive");
-    }
+    validate_module_scalars(
+        "ArmaSelectRequest", period, models_count, max_p, max_q, max_bp, max_bq, eps);
 }
 
 namespace {
@@ -71,9 +101,9 @@ namespace {
 // the refinement's tail trim still key on the literal).
 constexpr double kNoBic = 99999.0;
 
-void require(bool condition, const std::string& message) {
+void require(bool condition, const char* where, const std::string& message) {
     if (!condition) {
-        throw std::runtime_error("identify_initial_arma: " + message);
+        throw std::runtime_error(std::string(where) + ": " + message);
     }
 }
 
@@ -147,7 +177,7 @@ bool all_finite(const std::vector<double>& v) {
 // mirrored here as std::runtime_error (the ProcessingResult.Failed
 // equivalence, never a silent fallback).
 RegArmaBic evaluate_candidate(const SarmaOrders& orders, const std::vector<double>& cursor,
-    double eps, int stage, int slot, const Interrupt& interrupt) {
+    double eps, int stage, int slot, const Interrupt& interrupt, const char* where) {
     const std::size_t n = cursor.size();
     SarimaEstimationRequest request;
     request.series.values = cursor;
@@ -171,19 +201,19 @@ RegArmaBic evaluate_candidate(const SarmaOrders& orders, const std::vector<doubl
         EstimationStartingPoint::HannanRissanen, EstimationSolver::PinnedLevenbergMarquardt};
 
     const SarimaEstimationResult result = estimate_sarima_fixed(request, interrupt);
-    require(result.status != "start_not_evaluable",
+    require(result.status != "start_not_evaluable", where,
         "candidate " + orders.text()
             + ": the pinned machine rejects the start point (the pinned "
               "RegArmaSsqFunction evaluation throws before minimization, the "
               "ProcessingResult.Failed path)");
-    require(std::isfinite(result.log_likelihood),
+    require(std::isfinite(result.log_likelihood), where,
         "candidate " + orders.text()
             + ": the pinned machine rejects the landing point (the pinned "
               "DEFAULT_COMPUTER.compute at the landing throws, the "
               "ProcessingResult.Failed path)");
     for (const auto& block : result.coefficients) {
-        require(all_finite(block), "candidate " + orders.text()
-                + ": the landing carries non-finite coefficients");
+        require(all_finite(block), where,
+            "candidate " + orders.text() + ": the landing carries non-finite coefficients");
     }
 
     // BIC2 = ((-2 logLikelihood) + k log n) / n with the FdLibm log, n the
@@ -219,12 +249,12 @@ RegArmaBic evaluate_candidate(const SarmaOrders& orders, const std::vector<doubl
 // equal BIC (stable TimSort).
 std::vector<RegArmaBic> sort_candidates(const std::vector<SarmaOrders>& grid,
     const std::vector<double>& cursor, double eps, int stage,
-    std::vector<RegArmaBic>& evaluations, const Interrupt& interrupt) {
+    std::vector<RegArmaBic>& evaluations, const Interrupt& interrupt, const char* where) {
     std::vector<RegArmaBic> sorted;
     int slot = 0;
     for (const auto& orders : grid) {
         RegArmaBic evaluation =
-            evaluate_candidate(orders, cursor, eps, stage, slot++, interrupt);
+            evaluate_candidate(orders, cursor, eps, stage, slot++, interrupt, where);
         evaluations.push_back(evaluation);
         if (evaluation.bic != kNoBic) { // NaN kept
             sorted.push_back(std::move(evaluation));
@@ -271,7 +301,242 @@ void merge_into(
     }
 }
 
+// The pinned ArmaModule.select(cursor, period, d, bd): the three-stage grid
+// (bp, bq) / (p, q) / (bp, bq) with the mixed gate and the bd clamp, the
+// sort/merge panel and the eleven-rule BIC-margin refinement. The request is
+// validated by the public entry point; this engine assumes validity.
+ArmaSelectResult select_engine(
+    const ArmaSelectRequest& request, const Interrupt& interrupt, const char* where) {
+    const std::vector<double>& cursor = request.cursor;
+
+    // ArmaModule.select(cursor, period, d, bd). The request domain is
+    // period in {4, 12}; the pinned period == 1 shortcuts stay unreachable.
+    const int period = request.period;
+    const int nmod = request.models_count;
+    std::vector<RegArmaBic> estimations(static_cast<std::size_t>(nmod));
+    std::vector<RegArmaBic> evaluations;
+
+    SarmaOrders tmpl;
+    tmpl.period = period;
+    tmpl.p = period == 2 ? 1 : 3; // the pinned template (3, 0) for period 4/12
+    tmpl.q = 0;
+
+    const auto mixed_ok = [request](int a, int b) {
+        return request.mixed || a == 0 || b == 0;
+    };
+
+    // Stage 1: the (bp, bq) grid on the (3, 0) regular part; its winner's
+    // (bp, bq) is all stage 2 carries - the stage-1 winner itself (p = 3
+    // exceeds the stage-2 grid bound) is never merged.
+    SarmaOrders best = tmpl;
+    {
+        std::vector<SarmaOrders> grid;
+        for (int bp = 0; bp <= request.max_bp; ++bp) {
+            for (int bq = 0; bq <= request.max_bq; ++bq) {
+                if (!mixed_ok(bp, bq)) {
+                    continue;
+                }
+                SarmaOrders orders = tmpl;
+                orders.bp = bp;
+                orders.bq = bq;
+                grid.push_back(orders);
+            }
+        }
+        const std::vector<RegArmaBic> sorted =
+            sort_candidates(grid, cursor, request.eps, 1, evaluations, interrupt, where);
+        require(!sorted.empty(), where, "the seasonal grid produced no candidate");
+        best = sorted[0].spec;
+    }
+
+    // Stage 2: the (p, q) grid on the stage-1 winner's (bp, bq); its winner
+    // is adopted and the sorted list is merged into the fresh array (the
+    // first merge degenerates to copying the leading min(m, nmod) entries).
+    {
+        std::vector<SarmaOrders> grid;
+        for (int p = 0; p <= request.max_p; ++p) {
+            for (int q = 0; q <= request.max_q; ++q) {
+                if (!mixed_ok(p, q)) {
+                    continue;
+                }
+                SarmaOrders orders = best;
+                orders.p = p;
+                orders.q = q;
+                grid.push_back(orders);
+            }
+        }
+        const std::vector<RegArmaBic> sorted =
+            sort_candidates(grid, cursor, request.eps, 2, evaluations, interrupt, where);
+        require(!sorted.empty(), where, "the regular grid produced no candidate");
+        best = sorted[0].spec;
+        merge_into(sorted, estimations);
+    }
+
+    // Stage 3: the (bp, bq) refinement grid on the stage-2 winner; the
+    // winner is adopted only through the merged list and the refinement
+    // scan. The stage-3 bp clamp keys on the seasonal differencing order
+    // (bd == 1), never on the stored, never-read acceptWhiteNoise field.
+    {
+        int m1 = request.max_bp;
+        if (request.seasonal_d == 1) {
+            m1 = 0;
+        }
+        std::vector<SarmaOrders> grid;
+        for (int bp = 0; bp <= m1; ++bp) {
+            for (int bq = 0; bq <= request.max_bq; ++bq) {
+                if (!mixed_ok(bp, bq)) {
+                    continue;
+                }
+                SarmaOrders orders = best;
+                orders.bp = bp;
+                orders.bq = bq;
+                grid.push_back(orders);
+            }
+        }
+        const std::vector<RegArmaBic> sorted =
+            sort_candidates(grid, cursor, request.eps, 3, evaluations, interrupt, where);
+        require(!sorted.empty(), where,
+            "the seasonal refinement grid produced no candidate");
+        merge_into(sorted, estimations);
+    }
+
+    // All nmod slots must be filled: the pinned dead tail-trim then NPEs on
+    // an empty slot, which the module turns into ProcessingResult.Failed.
+    for (const auto& entry : estimations) {
+        require(entry.active, where,
+            "the merged list cannot fill all models_count slots (the pinned "
+            "refinement would NPE on the empty slot, the "
+            "ProcessingResult.Failed path)");
+    }
+    const int n = nmod;
+
+    // select(cursor, d, bd): the refinement scan over the merged list. The
+    // polarity measures count the unit roots the spec differencing implies
+    // against MA cancellation; the threshold band keys on the merged list's
+    // BIC spread and shrinks by each accepted move's gain.
+    SarmaOrders incumbent = estimations[0].spec;
+    int npq = incumbent.p + incumbent.q;
+    int nbpq = incumbent.bp + incumbent.bq;
+    int dpq = std::abs(incumbent.p + request.d - incumbent.q);
+    int dbpq = std::abs(incumbent.bp + request.seasonal_d - incumbent.bq);
+    double dif = estimations[static_cast<std::size_t>(n - 1)].bic - estimations[0].bic;
+    if (dif < 0.003) { // dcmpg: a NaN spread takes 1.0
+        dif = 0.0625;
+    } else if (dif < 0.03) {
+        dif = 0.25;
+    } else {
+        dif = 1.0;
+    }
+    double lim1 = 0.01 * dif;
+    double lim2 = 0.0025 * dif;
+    double lim3 = 0.0075 * dif;
+    int id = 0;
+    int cnt = 0;
+    std::vector<ArmaSelectionStep> steps;
+
+    for (int i = 1; i < n; ++i) {
+        if (interrupt) {
+            interrupt();
+        }
+        const SarmaOrders& cur = estimations[static_cast<std::size_t>(i)].spec;
+        const int cpq = cur.p + cur.q;
+        const int cbpq = cur.bp + cur.bq;
+        const int cdpq = std::abs(cur.p + request.d - cur.q);
+        const int cdbpq = std::abs(cur.bp + request.seasonal_d - cur.bq);
+        // curdif is measured against the INCUMBENT, not the list head (the
+        // pinned local 26 accumulates from the incumbent's BIC).
+        const double curdif = estimations[static_cast<std::size_t>(i)].bic
+            - estimations[static_cast<std::size_t>(id)].bic;
+        int rule = 0;
+        const bool polar = cdpq < dpq || cdbpq < dbpq;
+        if (request.balanced && polar && npq == cpq && nbpq == cbpq && curdif <= lim1) {
+            rule = 1;
+        } else if (request.balanced && cdpq < dpq && cpq <= npq && cbpq == nbpq
+            && curdif <= lim2 && cur.p > 0 && cur.q > 0) {
+            rule = 2;
+        } else if (request.balanced
+            && ((cdpq == 0 && cdpq < dpq && request.d > 0)
+                || (cdbpq == 0 && cdbpq < dbpq && request.seasonal_d > 0))
+            && npq == cpq && nbpq == cbpq && curdif <= lim1) {
+            rule = 3;
+        } else if (request.balanced && cdpq == 0 && cdbpq == 0 && curdif < lim2) {
+            rule = 4;
+        } else if (request.balanced && cpq > npq && cdpq == 0 && cbpq == nbpq
+            && curdif < lim2) {
+            rule = 5;
+        } else if (request.balanced && cbpq > nbpq && cdbpq == 0 && cpq == npq
+            && curdif < lim2) {
+            rule = 6;
+        } else if (request.balanced && cbpq < nbpq && cbpq > 0 && cpq == npq
+            && cdbpq == 0 && curdif < lim2) {
+            rule = 7;
+        } else if (i == 1 && npq == 0 && cpq == 1 && cbpq == nbpq && curdif < lim2) {
+            rule = 8;
+        } else if (cpq < npq && cpq > 0 && cbpq == nbpq && curdif < lim2) {
+            rule = 9;
+        } else if (cbpq < nbpq && cbpq > 0 && cpq == npq && curdif < lim2) {
+            rule = 10;
+        } else if (cur.p < incumbent.p && cur.q == incumbent.q && cpq > 0
+            && cbpq == nbpq && curdif < lim3) {
+            rule = 11;
+        }
+        if (rule != 0) {
+            ++cnt;
+            const double gain =
+                estimations[static_cast<std::size_t>(i)].bic - estimations[0].bic;
+            lim1 -= gain;
+            lim2 -= gain;
+            lim3 -= gain;
+            npq = cpq;
+            nbpq = cbpq;
+            dpq = cdpq;
+            dbpq = cdbpq;
+            id = i;
+            incumbent = cur;
+        }
+        steps.push_back(
+            ArmaSelectionStep{.candidate = i, .rule = rule, .incumbent = id, .moves = cnt});
+    }
+
+    // A zero-parameter incumbent escapes to the next merged entry whenever
+    // one exists behind it.
+    SarmaOrders selected = estimations[static_cast<std::size_t>(id)].spec;
+    if (selected.parameters_count() == 0 && id <= nmod - 2) {
+        selected = estimations[static_cast<std::size_t>(id + 1)].spec;
+    }
+
+    ArmaSelectResult out;
+    out.p = selected.p;
+    out.q = selected.q;
+    out.bp = selected.bp;
+    out.bq = selected.bq;
+    for (const auto& evaluation : evaluations) {
+        out.evaluations.push_back(ArmaCandidateEvaluation{.stage = evaluation.stage,
+            .slot = evaluation.slot, .p = evaluation.spec.p, .q = evaluation.spec.q,
+            .bp = evaluation.spec.bp, .bq = evaluation.spec.bq,
+            .initial_source = evaluation.initialSource, .fit_status = evaluation.fitStatus,
+            .log_likelihood = evaluation.logLikelihood, .bic = evaluation.bic,
+            .coefficients = evaluation.coefficients});
+    }
+    for (const auto& entry : estimations) {
+        out.preferred_models.push_back(ArmaPreferredModel{.p = entry.spec.p,
+            .q = entry.spec.q, .bp = entry.spec.bp, .bq = entry.spec.bq,
+            .bic = entry.bic, .log_likelihood = entry.logLikelihood,
+            .coefficients = entry.coefficients});
+    }
+    out.refinement = steps;
+    return out;
+}
+
 } // namespace
+
+ArmaSelectResult select_arma_orders(
+    const ArmaSelectRequest& request, const Interrupt& interrupt) {
+    request.validate();
+    if (interrupt) {
+        interrupt();
+    }
+    return select_engine(request, interrupt, "select_arma_orders");
+}
 
 InitialArmaIdentification identify_initial_arma(
     const InitialArmaIdentificationRequest& request, const Interrupt& interrupt) {
@@ -361,220 +626,36 @@ InitialArmaIdentification identify_initial_arma(
         }
     }
 
-    // ArmaModule.select(cursor, period, d, bd). The request domain is
-    // period in {4, 12}; the pinned period == 1 shortcuts stay unreachable.
-    const int period = request.period;
-    const int nmod = request.models_count;
-    std::vector<RegArmaBic> estimations(static_cast<std::size_t>(nmod));
-    std::vector<RegArmaBic> evaluations;
-
-    SarmaOrders tmpl;
-    tmpl.period = period;
-    tmpl.p = period == 2 ? 1 : 3; // the pinned template (3, 0) for period 4/12
-    tmpl.q = 0;
-
-    const auto mixed_ok = [request](int a, int b) {
-        return request.mixed || a == 0 || b == 0;
-    };
-
-    // Stage 1: the (bp, bq) grid on the (3, 0) regular part; its winner's
-    // (bp, bq) is all stage 2 carries - the stage-1 winner itself (p = 3
-    // exceeds the stage-2 grid bound) is never merged.
-    SarmaOrders best = tmpl;
-    {
-        std::vector<SarmaOrders> grid;
-        for (int bp = 0; bp <= request.max_bp; ++bp) {
-            for (int bq = 0; bq <= request.max_bq; ++bq) {
-                if (!mixed_ok(bp, bq)) {
-                    continue;
-                }
-                SarmaOrders orders = tmpl;
-                orders.bp = bp;
-                orders.bq = bq;
-                grid.push_back(orders);
-            }
-        }
-        const std::vector<RegArmaBic> sorted =
-            sort_candidates(grid, cursor, request.eps, 1, evaluations, interrupt);
-        require(!sorted.empty(), "the seasonal grid produced no candidate");
-        best = sorted[0].spec;
-    }
-
-    // Stage 2: the (p, q) grid on the stage-1 winner's (bp, bq); its winner
-    // is adopted and the sorted list is merged into the fresh array (the
-    // first merge degenerates to copying the leading min(m, nmod) entries).
-    {
-        std::vector<SarmaOrders> grid;
-        for (int p = 0; p <= request.max_p; ++p) {
-            for (int q = 0; q <= request.max_q; ++q) {
-                if (!mixed_ok(p, q)) {
-                    continue;
-                }
-                SarmaOrders orders = best;
-                orders.p = p;
-                orders.q = q;
-                grid.push_back(orders);
-            }
-        }
-        const std::vector<RegArmaBic> sorted =
-            sort_candidates(grid, cursor, request.eps, 2, evaluations, interrupt);
-        require(!sorted.empty(), "the regular grid produced no candidate");
-        best = sorted[0].spec;
-        merge_into(sorted, estimations);
-    }
-
-    // Stage 3: the (bp, bq) refinement grid on the stage-2 winner; the
-    // winner is adopted only through the merged list and the refinement
-    // scan. The stage-3 bp clamp keys on the seasonal differencing order
-    // (bd == 1), never on the stored, never-read acceptWhiteNoise field.
-    {
-        int m1 = request.max_bp;
-        if (request.seasonal_d == 1) {
-            m1 = 0;
-        }
-        std::vector<SarmaOrders> grid;
-        for (int bp = 0; bp <= m1; ++bp) {
-            for (int bq = 0; bq <= request.max_bq; ++bq) {
-                if (!mixed_ok(bp, bq)) {
-                    continue;
-                }
-                SarmaOrders orders = best;
-                orders.bp = bp;
-                orders.bq = bq;
-                grid.push_back(orders);
-            }
-        }
-        const std::vector<RegArmaBic> sorted =
-            sort_candidates(grid, cursor, request.eps, 3, evaluations, interrupt);
-        require(!sorted.empty(), "the seasonal refinement grid produced no candidate");
-        merge_into(sorted, estimations);
-    }
-
-    // All nmod slots must be filled: the pinned dead tail-trim then NPEs on
-    // an empty slot, which the module turns into ProcessingResult.Failed.
-    for (const auto& entry : estimations) {
-        require(entry.active, "the merged list cannot fill all models_count "
-                "slots (the pinned refinement would NPE on the empty slot, the "
-                "ProcessingResult.Failed path)");
-    }
-    const int n = nmod;
-
-    // select(cursor, d, bd): the refinement scan over the merged list. The
-    // polarity measures count the unit roots the spec differencing implies
-    // against MA cancellation; the threshold band keys on the merged list's
-    // BIC spread and shrinks by each accepted move's gain.
-    SarmaOrders incumbent = estimations[0].spec;
-    int npq = incumbent.p + incumbent.q;
-    int nbpq = incumbent.bp + incumbent.bq;
-    int dpq = std::abs(incumbent.p + request.d - incumbent.q);
-    int dbpq = std::abs(incumbent.bp + request.seasonal_d - incumbent.bq);
-    double dif = estimations[static_cast<std::size_t>(n - 1)].bic - estimations[0].bic;
-    if (dif < 0.003) { // dcmpg: a NaN spread takes 1.0
-        dif = 0.0625;
-    } else if (dif < 0.03) {
-        dif = 0.25;
-    } else {
-        dif = 1.0;
-    }
-    double lim1 = 0.01 * dif;
-    double lim2 = 0.0025 * dif;
-    double lim3 = 0.0075 * dif;
-    int id = 0;
-    int cnt = 0;
-    std::vector<ArmaSelectionStep> steps;
-
-    for (int i = 1; i < n; ++i) {
-        if (interrupt) {
-            interrupt();
-        }
-        const SarmaOrders& cur = estimations[static_cast<std::size_t>(i)].spec;
-        const int cpq = cur.p + cur.q;
-        const int cbpq = cur.bp + cur.bq;
-        const int cdpq = std::abs(cur.p + request.d - cur.q);
-        const int cdbpq = std::abs(cur.bp + request.seasonal_d - cur.bq);
-        // curdif is measured against the INCUMBENT, not the list head (the
-        // pinned local 26 accumulates from the incumbent's BIC).
-        const double curdif = estimations[static_cast<std::size_t>(i)].bic
-            - estimations[static_cast<std::size_t>(id)].bic;
-        int rule = 0;
-        const bool polar = cdpq < dpq || cdbpq < dbpq;
-        if (request.balanced && polar && npq == cpq && nbpq == cbpq && curdif <= lim1) {
-            rule = 1;
-        } else if (request.balanced && cdpq < dpq && cpq <= npq && cbpq == nbpq
-            && curdif <= lim2 && cur.p > 0 && cur.q > 0) {
-            rule = 2;
-        } else if (request.balanced
-            && ((cdpq == 0 && cdpq < dpq && request.d > 0)
-                || (cdbpq == 0 && cdbpq < dbpq && request.seasonal_d > 0))
-            && npq == cpq && nbpq == cbpq && curdif <= lim1) {
-            rule = 3;
-        } else if (request.balanced && cdpq == 0 && cdbpq == 0 && curdif < lim2) {
-            rule = 4;
-        } else if (request.balanced && cpq > npq && cdpq == 0 && cbpq == nbpq
-            && curdif < lim2) {
-            rule = 5;
-        } else if (request.balanced && cbpq > nbpq && cdbpq == 0 && cpq == npq
-            && curdif < lim2) {
-            rule = 6;
-        } else if (request.balanced && cbpq < nbpq && cbpq > 0 && cpq == npq
-            && cdbpq == 0 && curdif < lim2) {
-            rule = 7;
-        } else if (i == 1 && npq == 0 && cpq == 1 && cbpq == nbpq && curdif < lim2) {
-            rule = 8;
-        } else if (cpq < npq && cpq > 0 && cbpq == nbpq && curdif < lim2) {
-            rule = 9;
-        } else if (cbpq < nbpq && cbpq > 0 && cpq == npq && curdif < lim2) {
-            rule = 10;
-        } else if (cur.p < incumbent.p && cur.q == incumbent.q && cpq > 0
-            && cbpq == nbpq && curdif < lim3) {
-            rule = 11;
-        }
-        if (rule != 0) {
-            ++cnt;
-            const double gain =
-                estimations[static_cast<std::size_t>(i)].bic - estimations[0].bic;
-            lim1 -= gain;
-            lim2 -= gain;
-            lim3 -= gain;
-            npq = cpq;
-            nbpq = cbpq;
-            dpq = cdpq;
-            dbpq = cdbpq;
-            id = i;
-            incumbent = cur;
-        }
-        steps.push_back(ArmaSelectionStep{
-            .candidate = i, .rule = rule, .incumbent = id, .moves = cnt});
-    }
-
-    // A zero-parameter incumbent escapes to the next merged entry whenever
-    // one exists behind it.
-    SarmaOrders selected = estimations[static_cast<std::size_t>(id)].spec;
-    if (selected.parameters_count() == 0 && id <= nmod - 2) {
-        selected = estimations[static_cast<std::size_t>(id + 1)].spec;
-    }
+    ArmaSelectRequest select;
+    select.cursor = cursor;
+    select.period = request.period;
+    select.d = request.d;
+    select.seasonal_d = request.seasonal_d;
+    select.models_count = request.models_count;
+    select.max_p = request.max_p;
+    select.max_q = request.max_q;
+    select.max_bp = request.max_bp;
+    select.max_bq = request.max_bq;
+    select.balanced = request.balanced;
+    select.mixed = request.mixed;
+    select.accept_white_noise = request.accept_white_noise;
+    select.eps = request.eps;
+    // select.validate() holds no new information past the validated request
+    // (the cursor is built from finite inputs by the differencing/OLS sweep);
+    // the engine runs directly, keeping the pinned-abort messages under the
+    // identify_initial_arma prefix.
+    ArmaSelectResult result =
+        select_engine(select, interrupt, "identify_initial_arma");
 
     InitialArmaIdentification out;
-    out.p = selected.p;
-    out.q = selected.q;
-    out.bp = selected.bp;
-    out.bq = selected.bq;
-    out.residuals = cursor;
-    for (const auto& evaluation : evaluations) {
-        out.evaluations.push_back(ArmaCandidateEvaluation{.stage = evaluation.stage,
-            .slot = evaluation.slot, .p = evaluation.spec.p, .q = evaluation.spec.q,
-            .bp = evaluation.spec.bp, .bq = evaluation.spec.bq,
-            .initial_source = evaluation.initialSource, .fit_status = evaluation.fitStatus,
-            .log_likelihood = evaluation.logLikelihood, .bic = evaluation.bic,
-            .coefficients = evaluation.coefficients});
-    }
-    for (const auto& entry : estimations) {
-        out.preferred_models.push_back(ArmaPreferredModel{.p = entry.spec.p,
-            .q = entry.spec.q, .bp = entry.spec.bp, .bq = entry.spec.bq,
-            .bic = entry.bic, .log_likelihood = entry.logLikelihood,
-            .coefficients = entry.coefficients});
-    }
-    out.refinement = steps;
+    out.p = result.p;
+    out.q = result.q;
+    out.bp = result.bp;
+    out.bq = result.bq;
+    out.residuals = std::move(cursor);
+    out.evaluations = std::move(result.evaluations);
+    out.preferred_models = std::move(result.preferred_models);
+    out.refinement = std::move(result.refinement);
     return out;
 }
 

@@ -45,21 +45,27 @@ struct DifferencingDecisionRequest {
 // Coefficients are reported in the pinned JVM convention (1 + phi(B)).
 struct DifferencingIterationRecord {
     // 0 = step0 (initstep(true) + root scan), 1.. = nextstep rounds.
-    int iteration;
-    int p, q, bp, bq;                          // orders set by initstep
-    std::string hr_source;                     // "fitted" or "defaultfill"
-    bool hr_stabilized;                        // unstable-gate stabilization rewrote a block
-    bool failure;                              // pinned failure flag after the unstable gate
-    bool trial_fit;                            // ML branch executed an optimize()
-    std::string trial_status;                  // warm-reentry status, empty without trial fit
-    double phi, theta, bphi, btheta;           // lastModel coefficients consumed
-    double rmax, rsmax;                        // searchur maxima (step0) or allcond fills
-    double cancel_threshold;                   // c_ as seen by maincondition (step0: c_ before)
-    int maincondition;                         // maincondition() return (nextstep rounds; 0 at step0)
-    int carried;                               // cond1 return (round 0), else maincondition result
-    bool useml;                                // useml leaving the iteration
-    bool mlused;                               // mlused leaving the iteration
-    int d, seasonal_d;                         // spec d/bd leaving the iteration
+    // Default-initialized throughout: the machine writes the fields that
+    // the executed branch defines (hr_stabilized/trial_fit only on the
+    // failure/ml branches, maincondition/carried only on nextstep rounds),
+    // so every other value must be the defined zero - a diagnostic-record
+    // hardening found by the 21-F sanitizer run (reads only, no decision
+    // effect; see IMPLEMENTATION_STATUS 21-F).
+    int iteration = 0;
+    int p = 0, q = 0, bp = 0, bq = 0;            // orders set by initstep
+    std::string hr_source;                       // "fitted" or "defaultfill"
+    bool hr_stabilized = false;                  // unstable-gate stabilization rewrote a block
+    bool failure = false;                        // pinned failure flag after the unstable gate
+    bool trial_fit = false;                      // ML branch executed an optimize()
+    std::string trial_status;                    // warm-reentry status, empty without trial fit
+    double phi = 0.0, theta = 0.0, bphi = 0.0, btheta = 0.0; // lastModel coefficients consumed
+    double rmax = 0.0, rsmax = 0.0;              // searchur maxima (step0) or allcond fills
+    double cancel_threshold = 0.0;               // c_ as seen by maincondition (step0: c_ before)
+    int maincondition = 0;                       // maincondition() return (nextstep rounds; 0 at step0)
+    int carried = 0;                             // cond1 return (round 0), else maincondition result
+    bool useml = false;                          // useml leaving the iteration
+    bool mlused = false;                         // mlused leaving the iteration
+    int d = 0, seasonal_d = 0;                   // spec d/bd leaving the iteration
 };
 
 // The decision; mirrors IDifferencingModule$Info (d, bd, mean, tmean) plus
