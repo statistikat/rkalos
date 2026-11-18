@@ -47,6 +47,7 @@ add_library(kalos STATIC
   src/forecast_information.cpp
   src/hannan_rissanen.cpp
   src/information.cpp
+  src/initial_arma_identification.cpp
   src/interpolation_arma_information.cpp
   src/interpolation_information.cpp
   src/joint_regression_information.cpp
@@ -157,6 +158,7 @@ if(KALOS_BUILD_TESTS)
     test_forecast_information
     test_hannan_rissanen
     test_information
+    test_initial_arma_identification
     test_interpolation_arma_information
     test_interpolation_information
     test_joint_regression_information

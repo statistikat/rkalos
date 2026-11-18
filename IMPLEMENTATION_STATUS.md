@@ -984,6 +984,26 @@ lanes), re-synced, re-qualified here.
   inside a banded 2e-4 tier, everything else bit-identical) is the reference
   shape for what a future R tolerance tier may need.
 
+## Core pin advanced to 7200a56 — 21-E initial ARMA identification, R boundary unchanged — 2026-11-18
+
+- Infrastructure sync (no R or shim code changed): the core pin advances
+  `2170435 → 7200a56b0997dcdcf1970514ac44030796a8fd46` (item 21-E, the
+  initial ARMA identification unit). Manifest core 122→124; `src/kalos`
+  121→123 files (added `initial_arma_identification.{hpp,cpp}`; modified
+  only `CMakeLists.txt` and the generated `revision.hpp`); evidence
+  154→162 (`native/initial-arma-identification/`, 8 corpus files; inst tree
+  266→274). The new unit is unbound and outside `Makevars OBJECTS`.
+- Structural no-effect: the range is **purely additive** — 7,389
+  insertions, 0 deletions across all files; zero modifications to any
+  existing `src/` or `include/` file, so the compiled OBJECTS closure and
+  its header include-graph are bit-identical to the previous pin
+  (red-flag count 0).
+- Observational no-effect: full suite on the fresh tarball —
+  **290,073 assertions, 0 failures** (48 files, OpenMP lane) and
+  **290,069, 0 failures** (serial lane) — bit-identical to the M9–M11
+  checkpoints; no fixture moved. The 21-E unit becomes R-relevant only
+  through the 21-G/H specification-level qualification.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay
