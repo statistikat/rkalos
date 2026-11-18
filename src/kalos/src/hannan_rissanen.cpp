@@ -1,5 +1,10 @@
 #include "kalos/hannan_rissanen.hpp"
 
+#include "kalos/detail/fdlibm.hpp"
+#include "kalos/detail/hannan_rissanen_pipeline.hpp"
+#include "kalos/detail/sarima_stabilization.hpp"
+#include "kalos/detail/ssq_deviances.hpp"
+#include "kalos/detail/ssq_levmar.hpp"
 #include "kalos/linear_algebra.hpp"
 
 #include <algorithm>
@@ -22,6 +27,10 @@ void checkpoint(const Interrupt& interrupt) {
 
 // Pinned AbsMeanNormalizer: divide every entry by the mean absolute value of
 // the finite entries; a zero sum is a no-op.
+// Pinned AbsMeanNormalizer.normalize(DataBlock): scale = n / sum(|x|) over
+// the finite entries (1.0 when the sum is 0), applied by multiplication to
+// every entry. (getNormalizationFactor, which restricts to |x| > 1, is a
+// different method not used on this path.)
 void normalize_abs_mean(std::vector<double>& values) {
     double sum = 0.0;
     std::size_t finite = 0;
@@ -55,9 +64,15 @@ std::vector<double> levinson_coefficients(const std::vector<double>& y, int orde
         for (int i = 0; i <= m; ++i) k -= phi[static_cast<std::size_t>(i)] * x[static_cast<std::size_t>(m + 1 - i)];
         k /= delta;
         for (int i = 0; i <= (m + 1) / 2; ++i) {
-            const double previous = phi[static_cast<std::size_t>(m + 1 - i)];
-            phi[static_cast<std::size_t>(m + 1 - i)] = previous + k * phi[static_cast<std::size_t>(i)];
-            phi[static_cast<std::size_t>(i)] += k * previous;
+            // Pinned temporary order (LevinsonAlgorithm 158-211): var11 =
+            // a[m+1-i] + k*a[i] is computed from the OLD pair before either
+            // slot is written, so the middle slot (i == m+1-i) receives
+            // P*(1+k), not the double update P*(1+2k) an in-place sequence
+            // without the temporary would produce.
+            const double other = phi[static_cast<std::size_t>(m + 1 - i)];
+            const double new_other = other + k * phi[static_cast<std::size_t>(i)];
+            phi[static_cast<std::size_t>(i)] = phi[static_cast<std::size_t>(i)] + k * other;
+            phi[static_cast<std::size_t>(m + 1 - i)] = new_other;
         }
         delta *= 1.0 - k * k;
     }
@@ -77,13 +92,16 @@ std::vector<double> ar_residuals(const std::vector<double>& y, const std::vector
     return r;
 }
 
-// Pinned HannanRissanen.npi(): AR approximation length of the prefilter.
+// Pinned HannanRissanen.npi() (bytecode 747-105): the Levinson prefilter
+// window is max((int)(log n)^2, max(p + P*bp, 2*(q + P*bq))) (two Math.max
+// calls, NOT a product), replaced by n - n/4 when it reaches n, then capped
+// at 50.
 int ar_window(std::size_t n, const HannanRissanenOrders& o) {
-    const double logn = std::log(static_cast<double>(n));
-    const double factor = static_cast<int>(logn * logn);
-    const std::size_t dense_ar = static_cast<std::size_t>(o.p) + static_cast<std::size_t>(o.period) * static_cast<std::size_t>(o.bp);
-    const std::size_t dense_ma = 2 * (static_cast<std::size_t>(o.q) + static_cast<std::size_t>(o.period) * static_cast<std::size_t>(o.bq));
-    long long length = static_cast<long long>(factor) * static_cast<long long>(std::max(dense_ar, dense_ma));
+    const double logn = detail::fdlibm_log(static_cast<double>(n));
+    const long long logfactor = static_cast<int>(logn * logn);
+    const long long dense_ar = static_cast<long long>(o.p) + static_cast<long long>(o.period) * static_cast<long long>(o.bp);
+    const long long dense_ma = 2 * (static_cast<long long>(o.q) + static_cast<long long>(o.period) * static_cast<long long>(o.bq));
+    long long length = std::max(logfactor, std::max(dense_ar, dense_ma));
     const long long nn = static_cast<long long>(n);
     if (length >= nn) length = nn - nn / 4;
     if (length > 50) length = 50;
@@ -99,6 +117,7 @@ struct Pipeline {
     HannanRissanenOrders o;
     bool biascorrection;
     bool finalcorrection;
+    double bic = 0.0; // Pinned HannanRissanen.bic, set by the minspq ls().
     const Interrupt& interrupt;
 };
 
@@ -110,14 +129,56 @@ std::size_t ma_count(const Pipeline& h) {
     return static_cast<std::size_t>(h.o.q) + static_cast<std::size_t>(h.o.bq) * (1 + static_cast<std::size_t>(h.o.q));
 }
 
-// Pinned ls(): ordinary least squares on the dense design; the caller owns
-// the sign conventions. DGELSY is the qualified Kalos solver adapter; it
-// coincides with the pinned unpivoted Householder solution whenever the
-// design has full column rank.
-std::vector<double> least_squares(Pipeline& h, const DenseMatrix& x, const std::vector<double>& rhs) {
-    const DenseMatrix b(rhs.size(), 1, rhs);
-    const auto fit = qr_least_squares(x, b, 1e-10, h.interrupt);
-    return fit.coefficients.values();
+// Pinned ls(): QRLeastSquaresSolver.fastLeastSquares (unpivoted
+// Householder2 chain, UpperTriangularMatrix.rank(R, 0) and solveUx) on the
+// dense design, bit-reproduced by the shared pinned solver transcription;
+// DGELSY only agrees at full rank and steered the Multiple-start chain into
+// the wrong basins (21-D.2). The caller owns the sign conventions.
+struct PinnedPipelineLs {
+    std::vector<double> b; // getB(), zero padded to the column count
+    double ssq_err = 0.0;
+};
+
+PinnedPipelineLs pinned_ls(const DenseMatrix& x, const std::vector<double>& rhs,
+    const Interrupt& interrupt) {
+    checkpoint(interrupt);
+    const std::size_t rows = x.rows();
+    const std::size_t columns = x.columns();
+    auto solution = detail::pinned_least_squares(x.values(), rhs, rows, columns);
+    if (solution.singular) {
+        // The pinned solveUx throws before any residual is read, so the
+        // (empty) tail must not be summed here.
+        throw std::runtime_error("hannan_rissanen_start: singular design");
+    }
+    PinnedPipelineLs out;
+    out.b = std::move(solution.x);
+    // QRLeastSquaresSolution.getSsqErr: DataBlock.ssq over the residual
+    // tail (the b coordinates from rank on, stored compactly by the
+    // transcription), ascending, skipping the non-finite coordinates.
+    double acc = 0.0;
+    for (const double value : solution.residual_tail) {
+        if (std::isfinite(value)) {
+            acc += value * value;
+        }
+    }
+    out.ssq_err = acc;
+    return out;
+}
+
+std::vector<double> least_squares(Pipeline& h, const DenseMatrix& x, const std::vector<double>& rhs,
+    bool bic) {
+    const auto solution = pinned_ls(x, rhs, h.interrupt);
+    if (bic) {
+        // Pinned bic = log(ssqErr/n) + log(n) * count(b != 0) / n.
+        const double n = static_cast<double>(rhs.size());
+        std::size_t count = 0;
+        for (const double value : solution.b) {
+            if (value != 0.0) ++count;
+        }
+        h.bic = detail::fdlibm_log(solution.ssq_err / n) +
+            detail::fdlibm_log(n) * static_cast<double>(count) / n;
+    }
+    return solution.b;
 }
 
 // Pinned minspq(): dense two-sided regression y[t] ~ [y-lags | seasonal
@@ -135,6 +196,15 @@ void minspq(Pipeline& h) {
         throw std::runtime_error("hannan_rissanen_start: response shorter than the design warmup");
     }
     const std::size_t rows = n - warmup, columns = nP + nQ;
+    if (columns > rows) {
+        // Pinned short-window failure class: with more design columns than
+        // rows the pinned JVM continues past the (well-defined) min-width
+        // Householder stage into reflector and residual layouts that go out
+        // of bounds (the corpus records ArrayIndexOutOfBounds/
+        // NegativeArraySize for these cases). The qualified seam refuses the
+        // degenerate design instead of reproducing a JVM memory failure.
+        throw std::runtime_error("hannan_rissanen_start: design exceeds the short response window");
+    }
     DenseMatrix x(rows, columns);
     std::vector<double> rhs(rows);
     for (std::size_t r = 0; r < rows; ++r) rhs[r] = h.data[warmup + r];
@@ -153,7 +223,7 @@ void minspq(Pipeline& h) {
         for (std::size_t j = 0; j <= q; ++j) fill(h.a, block * period + j);
     }
     checkpoint(h.interrupt);
-    h.pi = least_squares(h, x, rhs);
+    h.pi = least_squares(h, x, rhs, true);
     for (std::size_t j = 0; j < nP; ++j) h.pi[j] = -h.pi[j];
 }
 
@@ -212,7 +282,7 @@ void biascorrection(Pipeline& h) {
         es[t] = acc_s + value;
     }
     checkpoint(h.interrupt);
-    const auto correction = least_squares(h, x, e);
+    const auto correction = least_squares(h, x, e, false);
     for (std::size_t j = 0; j < correction.size(); ++j) h.pi[j] += correction[j];
 }
 
@@ -250,19 +320,18 @@ std::vector<double> ar_polynomial(const Pipeline& h) {
 // MA tail of m_pi with the refit.
 void finalcorrection(Pipeline& h) {
     const std::vector<double> filter = ar_polynomial(h);
-    const std::size_t degree = filter.size() - 1;
-    if (h.data.size() <= degree) {
+    // Pinned IFiniteFilter.apply(DataBlock, DataBlock) unit-increment fast
+    // path: out[i] = sum_{k ascending} w[k] * data[i + k] with w the reversed
+    // polynomial coefficients. The accumulation direction decides ulps, and
+    // pass-2 sensitivity steers the Multiple-start chain (21-D.2).
+    std::vector<double> filtered = detail::pinned_backfilter_apply(filter, h.data);
+    if (filtered.empty()) {
         throw std::runtime_error("hannan_rissanen_start: filtered series is empty");
-    }
-    std::vector<double> filtered(h.data.size() - degree);
-    for (std::size_t t = 0; t < filtered.size(); ++t) {
-        double value = 0.0;
-        for (std::size_t k = 0; k <= degree; ++k) value += filter[k] * h.data[t + k];
-        filtered[t] = value;
     }
     checkpoint(h.interrupt);
     HannanRissanenOrders reduced{0, 0, h.o.q, h.o.bq, h.o.period};
-    Pipeline second{std::move(filtered), {}, {}, reduced, h.biascorrection, false, h.interrupt};
+    Pipeline second{std::move(filtered), {}, {}, reduced, h.biascorrection, false, 0.0,
+        h.interrupt};
     normalize_abs_mean(second.data);
     run(second);
     if (second.pi.size() > h.pi.size()) {
@@ -287,79 +356,23 @@ void run(Pipeline& h) {
     if (ma > 0 && ar > 0 && h.finalcorrection) finalcorrection(h);
 }
 
-// Pinned SarimaMapping.stabilize(DataBlock): trim trailing zeros, leave a
-// stable block, invert roots inside the unit circle of 1 + b(B) by
-// re-forming the polynomial from the inverted roots and normalizing the
-// constant term to one. Returns whether the block was rewritten.
-bool stabilize_block(std::vector<double>& block) {
-    std::size_t length = block.size();
-    while (length > 0 && block[length - 1] == 0.0) --length;
-    if (length == 0) return false;
-    if (length == 1) {
-        if (std::abs(block[0]) > 1.0) {
-            block[0] = 1.0 / block[0];
-            return true;
-        }
-        return false;
-    }
-    std::vector<double> polynomial(length + 1, 0.0);
-    polynomial[0] = 1.0;
-    for (std::size_t i = 0; i < length; ++i) polynomial[i + 1] = block[i];
-    const auto found = polynomial_roots(polynomial);
-    if (found.empty()) return false;
-    std::vector<std::complex<double>> roots;
-    roots.reserve(found.size());
-    for (const auto& root : found) roots.emplace_back(root.real, root.imag);
-    bool changed = false;
-    for (auto& root : roots) {
-        const double modulus = std::abs(root);
-        if (1.0 / modulus > 1.0) {
-            if (modulus == 0.0) {
-                throw std::runtime_error("hannan_rissanen_start: zero root cannot be inverted");
-            }
-            root = std::conj(root) / (modulus * modulus);
-            changed = true;
-        }
-    }
-    if (!changed) return false;
-    // Pinned Polynomial.fromComplexRoots followed by division by the
-    // constant term; only real parts cross back into the block.
-    std::vector<std::complex<double>> z(roots.size() + 1, {0.0, 0.0});
-    z[0] = {1.0, 0.0};
-    for (std::size_t i = 0; i < roots.size(); ++i) {
-        z[i + 1] = z[i];
-        for (std::size_t j = i; j >= 1; --j) z[j] = z[j - 1] - z[j] * roots[i];
-        z[0] = z[0] * (-roots[i]);
-    }
-    if (!(z[0].real() != 0.0)) {
-        throw std::runtime_error("hannan_rissanen_start: roots must all be different from 0");
-    }
-    for (std::size_t i = 0; i < length; ++i) {
-        if (!std::isfinite(z[i + 1].real())) {
-            throw std::runtime_error("hannan_rissanen_start: unstable reconstruction");
-        }
-        block[i] = z[i + 1].real() / z[0].real();
-    }
-    return true;
-}
-
 // Pinned SarimaMapping.stabilize(boolean, SarimaOrders, DataBlock) over the
-// model parameter layout: regular AR, one entry per seasonal AR block,
+// initializer parameter layout: regular AR, one entry per seasonal AR block,
 // regular MA, one entry per seasonal MA block, in that order.
 bool stabilize_model(std::array<std::vector<double>, 4>& raw) {
     bool changed = false;
-    changed |= stabilize_block(raw[0]);
+    changed |= detail::stabilize_coefficient_block(raw[0]);
     for (auto& entry : raw[1]) {
         std::vector<double> singleton{entry};
-        if (stabilize_block(singleton)) {
+        if (detail::stabilize_coefficient_block(singleton)) {
             entry = singleton[0];
             changed = true;
         }
     }
-    changed |= stabilize_block(raw[2]);
+    changed |= detail::stabilize_coefficient_block(raw[2]);
     for (auto& entry : raw[3]) {
         std::vector<double> singleton{entry};
-        if (stabilize_block(singleton)) {
+        if (detail::stabilize_coefficient_block(singleton)) {
             entry = singleton[0];
             changed = true;
         }
@@ -368,6 +381,53 @@ bool stabilize_model(std::array<std::vector<double>, 4>& raw) {
 }
 
 } // namespace
+
+namespace detail {
+
+std::array<std::vector<double>, 4> hannan_rissanen_pipeline(const std::vector<double>& response,
+    const HannanRissanenOrders& orders, const Interrupt& interrupt) {
+    if (orders.p < 0 || orders.bp < 0 || orders.q < 0 || orders.bq < 0 || orders.period < 1) {
+        throw std::invalid_argument("hannan_rissanen_pipeline: negative orders");
+    }
+    if (response.empty()) throw std::invalid_argument("hannan_rissanen_pipeline: empty response");
+    for (const double value : response) {
+        if (!std::isfinite(value)) {
+            throw std::invalid_argument("hannan_rissanen_pipeline: non-finite response value");
+        }
+    }
+    std::array<std::vector<double>, 4> blocks{
+        std::vector<double>(static_cast<std::size_t>(orders.p), 0.0),
+        std::vector<double>(static_cast<std::size_t>(orders.bp), 0.0),
+        std::vector<double>(static_cast<std::size_t>(orders.q), 0.0),
+        std::vector<double>(static_cast<std::size_t>(orders.bq), 0.0)};
+    Pipeline h{response, {}, {}, orders, true, true, 0.0, interrupt};
+    normalize_abs_mean(h.data);
+    run(h);
+    for (const double value : h.pi) {
+        if (!std::isfinite(value)) {
+            throw std::runtime_error("hannan_rissanen_pipeline: pipeline produced non-finite coefficients");
+        }
+    }
+    // Pinned updatemodel extraction: only the first entry of each seasonal
+    // block reaches the model; the blocks stay in the rjd3 sign convention.
+    const std::size_t p_count = static_cast<std::size_t>(orders.p);
+    const std::size_t q_count = static_cast<std::size_t>(orders.q);
+    const std::size_t nP = p_count + static_cast<std::size_t>(orders.bp) * (1 + p_count);
+    blocks[0].assign(h.pi.begin(), h.pi.begin() + static_cast<std::ptrdiff_t>(p_count));
+    for (std::size_t block = 0; block < static_cast<std::size_t>(orders.bp); ++block) {
+        blocks[1][block] = h.pi[p_count + block * (1 + p_count)];
+    }
+    blocks[2].assign(h.pi.begin() + static_cast<std::ptrdiff_t>(nP),
+                     h.pi.begin() + static_cast<std::ptrdiff_t>(nP + q_count));
+    for (std::size_t block = 0; block < static_cast<std::size_t>(orders.bq); ++block) {
+        // Pinned updatemodel: btheta takes m_pi[i1], then i1 += 1 + q, so
+        // the seasonal MA section starts after the q regular theta entries.
+        blocks[3][block] = h.pi[nP + q_count + block * (1 + q_count)];
+    }
+    return blocks;
+}
+
+} // namespace detail
 
 HannanRissanenStart hannan_rissanen_start(const std::vector<double>& response,
                                           const RegressionDesign& design,
@@ -410,8 +470,32 @@ HannanRissanenStart hannan_rissanen_start(const std::vector<double>& response,
     try {
         // Pinned Ols.compute on the differenced linear model: the pipeline
         // runs on y - X b, or on y itself when the model has no regressors.
+        // Pinned OlsComputer guard: a response with norm2 below machine
+        // epsilon makes Ols.compute return null, which the initializer
+        // swallows into the defaulted start.
+        double ynorm2 = 0.0;
+        for (const double value : response) {
+            ynorm2 += value * value;
+        }
+        if (std::sqrt(ynorm2) < 1.1102230246251565e-16) { // dcmpg: NaN passes
+            start.source = HannanRissanenStart::Source::Defaulted;
+            for (double& value : start.coefficients[0]) value = 0.1;
+            for (double& value : start.coefficients[1]) value = 0.1;
+            for (double& value : start.coefficients[2]) value = -0.2;
+            for (double& value : start.coefficients[3]) value = -0.2;
+            return start;
+        }
         std::vector<double> adjusted = response;
-        if (design.columns > 0) {
+        if (design.columns == 1) {
+            // The pinned HouseholderWithPivot solve (bit-exact), not the
+            // LAPACK QR: the ulp of this coefficient steers the whole
+            // Multiple-start chain (21-D.2).
+            const double b = detail::pinned_ols_1col(design.values, response);
+            adjusted.resize(n);
+            for (std::size_t i = 0; i < n; ++i) {
+                adjusted[i] = response[i] - design.values[i] * b;
+            }
+        } else if (design.columns > 0) {
             DenseMatrix x(n, design.columns, design.values);
             const DenseMatrix b(n, 1, response);
             const auto fit = qr_least_squares(x, b, 1e-10, checked_interrupt);
@@ -424,33 +508,11 @@ HannanRissanenStart hannan_rissanen_start(const std::vector<double>& response,
             start.source = HannanRissanenStart::Source::ZeroVariance;
             return start;
         }
-        Pipeline h{std::move(adjusted), {}, {}, orders, true, true, checked_interrupt};
-        normalize_abs_mean(h.data);
-        run(h);
-        for (const double value : h.pi) {
-            if (!std::isfinite(value)) {
-                throw std::runtime_error("hannan_rissanen_start: pipeline produced non-finite coefficients");
-            }
-        }
-        // Pinned updatemodel extraction (only the first entry of each
-        // seasonal block reaches the model), then the stabilized SarimaModel.
-        const std::size_t p_count = static_cast<std::size_t>(orders.p);
-        const std::size_t q_count = static_cast<std::size_t>(orders.q);
-        const std::size_t nP = p_count + static_cast<std::size_t>(orders.bp) * (1 + p_count);
-        auto& raw = start.coefficients;
-        raw[0].assign(h.pi.begin(), h.pi.begin() + static_cast<std::ptrdiff_t>(p_count));
-        for (std::size_t block = 0; block < static_cast<std::size_t>(orders.bp); ++block) {
-            raw[1][block] = h.pi[p_count + block * (1 + p_count)];
-        }
-        raw[2].assign(h.pi.begin() + static_cast<std::ptrdiff_t>(nP),
-                      h.pi.begin() + static_cast<std::ptrdiff_t>(nP + q_count));
-        for (std::size_t block = 0; block < static_cast<std::size_t>(orders.bq); ++block) {
-            raw[3][block] = h.pi[nP + block * (1 + q_count)];
-        }
-        start.stabilized = stabilize_model(raw);
+        start.coefficients = detail::hannan_rissanen_pipeline(adjusted, orders, checked_interrupt);
+        start.stabilized = stabilize_model(start.coefficients);
         // rjd3 stores raw 1 + phi(B); the Kalos convention is 1 - phi(B).
-        for (double& value : raw[0]) value = -value;
-        for (double& value : raw[1]) value = -value;
+        for (double& value : start.coefficients[0]) value = -value;
+        for (double& value : start.coefficients[1]) value = -value;
         checkpoint(checked_interrupt);
         return start;
     } catch (...) {

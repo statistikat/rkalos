@@ -38,8 +38,10 @@ add_library(kalos STATIC
   src/arma_optimizer.cpp
   src/arma_parameters.cpp
   src/arma_residuals.cpp
+  src/differencing_decision.cpp
   src/diffuse_state_space.cpp
   src/estimation_control.cpp
+  src/fdlibm.cpp
   src/finite_state_factor.cpp
   src/forecast_arma_information.cpp
   src/forecast_information.cpp
@@ -58,7 +60,10 @@ add_library(kalos STATIC
   src/prediction_moments.cpp
   src/regression_likelihood.cpp
   src/residual_information.cpp
+  src/sarima_stabilization.cpp
   src/sparse_history.cpp
+  src/ssq_levmar.cpp
+  src/ssq_deviances.cpp
   src/state_space.cpp
   src/transformation_decision.cpp
   src/transforms.cpp
@@ -145,6 +150,7 @@ if(KALOS_BUILD_TESTS)
     test_arma_optimizer
     test_arma_parameters
     test_arma_residuals
+    test_differencing_decision
     test_diffuse_state_space
     test_estimation_control
     test_forecast_arma_information

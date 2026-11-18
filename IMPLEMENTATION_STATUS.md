@@ -938,6 +938,52 @@ lanes), re-synced, re-qualified here.
   so the parallelism axis cannot discriminate it; the single lane confirms
   the expected bit-identical totals.
 
+## Core pin advanced to 2170435 — 21-D differencing decision, R boundary unchanged — 2026-11-18
+
+- Infrastructure sync (no R or shim code changed): the core pin advances
+  `e19df2c → 21704352cfc8c6af45e68041e42a9e7eb6d4f44d` (item 21-D: the
+  differencing decision unit plus its support cluster — fdlibm-pinned
+  transcendentals, the bit-exact `ssq_levmar`/`ssq_deviances` machines, the
+  raw-Hannan-Rissanen pipeline extraction, and the `EstimationSolver` seam).
+  Manifest core 111→122; `src/kalos` 110→121 files (added
+  `detail/fdlibm.hpp`, `detail/hannan_rissanen_pipeline.hpp`,
+  `detail/sarima_stabilization.hpp`, `detail/ssq_deviances.hpp`,
+  `detail/ssq_levmar.hpp`, `differencing_decision.hpp` and the matching
+  `differencing_decision.cpp`, `fdlibm.cpp`, `sarima_stabilization.cpp`,
+  `ssq_deviances.cpp`, `ssq_levmar.cpp`); evidence 150→154
+  (`native/differencing-decision/`, inst tree 262→266). The
+  `R_KIND_EXCLUDED` license behavior still holds (no vendored license texts;
+  lock core section = manifest minus the two license entries plus the
+  generated `revision.hpp`). New sources stay out of `Makevars OBJECTS`
+  (compile-only-what's-bound).
+- **Shared-unit diff-shape analysis** (this range MODIFIED files that
+  existed at the previous pin — the red-flag question):
+  `estimation_control.hpp` is **append-only** (+16/−0, the new
+  `EstimationSolver` seam and `spec_d`/`spec_bd` request fields);
+  `estimation_control.cpp` (+347/−11) and `hannan_rissanen.cpp` (+178/−116,
+  the four transcription-bug fixes) carry real edits but are **21-A units
+  that were never bound and never compiled** — the check against both
+  `Makevars` OBJECTS lists (45 core sources) is empty, and the include graph
+  of every compiled kernel source and Rcpp boundary file touches none of the
+  modified or new headers. All 45 compiled core sources and all headers in
+  their include graph are bit-identical between the pins: no red flags.
+- **Regression verdict: the 21-D slice has zero observable effect at the R
+  boundary.** Full suite on the fresh tarball: **290,073 assertions,
+  0 failures** (48 files, OpenMP lane) and **290,069, 0 failures** (serial
+  lane) — bit-identical to the M9/M10 checkpoints, no fixture moved.
+- Forward note for the 21-G/H R qualification: the four pinned-HR
+  transcription fixes (Levinson middle-slot temporary, `npi()` max-of-two
+  expression, `updatemodel` `btheta` section start, `finalcorrection`
+  `BackFilter` layout) move HR numerics toward the pinned JVM — the 21-A
+  verify corpus already drifts accordingly (worst 6.2e-4, still 27/27) — and
+  the fdlibm `exp`/`log` kernels with the MXCSR FTZ/DAZ guard will make
+  bit-level transcendental semantics observable. Future R corpus
+  discrimination cases for the HR/differencing surface must be pinned against
+  the POST-21-D core and must exercise each fixed behavior; the upstream
+  21-D tier note (the `m_i2_144` step0 root-scan pair drifting 3.2e-5/1.31e-4
+  inside a banded 2e-4 tier, everything else bit-identical) is the reference
+  shape for what a future R tolerance tier may need.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

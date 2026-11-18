@@ -1,10 +1,15 @@
 #include "kalos/estimation_control.hpp"
 
 #include "kalos/arma_optimizer.hpp"
+#include "kalos/detail/fdlibm.hpp"
+#include "kalos/detail/ssq_deviances.hpp"
+#include "kalos/detail/ssq_levmar.hpp"
 #include "kalos/hannan_rissanen.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <exception>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -80,6 +85,12 @@ double pinned_gate_sum(const std::vector<double>& coefficients, bool alternating
 
 bool within_limit(double pinned_sum) { return std::abs(1.0 + pinned_sum) <= ur_limit; }
 
+// Solver status names that mark the producing pass as converged: the BFGS
+// gradient criterion and the pinned machine's hasConverged stop rule.
+bool pass_reports_convergence(const std::string& status) {
+    return status == "converged_gradient" || status == "converged_function";
+}
+
 // Maps physical coefficients through the qualified parameter map to the
 // solver coordinates. Reflection-mode blocks use the map's own inverse
 // construction (atanh of the reflection over 1 - margin); coefficient-mode
@@ -119,8 +130,318 @@ struct PassOutcome {
     std::array<std::vector<double>, 4> coefficients;
 };
 
+bool pinned_solver(const SarimaEstimationRequest& request) {
+    return request.control.solver == EstimationSolver::PinnedLevenbergMarquardt;
+}
+
+// Pinned RegArmaSsqFunction with maximumLikelihood(true) over the request
+// surface (item 21-D.2). Qualified requests evaluate on the transcribed JVM
+// deviances machine (detail::pinned_deviances_evaluate): the residual vector
+// is the Evaluation's full-length deviances, the target is ssqErr * factor,
+// and the landing value is the concentrated likelihood's logLikelihood, all
+// bit-identical to the pinned machine at the differencing-decision seams.
+// Requests the machine is not qualified for (missing observations, designs
+// that are not the meanCorrection constant, sub-period seasonality) keep the
+// 21-A GLS provider, which inverts
+// ll = -0.5 * (n * LOGTWOPI + n * (1 + log(ssq/n)) + ldet),
+// the pinned ConcentratedLikelihoodWithMissing constructor formula, at the
+// surface-identity level the 21-A seams are qualified at. Coordinates are
+// the JVM-convention [phi, bphi, theta, btheta] blocks.
+class PinnedSsqProvider final : public detail::SsqVectorFunction {
+public:
+    PinnedSsqProvider(const SarimaEstimationRequest& request, std::size_t p, std::size_t bp,
+        std::size_t q, std::size_t bq, const Interrupt& interrupt)
+        : request_(request), interrupt_(interrupt), domain_(static_cast<int>(p),
+              static_cast<int>(bp), static_cast<int>(q), static_cast<int>(bq)) {
+        // Qualify the pinned deviances machine (21-D.2) for this request: the
+        // machine carries no missing observations, needs a seasonal period,
+        // and knows the design-free (sfilter) and constant-regressor
+        // (mfilter) machines. Anything else keeps the 21-A GLS provider.
+        if (request_.period < 2 || request_.d < 0 || request_.seasonal_d < 0) {
+            return;
+        }
+        if (!request_.series.missing.empty()) {
+            for (const std::uint8_t flag : request_.series.missing) {
+                if (flag != 0) return;
+            }
+        }
+        for (const double value : request_.series.values) {
+            if (!std::isfinite(value)) return;
+        }
+        machine_y_ = detail::pinned_backfilter_apply(
+            detail::pinned_differencing_polynomial(request_.period, request_.d,
+                request_.seasonal_d),
+            request_.series.values);
+        if (machine_y_.empty()) return;
+        if (request_.design.columns == 0) {
+            machine_usable_ = true;
+            return;
+        }
+        if (request_.design.columns != 1 || request_.design.values.size() !=
+                request_.series.values.size() ||
+            (!request_.design.fixed.empty() && request_.design.fixed[0] != 0)) {
+            return;
+        }
+        for (const double value : request_.design.values) {
+            if (value != 1.0) return; // the pinned seam machine is the
+                                      // meanCorrection constant column
+        }
+        machine_design_.assign(machine_y_.size(), 1.0);
+        machine_usable_ = true;
+    }
+
+    const detail::SarimaSsqDomain& domain() const override { return domain_; }
+
+    // True when the qualified deviances machine backs this provider.
+    bool machine_active() const { return machine_usable_; }
+
+    std::optional<detail::SsqPoint> ssq_evaluate(const std::vector<double>& x) const override {
+        const std::size_t p = domain_.sizes()[0], bp = domain_.sizes()[1];
+        const std::size_t q = domain_.sizes()[2], bq = domain_.sizes()[3];
+        if (x.size() != p + bp + q + bq) return std::nullopt;
+        if (machine_usable_) {
+            // x is already the JVM-convention [phi, bphi, theta, btheta]
+            // vector the machine runs on; a rejected evaluation mirrors the
+            // pinned Evaluation constructor throwing, which the pinned
+            // iterateQR catch feeds to the damping tail.
+            const auto point = detail::pinned_deviances_evaluate(
+                machine_y_, p, bp, q, bq, request_.period, machine_design_, x);
+            if (!point || point->e.size() != machine_y_.size() ||
+                !std::isfinite(point->ssq_e)) {
+                return std::nullopt;
+            }
+            detail::SsqPoint ssq;
+            ssq.e = point->e;
+            ssq.ssq_e = point->ssq_e;
+            return ssq;
+        }
+        std::array<std::vector<double>, 4> c;
+        c[0].assign(x.begin(), x.begin() + static_cast<std::ptrdiff_t>(p));
+        std::for_each(c[0].begin(), c[0].end(), [](double& v) { v = -v; });
+        c[2].assign(x.begin() + static_cast<std::ptrdiff_t>(p),
+            x.begin() + static_cast<std::ptrdiff_t>(p + bp));
+        std::for_each(c[2].begin(), c[2].end(), [](double& v) { v = -v; });
+        c[1].assign(x.begin() + static_cast<std::ptrdiff_t>(p + bp),
+            x.begin() + static_cast<std::ptrdiff_t>(p + bp + q));
+        c[3].assign(x.begin() + static_cast<std::ptrdiff_t>(p + bp + q), x.end());
+
+        std::exception_ptr interrupted;
+        const Interrupt checked = [&] {
+            if (!interrupt_) return;
+            try { interrupt_(); } catch (...) { interrupted = std::current_exception(); throw; }
+        };
+        RegressionLikelihood fit;
+        try {
+            fit = sarima_regression_likelihood(request_.series, request_.design, c[0], c[1],
+                c[2], c[3], request_.period, request_.d, request_.seasonal_d, 0.0, 1.0, 1e-10,
+                checked);
+        } catch (const std::invalid_argument&) {
+            if (interrupted) std::rethrow_exception(interrupted);
+            return std::nullopt; // pinned Evaluation constructor throws
+        } catch (const std::runtime_error&) {
+            if (interrupted) std::rethrow_exception(interrupted);
+            return std::nullopt;
+        }
+        if (fit.likelihood_status != "available" || fit.profile_status != "available") {
+            return std::nullopt;
+        }
+        const std::size_t n = fit.finite_count;
+        const double ssq = fit.sum_squared_standardized;
+        const double ll = fit.profiled_log_likelihood;
+        if (n == 0 || fit.whitened_residuals.size() != n || !std::isfinite(ssq) ||
+            !std::isfinite(ll) || ssq <= 0.0) {
+            return std::nullopt;
+        }
+        // The pinned scaling factor and the two deviances-derived values.
+        const double ldet = -2.0 * ll
+            - (static_cast<double>(n) * kLogTwoPi
+                  + static_cast<double>(n)
+                        * (1.0 + detail::fdlibm_log(ssq / static_cast<double>(n))));
+        const double factor = detail::fdlibm_exp(ldet / static_cast<double>(n));
+        const double root = std::sqrt(factor);
+        if (!std::isfinite(factor) || !std::isfinite(root)) return std::nullopt;
+        detail::SsqPoint point;
+        point.e.reserve(n);
+        for (const double value : fit.whitened_residuals) {
+            const double scaled = value * root;
+            if (!std::isfinite(scaled)) return std::nullopt;
+            point.e.push_back(scaled);
+        }
+        point.ssq_e = ssq * factor; // pinned DefaultLikelihoodEvaluation.deviance
+        if (!std::isfinite(point.ssq_e)) return std::nullopt;
+        return point;
+    }
+
+    // Direct request-surface likelihood at a landed point, bypassing the
+    // Kalos map admissibility margin (pinned-domain stabilizations can land
+    // inside the pinned limits but outside the Kalos margin).
+    std::optional<double> landing_likelihood(const std::array<std::vector<double>, 4>& c,
+        const Interrupt& interrupt) const {
+        if (machine_usable_) {
+            // The machine's ConcentratedLikelihoodWithMissing logLikelihood,
+            // the pinned landing value; c is in the Kalos blocks and signs.
+            const auto p = domain_.sizes()[0];
+            const auto bp = domain_.sizes()[1];
+            const auto q = domain_.sizes()[2];
+            const auto bq = domain_.sizes()[3];
+            if (c[0].size() == p && c[2].size() == bp && c[1].size() == q && c[3].size() == bq) {
+                std::vector<double> jvm;
+                for (const double v : c[0]) jvm.push_back(-v);
+                for (const double v : c[2]) jvm.push_back(-v);
+                for (const double v : c[1]) jvm.push_back(v);
+                for (const double v : c[3]) jvm.push_back(v);
+                const auto point = detail::pinned_deviances_evaluate(
+                    machine_y_, p, bp, q, bq, request_.period, machine_design_, jvm);
+                if (point && std::isfinite(point->log_likelihood)) {
+                    return point->log_likelihood;
+                }
+                return std::nullopt;
+            }
+        }
+        try {
+            const auto fit = sarima_regression_likelihood(request_.series, request_.design,
+                c[0], c[1], c[2], c[3], request_.period, request_.d, request_.seasonal_d, 0.0,
+                1.0, 1e-10, interrupt);
+            if (fit.likelihood_status != "available" || fit.profile_status != "available") {
+                return std::nullopt;
+            }
+            if (!std::isfinite(fit.profiled_log_likelihood)) return std::nullopt;
+            return fit.profiled_log_likelihood;
+        } catch (const std::invalid_argument&) {
+            return std::nullopt;
+        } catch (const std::runtime_error&) {
+            return std::nullopt;
+        }
+    }
+
+private:
+    // jdplus.api.math.Constants.LOGTWOPI.
+    static constexpr double kLogTwoPi = 1.8378770664093453;
+
+    const SarimaEstimationRequest& request_;
+    const Interrupt& interrupt_;
+    detail::SarimaSsqDomain domain_;
+    // Pinned deviances machine setup (21-D.2): the unit-root-filtered
+    // response, the machine design (empty or the constant column) and the
+    // usability flag; the GLS path stays for everything the machine does not
+    // qualify for (missing observations, multi-column or non-constant
+    // designs, sub-period seasonality).
+    bool machine_usable_ = false;
+    std::vector<double> machine_y_;
+    std::vector<double> machine_design_;
+};
+
+const char* pinned_lm_status(int stop) {
+    switch (stop) {
+    case 0: return "attempts_exhausted";
+    case 1: return "converged_gradient";
+    case 2: return "converged_function";
+    case 4: return "step_overflow";
+    case 5: return "mu_overflow";
+    case 6: return "converged_scale";
+    default: return "non_finite";
+    }
+}
+
+// JVM-convention [phi, bphi, theta, btheta] coordinates back to Kalos block
+// positions in the JVM sign convention; flip_ar completes the return to the
+// Kalos convention.
+std::array<std::vector<double>, 4> from_jvm_coordinates(const std::vector<double>& x,
+    std::size_t p, std::size_t bp, std::size_t q) {
+    std::array<std::vector<double>, 4> c;
+    c[0].assign(x.begin(), x.begin() + static_cast<std::ptrdiff_t>(p));
+    c[2].assign(x.begin() + static_cast<std::ptrdiff_t>(p),
+        x.begin() + static_cast<std::ptrdiff_t>(p + bp));
+    c[1].assign(x.begin() + static_cast<std::ptrdiff_t>(p + bp),
+        x.begin() + static_cast<std::ptrdiff_t>(p + bp + q));
+    c[3].assign(x.begin() + static_cast<std::ptrdiff_t>(p + bp + q), x.end());
+    return c;
+}
+
+PassOutcome run_pass_pinned_lm(const SarimaEstimationRequest& request,
+    const std::array<std::vector<double>, 4>& physical, double precision,
+    const Interrupt& interrupt) {
+    PassOutcome outcome;
+    for (const auto& block : request.blocks) {
+        if (std::any_of(block.fixed.begin(), block.fixed.end(),
+                [](const std::uint8_t flag) { return flag != 0; })) {
+            throw std::invalid_argument(
+                "the pinned sum-of-squares solver is only qualified for fully free blocks");
+        }
+    }
+    const std::size_t p = request.blocks[0].initial.size();
+    const std::size_t q = request.blocks[1].initial.size();
+    const std::size_t bp = request.blocks[2].initial.size();
+    const std::size_t bq = request.blocks[3].initial.size();
+    const PinnedSsqProvider provider(request, p, bp, q, bq, interrupt);
+    const auto jvm = flip_ar(physical); // blockwise JVM sign convention
+    std::vector<double> start;          // JVM block order [phi, bphi, theta, btheta]
+    start.insert(start.end(), jvm[0].begin(), jvm[0].end());
+    start.insert(start.end(), jvm[2].begin(), jvm[2].end());
+    start.insert(start.end(), jvm[1].begin(), jvm[1].end());
+    start.insert(start.end(), jvm[3].begin(), jvm[3].end());
+
+    std::exception_ptr interrupted;
+    const Interrupt checked = [&] {
+        if (!interrupt) return;
+        try { interrupt(); } catch (...) { interrupted = std::current_exception(); throw; }
+    };
+    detail::SsqLmResult lm;
+    try {
+        lm = detail::minimize_ssq_levmar(provider, std::move(start), precision, checked);
+    } catch (const std::runtime_error&) {
+        if (interrupted) std::rethrow_exception(interrupted);
+        outcome.optimizer_status = "start_not_evaluable"; // pinned Evaluation throws
+        return outcome;
+    }
+    const auto landing = flip_ar(from_jvm_coordinates(lm.parameters, p, bp, q));
+    outcome.optimizer_status = pinned_lm_status(lm.stop);
+    if (provider.machine_active()) {
+        // The pinned landing likelihood is the machine's concentrated
+        // likelihood at the landing (21-D.2); it is bit-identical to the
+        // seam, while the Kalos surface profile differs by rounding.
+        const auto fit = provider.landing_likelihood(landing, checked);
+        if (!fit) {
+            outcome.log_likelihood = unavailable();
+            return outcome;
+        }
+        outcome.available = true;
+        outcome.log_likelihood = *fit;
+        outcome.coefficients = std::move(landing);
+        outcome.evaluations = static_cast<std::size_t>(lm.evaluations);
+        return outcome;
+    }
+    const auto objective = evaluate_arma_physical_objective(request.series, request.design,
+        ArmaParameterMap(request.blocks), landing, request.period, request.d,
+        request.seasonal_d, 0.0, 1e-10, 0.0, interrupt);
+    if (objective.status != "available") {
+        // A landing the Kalos map rejects on its admissibility margin (the
+        // pinned domain stabilizes with its own limits) keeps the pinned
+        // behavior: the likelihood on the request surface decides.
+        const auto fit = provider.landing_likelihood(landing, checked);
+        if (!fit) {
+            outcome.log_likelihood = unavailable();
+            return outcome;
+        }
+        outcome.available = true;
+        outcome.log_likelihood = *fit;
+        outcome.coefficients = std::move(landing);
+        outcome.evaluations = static_cast<std::size_t>(lm.evaluations);
+        return outcome;
+    }
+    outcome.available = true;
+    outcome.log_likelihood = objective.adjusted_log_likelihood;
+    outcome.coefficients = std::move(landing);
+    outcome.evaluations = static_cast<std::size_t>(lm.evaluations);
+    return outcome;
+}
+
 PassOutcome run_pass(const SarimaEstimationRequest& request, const ArmaParameterMap& map,
-    const std::vector<double>& coordinates, double precision, const Interrupt& interrupt) {
+    const std::array<std::vector<double>, 4>& physical, const std::vector<double>& coordinates,
+    double precision, const Interrupt& interrupt) {
+    if (pinned_solver(request)) {
+        return run_pass_pinned_lm(request, physical, precision, interrupt);
+    }
     PassOutcome outcome;
     OptimizerControl control = request.optimizer;
     control.function_tolerance = precision; // Pinned minimizer function precision.
@@ -147,8 +468,19 @@ void run_cancelling_pass(std::vector<EstimationPassRecord>& passes,
     EstimationPassRecord record, const SarimaEstimationRequest& request,
     const ArmaParameterMap& map, bool seasonal, const Interrupt& interrupt,
     std::array<std::vector<double>, 4>& current, double& current_ll) {
+    // Pinned gates: tryUrpCancelling passes on orders.getDifferenceOrder()
+    // != 0 (d + period * bd when period > 1 and bd > 0), tryUrmCancelling on
+    // orders.bd != 0; both additionally need a non-empty AR and MA block.
+    // The orders are the spec's (spec_d/spec_bd when the response arrives
+    // pre-differenced).
+    const int spec_d = request.spec_d < 0 ? request.d : request.spec_d;
+    const int spec_bd = request.spec_bd < 0 ? request.seasonal_d : request.spec_bd;
     record.gates_passed = !current[0].empty() && !current[1].empty() &&
-        (seasonal ? request.seasonal_d : request.d) > 0;
+        (seasonal ? spec_bd != 0
+                  : spec_d + (request.period > 1 && spec_bd > 0
+                        ? request.period * spec_bd
+                        : 0) !=
+                        0);
     if (record.gates_passed) {
         const auto pinned = flip_ar(current);
         record.gates_passed = within_limit(pinned_gate_sum(pinned[0], seasonal)) &&
@@ -157,10 +489,12 @@ void run_cancelling_pass(std::vector<EstimationPassRecord>& passes,
             auto deflated = flip_ar(current);
             if (seasonal) deflate_seasonal(deflated); else deflate_regular(deflated);
             record.attempted = true;
+            auto candidate_physical = flip_ar(deflated);
             std::vector<double> coordinates;
-            if (to_coordinates(map, flip_ar(deflated), coordinates)) {
-                const auto candidate = run_pass(request, map, coordinates, request.control.eps,
-                    interrupt);
+            if (pinned_solver(request) ||
+                to_coordinates(map, candidate_physical, coordinates)) {
+                const auto candidate = run_pass(request, map, candidate_physical, coordinates,
+                    request.control.eps, interrupt);
                 record.optimizer_status = candidate.optimizer_status;
                 record.evaluations = candidate.evaluations;
                 record.log_likelihood = candidate.log_likelihood;
@@ -194,14 +528,14 @@ ChainOutcome run_chain(const SarimaEstimationRequest& request, const ArmaParamet
     const std::string& prefix, const Interrupt& interrupt) {
     ChainOutcome chain;
     std::vector<double> coordinates;
-    if (!to_coordinates(map, physical, coordinates)) {
+    if (!pinned_solver(request) && !to_coordinates(map, physical, coordinates)) {
         throw std::invalid_argument("the pinned starting point is not admissible for this map");
     }
     EstimationPassRecord record{};
     record.stage = prefix + "estimate";
     record.attempted = true;
     record.gates_passed = true;
-    const auto initial = run_pass(request, map, coordinates, precision, interrupt);
+    const auto initial = run_pass(request, map, physical, coordinates, precision, interrupt);
     record.optimizer_status = initial.optimizer_status;
     record.evaluations = initial.evaluations;
     record.log_likelihood = initial.log_likelihood;
@@ -210,7 +544,7 @@ ChainOutcome run_chain(const SarimaEstimationRequest& request, const ArmaParamet
     chain.best = initial;
     chain.ok = initial.available;
     chain.producing_status = initial.optimizer_status;
-    chain.producing_converged = initial.optimizer_status == "converged_gradient";
+    chain.producing_converged = pass_reports_convergence(initial.optimizer_status);
     if (!initial.available) return chain; // No pinned restarts without a base point.
     auto current = initial.coefficients;
     auto current_ll = initial.log_likelihood;
@@ -220,7 +554,8 @@ ChainOutcome run_chain(const SarimaEstimationRequest& request, const ArmaParamet
         run_cancelling_pass(chain.records, std::move(pending),
             request, map, seasonal, interrupt, current, current_ll);
         if (chain.records.back().accepted) {
-            chain.producing_converged = chain.records.back().optimizer_status == "converged_gradient";
+            chain.producing_converged =
+                pass_reports_convergence(chain.records.back().optimizer_status);
             chain.producing_status = chain.records.back().optimizer_status;
         }
     }
@@ -503,14 +838,15 @@ SarimaEstimationResult optimize_sarima_from(const SarimaEstimationRequest& reque
     }
 
     std::vector<double> coordinates;
-    if (!to_coordinates(map, physical, coordinates)) {
+    if (!pinned_solver(request) && !to_coordinates(map, physical, coordinates)) {
         throw std::invalid_argument("the warm start is not admissible for this map");
     }
     EstimationPassRecord record{};
     record.stage = "estimate";
     record.attempted = true;
     record.gates_passed = true;
-    const auto pass = run_pass(request, map, coordinates, request.control.eps, interrupt);
+    const auto pass = run_pass(request, map, physical, coordinates, request.control.eps,
+        interrupt);
     record.optimizer_status = pass.optimizer_status;
     record.evaluations = pass.evaluations;
     record.log_likelihood = pass.log_likelihood;

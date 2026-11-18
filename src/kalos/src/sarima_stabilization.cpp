@@ -1,0 +1,63 @@
+#include "kalos/detail/sarima_stabilization.hpp"
+
+#include "kalos/linear_algebra.hpp"
+
+#include <cmath>
+#include <complex>
+#include <stdexcept>
+
+namespace kalos::detail {
+
+bool stabilize_coefficient_block(std::vector<double>& block) {
+    std::size_t length = block.size();
+    while (length > 0 && block[length - 1] == 0.0) --length;
+    if (length == 0) return false;
+    if (length == 1) {
+        if (std::abs(block[0]) > 1.0) {
+            block[0] = 1.0 / block[0];
+            return true;
+        }
+        return false;
+    }
+    std::vector<double> polynomial(length + 1, 0.0);
+    polynomial[0] = 1.0;
+    for (std::size_t i = 0; i < length; ++i) polynomial[i + 1] = block[i];
+    const auto found = polynomial_roots(polynomial);
+    if (found.empty()) return false;
+    std::vector<std::complex<double>> roots;
+    roots.reserve(found.size());
+    for (const auto& root : found) roots.emplace_back(root.real, root.imag);
+    bool changed = false;
+    for (auto& root : roots) {
+        const double modulus = std::abs(root);
+        if (1.0 / modulus > 1.0) {
+            if (modulus == 0.0) {
+                throw std::runtime_error("stabilization: zero root cannot be inverted");
+            }
+            root = std::conj(root) / (modulus * modulus);
+            changed = true;
+        }
+    }
+    if (!changed) return false;
+    // Pinned Polynomial.fromComplexRoots followed by division by the
+    // constant term; only real parts cross back into the block.
+    std::vector<std::complex<double>> z(roots.size() + 1, {0.0, 0.0});
+    z[0] = {1.0, 0.0};
+    for (std::size_t i = 0; i < roots.size(); ++i) {
+        z[i + 1] = z[i];
+        for (std::size_t j = i; j >= 1; --j) z[j] = z[j - 1] - z[j] * roots[i];
+        z[0] = z[0] * (-roots[i]);
+    }
+    if (!(z[0].real() != 0.0)) {
+        throw std::runtime_error("stabilization: roots must all be different from 0");
+    }
+    for (std::size_t i = 0; i < length; ++i) {
+        if (!std::isfinite(z[i + 1].real())) {
+            throw std::runtime_error("stabilization: unstable reconstruction");
+        }
+        block[i] = z[i + 1].real() / z[0].real();
+    }
+    return true;
+}
+
+} // namespace kalos::detail

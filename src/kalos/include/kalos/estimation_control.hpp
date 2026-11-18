@@ -23,6 +23,14 @@ namespace kalos {
 // by the maintainer decision list of docs/item21-roadmap.md.
 enum class EstimationStartingPoint { Zero, Default, HannanRissanen, Multiple };
 
+// Solver seam (item 21-D.2): the qualified Kalos BFGS over the mapped −ll
+// objective (the 21-A/B/C corpus), or the transcribed pinned sum-of-squares
+// Levenberg-Marquardt machine of RegArmaSsqFunction (detail/ssq_levmar.hpp)
+// over the physical JVM-convention coordinates of the request surface. Only
+// the differencing decision (item 21-D) selects the pinned machine; it
+// requires fully free coefficient blocks.
+enum class EstimationSolver { Bfgs, PinnedLevenbergMarquardt };
+
 // Pinned RegSarimaComputer control fields, kept as required request data:
 // there is no default-constructed control and the core applies no implicit
 // value. Numerically active in this unit: eps, starting_point. The remaining
@@ -50,6 +58,7 @@ struct EstimationControl {
     // owns its derivative policy, so either value is accepted.
     bool fast_derivatives;
     EstimationStartingPoint starting_point;
+    EstimationSolver solver;
     void validate() const;
 };
 
@@ -70,6 +79,13 @@ struct SarimaEstimationRequest {
     int period;
     int d;
     int seasonal_d;
+    // When the response has already been unit-root-filtered by the caller
+    // (d = seasonal_d = 0), the spec SarimaOrders the pinned machine still
+    // reads its unit-root-cancellation gates from (orders.getDifferenceOrder
+    // () and orders.getBd()) are carried here instead; negative inherits
+    // from d/seasonal_d.
+    int spec_d = -1;
+    int spec_bd = -1;
     EstimationControl control;
     // Qualified 20b solver controls; function_tolerance is replaced by eps.
     OptimizerControl optimizer;
