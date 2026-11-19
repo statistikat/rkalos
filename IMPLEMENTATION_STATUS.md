@@ -1035,6 +1035,27 @@ lanes), re-synced, re-qualified here.
   also pins the re-differencing D-polynomial semantics ((1−B^d)(1−B^period)^bd,
   not (1−B)^d at d=2) — relevant when the refinement stage becomes R-bound.
 
+## Core pin advanced to e7af23f — 21-G regression tests and mean rules, R boundary unchanged — 2026-11-19
+
+- Infrastructure sync (no R or shim code changed): the core pin advances
+  `0930c9b → e7af23f222315e320ab30338ff8188e74bd444ed` (item 21-G, the
+  regression stage tests and mean rules). The range is **purely additive**
+  — 2,704 insertions, 0 deletions; the only `src/`+`include/` change is the
+  added `regression_variable_tests.{hpp,cpp}` (+154/+308). Manifest core
+  126→128; `src/kalos` 125→127; evidence 170→179
+  (`native/regression-tests/`, 9 corpus files; inst tree 282→291).
+  OBJECTS red-flag count 0 (no existing file touched; the new unit is
+  unbound and uncompiled) — the compiled closure is bit-identical to the
+  previous pin.
+- Full suite on the fresh tarball (built and confirmed before the lane
+  runs): **290,073 assertions, 0 failures** (48 files, OpenMP lane) and
+  **290,069, 0 failures** (serial lane) — bit-identical to the M9–M13
+  checkpoints, no fixture moved.
+- Forward note: 21-G's cl-statistics machine and the mean rules become
+  R-observable only at the 21-H integration slice (user-variable detection
+  is deferred to 21-I); the new evidence corpus (`cl`/`mean`/`rvt`/`vars`/
+  `ucov`/`obs` tables) is the pinning reference for that qualification.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

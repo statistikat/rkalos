@@ -61,6 +61,7 @@ add_library(kalos STATIC
   src/preparation.cpp
   src/prediction_moments.cpp
   src/regression_likelihood.cpp
+  src/regression_variable_tests.cpp
   src/residual_information.cpp
   src/sarima_stabilization.cpp
   src/sparse_history.cpp
@@ -174,6 +175,7 @@ if(KALOS_BUILD_TESTS)
     test_prediction_moments
     test_regression_information
     test_regression_likelihood
+    test_regression_variable_tests
     test_residual_information
     test_state_space
     test_transformation_decision
