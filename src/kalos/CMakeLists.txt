@@ -244,21 +244,22 @@ if(KALOS_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES TIMEOUT 3600)
     endif()
   endforeach()
-  # 21-H.2 end-to-end JVM oracle: the driver's decision chain and landing
+  # 21-H.3 end-to-end JVM oracle: the driver's decision chain and landing
   # surfaces against the pinned automatic captures
   # (validation/evidence/native/x13-automatic/). The corpus is qualified
-  # bit-exact on the cascade-free cases; the outlier-feed cases re-enter
-  # this list when the driver's diff-search feed lands (contract
-  # qualification section, docs/contracts/x13-automatic-pipeline-contract.md).
-  # The full 13-case sweep runs through tools/verify_x13_automatic.cpp.
+  # decision-bit exact on ALL 13 cases (airline-init fix, 21-H.3); landing
+  # quantities carry the measured tier bands of the contract qualification
+  # section, docs/contracts/x13-automatic-pipeline-contract.md. The
+  # detection-on cases run the ODM cascade through both kernel passes, so
+  # the full sweep is slow but far inside the timeout.
   add_executable(test_x13_automatic_oracle tests/test_x13_automatic_oracle.cpp)
   target_link_libraries(test_x13_automatic_oracle PRIVATE kalos::kalos)
   add_test(NAME test_x13_automatic_oracle
-           COMMAND test_x13_automatic_oracle quick seas)
+           COMMAND test_x13_automatic_oracle)
   set_tests_properties(test_x13_automatic_oracle PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
-    TIMEOUT 1800)
+    TIMEOUT 3600)
 endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

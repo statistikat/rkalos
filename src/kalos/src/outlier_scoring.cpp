@@ -395,6 +395,16 @@ OutlierScoringResult detect_outliers(const OutlierScoringRequest& request,
             break;
         }
         excluded = found.excluded_after;
+        // 21-H.3 decision-qualification trace: one record per completed scan
+        // (the pinned searchMax outcome and the pinned |maxT| > cv gate).
+        OutlierScoringResult::ScanRecord scan_record;
+        scan_record.position = found.max_position;
+        scan_record.type = found.max_type;
+        scan_record.t_stat = found.max_t_stat;
+        scan_record.beyond_cv =
+            dcmpl(std::fabs(found.max_t_stat), request.critical_value) > 0;
+        result.scans.push_back(scan_record);
+        result.last_scan_max_t = found.max_t_stat;
         if (!(dcmpl(std::fabs(found.max_t_stat), request.critical_value) > 0)) {
             result.stop_reason = "below_cv";
             break;

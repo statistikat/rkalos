@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -224,6 +225,20 @@ struct OutlierScoringResult {
     std::vector<OutlierRejection> rejections;       // verifymodel trace.
     std::array<std::vector<double>, 4> coefficients; // Last available state.
     std::vector<double> t_statistics;                // Same state, column order.
+    // One entry per completed (available) scan, in driver order. The argmax
+    // triple reproduces the pinned searchMax outcome; beyond_cv is the pinned
+    // |maxT| > cv gate. The first and last entries qualify against the JVM
+    // odmscan measurements (entry-state replay and stop scan).
+    struct ScanRecord {
+        std::size_t position = 0;    // searchMax row
+        std::size_t type = 0;        // factory index (or max_type_sentinel)
+        double t_stat = 0.0;         // Signed argmax T
+        bool beyond_cv = false;      // Pinned |maxT| > cv decision
+    };
+    std::vector<ScanRecord> scans;
+    // Signed max T of the last completed scan; NaN when no scan completed
+    // (additive 21-H.3 field: the oracle stop-scan comparison quantity).
+    double last_scan_max_t = std::numeric_limits<double>::quiet_NaN();
 };
 
 // Stage-O forward selection transcribed from the pinned ExactOutliersDetector

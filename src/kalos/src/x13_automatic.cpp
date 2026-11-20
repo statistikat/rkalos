@@ -273,9 +273,12 @@ struct Estimation {
 struct Description {
   bool log = false;
   bool mean = false;
-  // The specification (SarimaOrders): stationary part + differencing.
-  int p = 0, q = 0, bp = 0, bq = 0;
-  int d = 1, bd = 1;  // the airline start (freq != 1)
+  // The specification (SarimaOrders): stationary part + differencing. The
+  // X13ModelBuilder start is the AIRLINE (0,1,1)(0,1,1) - q and bq are 1
+  // from the start (odmscan spec echoes: "0 1 1 0 1 1"); the ODM/refine
+  // units size their whitening and search from these orders.
+  int p = 0, q = 1, bp = 0, bq = 1;
+  int d = 1, bd = 1;  // the airline differencing (freq != 1)
   std::vector<OutlierVariable> variables;  // ami outliers (no user
                                            // variables inside the envelope)
 };
@@ -1790,7 +1793,16 @@ class AutomaticPipeline {
     out.bd = model_.desc.bd;
 
     const Estimation& estimation = estimation_required();
+    // Export convention (pinned by the oracle's arma facts, 21-H.3): the
+    // JVM surface is SarimaSpec.parameters(), where the AR and SAR blocks
+    // carry the all-plus polynomial signs (a = -phi); MA/SMA already match
+    // the driver's theta convention. The internal estimation keeps phi.
     out.coefficients = estimation.coefficients;
+    for (const int block : {0, 2}) {
+      for (double& v : out.coefficients[static_cast<std::size_t>(block)]) {
+        v = -v;
+      }
+    }
     out.estimation_status = estimation.status;
     out.log_likelihood = estimation.log_likelihood;
     out.effective_observations = static_cast<std::size_t>(
@@ -1824,8 +1836,22 @@ class AutomaticPipeline {
       const double parameters =
           static_cast<double>(arma_dim_of(estimation.coefficients) +
                               fit.coefficients.size() + 1);
+      // AICC rides the ADJUSTED log-likelihood (LikelihoodStatistics.calc
+      // reads adjustedLogLikelihood; the Builder adds the transformation
+      // Jacobian): in log mode the JVM subtracts sum(log y_t) over the
+      // estimation domain - the last n - d - 12*bd original values (pinned
+      // by the oracle stats facts: ao -333.0415626 with d=0, bd=1; rw
+      // -450.5425654 with d=1, bd=0; level cases carry no adjustment).
+      double adjusted_log_likelihood = out.log_likelihood;
+      if (out.log) {
+        const std::size_t skip = static_cast<std::size_t>(
+            model_.desc.d + model_.desc.bd * kAnnualFrequency);
+        for (std::size_t i = skip; i < request_.input.size(); ++i) {
+          adjusted_log_likelihood -= std::log(request_.input[i]);
+        }
+      }
       out.aicc = -2. *
-                 (out.log_likelihood -
+                 (adjusted_log_likelihood -
                   neff * parameters / (neff - parameters - 1.));
     }
 
