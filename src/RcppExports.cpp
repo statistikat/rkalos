@@ -928,6 +928,65 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_x13_fit_automatic
+Rcpp::List native_x13_fit_automatic(SEXP values, SEXP frequency, SEXP start_period, SEXP first_year, SEXP aicc_log_correction, SEXP max_d, SEXP max_bd, SEXP ub1, SEXP ub2, SEXP cancel, SEXP differencing_precision, SEXP models_count, SEXP max_p, SEXP max_q, SEXP max_bp, SEXP max_bq, SEXP balanced, SEXP mixed, SEXP accept_white_noise, SEXP arma_eps, SEXP outliers_used, SEXP otypes, SEXP span, SEXP outlier_max_round, SEXP outlier_max_outliers, SEXP tcrate, SEXP precision, SEXP mean_precision, SEXP va, SEXP reduce_va, SEXP ljung_box_limit, SEXP check_mu, SEXP accept_airline, SEXP ur_limit, SEXP mean_test_initial, SEXP mean_test_final, SEXP tsig, SEXP calendar, SEXP easter, SEXP trading_days, SEXP user_variables, SEXP seasonal, SEXP sigma, SEXP lower_sigma, SEXP upper_sigma, SEXP msr_policy, SEXP mode, SEXP backcast, SEXP forecast);
+RcppExport SEXP _rkalos_native_x13_fit_automatic(SEXP valuesSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP first_yearSEXP, SEXP aicc_log_correctionSEXP, SEXP max_dSEXP, SEXP max_bdSEXP, SEXP ub1SEXP, SEXP ub2SEXP, SEXP cancelSEXP, SEXP differencing_precisionSEXP, SEXP models_countSEXP, SEXP max_pSEXP, SEXP max_qSEXP, SEXP max_bpSEXP, SEXP max_bqSEXP, SEXP balancedSEXP, SEXP mixedSEXP, SEXP accept_white_noiseSEXP, SEXP arma_epsSEXP, SEXP outliers_usedSEXP, SEXP otypesSEXP, SEXP spanSEXP, SEXP outlier_max_roundSEXP, SEXP outlier_max_outliersSEXP, SEXP tcrateSEXP, SEXP precisionSEXP, SEXP mean_precisionSEXP, SEXP vaSEXP, SEXP reduce_vaSEXP, SEXP ljung_box_limitSEXP, SEXP check_muSEXP, SEXP accept_airlineSEXP, SEXP ur_limitSEXP, SEXP mean_test_initialSEXP, SEXP mean_test_finalSEXP, SEXP tsigSEXP, SEXP calendarSEXP, SEXP easterSEXP, SEXP trading_daysSEXP, SEXP user_variablesSEXP, SEXP seasonalSEXP, SEXP sigmaSEXP, SEXP lower_sigmaSEXP, SEXP upper_sigmaSEXP, SEXP msr_policySEXP, SEXP modeSEXP, SEXP backcastSEXP, SEXP forecastSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type frequency(frequencySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type start_period(start_periodSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type first_year(first_yearSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type aicc_log_correction(aicc_log_correctionSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type max_d(max_dSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type max_bd(max_bdSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type ub1(ub1SEXP);
+    Rcpp::traits::input_parameter< SEXP >::type ub2(ub2SEXP);
+    Rcpp::traits::input_parameter< SEXP >::type cancel(cancelSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type differencing_precision(differencing_precisionSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type models_count(models_countSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type max_p(max_pSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type max_q(max_qSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type max_bp(max_bpSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type max_bq(max_bqSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type balanced(balancedSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type mixed(mixedSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type accept_white_noise(accept_white_noiseSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type arma_eps(arma_epsSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type outliers_used(outliers_usedSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type otypes(otypesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type span(spanSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type outlier_max_round(outlier_max_roundSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type outlier_max_outliers(outlier_max_outliersSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type tcrate(tcrateSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type precision(precisionSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type mean_precision(mean_precisionSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type va(vaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type reduce_va(reduce_vaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type ljung_box_limit(ljung_box_limitSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type check_mu(check_muSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type accept_airline(accept_airlineSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type ur_limit(ur_limitSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type mean_test_initial(mean_test_initialSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type mean_test_final(mean_test_finalSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type tsig(tsigSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type calendar(calendarSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type easter(easterSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type trading_days(trading_daysSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type user_variables(user_variablesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type seasonal(seasonalSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type lower_sigma(lower_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type upper_sigma(upper_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type msr_policy(msr_policySEXP);
+    Rcpp::traits::input_parameter< SEXP >::type mode(modeSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type backcast(backcastSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type forecast(forecastSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_x13_fit_automatic(values, frequency, start_period, first_year, aicc_log_correction, max_d, max_bd, ub1, ub2, cancel, differencing_precision, models_count, max_p, max_q, max_bp, max_bq, balanced, mixed, accept_white_noise, arma_eps, outliers_used, otypes, span, outlier_max_round, outlier_max_outliers, tcrate, precision, mean_precision, va, reduce_va, ljung_box_limit, check_mu, accept_airline, ur_limit, mean_test_initial, mean_test_final, tsig, calendar, easter, trading_days, user_variables, seasonal, sigma, lower_sigma, upper_sigma, msr_policy, mode, backcast, forecast));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_x13_fit
 Rcpp::List native_x13_fit(SEXP values, SEXP variables_list, SEXP log, SEXP frequency, SEXP start_period, SEXP seasonal, SEXP trend_length, SEXP sigma, SEXP lower_sigma, SEXP upper_sigma, SEXP msr_policy, SEXP mode, SEXP backcast, SEXP forecast);
 RcppExport SEXP _rkalos_native_x13_fit(SEXP valuesSEXP, SEXP variables_listSEXP, SEXP logSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP seasonalSEXP, SEXP trend_lengthSEXP, SEXP sigmaSEXP, SEXP lower_sigmaSEXP, SEXP upper_sigmaSEXP, SEXP msr_policySEXP, SEXP modeSEXP, SEXP backcastSEXP, SEXP forecastSEXP) {
@@ -1010,6 +1069,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_x11_trend_select", (DL_FUNC) &_rkalos_native_x11_trend_select, 5},
     {"_rkalos_native_x13_preadjust", (DL_FUNC) &_rkalos_native_x13_preadjust, 3},
     {"_rkalos_native_x13_restore", (DL_FUNC) &_rkalos_native_x13_restore, 7},
+    {"_rkalos_native_x13_fit_automatic", (DL_FUNC) &_rkalos_native_x13_fit_automatic, 49},
     {"_rkalos_native_x13_fit", (DL_FUNC) &_rkalos_native_x13_fit, 14},
     {NULL, NULL, 0}
 };

@@ -37,5 +37,72 @@ if (cd "$probe_dir" && "$r_command" CMD SHLIB --preclean -o "probe$extension" pr
 else
     echo 'rkalos: OpenMP unavailable for this C++17 toolchain; using serial execution (see config.log).'
 fi
-sed "s|@OPENMP_FLAGS@|$openmp_flags|g" src/Makevars.in > src/Makevars
-sed "s|@OPENMP_FLAGS@|$openmp_flags|g" src/Makevars.win.in > src/Makevars.win
+# The vendored core links the OpenBLAS C API provider (src/kalos/backends),
+# the exact numerical surface the CMake-qualified core (and with it the JVM
+# oracle) is measured on: the LAPACKE/CBLAS headers and symbols must be
+# reachable at build and load time. KALOS_OPENBLAS_CPPFLAGS/KALOS_OPENBLAS_LINK
+# override the detection wholesale; KALOS_OPENBLAS_ROOT points at an
+# installation with include/ and lib/ (static libopenblas.a preferred). There
+# is deliberately no fallback to the old F77 shims: silently swapping the
+# LAPACK surface re-forks the numerics from the qualified core.
+capi_cppflags=${KALOS_OPENBLAS_CPPFLAGS-}
+capi_link=${KALOS_OPENBLAS_LINK-}
+if test -z "$capi_cppflags" && test -z "$capi_link" && test -n "${KALOS_OPENBLAS_ROOT-}"; then
+    capi_cppflags="-isystem ${KALOS_OPENBLAS_ROOT}/include"
+    if test -f "${KALOS_OPENBLAS_ROOT}/lib/libopenblas.a"; then
+        capi_link="${KALOS_OPENBLAS_ROOT}/lib/libopenblas.a -lpthread -lm -ldl"
+    else
+        capi_link="-L${KALOS_OPENBLAS_ROOT}/lib -lopenblas -lpthread -lm -ldl"
+    fi
+fi
+# ELF only: keep the shared object self-contained so statically linked LAPACK
+# routines cannot be interposed by a different libblas/liblapack already loaded
+# into the R process (the qualified core measures the pinned kernels).
+local_bind='-Wl,--exclude-libs,ALL -Wl,-Bsymbolic'
+cat > "$probe_dir/capi.cpp" <<'EOF'
+#include <cblas.h>
+#include <lapacke.h>
+extern "C" void rkalos_capi_probe(int* output) {
+    double a[4] = {2., 1., 1., 3.}, b[2] = {1., 2.}, x[2] = {0., 0.};
+    double work[512];
+    int jpvt[2], rank = 0;
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 2, 1, 2, 1., a, 2, b, 2, 0., x, 2);
+    LAPACKE_dgelsy_work(LAPACK_COL_MAJOR, 2, 2, 1, a, 2, b, 2, jpvt, 1e-13, &rank, work, 512);
+    *output = rank + static_cast<int>(x[0] != 4.);
+}
+EOF
+capi_ok=0
+for local_bind_try in "$local_bind" ''; do
+    cat > "$probe_dir/Makevars" <<EOF
+CXX_STD = CXX17
+PKG_CPPFLAGS = $capi_cppflags
+PKG_LIBS = $capi_link $local_bind_try
+EOF
+    if (cd "$probe_dir" && "$r_command" CMD SHLIB --preclean -o "capi$extension" capi.cpp) >> config.log 2>&1; then
+        local_bind="$local_bind_try"
+        capi_ok=1
+        break
+    fi
+done
+if test "$capi_ok" -ne 1; then
+    echo 'rkalos: the OpenBLAS C API (cblas.h/lapacke.h with a linkable' \
+         'CBLAS/LAPACKE) required by the vendored core provider is not' \
+         'available to this compiler. Install it, or point KALOS_OPENBLAS_ROOT' \
+         '(or KALOS_OPENBLAS_CPPFLAGS/KALOS_OPENBLAS_LINK) at an OpenBLAS' \
+         'installation; see config.log.' >&2
+    exit 1
+fi
+if test -n "$local_bind"; then
+    echo 'rkalos: OpenBLAS C API check passed; shared object bound to its own' \
+         'LAPACK symbols (no in-process interposition).'
+fi
+sed -e "s|@OPENMP_FLAGS@|$openmp_flags|g" \
+    -e "s|@KALOS_OPENBLAS_CPPFLAGS@|$capi_cppflags|g" \
+    -e "s|@KALOS_OPENBLAS_LINK@|$capi_link|g" \
+    -e "s|@KALOS_LOCAL_BIND@|$local_bind|g" \
+    src/Makevars.in > src/Makevars
+sed -e "s|@OPENMP_FLAGS@|$openmp_flags|g" \
+    -e "s|@KALOS_OPENBLAS_CPPFLAGS@|$capi_cppflags|g" \
+    -e "s|@KALOS_OPENBLAS_LINK@|$capi_link|g" \
+    -e "s|@KALOS_LOCAL_BIND@|$local_bind|g" \
+    src/Makevars.win.in > src/Makevars.win

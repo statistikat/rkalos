@@ -1,6 +1,6 @@
 info <- core_version()
 expect_match(info$commit, "^[0-9a-f]{40}$")
-expect_equal(info$provider, "R-configured BLAS/LAPACK")
+expect_equal(info$provider, "OpenBLAS") # the vendored core C-API provider
 expect_equal(info$blas_integer_bits, 32)
 expect_false(capabilities()$fit)
 expect_true("x11_additive_initial_tables" %in% capabilities()$primitives)

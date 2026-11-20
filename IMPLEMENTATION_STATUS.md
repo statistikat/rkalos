@@ -1120,6 +1120,80 @@ lanes), re-synced, re-qualified here.
   observable effect at the R boundary; no fixture moved, nothing
   re-pinned.
 
+## Core pin b2573fc + M4 automatic-spec surface, OpenBLAS build policy — 2026-11-20
+
+- Infrastructure sync: the core pin advances
+  `b773d27 → b2573fc011aee37eced0e97ddfd86d88349887c2` (item 21-H.3, the
+  thirteen-case automatic-pipeline oracle closure) — one commit, 16 files,
+  +930/−67. The only `src/`+`include/` changes are `outlier_scoring.{hpp,cpp}`
+  (selection-window facts for the probes) and `x13_automatic.cpp`
+  (decision-chain recording); all three sit **outside the restricted compiled
+  closure**. Manifest counts unchanged (core 139, fixtures 112, evidence 190);
+  evidence content updated at the new probe (`oracle-facts.csv` +43 rows of
+  21-H.3 fact families, `metadata.R` probe hash `088eb815…`, `SHA256SUMS.csv`
+  regenerated). `sync-core.py --verify` green; the vendored provider
+  (`src/kalos/backends/openblas.cpp`) and every synced file diff byte-identical
+  against `git show b2573fc:…`.
+- **Structural zero-drift proof** for the restricted paths (pin diff × the 92-file
+  compiled closure × OBJECTS, scanned from all boundary TUs): restricted-closure
+  bytes drifting between the pins **NONE** (stamp apart); the three modified core
+  files are uncompiled/unbound; the automatic closure adds 39 core sources over
+  the restricted one; `src/RcppExports.cpp` +60 and `R/RcppExports.R` +4 are
+  additive-only. Red-flag count **0**.
+- **Qualification of the vendored pin itself** (fresh CMake tree extracted at
+  exactly `b2573fc`, pinned OpenBLAS 0.3.34 provider, Release): **ctest 62/62
+  OpenMP and 62/62 serial**, including `test_x13_automatic_oracle` (13 cases,
+  4,637 checks, 0 failures). The contract tier bands *are* the b2573fc
+  behaviour: the oracle's own worst deviations — diff t-mean 7.42e-4, ARMA
+  panel BIC2 8.09e-3, landing coefficients 9.75e-3 — are reproduced to the
+  digit by the R lane (below).
+- **M4 surface (first R-observable automatic pipeline).** Boundary:
+  `native_x13_fit_automatic()` — namespace-internal, **not** NAMESPACE-exported,
+  49 arguments; echoes provenance, the module state exactly as received
+  (1-based span kept 1-based) and the full decision chain (1-based positions,
+  types `AO`/`LS`/`TC`/`SO`); the pinned fail-closed matrix arrives as
+  structured `status`, never an error path, never a silent restricted fallback.
+  `R/native_x13_automatic_fit.R` decodes the automatic spec with the pinned
+  `mirror_request` scalars (max_d 2, max_bd 1, precision 1e-7/1e-5, models 5,
+  grid 2/2/1/1, eps 1e-7, max_outliers 30, va 0, check_mu on, accept_airline
+  off, ur_limit .95, mean tests 1.96/1.0, tsig 1.0); `ub1`/`ub2` pass as
+  reciprocals (fixtures store JVM-space values). `capabilities()` advances to
+  schema_version **2** with the `automatic_fit` block (transform/automodel/
+  outliers/ami/regression/deferred/x11 surfaces and their required module
+  state); `fit` stays **FALSE** until the boundary is user-facing.
+- **Tests**: `inst/tinytest/test-native-x13-automatic.R`, 1,167 assertions,
+  thirteen corpus cases; all DECISIONS asserted **bit-identical** against the
+  pinned JVM goldens (`sigma="accurate"`); tier bands per contract with **no
+  relaxation** — measured R worsts equal the C++ oracle measurements: display
+  AICC 3.42e-6 (band 1e-5), diff t-mean 7.42e-4 (1e-3), ARMA panel 8.09e-3
+  (1e-2), landing coefficients 3.05e-6 (2e-3), ARMA landing 9.75e-3 (1e-2),
+  tables 5.04e-7 rel (1e-6), landing stats 4.48e-7 (2e-3).
+- **Build policy — the R-vs-C++ tier divergence, root-caused and closed.**
+  The `.so` had been binding `cblas_dgemm` (the provider's only dynamic BLAS
+  reference) to the *system* OpenBLAS, because R's `$(BLAS_LIBS)` preceded the
+  pinned archive at link time: a shared library satisfies an undefined
+  reference before archives are scanned, so mixed kernels ran and the
+  automatic pipeline became environment-dependent (thread/BLAS knobs moved
+  the diff t-mean to 5.6e-3 and ARMA landing to 6.2e-2). R's `$(BLAS_LIBS)`/
+  `$(LAPACK_LIBS)` are now **removed** from `PKG_LIBS`; `configure` fails
+  closed unless the OpenBLAS C API (`cblas.h`/`lapacke.h` + linkable
+  CBLAS/LAPACKE) is reachable — `KALOS_OPENBLAS_ROOT` or
+  `KALOS_OPENBLAS_CPPFLAGS`/`KALOS_OPENBLAS_LINK` direct it — and ELF builds
+  add `-Wl,--exclude-libs,ALL -Wl,-Bsymbolic` so the object is self-bound
+  (no in-process interposition by R's own OpenBLAS). The automatic fit pins
+  BLAS kernels single-threaded for the duration of the qualified call (the
+  oracle surface is measured per-kernel serial; outer OpenMP untouched).
+  After the fix the R lane is bit-identical to the C++ oracle lane **in the
+  default environment**, with no thread or BLAS variables set.
+- Full suites (fresh tarball lanes, default environment): **291,240
+  assertions, 0 failures** (49 files, OpenMP lane — existing 48 files
+  per-file-identical to the 290,073 checkpoint, new file +1,167; the
+  boundary file's provider string now asserts the vendored C-API provider
+  `OpenBLAS`, count 8 unchanged) and **291,236, 0 failures** (serial lane,
+  290,069 + 1,167; all four serial markers: probe falls back, zero
+  `-fopenmp` lines, no `GOMP_*` in the installed `.so`,
+  `core_version()$parallel$compiled = FALSE`).
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

@@ -1,9 +1,9 @@
 CXX_STD = CXX17
-PKG_CPPFLAGS = -Ikalos/include
+PKG_CPPFLAGS = -Ikalos/include @KALOS_OPENBLAS_CPPFLAGS@
 PKG_CXXFLAGS = @OPENMP_FLAGS@
-PKG_LIBS = @OPENMP_FLAGS@ $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+PKG_LIBS = @OPENMP_FLAGS@ @KALOS_OPENBLAS_LINK@ @KALOS_LOCAL_BIND@ $(FLIBS)
 OBJECTS = RcppExports.o \
-  lapack_r.o \
+  kalos/backends/openblas.o \
   rcpp_arma_objective.o \
   rcpp_diffuse_state_space.o \
   rcpp_interface.o \
@@ -35,6 +35,7 @@ OBJECTS = RcppExports.o \
   rcpp_x11_trend_selection.o \
   rcpp_x13_allocation.o \
   rcpp_x13_fit.o \
+  rcpp_x13_automatic.o \
   rcpp_x13_shared.o \
   kalos/src/arma_identification.o \
   kalos/src/arma_information.o \
@@ -80,4 +81,22 @@ OBJECTS = RcppExports.o \
   kalos/src/x11_sigma.o \
   kalos/src/x11_trend_selection.o \
   kalos/src/x13_allocation.o \
-  kalos/src/x13_fit.o
+  kalos/src/x13_fit.o \
+  kalos/src/arma_diagnostics.o \
+  kalos/src/arma_refinement.o \
+  kalos/src/differencing_decision.o \
+  kalos/src/estimation_control.o \
+  kalos/src/fdlibm.o \
+  kalos/src/final_estimator.o \
+  kalos/src/final_information.o \
+  kalos/src/hannan_rissanen.o \
+  kalos/src/initial_arma_identification.o \
+  kalos/src/outlier_scan_engine.o \
+  kalos/src/outlier_scoring.o \
+  kalos/src/regression_variable_tests.o \
+  kalos/src/sarima_stabilization.o \
+  kalos/src/special_functions.o \
+  kalos/src/ssq_deviances.o \
+  kalos/src/ssq_levmar.o \
+  kalos/src/transformation_decision.o \
+  kalos/src/x13_automatic.o
