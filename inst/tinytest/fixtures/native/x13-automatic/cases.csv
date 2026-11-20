@@ -1,0 +1,14 @@
+"id","note","n","status","log","mean","p","d","q","bp","bd","bq","mode_requested","mode_effective","nvars","nevents"
+"quick","plain seasonal baseline, no outlier detection",96,"ok","false","false","0","1","1","0","1","1","Undefined","Additive",0,19
+"ao","AO +15 at 1994-01: single irregular outlier, log chosen",96,"ok","true","true","1","0","1","0","1","1","Undefined","Multiplicative",2,25
+"ls","level shift +15 from 1995-01: regeffect Trend",96,"ok","true","true","1","0","0","0","1","0","Undefined","Multiplicative",2,25
+"multi","AO + TC ramp + late level shift: four-variable round",96,"ok","true","false","0","1","0","1","1","0","Undefined","Multiplicative",4,25
+"noout","clean baseline with detection on: every round rejects",96,"ok","false","false","0","1","1","0","1","1","Undefined","Additive",0,25
+"so","AO-shaped shock with the SO-only type set: regeffect Seasonal",96,"ok","true","false","0","1","1","0","1","1","Undefined","Multiplicative",2,25
+"ao_nodet","AO +15 at 1994-01 with detection off: model-only path",96,"ok","true","true","1","0","1","0","1","1","Undefined","Multiplicative",1,19
+"d2","integrated-of-integrated level: d=2 selection boundary",96,"ok","false","false","1","2","1","0","1","1","Undefined","Additive",0,19
+"rw","random walk with drift, log chosen, mean kept (tmean 2.685)",96,"ok","true","true","0","1","0","0","0","0","Undefined","Multiplicative",1,20
+"seas","strong seasonality, no trend: seasonal-only (0,0)(0,1)",96,"ok","false","false","0","0","1","0","1","1","Undefined","Additive",0,19
+"mode_mult","AO case with the Multiplicative forcing",96,"ok","true","true","1","0","1","0","1","1","Multiplicative","Multiplicative",1,19
+"mode_logadd","AO case with the LogAdditive forcing",96,"ok","true","true","1","0","1","0","1","1","LogAdditive","LogAdditive",1,19
+"mode_pseudo","AO case with the PseudoAdditive forcing",96,"ok","true","true","1","0","1","0","1","1","PseudoAdditive","PseudoAdditive",1,19

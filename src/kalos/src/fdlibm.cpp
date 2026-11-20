@@ -114,11 +114,13 @@ double fdlibm_exp(double x) {
     }
     double y = 1.0 - ((lo - (x * t / (2.0 - t))) - hi);
     if (n >= -1021) {
-        y = with_hi(y, static_cast<uint32_t>(hi_word(y) + static_cast<uint32_t>(n << 20)));
+        // n * 2^20 (|n| <= 1023 stays exact in int): bit-identical to the
+        // two's-complement shift the JVM emits, without the C++ UB.
+        y = with_hi(y, static_cast<uint32_t>(hi_word(y) + static_cast<uint32_t>(n * 0x100000)));
         return y;
     }
     y = with_hi(y,
-        static_cast<uint32_t>(hi_word(y) + static_cast<uint32_t>((n + 1000) << 20)));
+        static_cast<uint32_t>(hi_word(y) + static_cast<uint32_t>((n + 1000) * 0x100000)));
     return y * twom1000;
 }
 

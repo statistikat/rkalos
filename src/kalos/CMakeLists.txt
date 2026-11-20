@@ -32,6 +32,7 @@ endif()
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated/kalos")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/kalos/revision.hpp" "${KALOS_REVISION_HEADER}")
 add_library(kalos STATIC
+  src/arma_diagnostics.cpp
   src/arma_identification.cpp
   src/arma_information.cpp
   src/arma_objective.cpp
@@ -43,6 +44,8 @@ add_library(kalos STATIC
   src/diffuse_state_space.cpp
   src/estimation_control.cpp
   src/fdlibm.cpp
+  src/final_estimator.cpp
+  src/final_information.cpp
   src/finite_state_factor.cpp
   src/forecast_arma_information.cpp
   src/forecast_information.cpp
@@ -65,6 +68,7 @@ add_library(kalos STATIC
   src/residual_information.cpp
   src/sarima_stabilization.cpp
   src/sparse_history.cpp
+  src/special_functions.cpp
   src/ssq_levmar.cpp
   src/ssq_deviances.cpp
   src/state_space.cpp
@@ -89,11 +93,25 @@ add_library(kalos STATIC
   src/x11_sigma.cpp
   src/x11_trend_selection.cpp
   src/x13_allocation.cpp
+  src/x13_automatic.cpp
   src/x13_fit.cpp
   backends/openblas.cpp)
 add_library(kalos::kalos ALIAS kalos)
 set_target_properties(kalos PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(kalos PUBLIC cxx_std_17)
+# The qualified JVM numerics are unfused IEEE: a*b+c must round twice.
+# GCC/Clang contract by default whenever the target exposes FMA (arm64
+# baseline, x86-64-v3/amd64v3 distro defaults), which flips last bits in
+# the fdlibm Horner kernels and every dot product on those machines.
+# Keep the semantic pinned, independent of the build machine's ISA.
+# PUBLIC: the inline kernels in the shipped headers (x11_pinned.hpp,
+# parallel.hpp, ...) compile in consumer translation units too.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  target_compile_options(kalos PUBLIC -ffp-contract=off)
+elseif(MSVC)
+  # MSVC /fp:precise (the default) never contracts; make the intent explicit.
+  target_compile_options(kalos PUBLIC /fp:precise)
+endif()
 target_include_directories(kalos PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
@@ -147,6 +165,7 @@ endif()
 if(KALOS_BUILD_TESTS)
   enable_testing()
   foreach(test_name IN ITEMS
+    test_arma_diagnostics
     test_arma_identification
     test_arma_information
     test_arma_objective
@@ -157,6 +176,8 @@ if(KALOS_BUILD_TESTS)
     test_differencing_decision
     test_diffuse_state_space
     test_estimation_control
+    test_final_estimator
+    test_final_information
     test_forecast_arma_information
     test_forecast_information
     test_hannan_rissanen
@@ -177,6 +198,7 @@ if(KALOS_BUILD_TESTS)
     test_regression_likelihood
     test_regression_variable_tests
     test_residual_information
+    test_special_functions
     test_state_space
     test_transformation_decision
     test_transforms
@@ -202,6 +224,7 @@ if(KALOS_BUILD_TESTS)
     test_x11_sigma
     test_x11_trend_selection
     test_x13_allocation
+    test_x13_automatic
     test_x13_fit)
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE kalos::kalos)
@@ -214,7 +237,28 @@ if(KALOS_BUILD_TESTS)
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES ENVIRONMENT
       "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1")
+    if(test_name STREQUAL "test_x13_automatic")
+      # One full automatic search with outlier detection on the probe corpus
+      # shape runs ~250 s (suite wall time ~5 min single-process); the
+      # sanitizer lane multiplies this several-fold.
+      set_tests_properties(${test_name} PROPERTIES TIMEOUT 3600)
+    endif()
   endforeach()
+  # 21-H.2 end-to-end JVM oracle: the driver's decision chain and landing
+  # surfaces against the pinned automatic captures
+  # (validation/evidence/native/x13-automatic/). The corpus is qualified
+  # bit-exact on the cascade-free cases; the outlier-feed cases re-enter
+  # this list when the driver's diff-search feed lands (contract
+  # qualification section, docs/contracts/x13-automatic-pipeline-contract.md).
+  # The full 13-case sweep runs through tools/verify_x13_automatic.cpp.
+  add_executable(test_x13_automatic_oracle tests/test_x13_automatic_oracle.cpp)
+  target_link_libraries(test_x13_automatic_oracle PRIVATE kalos::kalos)
+  add_test(NAME test_x13_automatic_oracle
+           COMMAND test_x13_automatic_oracle quick seas)
+  set_tests_properties(test_x13_automatic_oracle PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
+    TIMEOUT 1800)
 endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

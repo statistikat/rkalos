@@ -1056,6 +1056,70 @@ lanes), re-synced, re-qualified here.
   is deferred to 21-I); the new evidence corpus (`cl`/`mean`/`rvt`/`vars`/
   `ucov`/`obs` tables) is the pinning reference for that qualification.
 
+## Core pin advanced to b773d27 — 21-H pipeline slice + FP-contraction pin, R boundary unchanged — 2026-11-20
+
+- Infrastructure sync (no R or shim code changed): the core pin advances
+  `e7af23f → b773d27a66ef2ee50445a6930c307111efc99ff8` — a **7-commit,
+  64-file range** (+24,397/−578): the cxx_std_17 cleanup `3a54b95`, the
+  21-H stage-Z contract and slice-1 decision units (`9a65609`, `0c57c57`),
+  the final-information producer 21-H.0 (`48342a2`), the automatic-pipeline
+  driver 21-H.1 (`a3bbb4e`), the JVM-oracle qualification 21-H.2
+  (`b17ee8d`), and the CI root-cause fix (`b773d27`:
+  `target_compile_options(kalos PUBLIC -ffp-contract=off)` for GNU/Clang,
+  `/fp:precise` for MSVC — the JVM goldens and the vendored fdlibm kernels
+  encode unfused IEEE arithmetic). Manifest core 128→140; `src/kalos`
+  127→139 files (added the `arma_diagnostics`, `final_estimator`,
+  `final_information`, `special_functions` and `x13_automatic` units with
+  `mlj_engine.hpp`, `detail/special_functions.hpp`,
+  `detail/filter_utility.hpp` and their headers; modified only the
+  **uncompiled** `fdlibm.cpp`, `initial_arma_identification.cpp`,
+  `outlier_scan_engine.cpp`, `ssq_levmar.cpp` and the vendored
+  `CMakeLists.txt`); fixtures 112 unchanged; evidence 179→190
+  (`native/final-information/` 5 + `native/x13-automatic/` 6 corpus
+  files; inst tree 291→302). Lock schema 2 with both fixture sections;
+  `sync-core.py --verify` green.
+- **Structural zero-R-boundary-effect proof** (range classification above,
+  computed against both `Makevars` OBJECTS lists): the four modified
+  vendored sources are 21-C/21-D/21-E units outside the compiled set, and
+  the range adds **no header into the compiled include graph**. The 92-file
+  compiled closure (45 core sources + transitive headers, scanned also from
+  all 37 rkalos boundary TUs) is **byte-identical between the pins** except
+  the generated `revision.hpp` stamp — red-flag count 0; the new units are
+  unbound and uncompiled (compile-only-what's-bound).
+- **Provider (SCRATCH, rebuilt fresh at `b773d27`)**: `env -u
+  LD_LIBRARY_PATH` + explicit pinned OpenBLAS 0.3.34 root; OpenMP tree
+  ctest **62/62** and reinstalled into `tmp_opencode/kalos-install`
+  (installed `revision.hpp` = `b773d27…`); serial tree ctest **62/62**;
+  `-ffp-contract=off` in all 126 `compile_commands.json` entries of each
+  tree, warning-free, serial tree with zero `-fopenmp`. Core gates at
+  `b773d27`: `check-manifest.py` 140/112/190, `verify-migration.py` 406
+  (both unchanged by this range's consumer-side effect).
+- **FP-flag reach (verified precisely):** PUBLIC propagation was verified
+  on the CMake surface — the installed `kalosTargets.cmake` carries
+  `INTERFACE_COMPILE_OPTIONS "-ffp-contract=off"` and a fresh
+  `find_package(kalos CONFIG)` consumer compiles **its own TU** with the
+  flag (consumer `compile_commands.json` verified; binary prints
+  `version 0.1.0 revision b773d27`). The R package is **not** a CMake
+  consumer: `src/Makevars` never reads the package config and the vendored
+  `src/kalos/CMakeLists.txt` is locked but unused by the R build, so
+  rkalos' own compile lines are unchanged (grep-verified zero flag hits in
+  the lane install logs). The flag therefore guards the CMake consumer
+  surface; on this non-FMA baseline it is additionally bit-neutral for
+  everything, consistent with the core evidence.
+- Full suite on the fresh tarball (built and confirmed before the lane
+  runs): **290,073 assertions, 0 failures** (48 files, OpenMP lane,
+  18m 08s) and **290,069, 0 failures** (serial lane, 15m 45s — same
+  `R_MAKEVARS_USER` probe override, installed into `rlib-b-serial` with
+  all four serial markers: probe fails, no `-fopenmp` line, no
+  libgomp/`GOMP_*` in the installed `.so`, `core_version()$parallel`
+  `compiled = FALSE`/`openmp_version = 0`). **Zero-drift verdict:**
+  per-file assertion counts are *identical* to the M9–M14 checkpoints in
+  both lanes, and the cross-lane delta stays the documented conditional
+  pair (`test-native-parallel.R` 35→37, `test-native-tramo-information.R`
+  1580→1574 = net −4). The 21-H slice and the FP-contraction pin have no
+  observable effect at the R boundary; no fixture moved, nothing
+  re-pinned.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

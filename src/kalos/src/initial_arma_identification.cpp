@@ -493,8 +493,7 @@ ArmaSelectResult select_engine(
             id = i;
             incumbent = cur;
         }
-        steps.push_back(
-            ArmaSelectionStep{.candidate = i, .rule = rule, .incumbent = id, .moves = cnt});
+        steps.push_back(ArmaSelectionStep{i, rule, id, cnt});
     }
 
     // A zero-parameter incumbent escapes to the next merged entry whenever
@@ -510,18 +509,15 @@ ArmaSelectResult select_engine(
     out.bp = selected.bp;
     out.bq = selected.bq;
     for (const auto& evaluation : evaluations) {
-        out.evaluations.push_back(ArmaCandidateEvaluation{.stage = evaluation.stage,
-            .slot = evaluation.slot, .p = evaluation.spec.p, .q = evaluation.spec.q,
-            .bp = evaluation.spec.bp, .bq = evaluation.spec.bq,
-            .initial_source = evaluation.initialSource, .fit_status = evaluation.fitStatus,
-            .log_likelihood = evaluation.logLikelihood, .bic = evaluation.bic,
-            .coefficients = evaluation.coefficients});
+        out.evaluations.push_back(ArmaCandidateEvaluation{evaluation.stage, evaluation.slot,
+            evaluation.spec.p, evaluation.spec.q, evaluation.spec.bp, evaluation.spec.bq,
+            evaluation.initialSource, evaluation.fitStatus, evaluation.logLikelihood,
+            evaluation.bic, evaluation.coefficients});
     }
     for (const auto& entry : estimations) {
-        out.preferred_models.push_back(ArmaPreferredModel{.p = entry.spec.p,
-            .q = entry.spec.q, .bp = entry.spec.bp, .bq = entry.spec.bq,
-            .bic = entry.bic, .log_likelihood = entry.logLikelihood,
-            .coefficients = entry.coefficients});
+        out.preferred_models.push_back(ArmaPreferredModel{entry.spec.p, entry.spec.q,
+            entry.spec.bp, entry.spec.bq, entry.bic, entry.logLikelihood,
+            entry.coefficients});
     }
     out.refinement = steps;
     return out;

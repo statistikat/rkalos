@@ -1,3 +1,4 @@
+#include "kalos/detail/filter_utility.hpp"
 #include "kalos/detail/ssq_levmar.hpp"
 
 #include "kalos/linear_algebra.hpp" // polynomial_roots
@@ -10,6 +11,40 @@
 #include <utility>
 
 namespace kalos::detail {
+
+// FilterUtility.checkRoots (declared in kalos/detail/filter_utility.hpp);
+// visible to the stabilization helpers below and to the 21-H final-estimator unit.
+bool check_roots(const double* c, std::size_t length, double limit) {
+    std::size_t k = length;
+    while (k > 0 && c[k - 1] == 0.0) --k;
+    if (k == 0) return true;
+    if (k == 1) return std::abs(c[0]) < limit;
+    if (k == 2) {
+        const double disc = c[0] * c[0] - 4.0 * c[1];
+        if (disc > 0.0) {
+            const double sq = std::sqrt(disc);
+            const double r1 = (c[0] * -1.0 + sq) / (2.0 * c[1]);
+            const double r2 = (c[0] * -1.0 - sq) / (2.0 * c[1]);
+            const double i1 = 1.0 / std::abs(r1);
+            const double i2 = 1.0 / std::abs(r2);
+            return i1 < limit && i2 < limit;
+        }
+        return std::sqrt(c[1]) < limit;
+    }
+    // The pinned >= 3 path delegates to checkRoots(Complex[], limit), whose
+    // guard returns true for a negative limit (and for a null root array,
+    // which the deterministic port cannot produce).
+    if (limit < 0.0) return true;
+    std::vector<double> polynomial(k + 1, 0.0);
+    polynomial[0] = 1.0;
+    for (std::size_t i = 0; i < k; ++i) polynomial[i + 1] = c[i];
+    for (const auto& root : polynomial_roots(polynomial)) {
+        const double modulus = std::hypot(root.real, root.imag);
+        if (!(1.0 / modulus < limit)) return false;
+    }
+    return true;
+}
+
 namespace {
 
 // Pinned SarimaMapping2.STEP and the of() default limits.
@@ -166,32 +201,6 @@ namespace {
 // Pinned FilterUtility.checkRoots(DoubleSeq, limit) for coefficient blocks of
 // the polynomial 1 + c(B): trailing-zero trim, the |c| < limit case, the
 // quadratic with its real and complex branch and the general root scan.
-bool check_roots(const double* c, std::size_t length, double limit) {
-    std::size_t k = length;
-    while (k > 0 && c[k - 1] == 0.0) --k;
-    if (k == 0) return true;
-    if (k == 1) return std::abs(c[0]) < limit;
-    if (k == 2) {
-        const double disc = c[0] * c[0] - 4.0 * c[1];
-        if (disc > 0.0) {
-            const double sq = std::sqrt(disc);
-            const double r1 = (c[0] * -1.0 + sq) / (2.0 * c[1]);
-            const double r2 = (c[0] * -1.0 - sq) / (2.0 * c[1]);
-            const double i1 = 1.0 / std::abs(r1);
-            const double i2 = 1.0 / std::abs(r2);
-            return i1 < limit && i2 < limit;
-        }
-        return std::sqrt(c[1]) < limit;
-    }
-    std::vector<double> polynomial(k + 1, 0.0);
-    polynomial[0] = 1.0;
-    for (std::size_t i = 0; i < k; ++i) polynomial[i + 1] = c[i];
-    for (const auto& root : polynomial_roots(polynomial)) {
-        const double modulus = std::hypot(root.real, root.imag);
-        if (!(1.0 / modulus < limit)) return false;
-    }
-    return true;
-}
 
 std::complex<double> pinned_inverse(const std::complex<double>& z) {
     // Pinned Complex.inv: plain IEEE component arithmetic, no guards; a zero
