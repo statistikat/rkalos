@@ -116,7 +116,11 @@ struct X13AutomaticRequest {
     double lower_sigma=1.5, upper_sigma=2.5;
     X11MsrIterationPolicy msr_policy=X11MsrIterationPolicy::jdplus;
     X11DecompositionMode mode=X11DecompositionMode::additive; // Undefined
-    int backcast=0, forecast=0;                 // the {0, 0} domain only
+    // The X-11 spec horizons (item 21-H.4): month counts, a negative value
+    // meaning |h| annual frequencies, exactly as the pinned process reads
+    // them; the initialStep extension route then drives a1b/a1a, the
+    // extended out calendar and the split finals.
+    int backcast=0, forecast=0;
 };
 // ---- decision-record vocabulary (the H.2 diff surface) ----
 // One pass2 invocation: the fired filter (0 = keep), the state after the

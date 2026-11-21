@@ -1873,29 +1873,94 @@ class AutomaticPipeline {
     fit_result.msr_policy = request_.msr_policy;
     fit_result.mode_requested = request_.mode;
     fit_result.mode_effective = forceMode(out.log, request_.mode);
-    fit_result.backcast = 0;
-    fit_result.forecast = 0;
+    // The pinned process semantics (item 21-H.4): the spec horizons are
+    // month counts; a negative value means |h| annual frequencies.
+    const int nb = request_.backcast < 0
+                       ? -request_.backcast * kAnnualFrequency
+                       : request_.backcast;
+    const int nf = request_.forecast < 0
+                       ? -request_.forecast * kAnnualFrequency
+                       : request_.forecast;
+    fit_result.backcast = nb;
+    fit_result.forecast = nf;
 
     X13PreadjustInput preadjust;
     preadjust.input = request_.input;
     preadjust.log = out.log;
+    preadjust.backcast = nb;
+    preadjust.forecast = nf;
+    if (nb != 0 || nf != 0) {
+      // The landing stochastic component on the JVM SarimaModel surface
+      // (the AR blocks carry the all-plus polynomial signs, the same export
+      // convention as the oracle's arma facts) plus the mean-correction
+      // flag, the exact inputs of the pinned ExactArimaForecasts route.
+      ArimaForecastModel forecasts_model;
+      forecasts_model.period = kAnnualFrequency;
+      forecasts_model.p = out.p;
+      forecasts_model.q = out.q;
+      forecasts_model.bp = out.bp;
+      forecasts_model.bq = out.bq;
+      forecasts_model.d = out.d;
+      forecasts_model.bd = out.bd;
+      forecasts_model.mean_correction = out.mean;
+      // The estimation block layout is [ar, ma, sar, sma] (the export flips
+      // the two AR blocks {0,2}); the JVM SarimaModel parameter surface is
+      // [ar, sar, ma, sma] with the all-plus polynomial signs on the AR
+      // blocks (SarimaModel.parameters(), probe-verified in the pinning
+      // notes section E).
+      const std::array<std::vector<double>, 4>& blocks = estimation.coefficients;
+      forecasts_model.phi.assign(blocks[0].size(), 0.);
+      forecasts_model.bphi.assign(blocks[2].size(), 0.);
+      for (std::size_t i = 0; i < blocks[0].size(); ++i)
+        forecasts_model.phi[i] = -blocks[0][i];
+      for (std::size_t i = 0; i < blocks[2].size(); ++i)
+        forecasts_model.bphi[i] = -blocks[2][i];
+      forecasts_model.theta = blocks[1];
+      forecasts_model.btheta = blocks[3];
+      preadjust.arima = forecasts_model;
+    }
     for (const AutoVariableRecord& variable : out.variables) {
       X13AllocationVariable allocation;
       allocation.cls = X13VariableClass::outlier;
       allocation.effect = outlier_effect(variable.type);
       allocation.coefficient = {variable.coefficient};
-      allocation.columns = {variable.column};
+      // The pinned factory fill over the extended calendar: the zero-ended
+      // LS/SO patterns reach back across the position into the backcast
+      // window, the TC ramp runs into the forecast one (the JVM reg-column
+      // probe, pinning notes section J).
+      std::vector<double> column(
+          static_cast<std::size_t>(nb) + request_.input.size() +
+              static_cast<std::size_t>(nf),
+          0.);
+      fill_outlier_column(variable.type,
+          static_cast<std::size_t>(nb) + variable.position, kAnnualFrequency,
+          transitory_rate_, column);
+      allocation.columns = {std::move(column)};
       preadjust.variables.push_back(std::move(allocation));
     }
     fit_result.preadjustment = x13_preadjust(preadjust);
+    if (fit_result.preadjustment.status != "available") {
+      fit_result.status = fit_result.preadjustment.status;  // verbatim
+      out.status = fit_result.status;
+      AutoDecisionRecord entry;
+      entry.stage = "final";
+      entry.notes = {"preadjust refused", fit_result.status};
+      push(std::move(entry));
+      return;
+    }
 
+    const int extended_first_period =
+        ((request_.first_period - 1 - nb) % kAnnualFrequency +
+            kAnnualFrequency) %
+            kAnnualFrequency +
+        1;
     MaskedSeries series;
     series.values = fit_result.preadjustment.out;
     series.missing.assign(fit_result.preadjustment.out.size(), 0);
     fit_result.selection = x11_selection_pass(
-        series, kAnnualFrequency, request_.first_period, request_.seasonal,
+        series, kAnnualFrequency, extended_first_period, request_.seasonal,
         request_.trend_length, *request_.sigma, request_.msr_policy,
-        request_.lower_sigma, request_.upper_sigma, 0, 0,
+        request_.lower_sigma, request_.upper_sigma, nb, nf,
         fit_result.mode_effective);
     if (fit_result.selection.status != "available") {
       fit_result.status = fit_result.selection.status;  // verbatim
@@ -1927,6 +1992,8 @@ class AutomaticPipeline {
     restore.d13 = fit_result.d13;
     restore.c17 = fit_result.c17;
     restore.mode = fit_result.mode_effective;
+    restore.backcast = nb;
+    restore.forecast = nf;
     fit_result.finals = x13_restore(restore);
     fit_result.finalSA = fit_result.finals.d11final;
     fit_result.finalTrend = fit_result.finals.d12final;
@@ -2020,10 +2087,6 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
           "unsupported:x13 automatic fit requires a complete finite series";
       return out;
     }
-  }
-  if (request.backcast != 0 || request.forecast != 0) {
-    out.status = "unsupported:x13 fit requires zero horizons";
-    return out;
   }
   if (!request.sigma) {
     out.status = "unsupported:x13 fit requires an explicit sigma policy";

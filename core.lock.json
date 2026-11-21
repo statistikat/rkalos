@@ -1,9 +1,9 @@
 {
   "schema_version": 2,
   "repository": "https://github.com/statistikat/kalos",
-  "commit": "b2573fc011aee37eced0e97ddfd86d88349887c2",
+  "commit": "f500162a3be1539803566f9bc8f071e0deb4f66b",
   "version": "0.1.0",
-  "source_manifest_sha256": "3940b18e68e122f0d8ca095b9f518fe3e562ebd139e032966a04b0f91a849d23",
+  "source_manifest_sha256": "8dde089174bdb8e843733a161699d71b5b3bb256e0cb9dd6dd8405c2c51a8722",
   "generated_files": [
     "include/kalos/revision.hpp"
   ],
@@ -12,7 +12,7 @@
       "directory": "src/kalos",
       "section": "core",
       "files": {
-        "CMakeLists.txt": "80a7e386d10e12c8fef308d00d791a72f60477a0dc96ef84475c643abad751a4",
+        "CMakeLists.txt": "ba183535d24dd38568a8c2979e5908001f108cbae99c2ff93264f219fbb6737c",
         "backends/openblas.cpp": "a0d604e0a5997fc08d08a8923d7efb23d120bda863aaee812d3fe1044a1770e0",
         "cmake/FindKalosOpenBLAS.cmake": "5e3dd0c414f6532c8994d4e29600862b4909ffca6c4b6f16060564b3aa459b7a",
         "cmake/kalosConfig.cmake.in": "988ab7fd16970096c2b66b251550d3869ffc10202d8dd9e3677efb22d415ad4a",
@@ -20,6 +20,7 @@
         "dependencies/README.md": "65b2b8a7676d5a9bd920797ddb58d8b48407c47ba6afcd30e43b056c8bd6bec8",
         "dependencies/lapack-netlib-LICENSE.txt": "978539245c405775bf347b1256c36df4daf8b69a64b099e94b1d53742201621e",
         "dependencies/openblas.lock.json": "7de36682146fab0a55e9291d01b3c464bd23c2e5bbdcf48f31043eea3e5e21a0",
+        "include/kalos/arima_forecasts.hpp": "2c42ef431bae60b4a7ed0bf70d828addab15484e2c8da820f9b271353445111b",
         "include/kalos/arma_diagnostics.hpp": "479800ea69819c45547a6e5f313658aacfd51bee3f29aec260123714a9027de1",
         "include/kalos/arma_identification.hpp": "2cd4015cd91f9520b41bd8499241103b76ef21d3a92dc9cfc1891352f6d4c133",
         "include/kalos/arma_information.hpp": "1e3ba17393981be7030c371a49b1a14ac86b4142825313c4fe002d3b1dcd55e5",
@@ -59,7 +60,7 @@
         "include/kalos/preparation.hpp": "86d4a4319a5d687854cbe48d53ee7e7312fc45823b676f6aa57fb5dfa7a32161",
         "include/kalos/regression_likelihood.hpp": "2fc46cfdaa140bc350e0e414cf7a4e723a864b35faeb21cc2803db791626fc34",
         "include/kalos/regression_variable_tests.hpp": "a816f8ec79a8183c899703c0b61e5e1955149271be38599d63ca15a6daecf63b",
-        "include/kalos/revision.hpp": "77dec0908e1db7c4133b1ee0bc4a42c4117263adea376f15059fee3b8a911fe4",
+        "include/kalos/revision.hpp": "1a1c41913ef6d77c2439cd4a51b7eb067c2792cbf5765a3aafac6e25986bad5a",
         "include/kalos/sparse_history.hpp": "4a0a34d5f653e6d314fbf2bf72a323c3d72297c18ea39cc3c6f73c98bab13e79",
         "include/kalos/state_space.hpp": "13aa70201814f68da74e82b8b75db8102d51d61ce076b87dd8aa6c1323cd3a5a",
         "include/kalos/transformation_decision.hpp": "5f382c2fd1882aaf243d61ce5827a62eb5c97e7f31d6e26488dec9c53919be88",
@@ -83,9 +84,10 @@
         "include/kalos/x11_selection_pass.hpp": "f8a52caca5144ed84f29dacf7cc7035a669db3d7f49a829e562d0e647618f464",
         "include/kalos/x11_sigma.hpp": "184585b1d38b47c7d04edd5e2d07ad15eec7b81e3ff810e27b5338604e0948eb",
         "include/kalos/x11_trend_selection.hpp": "ff4092b28d72addbd38ccc39ba9e3a48e93cf43b8e62302505cd6eee9b3209cd",
-        "include/kalos/x13_allocation.hpp": "1e3712800f0ef97d506c17a73a9ae4777e8a34a26ad7d466a33f467d1aea06b0",
-        "include/kalos/x13_automatic.hpp": "44ce2f9431b5179cec77a37d40f0f3f247ef889ef00a7b855e238fe51ea6a32f",
+        "include/kalos/x13_allocation.hpp": "5be04bba98cdff755b293e331fe3766a6728eea3d66ad1a5a124043f1868072e",
+        "include/kalos/x13_automatic.hpp": "9101d04e8df796abdf8d2efe5996a029b8f5905ea841c70c7d5bbd29138d8c0d",
         "include/kalos/x13_fit.hpp": "88815bbd55cd5c5aa2ac2e4cf946712baddbcdb1bbdc6d45dd5f858e7025eed7",
+        "src/arima_forecasts.cpp": "1a1975579fb0c4f0b1642035758d7bf04a12949aee71d2413fab4945b983b94b",
         "src/arma_diagnostics.cpp": "b797fdec6f8b5bdba25e6f7f7d019643688869d15cc0341420f1d489527b7486",
         "src/arma_identification.cpp": "aac64e9c0569291459cc3f283d12269679909e83c3c84bd943cbe3673d0514c7",
         "src/arma_information.cpp": "e3937692d1543af6b836c11f441e37f6af8b2dcce111dbf6e44cc9ab1aa10418",
@@ -148,8 +150,8 @@
         "src/x11_selection_pass.cpp": "37a8c543fb729454fbbda1a387c3f298357ac328e8b93f61e8b03724b1c08017",
         "src/x11_sigma.cpp": "e0250fdd3d3458833bd5a523478eefc53ce65ead1144a14e4270c0c3de93d753",
         "src/x11_trend_selection.cpp": "e5177347e427acb15afabd3d59cc4665fc9b1126c572163cb5944b437251f64f",
-        "src/x13_allocation.cpp": "602064292ebafbff78e738180a40dced70cf5c7cc0fa8e2c950f9951c535ab77",
-        "src/x13_automatic.cpp": "99bff007f44677b04974cb417b3bb5bc3afb7246d3e5ff0194d6a4d9b4632d1e",
+        "src/x13_allocation.cpp": "2c7926942a5bb8f86d88cf5591274f5db3533b1f3c0798795fdb2e4e78053884",
+        "src/x13_automatic.cpp": "b59efb01eb04dae7275fb66302c1b7e0fe6cc0801299a9070d4495dec13b9e59",
         "src/x13_fit.cpp": "8cd0d746507d47bf3d5726480d1d1b0d6fc46535c45d1be88d713a0ce382fb75"
       }
     },
@@ -465,7 +467,12 @@
         "native/x13-fit/metadata.R": "c4c75e51e92fd9e62184c4f00c508add8850081da7d26ec236e17e53217735cb",
         "native/x13-fit/tables.csv": "687fc8367f7e2394a10df8c5c3071a1324c7a8ff0b6e9b006e456a4640897ffc",
         "native/x13-fit/vars.csv": "b2527462277255f29529f43a1ae2a83e3f93b2781b2232a5df5002196091db07",
-        "native/x13-fit/x13fast.csv": "6f5d5ee66ceacbf1fe87a31c1325cb24d24f0a86f95f21b08f257498ab2fc156"
+        "native/x13-fit/x13fast.csv": "6f5d5ee66ceacbf1fe87a31c1325cb24d24f0a86f95f21b08f257498ab2fc156",
+        "native/x13-horizon/SHA256SUMS.csv": "dfcbecfa66450c92b0358b486ed9503392cd19c93a5048f35dfa64b0ba7956ff",
+        "native/x13-horizon/cases.csv": "2e186f1563646a6d014fac8aff334a42702ac1e5ec260b6d69f0242babce799d",
+        "native/x13-horizon/inputs.csv": "8b6f88893aeb20e15096ed4195fcb456fa3d71e067e1f88c319d385f3ffa59b1",
+        "native/x13-horizon/metadata.R": "a353ca5d3fc1e0ec88395ea6995eb1c5225d477953310f5e8dbee46c1636610d",
+        "native/x13-horizon/oracle-facts.csv": "ed80b8372e226de834c42cacde02e7f5bd8dc95d67823f7d4ac3d1dfb7c37eb3"
       },
       "source_prefix": "validation/evidence/"
     }

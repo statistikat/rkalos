@@ -99,4 +99,5 @@ OBJECTS = RcppExports.o \
   kalos/src/ssq_deviances.o \
   kalos/src/ssq_levmar.o \
   kalos/src/transformation_decision.o \
-  kalos/src/x13_automatic.o
+  kalos/src/x13_automatic.o \
+  kalos/src/arima_forecasts.o

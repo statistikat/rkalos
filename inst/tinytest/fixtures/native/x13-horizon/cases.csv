@@ -1,0 +1,5 @@
+"id","note","n","bc","fc","status","log","mean","p","d","q","bp","bd","bq"
+"quick_h6","plain seasonal baseline with a 6-month forecast",96,0,6,"ok","false","false","0","1","1","0","1","1"
+"ao_b3","AO +15 at 1994-01 with a 3-month backcast (mean kept)",96,3,0,"ok","true","true","1","0","1","0","1","1"
+"multi_b3h6","AO + TC ramp + late level shift, 3-month backcast and 6-month forecast",96,3,6,"ok","true","false","0","1","0","1","1","0"
+"so_h6","AO-shaped shock with the SO-only type set, 6-month forecast",96,0,6,"ok","true","false","0","1","1","0","1","1"

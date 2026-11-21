@@ -9,7 +9,8 @@
 # answers the pinned fail-closed statuses verbatim. The X-11 block is the
 # decoder automatic surface: one "msr" request per calendar period and the
 # automatic Henderson length 0 are the pinned G4 facts, not user options, and
-# horizons are the {0, 0} domain only. Sigma: NULL (or omitted) receives the
+# horizons: {0, 0} stays the only R-qualified domain (the core's 21-H.4 route
+# answers nonzero horizons since f500162 but is not yet R-qualified). Sigma: NULL (or omitted) receives the
 # maintainer default "legacy" — the decision of 2026-11-17, applied here at
 # the interface while the core keeps its explicitness contract and the raw
 # entry still answers the pinned "unsupported:x13 fit requires an explicit

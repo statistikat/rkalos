@@ -58,7 +58,7 @@ capabilities <- function() {
                     msr_requests_pinned = TRUE,      # one "msr" per calendar period: the decoder G4 surface, not an option
                     automatic_henderson = TRUE,      # trend_length 0 (the restricted fit refuses it)
                     sigma_policy_default = "legacy", # same maintainer 2026-11-17 decision as restricted_fit; $sigma_provenance reports "legacy (default)" vs "(explicit)"
-                    zero_horizon_only = TRUE,        # backcast = forecast = 0 is the only delivered domain
+                    zero_horizon_only = TRUE,        # the ONLY R-qualified domain stays backcast = forecast = 0; the core delivers the 21-H.4 horizon route (no refusal since f500162) but R-side horizon qualification is the next slice
                     modes = c("additive", "multiplicative", "log_additive", "pseudo_additive")
                   ),
                   monthly_only = TRUE,               # qualified on the frequency-12 corpus only

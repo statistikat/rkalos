@@ -12,11 +12,13 @@
 // as INPUTS, the staging tables are pure algebra and this header reproduces
 // them; everything upstream of the seam (coefficient and ARIMA estimation,
 // outlier detection, trading-day tests) and everything the fixed-model path
-// with zero horizons and LengthOfPeriodType.None never reaches (ARIMA
-// backcast/forecast extension through ExactArimaForecasts, missing-row
-// interpolation through MissingValueEstimation, the a1a/a1b extensions, the
-// length-of-period transform, benchmarking and diagnostics) is outside this
-// contract. See docs/contracts/x13-allocation-contract.md and
+// with zero horizons and LengthOfPeriodType.None never reaches (missing-row
+// interpolation through MissingValueEstimation, the length-of-period
+// transform, benchmarking and diagnostics) is outside this contract. The
+// nonzero-horizon ARIMA extension route through ExactArimaForecasts
+// (the a1a/a1b extensions and the split finals) landed with item 21-H.4 and
+// is qualified by docs/contracts/arima-forecasts-contract.md and the
+// automatic-pipeline horizon captures. See docs/contracts/x13-allocation-contract.md and
 // docs/contracts/x13-allocation-scope-22c.md for the scoping memo.
 //
 // Pinned semantics reflected here (each pinned bit-exact by a capture
@@ -35,8 +37,10 @@
 // DecompositionMode.isMultiplicative() includes LogAdditive — add only for
 // additive) and mean (0 only for additive), with the c17 correction rule
 // y[i] exactly where c17[i] == 0 (X11Utility.correctSeries).
+#include "arima_forecasts.hpp"
 #include "x11_decomposition.hpp"
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 namespace kalos {
@@ -70,52 +74,76 @@ struct X13PreadjustInput {
     std::vector<double> input; // complete; strictly positive when log
     std::vector<X13AllocationVariable> variables; // pinned model order
     bool log=false;
+    // The nonzero-horizon extension of item 21-H.4 (the pinned initialStep
+    // branch): with backcast/forecast nonzero the variable columns span the
+    // EXTENDED calendar (length n + backcast + forecast, the input rows at
+    // [backcast, backcast + n)) — the pinned factory fills evaluated over it
+    // (the zero-ended LS/SO patterns extend BACKWARD across the position, the
+    // TC ramp runs into the forecast window) — and `arima`, the landing
+    // stochastic component on the JVM coefficient surface with the mean
+    // correction flag, drives the ExactArimaForecasts route on
+    // r = transformed(input) - v27 over the input window.
+    int backcast=0,forecast=0;
+    std::optional<ArimaForecastModel> arima; // required when a horizon is nonzero
 };
 // The stored (backTransform'ed) preadjustment tables of X13Kernel.
-// initialStep over the zero-horizon contract: a1 is the interpolated series
-// (= the complete input), a6 the days-related effect, a7 the moving-holiday
+// initialStep: a1 is the interpolated series (= the complete input) on the
+// INPUT calendar, a6 the days-related effect, a7 the moving-holiday
 // effect, a8t/a8s/a8i the trend/seasonal/irregular outlier+user buckets,
 // a8 their pinned ((t+s)+i) fold, a9cal/a9sa/a9ser/a9u the user calendar,
 // seasonally-adjusted, series and undefined buckets, a9 the pinned
-// ((cal+sa)+ser) fold, and out the series fed to X-11. All tables share the
-// input length and calendar.
+// ((cal+sa)+ser) fold, and out the series fed to X-11. Under zero horizons
+// all tables share the input length and calendar; under the item 21-H.4
+// extension a6..a9u and out span the extended calendar (n + backcast +
+// forecast rows), a1 stays the input, and a1b/a1a carry the ARIMA-extended
+// raw series on the backcast/forecast windows (backTransform'ed, the pinned
+// backcasts + v27 in the back window, forecasts + v27 in the forecast one).
 struct X13Preadjustment {
     std::vector<double> a1,a6,a7,a8,a8t,a8s,a8i,a9,a9u,a9cal,a9sa,a9ser,out;
-    std::string status; // "available", or "unsupported:<reason>"
+    std::vector<double> a1a,a1b; // empty under zero horizons
+    std::string status; // "available", "unsupported:<reason>" or "failed:arima_forecasts"
 };
 // Fixed-coefficient preadjustment. Throws std::invalid_argument on shape
 // violations (missing or non-positive-under-log observations, ragged or
-// mismatched columns, non-finite coefficients); a1a/a1b and the extended
-// out horizon of the nonzero-horizon pipeline are outside the contract and
-// are not represented.
+// mismatched columns, non-finite coefficients, a nonzero horizon without a
+// stochastic component); a nonzero horizon with a stochastic component runs
+// the pinned ExactArimaForecasts route (whose own rejection answers
+// "failed:arima_forecasts").
 X13Preadjustment x13_preadjust(const X13PreadjustInput& input);
 
 // The restore inputs: the available preadjustment above, the X-11 tables
-// D10..D13 and C17 exactly as the pinned X11Results stores them for the
-// same calendar (under the pinned LogAdditive results-builder stage — exp
-// plus the default ratio bias correction, see the contract — D10..D13 are
-// the exp'd and rescaled tables), and the effective decomposition mode the
-// pinned X13Kernel.updateSpec produced for the X-11 run (additive for non-log
+// D10..D13 and C17 exactly as the pinned X11Results stores them for the same
+// calendar (under the pinned LogAdditive results-builder stage — exp plus the
+// default ratio bias correction, see the contract — D10..D13 are the exp'd
+// and rescaled tables), the effective decomposition mode the pinned
+// X13Kernel.updateSpec produced for the X-11 run (additive for non-log
 // models, multiplicative for log models unless log_additive or
 // pseudo_additive was requested — the forcing rule is part of the contract
-// and the fixtures pin it).
+// and the fixtures pin it), and — item 21-H.4 — the backcast/forecast row
+// counts of the extended calendar the preadjustment and X-11 tables span
+// (zero under the zero-horizon contract; the pinned finals then slice the
+// a/b extension tables and fit the finals to the a1 calendar).
 struct X13RestoreInput {
     X13Preadjustment pre;
     std::vector<double> d10,d11,d12,d13,c17;
     X11DecompositionMode mode=X11DecompositionMode::additive;
+    int backcast=0,forecast=0;
 };
-// The pinned X13Finals of the zero-horizon contract: d11final (seasonally
-// adjusted with the trend and irregular effects restored), d12final and
-// d13final, d16 (original with the seasonal-side effects restored), d18
-// (calendar-effect-only composite), and the finals adjustment tables
-// e1/e2/e3/e11. The a/b extension tables stay empty outside this contract.
+// The pinned X13Finals: d11final (seasonally adjusted with the trend and
+// irregular effects restored), d12final and d13final, d16 (original with the
+// seasonal-side effects restored), d18 (calendar-effect-only composite), and
+// the finals adjustment tables e1/e2/e3/e11 — all fitted to the a1 calendar.
+// Under the item 21-H.4 extension the d11a/d12a/d16a/d18a tables carry the
+// forecast-window slices (the pinned fitToDomain over the a1a domain) and
+// d11b/... the backcast-window ones; they stay empty under zero horizons.
 struct X13Finals {
     std::vector<double> d11final,d12final,d13final,d16,d18,e1,e2,e3,e11;
+    std::vector<double> d11a,d12a,d16a,d18a,d11b,d12b,d16b,d18b;
     std::string status; // "available", or "unsupported:<reason>"
 };
-// Finals restore over the zero-horizon contract. Throws
-// std::invalid_argument on shape violations (tables of differing lengths,
-// an unavailable preadjustment).
+// Finals restore. Throws std::invalid_argument on shape violations (tables
+// of differing lengths, an unavailable preadjustment, a calendar mismatch
+// against the horizon counts).
 X13Finals x13_restore(const X13RestoreInput& input);
 } // namespace kalos
 #endif

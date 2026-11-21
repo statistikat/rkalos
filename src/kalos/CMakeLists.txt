@@ -40,6 +40,7 @@ add_library(kalos STATIC
   src/arma_parameters.cpp
   src/arma_refinement.cpp
   src/arma_residuals.cpp
+  src/arima_forecasts.cpp
   src/differencing_decision.cpp
   src/diffuse_state_space.cpp
   src/estimation_control.cpp
@@ -173,6 +174,7 @@ if(KALOS_BUILD_TESTS)
     test_arma_parameters
     test_arma_refinement
     test_arma_residuals
+    test_arima_forecasts
     test_differencing_decision
     test_diffuse_state_space
     test_estimation_control
@@ -257,6 +259,19 @@ if(KALOS_BUILD_TESTS)
   add_test(NAME test_x13_automatic_oracle
            COMMAND test_x13_automatic_oracle)
   set_tests_properties(test_x13_automatic_oracle PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
+    TIMEOUT 3600)
+  # 21-H.4 non-zero-horizon acceptance: the initialStep forecast route (the
+  # ExactArimaForecasts stack over the preadjusted series) against the pinned
+  # horizon captures (validation/evidence/native/x13-horizon/). Decisions and
+  # the adjusted series a1 are bit claims; the extension-riding tables carry
+  # the measured bands (docs/contracts/arima-forecasts-contract.md).
+  add_executable(test_x13_automatic_horizon tests/test_x13_automatic_horizon.cpp)
+  target_link_libraries(test_x13_automatic_horizon PRIVATE kalos::kalos)
+  add_test(NAME test_x13_automatic_horizon
+           COMMAND test_x13_automatic_horizon)
+  set_tests_properties(test_x13_automatic_horizon PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
     TIMEOUT 3600)

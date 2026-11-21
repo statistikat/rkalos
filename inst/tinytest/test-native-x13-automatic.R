@@ -411,8 +411,15 @@ local({
     expect_identical(r$schema_version,2L) # the echo is complete on a refusal too
     expect_identical(raw0(frequency=4L,seasonal=rep('msr',4L))$status,
       'unsupported:x13 automatic fit monthly series only')
-    expect_identical(raw0(backcast=1L)$status,'unsupported:x13 fit requires zero horizons')
-    expect_identical(raw0(forecast=3L)$status,'unsupported:x13 fit requires zero horizons')
+    # The horizons are no gate (item 21-H.4 delivers the horizon route): a
+    # horizon-bearing request flows through to the sigma gate exactly as a
+    # zero-horizon one does (the core mirrors this in its t01_status_matrix).
+    expect_identical(raw0(backcast=1L,sigma=NULL)$status,
+      'unsupported:x13 fit requires an explicit sigma policy',
+      info='horizon is no gate; sigma gate next')
+    expect_identical(raw0(forecast=3L,sigma=NULL)$status,
+      'unsupported:x13 fit requires an explicit sigma policy',
+      info='forecast is no gate either')
     for(flag in c('calendar','easter','trading_days','user_variables')) {
       a<-list(FALSE,FALSE,FALSE,FALSE);names(a)<-c('calendar','easter','trading_days','user_variables')
       a[[flag]]<-TRUE
@@ -426,14 +433,15 @@ local({
     y<-m$y;y[10]<-NA_real_
     expect_identical(raw0(values=y)$status,
       'unsupported:x13 automatic fit requires a complete finite series')
-    # The guard order of the matrix: monthly, finite, horizons, sigma, defer,
-    # span — the first violation answers.
+    # The guard order of the matrix: monthly, finite, sigma, defer, span —
+    # the first violation answers (the horizons are no gate since 21-H.4).
     expect_identical(raw0(values=y,frequency=4L,seasonal=rep('msr',4L))$status,
       'unsupported:x13 automatic fit monthly series only',info='monthly first')
     expect_identical(raw0(values=y,backcast=1L,sigma=NULL)$status,
-      'unsupported:x13 automatic fit requires a complete finite series',info='finite before horizons')
-    expect_identical(raw0(backcast=1L,sigma=NULL)$status,
-      'unsupported:x13 fit requires zero horizons',info='horizons before sigma')
+      'unsupported:x13 automatic fit requires a complete finite series',info='finite beats later gates (horizon present)')
+    expect_identical(raw0(backcast=1L,calendar=TRUE)$status,
+      'unsupported:x13 automatic fit defers calendar/easter/TD/user detection (21-I)',
+      info='defer gate answers with a horizon present')
     # Shape violations throw instead of answering a status.
     expect_error(raw0(sigma='foolish'),'sigma weight policy',info='sigma policy throws')
     expect_error(raw0(mode='sideways'),'decomposition mode',info='mode throws')
@@ -461,10 +469,17 @@ local({
       balanced=FALSE,mixed=TRUE,accept_white_noise=FALSE,eps=1e-7)),'whole number',
       info='automodel integer validation')
     expect_error(fit_case('quick',sigma=42),'legacy',info='sigma label validation')
+    # Since item 21-H.4 (core f500162) a nonzero horizon is no refusal: the
+    # core's initialStep route answers 'available' through this boundary.
+    # The R-qualified domain stays {0,0} (capabilities $zero_horizon_only,
+    # JVM horizon qualification is the next slice); this block pins only the
+    # route's shape, not its numbers.
     r<-fit_case('quick',backcast=1)
-    expect_identical(r$status,'unsupported:x13 fit requires zero horizons')
-    expect_false(r$fitted);expect_null(r$model);expect_null(r$chain)
-    expect_true(grepl('fail-closed matrix',r$records_only))
+    expect_identical(r$status,'available',info='horizon route answers (21-H.4)')
+    expect_true(r$fitted)
+    expect_false(is.null(r$model))
+    expect_false(is.null(r$chain))
+    expect_identical(as.integer(r$request$x11$backcast),1L)
     expect_identical(r$sigma_provenance,'accurate (explicit)')
     expect_identical(fit_case('quick',calendar=TRUE)$status,
       'unsupported:x13 automatic fit defers calendar/easter/TD/user detection (21-I)')
