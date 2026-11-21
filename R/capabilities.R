@@ -33,7 +33,7 @@ capabilities <- function() {
                 # required request data — the descriptor promotes no default
                 # except the maintainer sigma-rule default below.
                 automatic_fit = list(
-                  schema_version = 2L,
+                  schema_version = 3L,     # 3L: x11 zero_horizon_only -> horizon_envelope (item 21-H.4 R horizon qualification)
                   native_x13_fit_automatic = TRUE,
                   transform = list(
                     auto_log_test = TRUE,            # LogLevelModule transform.function = Auto is the only wired branch (decoder)
@@ -58,14 +58,15 @@ capabilities <- function() {
                     msr_requests_pinned = TRUE,      # one "msr" per calendar period: the decoder G4 surface, not an option
                     automatic_henderson = TRUE,      # trend_length 0 (the restricted fit refuses it)
                     sigma_policy_default = "legacy", # same maintainer 2026-11-17 decision as restricted_fit; $sigma_provenance reports "legacy (default)" vs "(explicit)"
-                    zero_horizon_only = TRUE,        # the ONLY R-qualified domain stays backcast = forecast = 0; the core delivers the 21-H.4 horizon route (no refusal since f500162) but R-side horizon qualification is the next slice
+                    horizon_envelope = "backcast/forecast month counts, a negative count meaning |h| annual frequencies (the core normalizes); the 21-H.4 initialStep route extends the downstream composition only — decisions, landing and the preadjustment stay horizon-invariant",
+                                         # replaces zero_horizon_only (schema 3L): R-qualified by the 4-case JVM horizon capture in test-native-x13-horizon.R; the RESTRICTED fit stays zero-horizon-only
                     modes = c("additive", "multiplicative", "log_additive", "pseudo_additive")
                   ),
                   monthly_only = TRUE,               # qualified on the frequency-12 corpus only
                   frequency = 12L,
                   complete_finite_input_only = TRUE, # missing-value interpolation is not part of the automatic description build
                   deferred = "calendar, easter-detection, automatic-trading-days and user-variable detection answer 'unsupported:x13 automatic fit defers calendar/easter/TD/user detection (21-I)'",
-                  qualification = "13-case pinned JVM oracle, decision-bit exact end to end at the core tier (21-H.3); re-pinned at the R boundary in test-native-x13-automatic.R",
+                  qualification = "13-case pinned JVM oracle, decision-bit exact end to end at the core tier (21-H.3); re-pinned at the R boundary in test-native-x13-automatic.R; horizons qualified on the 4-case 21-H.4 horizon capture in test-native-x13-horizon.R (bit decisions, transcribed table bands)",
                   refusals = "verbatim unsupported:/failed: statuses from the core; NEVER a fallback to the restricted fit; see IMPLEMENTATION_STATUS.md",
                   entry_points = "native_x13_fit_automatic()"),
                 primitives = c("time_domain", "difference_polynomial", "convolve", "finite_filter",

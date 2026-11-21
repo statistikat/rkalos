@@ -1263,6 +1263,62 @@ lanes), re-synced, re-qualified here.
   `actions/checkout@v5`/`actions/setup-python@v6` (Node 24 runtimes,
   mirroring kalos 7564ce7).
 
+## Item 21-H.4 horizon qualification at the R boundary — 2026-11-21
+
+Core pin unchanged (f500162, no re-vendor): the pinned core already delivers the
+initialStep horizon route; this slice qualifies the horizon envelope AT the R
+boundary and makes the boundary's decorations horizon-aware.
+
+- `capabilities()$automatic_fit`: schema_version 2L → 3L; the x11
+  `zero_horizon_only` marker is REPLACED by `horizon_envelope` (month counts,
+  negative = |h| annual frequencies via the core's normalization, downstream
+  composition only); the `qualification` string names the new horizon capture.
+  `restricted_fit` is byte-identical: the restricted route keeps its {0, 0}
+  domain (the core still refuses nonzero fixed-path horizons).
+- `native_x13_fit_automatic()`: docstring now states the qualified envelope
+  (no more "{0, 0} only" claim). Decoration fixes the horizons exposed: the
+  extended composition tables (`out`, `d10..c17`, length `n+bc+fc`) get the
+  calendar start shifted by the backcast (mirroring the core's negative-count
+  normalization locally), and `row_basis`/`available_rows` follow each table's
+  own length instead of pinning every preadjustment table to `n` (which made
+  `available_rows$out` overrun into NA indices once a backcast existed). At
+  zero horizons both changes are byte-identical to the previous decoration
+  (same `ts()` calls, same bases); the restricted wrapper and
+  `.x13_decorate_tables` are untouched.
+- `test-native-x13-automatic.R` (+20, 1167 → 1187): capability envelope re-pin
+  (schema 3L, retired marker, envelope wording), the horizon block upgraded
+  from shape-only to envelope acceptance (lengths, shifted tsp starts, row
+  basis, available rows, negative-horizon `forecast=-1` → 108 months with the
+  raw echo kept), and the fail-closed matrix untouched (horizons are no gate).
+- NEW `test-native-x13-horizon.R` (458 assertions): the 4-case JVM horizon
+  capture replay (quick_h6, ao_b3, multi_b3h6, so_h6). Evidence gate first
+  (SHA256SUMS.csv over the vendored bytes via `tools::sha256sum`, file set
+  pinned); then per case: decisions BIT (status, log/mean/orders,
+  mode_effective, horizon echo, variable identity, narma, neff), `a1` and
+  `d18` BIT claims, and every other boundary-exposed table against the
+  kCases band matrix transcribed from `tests/jvm_x13_automatic_horizon.h`
+  at f500162 — copied, never widened, gated per case (no cross-case pooling).
+  Landing coefficients/loglik/aicc reuse the existing zero-horizon bands
+  (2e-3 / 1e-2 / 2e-3, horizon-invariant upstream). The `a1a`/`a1b` and
+  `d11a..d18b` slices and `d8` do not cross this surface and stay inside the
+  core claim. Measured worsts (all inside band, largest occupancies): out
+  1.84e-7/2e-6, 2.69e-7/5e-6, 5.04e-7/1e-5, 1.05e-6/2e-5; d13 2.01e-4 vs
+  5e-3 (quick_h6); c17 6.97e-4 vs 1e-2 (so_h6); e2 5.61e-3 vs 1e-1 (ao_b3)
+  and 1.65e-2 vs 2e-1 (multi_b3h6); landing worst 3.05e-6 (2e-3).
+
+Shared gates on the edited tree: full suites **291,718 assertions / 0
+failures** (OpenMP lane, 50 files) and **291,714 / 0** (serial lane);
+**every pre-existing file per-file identical to the f500162 checkpoint**
+except the intended `test-native-x13-automatic.R` (+20) and the new horizon
+file. The 13-case harness reproduces its recorded worsts to the digit on the
+edited lane (3.42e-6, 7.42e-4, 8.09e-3, 3.05e-6, 9.75e-3, 5.04e-7, 4.48e-7;
+measured at `OMP_NUM_THREADS=4` as all lane baselines were — an unset thread
+count changes only the sub-band tail drift, never a verdict). All four serial
+markers hold (probe falls back, zero `-fopenmp` lines, no `GOMP_*`/`omp_*`
+symbols, `core_version()$parallel$compiled = FALSE`). Isolated no-Java
+verification passes with `--native` on the new build; `R CMD build` clean;
+`DESCRIPTION` License remains the sole `GPL (>= 3)`.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay

@@ -8,9 +8,13 @@
 # refused with an explicit error before anything runs, and the raw entry
 # answers the pinned fail-closed statuses verbatim. The X-11 block is the
 # decoder automatic surface: one "msr" request per calendar period and the
-# automatic Henderson length 0 are the pinned G4 facts, not user options, and
-# horizons: {0, 0} stays the only R-qualified domain (the core's 21-H.4 route
-# answers nonzero horizons since f500162 but is not yet R-qualified). Sigma: NULL (or omitted) receives the
+# automatic Henderson length 0 are the pinned G4 facts, not user options. The
+# X-11 horizons (item 21-H.4) are R-qualified over the horizon envelope: month
+# counts, a negative count meaning |h| annual frequencies (the core normalizes);
+# the initialStep route extends the downstream composition (out, d10..c17) on the
+# calendar shifted by the backcast, while the decision chain, the landing model
+# and the preadjustment inputs stay horizon-invariant
+# (capabilities()$automatic_fit$horizon_envelope). Sigma: NULL (or omitted) receives the
 # maintainer default "legacy" — the decision of 2026-11-17, applied here at
 # the interface while the core keeps its explicitness contract and the raw
 # entry still answers the pinned "unsupported:x13 fit requires an explicit
@@ -128,20 +132,34 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
   start<-if(!is.null(tsp_orig))
     c(floor(tsp_orig[1L]),as.integer(round((tsp_orig[1L]-floor(tsp_orig[1L]))*f))+1L)
     else c(as.integer(first_year),as.integer(start_period))
+  # The horizon calendars (item 21-H.4): the core normalizes a negative count to
+  # |h| annual frequencies (kAnnualFrequency at the initialStep route); the
+  # extended composition tables (out, d10..c17) carry bc months before the input
+  # calendar start, the n-length tables keep the start above unchanged.
+  bc_eff<-as.integer(backcast);if(bc_eff<0L)bc_eff<--bc_eff*12L
+  year_ordinal<-if(!is.null(tsp_orig))round(tsp_orig[1L]*f) else
+    as.integer(first_year)*f+as.integer(start_period)-1L
+  ext_start<-if(bc_eff>0L){o<-year_ordinal-bc_eff
+    c(floor(o/f),as.integer(o%%f)+1L)} else start
   if(!is.null(result[["preadjustment"]])) { # past the fail-closed guards
-    result$preadjustment$tables<-.x13_decorate_tables(result$preadjustment$tables,start,f)
-    result$preadjustment$row_basis<-rep(list(seq_along(y)),length(result$preadjustment$tables))
-    names(result$preadjustment$row_basis)<-names(result$preadjustment$tables)
-    result$preadjustment$available_rows<-lapply(names(result$preadjustment$tables),
-      function(name)result$preadjustment$row_basis[[name]][!is.na(result$preadjustment$tables[[name]])])
-    names(result$preadjustment$available_rows)<-names(result$preadjustment$tables)
+    basis<-list();avail<-list()
+    for(name in names(result$preadjustment$tables)) {
+      tab<-result$preadjustment$tables[[name]]
+      result$preadjustment$tables[[name]]<-stats::ts(tab,
+        start=if(length(tab)==length(y))start else ext_start,frequency=f)
+      basis[[name]]<-seq_along(tab)
+      avail[[name]]<-seq_along(tab)[!is.na(tab)]
+    }
+    result$preadjustment$row_basis<-basis
+    result$preadjustment$available_rows<-avail
   }
   if(!is.null(result[["selection"]])) { # the same record the selection wrapper delivers
     result$selection<-.x11_decorate_selection_record(result$selection,ordinal,f,length(y))
   }
   if(identical(result$status,"available")) {
     for(name in c("d10","d11","d12","d13","c17"))
-      result$results[[name]]<-stats::ts(result$results[[name]],start=start,frequency=f)
+      result$results[[name]]<-stats::ts(result$results[[name]],
+        start=if(length(result$results[[name]])==length(y))start else ext_start,frequency=f)
     result$finals$tables<-.x13_decorate_tables(result$finals$tables,start,f)
     for(name in c("finalSA","finalTrend","finalIrregular"))
       result[[name]]<-stats::ts(result[[name]],start=start,frequency=f)

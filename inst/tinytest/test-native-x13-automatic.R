@@ -345,7 +345,7 @@ local({
     expect_identical(names(af),c('schema_version','native_x13_fit_automatic','transform',
       'automodel','outliers','ami','regression','x11','monthly_only','frequency',
       'complete_finite_input_only','deferred','qualification','refusals','entry_points'))
-    expect_identical(af$schema_version,2L)
+    expect_identical(af$schema_version,3L,info='3L: x11 zero_horizon_only -> horizon_envelope (21-H.4)')
     expect_true(af$native_x13_fit_automatic)
     expect_identical(names(af$transform),c('auto_log_test','aicc_correction_required'))
     expect_true(af$transform$auto_log_test&&af$transform$aicc_correction_required)
@@ -356,7 +356,12 @@ local({
     expect_false(af$regression$user_detection)
     expect_identical(af$x11$sigma_policy_default,'legacy',info='maintainer 2026-11-17')
     expect_identical(af$x11$modes,c('additive','multiplicative','log_additive','pseudo_additive'))
-    expect_true(af$x11$msr_requests_pinned&&af$x11$automatic_henderson&&af$x11$zero_horizon_only)
+    expect_true(af$x11$msr_requests_pinned&&af$x11$automatic_henderson)
+    expect_null(af$x11$zero_horizon_only,info='the {0,0} marker retired with schema 3L')
+    expect_true(grepl('21-H.4',af$x11$horizon_envelope)&&
+      grepl('annual frequencies',af$x11$horizon_envelope)&&
+      grepl('downstream composition only',af$x11$horizon_envelope),
+      info='horizon_envelope states the qualified route (21-H.4)')
     expect_true(af$monthly_only);expect_identical(af$frequency,12L)
     expect_true(af$complete_finite_input_only)
     expect_true(grepl('21-I',af$deferred))
@@ -469,18 +474,44 @@ local({
       balanced=FALSE,mixed=TRUE,accept_white_noise=FALSE,eps=1e-7)),'whole number',
       info='automodel integer validation')
     expect_error(fit_case('quick',sigma=42),'legacy',info='sigma label validation')
-    # Since item 21-H.4 (core f500162) a nonzero horizon is no refusal: the
-    # core's initialStep route answers 'available' through this boundary.
-    # The R-qualified domain stays {0,0} (capabilities $zero_horizon_only,
-    # JVM horizon qualification is the next slice); this block pins only the
-    # route's shape, not its numbers.
-    r<-fit_case('quick',backcast=1)
+    # Item 21-H.4 horizon route at this boundary: accepted over the envelope
+    # (capabilities()$automatic_fit$horizon_envelope), qualified against the
+    # 4-case JVM horizon capture in test-native-x13-horizon.R. This block keeps
+    # the shape pins and adds the boundary decorations the horizons drive: the
+    # extended composition tables (out, d10..c17) lengthen by bc+fc months and
+    # start bc months before the input calendar; the a1/finals calendar stays.
+    r<-fit_case('quick',backcast=1,forecast=2)
     expect_identical(r$status,'available',info='horizon route answers (21-H.4)')
     expect_true(r$fitted)
     expect_false(is.null(r$model))
     expect_false(is.null(r$chain))
     expect_identical(as.integer(r$request$x11$backcast),1L)
+    expect_identical(as.integer(r$request$x11$forecast),2L,info='horizon echo raw')
     expect_identical(r$sigma_provenance,'accurate (explicit)')
+    expect_identical(length(r$preadjustment$tables$out),99L,info='out grows by bc+fc')
+    expect_identical(length(r$preadjustment$tables$a1),96L,info='adjustment stays on n')
+    expect_identical(stats::tsp(r$preadjustment$tables$out)[1L],1989+11/12,
+      info='extended tables start one month before the input calendar')
+    expect_identical(stats::tsp(r$preadjustment$tables$a1)[1L],1990,
+      info='n-length tables keep the input calendar')
+    expect_identical(stats::tsp(r$results$d10)[1L],1989+11/12,info='d10 shares the shift')
+    expect_identical(length(r$preadjustment$row_basis$out),99L,info='row basis follows out')
+    expect_identical(r$preadjustment$available_rows$out,seq_len(99L),
+      info='available rows complete on the extended calendar')
+    expect_true(length(r$results$d10)==99L&&length(r$results$c17)==99L)
+    expect_identical(length(r$finals$tables$d11final),96L,info='finals stay on n')
+    expect_identical(length(r$finalSA),96L)
+    expect_false(anyNA(unlist(r$preadjustment$available_rows)),
+      info='no index overrun in available_rows')
+    # The core normalizes a negative count to |h| annual frequencies; the
+    # decoration follows the normalized backcast.
+    nh<-fit_case('quick',forecast=-1)
+    expect_identical(nh$status,'available',info='negative horizon accepted (21-H.4)')
+    expect_identical(length(nh$preadjustment$tables$out),108L,
+      info='forecast=-1 means one annual frequency: 12 months')
+    expect_identical(as.integer(nh$request$x11$forecast),-1L,info='echo keeps the raw request')
+    expect_identical(stats::tsp(nh$preadjustment$tables$out)[1L],1990,
+      info='forecast-only horizons do not shift the start')
     expect_identical(fit_case('quick',calendar=TRUE)$status,
       'unsupported:x13 automatic fit defers calendar/easter/TD/user detection (21-I)')
     expect_identical(fit_case('quick',used=TRUE,span=c(2,95))$status,
