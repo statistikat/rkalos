@@ -1194,6 +1194,75 @@ lanes), re-synced, re-qualified here.
   `-fopenmp` lines, no `GOMP_*` in the installed `.so`,
   `core_version()$parallel$compiled = FALSE`).
 
+## Core pin f500162 — 21-H.4 horizon route pinned, fail-closed matrix mirrored — 2026-11-21
+
+- Infrastructure sync: the core pin advances
+  `b2573fc → f500162a3be1539803566f9bc8f071e0deb4f66b` (item 21-H.4, the
+  nonzero-horizon initialStep route, via the workflow-only 7564ce7) — 26
+  files, +3,102/−90 upstream. The six `src/`+`include/` changes
+  (`x13_automatic.{cpp,hpp}` horizon wiring incl. the estimation-block AR
+  sign correction, `x13_allocation.{cpp,hpp}` allocation-seam extensions,
+  NEW `kalos::arima_forecasts`) all sit **inside the compiled closure**
+  (`x13_automatic.cpp` has been compiled since M4); `kalos/src/
+  arima_forecasts.o` joins OBJECTS — `x13_allocation.cpp` now calls the
+  unit (link edge verified). Manifest advances to core **141**, fixtures
+  **112**, evidence **195** (five `native/x13-horizon` capture files);
+  lock schema 2 unchanged, `sync-core.py --verify` green pre/post, every
+  vendored file byte-identical against `git show f500162:…`.
+- **Qualification of the vendored pin itself** (fresh `git archive` trees
+  at exactly `f500162`, pinned OpenBLAS 0.3.34 provider, Release, built
+  with `LD_LIBRARY_PATH` unset, tested with it pointing at the provider's
+  `lib/`): **ctest 64/64 OpenMP and 64/64 serial** — incl.
+  `test_x13_automatic_horizon` (4 captures, 6,459 checks) and
+  `test_arima_forecasts`; the automatic sweep (71,401 checks) and the
+  13-case oracle (4,637 checks) pass unchanged, so zero-horizon semantics
+  are provably invariant at the new pin.
+- **Structural compiled-closure diff b2573fc → f500162** (roots = 64 core
+  OBJECTS sources + 37 boundary TUs, transitive include closure, 133
+  files): the drifting bytes are EXACTLY the six vendored files —
+  `x13_automatic.cpp` (horizon gating + the a1 sign fix; header change
+  comment-only), `x13_allocation.cpp` (horizon plumbing, new
+  `arima_forecasts` call), `x13_automatic.hpp` (comment-only),
+  `x13_allocation.hpp` (extended input structs), +`arima_forecasts.{cpp,
+  hpp}` — with **zero unexplained drift**; OBJECTS changed only by the
+  additive `arima_forecasts.o`; every boundary TU and both RcppExports
+  files are byte-identical to 0a56d1f. Results are nevertheless unchanged
+  at the existing surface because the corpus drives `backcast = forecast =
+  0` (zero-horizon code paths, invariant per the core's unchanged sweep +
+  oracle) and the a1 sign correction is bit-exact per the core's horizon
+  and zero-horizon oracles — confirmed at the R boundary below.
+- **Pinned fail-closed matrix drift, mirrored with maintainer sign-off.**
+  21-H.4 *delivers* the nonzero-horizon route on the automatic driver and
+  removed its `unsupported:x13 fit requires zero horizons` gate (the fixed
+  fit keeps refusing); the core mirrored its own `t01_status_matrix` in
+  the same commit. Three assertion sites in
+  `inst/tinytest/test-native-x13-automatic.R` were updated to the new
+  pinned matrix, count-preserving (file stays at 1,167 assertions):
+  horizon + missing policy now answers the sigma-gate refusal; the
+  guard-order case with a horizon present answers the 21-I defer refusal;
+  the wrapper horizon case now pins the *shape* of the delivered route
+  (`available`, fitted, model/chain non-NULL, horizon echoed in the
+  request), not its numbers. `capabilities()` keeps
+  `$automatic_fit$zero_horizon_only = TRUE` — R-side horizon qualification
+  against the four JVM captures is the next slice; the flag comment now
+  states that the refusal itself is gone.
+- **Harness + full suites (fresh tarball lanes built from the pinned
+  commit, default environment, provider via `KALOS_OPENBLAS_ROOT`,
+  object self-bound — zero dynamic BLAS/LAPACK references; R 4.5.3
+  toolchain).** 13-case automatic harness: **0 failures**, decisions
+  bit-identical to the JVM goldens, tier worsts equal to the b2573fc
+  checkpoint to the digit — display AICC 3.42e-6 (1e-5), diff t-mean
+  7.42e-4 (1e-3), ARMA panel BIC2 8.09e-3 (1e-2), landing coefficients
+  3.05e-6 (2e-3), ARMA landing 9.75e-3 (1e-2), tables 5.04e-7 rel (1e-6),
+  landing stats 4.48e-7 (2e-3). Full suites: **291,240 assertions, 0
+  failures** (OpenMP lane) and **291,236, 0 failures** (serial lane), both
+  **per-file identical to the 0a56d1f checkpoint** (49/49 files). All
+  four serial markers hold (probe falls back, zero `-fopenmp` lines, no
+  `GOMP_*`/`omp_*` symbols in the installed `.so`,
+  `core_version()$parallel$compiled = FALSE`). CI workflows moved to
+  `actions/checkout@v5`/`actions/setup-python@v6` (Node 24 runtimes,
+  mirroring kalos 7564ce7).
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay
