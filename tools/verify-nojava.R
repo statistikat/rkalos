@@ -22,6 +22,11 @@ stopifnot(!any(forbidden %in% loadedNamespaces()))
 cap <- capabilities()
 stopifnot(identical(cap$fit, FALSE), identical(cap$status, "unimplemented"))
 if ("--native" %in% args) {
+  rsa0 <- native_tramoseats_fit(datasets::AirPassengers)
+  trend_forecast <- with(rsa0$merged, values[[which(component == "Trend" & information == "Forecast")]])
+  stopifnot(identical(cap$tramo_seats_fit$templates, "RSA0"), identical(rsa0$status, "ok"),
+            identical(stats::tsp(rsa0$finalSA), stats::tsp(datasets::AirPassengers)),
+            length(trend_forecast) == 24L)
   convolve <- getFromNamespace(".native_convolve", "rkalos")
   difference <- getFromNamespace(".native_difference_polynomial", "rkalos")
   stopifnot(identical(convolve(c(1, -1), c(1, 1)), c(1, 0, -1)))

@@ -24,7 +24,10 @@ cases bit-for-bit. Custom spans, zero-horizon output, date preservation
 and refusal paths passed. A clean OpenMP source package check completed
 with zero errors and the existing Clang/R-header and floating-point flag
 warnings. The package overview example reproduced the full observed
-calendar and a 24-month trend forecast. Adjacent fitted-model, WK and first-round
+calendar and a 24-month trend forecast. The complete native smoke script
+passed in serial and OpenMP libraries isolated from the six forbidden
+Java-related R packages. The hosted CI smoke step also executes the full
+RSA0 fit before checking which namespaces it loaded. Adjacent fitted-model, WK and first-round
 differencing tests passed **718/718**, **7,369/7,369** and **142/142**.
 At the preceding published checkpoint `5f57f09`, the complete OpenMP
 suite passed **299,658/299,658** across 53 files.

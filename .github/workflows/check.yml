@@ -81,6 +81,8 @@ jobs:
         shell: Rscript {0}
         run: |
           library(rkalos, lib.loc=file.path("check", "rkalos.Rcheck"))
+          fit <- native_tramoseats_fit(datasets::AirPassengers)
+          stopifnot(identical(fit$status, "ok"), identical(tsp(fit$finalSA), tsp(datasets::AirPassengers)))
           stopifnot(!any(c("rJava", "rjd3toolkit", "rjd3x13", "rjd3tramoseats") %in% loadedNamespaces()))
           provider <- core_version()
           stopifnot(provider$provider == "OpenBLAS", provider$blas_integer_bits == 32L,
