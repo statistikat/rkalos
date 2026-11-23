@@ -71,5 +71,5 @@ seats_validate_horizons <- function(backcast, forecast, frequency, observations)
   counts[counts < 0] <- -counts[counts < 0] * frequency
   if (observations + sum(counts) > .Machine$integer.max)
     stop("The extended SEATS series exceeds the native index range.", call. = FALSE)
-  invisible(NULL)
+  as.integer(counts)
 }

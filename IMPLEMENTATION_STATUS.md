@@ -4,6 +4,22 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5/M6 RSA0 original-series forecast errors (2026-11-23)
+
+Version `0.1.0.9005` exposes the preprocessing `y_ef` projection as a
+dated `series_forecast_stdev`. Its companion status identifies available,
+zero-horizon and unavailable results. WK forecast uncertainty continues
+to appear in the `final` component table.
+
+The installed serial package passed **62/62** assertions on the paired
+six-case JVM capture and custom horizons. All **144** preprocessing
+values met the core's established `2e-8 * (1 + abs(reference))`
+tolerance. The largest absolute error was **2.42e-13**. The **144**
+corresponding WK series forecast standard deviations matched bit-for-bit.
+The adjacent raw RSA0 and fixed WK suites passed **498/498** and
+**7,369/7,369**.
+[Forecast-error replay](inst/tinytest/test-native-tramoseats-forecast-errors.R)
+
 ## M5 integration checkpoint for preprocessing forecast uncertainty (2026-11-23)
 
 Both locks and the CI tools use Kalos `2fe3d8e8c8b6bfeae9fa4224517e9e0c12228fe8`.

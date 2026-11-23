@@ -26,6 +26,8 @@ for the non-robust log/level decision. For a complete monthly series,
 seasonally adjusted series, trend, seasonal and irregular components.
 The `final` table includes component standard deviations and forecast
 uncertainty. The `merged` table contains the final product forecasts.
+For the preprocessing original-series forecast error (`y_ef`), use
+`series_forecast_stdev` and its `series_forecast_stdev_status` field.
 
 ```r
 fit <- rkalos::native_tramoseats_fit(AirPassengers, template = "RSA0")

@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9005 adds dated preprocessing standard errors for RSA0
+original-series forecasts, with a separate projection status.
+
 Version 0.1.0.9004 adds native monthly RSA0 estimation and decomposition
 from the observed series, including fitted likelihood, uncertainty and
 dated product forecasts and backcasts.

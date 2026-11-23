@@ -113,8 +113,12 @@ Rcpp::List native_tramoseats_rsa0(const std::vector<double>& series, int year, i
     const auto& fitted = result.preprocessing;
     const auto& model = fitted.model;
     const auto& decomposition = result.decomposition;
+    // Both projections receive the month counts normalized at the R boundary.
+    const auto errors = kalos::tramo_tr0_forecast_errors(fitted, forecast);
     return Rcpp::List::create(
         Rcpp::_["status"] = decomposition.extraction.fact("status"),
+        Rcpp::_["series_forecast_stdev_status"] = errors.status,
+        Rcpp::_["series_forecast_stdev"] = errors.standard_errors,
         Rcpp::_["model"] = Rcpp::List::create(
             Rcpp::_["d"] = model.d, Rcpp::_["bd"] = model.bd,
             Rcpp::_["orders"] = Rcpp::IntegerVector::create(

@@ -7,9 +7,14 @@ native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, bac
     stop("Native RSA0 requires complete finite monthly observations.", call. = FALSE)
   if (abs(domain$start[1L]) > .Machine$integer.max)
     stop("The RSA0 start year exceeds the supported native range.", call. = FALSE)
-  seats_validate_horizons(backcast, forecast, domain$frequency, length(series))
-  result <- .native_tramoseats_rsa0(as.numeric(series), domain$start[1L], domain$start[2L], backcast, forecast)
+  months <- seats_validate_horizons(backcast, forecast, domain$frequency, length(series))
+  result <- .native_tramoseats_rsa0(as.numeric(series), domain$start[1L], domain$start[2L], months[1L], months[2L])
   result <- seats_date_components(result, domain$frequency, c("initial", "final", "merged"))
+  if (length(result$series_forecast_stdev)) {
+    first <- domain$start_ordinal + length(series)
+    result$series_forecast_stdev <- stats::ts(result$series_forecast_stdev,
+      start = c(first %/% domain$frequency, first %% domain$frequency + 1), frequency = domain$frequency)
+  }
   result$template <- "RSA0"
   result$method <- "tramoseats"
   result$mode <- "additive"
