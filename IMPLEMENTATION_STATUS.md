@@ -1370,6 +1370,176 @@ symbols, `core_version()$parallel$compiled = FALSE`). Isolated no-Java
 verification passes with `--native` on the new build; `R CMD build` clean;
 `DESCRIPTION` License remains the sole `GPL (>= 3)`.
 
+## Core pin 0e064dd — CI-FDLIBM pinned transcendental surface vendored; landing re-rule qualified at the R boundary — 2026-11-23
+
+- Infrastructure sync: the core pin advances
+  `f500162 → 0e064dd18eb45568fc35e1bed337161598ace36f` (67 commits:
+  21-I.1 calendar_generation, 23-A..23-F TRAMO machines incl. the NEW
+  `kalos::tramo_fit` (UNCONSUMED here — consumer routing is a later M5
+  slice per plan; `capabilities()` byte-identical, `fit` stays FALSE),
+  24-C WK extraction, CI-FDLIBM transcendental pinning (ce896b0), CI-FIX-2
+  glibc-2.39 hostlineage vendoring + pinned CI). Lock schema 2; manifests
+  core **186** / fixtures **112** / evidence **331** (the +136 evidence dirs
+  carry the tramo/seats/calendar corpora). Lock-vs-manifest arithmetic:
+  kalos `check-manifest` reports 187 core entries INCLUDING `LICENSE` and
+  `LICENSE.md`; the r-kind vendoring rule (maintainer decision 2026-11-17:
+  R packages carry the license solely in DESCRIPTION) excludes both and the
+  export adds the generated `revision.hpp`: **187 − 2 + 1 = 186**. Every
+  lock entry byte-verified against `git show 0e064dd:…` (629 entries,
+  0 mismatches); `sync-core.py --verify` green pre/post. Pin mirrors:
+  `core.lock.json`, `inst/core.lock.json`, generated
+  `src/kalos/include/kalos/revision.hpp` (DESCRIPTION carries no SHA field).
+- **Compiled-closure diff (roots = 67 Makevars OBJECTS + transitive
+  includes; 136 files vs 132 at f500162):** 25 in-closure files changed
+  bytes, ALL attributed to the CI-FDLIBM/CI-FIX-2 family — (a) estimation
+  sites route to fdlibm JVM bytecode kernels (decided-log, likelihood/AICc
+  logs, tanh/atanh coordinate maps, selection-gate exp); (b) stub-lineage
+  claim sites route to the vendored glibc-2.39 kernels (`glibc_exp/log/…`,
+  machine-independent by construction); (c) the CI-FDLIBM landing re-rule
+  (`src/x13_automatic.cpp:553`: row-1/row-4 `base_request` solver
+  `Bfgs → EstimationSolver::PinnedLevenbergMarquardt`); (d) additive
+  23-B/23-F machines in `estimation_control`/`ssq_deviances` extending the
+  pinned-machine qualification envelope (no existing entry point changed).
+  NEW in-closure files: EXACTLY the 4 hostlineage TUs (joined via
+  `x11_pinned.hpp::log_domain` → `glibc_log` + the routed units), so
+  `hostlineage.o` + `hostlineage_tables.o` joined OBJECTS (link edge).
+  All 43 TRAMO/SEATS/calendar units — including the 23-C/23-D corrected
+  units and `tramo_fit` — stay OUTSIDE the compiled closure (unbound,
+  uncompiled): the 23-C/23-D semantics fixes CANNOT reach the x13 consumer
+  surface structurally, and the replay suites below prove the bits.
+- **Provider (vendored pin) qualification, fresh `git archive` trees at
+  0e064dd, pinned OpenBLAS 0.3.34, Release, built with `LD_LIBRARY_PATH`
+  unset, tested against the provider `lib/`: ctest 79/79 OpenMP (474 s)
+  and 79/79 serial (423 s)** — both warning-free; serial tree zero
+  `-fopenmp` lines. (64→79 tests: 21-I.1/23-A..F/24-C additions.)
+- **CI-FDLIBM landing re-rule — band-mirror adjudication at the R
+  boundary (explicit, measured, never silent).** The core re-ruled the
+  automatic row-1/row-4 landing (Bfgs → PinnedLevenbergMarquardt) and
+  re-pinned its oracle band `kTmeanBand` 1e-3 → **5e-3**
+  (`tests/test_x13_automatic_oracle.cpp:211` at 0e064dd; measured
+  3.1e-3 at `multi/diff0` RAW-BIT tier, deterministic, shims/hwcaps
+  no-ops; contract `x13-automatic-pipeline-contract.md` tier row +
+  CI-FDLIBM section; the only 5e-3 crossing — 6.25e-3 — is under the
+  SYNTHETIC lapack1@100 provider-headroom probe, outside the
+  qualification matrix). R-side re-measurement (instrumented probe = the
+  automatic test + per-row print, failure-collecting harness,
+  `OMP_NUM_THREADS=4`, TOTAL FAILURES 0): the 13 boundary-exposed
+  final-refine tmean rows MOVED TOWARD THE JVM — worst `multi`
+  7.423e-4 (the recorded checkpoint worst) → **8.562e-6**, `so`
+  7.56e-7 → 7.94e-8, and NINE rows (ao, ao_nodet, ls, rw, mode_mult,
+  mode_logadd, mode_pseudo + the zero rows) became BIT-IDENTICAL
+  (rel = 0); `d2/noout/quick/seas` unchanged at 0. NO row crosses the
+  existing R vector (1e-3): the worst row sits 117x inside it and 584x
+  inside the core's 5e-3. The R band vector therefore KEEPS
+  `diff-tmean = 1e-3` — STRICTER than the core's re-pinned 5e-3 by
+  measured right; raising it would relax the R lane 5x with zero
+  measurement basis (doctrine: never widen without measured basis). The
+  divergence is deliberate and documented here, not a stale mirror.
+- Tier worsts vs the f500162 checkpoint (13-case harness, OMP_NUM_THREADS=4,
+  all inside bands, all unchanged-or-tightened): display-aicc 3.42e-6/3.42e-6
+  (1e-5), diff-tmean 8.56e-6/7.42e-4 (1e-3), arma-panel 8.09e-3/8.09e-3
+  (1e-2), landing-coefficients 9.97e-7/3.05e-6 (2e-3), arma-landing
+  5.73e-4/9.75e-3 (1e-2), tables 2.28e-7/5.04e-7 (1e-6), landing-stats
+  1.8e-9/4.48e-7 (2e-3). The LM landing moved every trajectory quantity
+  closer to the JVM except display-aicc/arma-panel (unchanged to the digit).
+- **R lanes (fresh tarballs from the pinned commit, default environment,
+  provider via `KALOS_OPENBLAS_ROOT`, JVM 21 in the environment, object
+  self-bound — installed `.so` with zero NEEDED BLAS/LAPACK entries and
+  zero undefined `cblas_*`/`LAPACKE_*` symbols).** Full suites:
+  **291,718 assertions / 0 failures** (OpenMP lane, 50 files) and
+  **291,714 / 0** (serial lane); both per-file tables byte-compare IDENTICAL
+  to the b90d367 horizon checkpoint (m17 baselines), including the
+  documented conditional pair test-native-parallel.R 35->37 and
+  test-native-tramo-information.R 1580->1574 lane mapping. Serial markers
+  all four (probe falls back, zero `-fopenmp` lines, no `GOMP_*`/`omp_*`/
+  libgomp in the `.so`, `core_version()$parallel$compiled = FALSE` /
+  `openmp_version = 0`). Double capture: second independent
+  export->build->install (`rkalos_0.1.0-0e064dd-b.tar.gz`, `rlib-0e064dd-b`)
+  reproduces **291,718 / 0** with per-file table identical to both the
+  baseline and capture A (tarball bytes differ only by build timestamps;
+  `.so` bytes only by embedded build paths). JVM-free lane: isolated
+  library (464 packages, rJava/rjd3*/RProtoBuf/persephone3 provably
+  absent) — `tools/verify-nojava.R --native` PASS on the fresh build.
+  JVM-present lane: suites ran with the full rJava/rjd3 stack installed;
+  no Java package is ever loaded by rkalos.
+- **Non-deterministic guard flake — investigated, localized, UNRESOLVED
+  MECHANISM, reportable at every provenance outcome (loud section).**
+  One occurrence in ~5 full-suite sessions: serial-lane
+  `test-native-joint-information.R:53` byte-identity guard
+  (`expect_identical(serialize(context, NULL), original)` — the adapter
+  non-mutation contract) failed with the context serialization GROWING by
+  40 bytes (19,777 -> 19,817; 5,719 raw-byte mismatches); the delta was
+  forensically identified as `adjustment$local_rows` AND
+  `adjustment$source_rows` each serializing +5 integers — exactly the
+  five gap rows of the `*-gaps-log` case family. Every other assertion in
+  the same session (291,713 of them) passed; a full re-run of the
+  identical lane/env/table completed 291,714/0 baseline-identical, and the
+  OMP lane completed clean twice. Investigation (full log:
+  `tmp_opencode/0e064dd-anomaly-notes.md`): (i) ASAN lane — package tree
+  byte-identical to the qualified export except two Makevars.in sanitizer
+  flag lines, installed under `LD_PRELOAD=libasan.so.8` so ALL allocator
+  traffic (R included) is intercepted — reproduced the guard failure once
+  in ~14 un-instrumented-path file passes with ZERO sanitizer reports,
+  excluding instrumented-code buffer overflows (redzone hits are
+  synchronous). (ii) Serializer-instability hypothesis (compact-vs-materialized
+  ALTREP serialization) TESTED AND EXCLUDED on R 4.5.3: serialize() is
+  byte-stable across forcing accesses in every probed shape. (iii) Static
+  alias audit of the adapter surface: `objective_data`/`indices` copy every
+  input into fresh C++ containers; all raw `INTEGER()/REAL()/LOGICAL()`
+  uses are scalar reads; no retained `Rcpp::Vector`/`Reference` handles on
+  the failing path; the vendored core carries no R headers. (iv) Probe
+  loops: content-inspecting probes never fire (their pre-snapshot access
+  materializes the vectors — heisenbug); bare-file loops 15/15 clean
+  (new-pin serial), 8/8 clean (ASAN), 8/8 clean on the OLD f500162 serial
+  pin. Surviving hypotheses: legitimate in-bounds mutation through an
+  alias (ASAN-blind by construction) or an un-instrumented-writer overflow
+  (static OpenBLAS/libgfortran/R-internals) smashing SEXPREC length
+  headers — the single recorded hit's coherent +5-rows content slightly
+  favors the alias theory; decisive REF/length/content forensics are
+  armed post-failure-only (a full-suite serial witness with that probe
+  installed was running at entry time; its outcome, and the HEAD-tree
+  coexistence witness, are appended below as dated sub-entries when they
+  land).
+- Upstream commits between this pin commit and this entry (maintainer
+  pushes 2026-11-23, linear on top of 49e2b11; qualification lineage: the
+  suite numbers above belong to the tarball built at 49e2b11 — none of
+  these commits touch `src/kalos/**`, either lock, `revision.hpp`, the
+  band vector in `test-native-x13-automatic.R`, or the joint-information
+  surface, so the pin, the closure analysis and the anomaly witness above
+  all remain valid as recorded): `36fe2c0`/`ca6770f` review-record updates
+  (docs only); `c7b92d6` implements the review-file rkalos P1s at this
+  boundary (X-11 B/C/D adapter `values`-conflict fix, input validation
+  before integer conversion in the automatic wrapper + adapter span/budget
+  guards, provider-build probe + README/CI hardening; new validation
+  expectations in test-native-x13-automatic.R; `fixture_doubles` helper);
+  `50eee9f` monthly-only status with bounded decoder defaults;
+  `8a7d1ba` new public TRAMO-transform boundary — its
+  Makevars OBJECTS additions (`rcpp_tramo_transform.o` +
+  `kalos/src/tramo_transform_decision.o`) move ONE previously-out-of-
+  closure vendored unit INTO the compiled closure AT HEAD; the
+  all-43-units-out-of-closure statement above describes the tree AT this
+  pin commit and is unchanged by anything in this slice. `8a7d1ba` also
+  signals that consumer-side TRAMO routing has BEGUN upstream: the
+  `tramo_fit` vendored-unconsumed status recorded above is lineage-scoped
+  to this pin, and the routing slice will re-qualify against a later pin
+  when it lands. `8024ed9`
+  capability text; `2a7e650` test-side replay of frozen X-11/X-13 cases
+  with correctly rounded fixture parsing (`fixture_doubles` via
+  jsonlite). On the core side, kalos origin/main gained
+  `cb5c2de` (OpenBLAS selection validation + automatic-horizon bounds —
+  in-core implementations of two review P1s) plus four TRAMO/SEATS units
+  after this pin; adoption there is a separate merge slice; this slice
+  touches nothing in the core repo.
+- External review record (`adaption_in_the_implemetation_needed.md`,
+  2026-11-23, read at this pin): its rkalos-side P1s (selection-table
+  calendar, input validation before integer conversion, provider
+  provisioning/README, X-11 adapter macOS build) were acknowledged by this
+  slice as later-batch work and have SINCE been implemented upstream
+  (see commit dispositions above; the selection-table calendar item is
+  addressed by the horizon/decoder bounds work); this slice changed no
+  boundary R code, so none of them is affected by or affects the pin
+  advance.
+
 - **Witness sub-entries (2026-11-23, after the entry above):**
   (a) HEAD coexistence: a tarball built from `git archive` of upstream tip
   `2a7e650` (version 0.1.0.9001; includes this slice's vendored 0e064dd
