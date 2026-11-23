@@ -4,6 +4,18 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Windows checkout integrity for locked snapshots (2026-11-23)
+
+The Windows CI checkout converted the pinned Kalos text files to CRLF
+before `sync-core.py --verify`. A fresh Git checkout with
+`core.autocrlf=true` reproduced checksum changes in all 194 locked core
+files. Both locked export directories now preserve the exact blob bytes.
+A fresh Windows-style checkout passed verification for **194 core, 112
+fixture and 355 evidence files** while ordinary package sources still
+followed the platform checkout setting. At the previous `b6fb5f9`
+checkpoint the complete serial suite passed **301,906/301,906**.
+[Windows failure](https://github.com/statistikat/rkalos/actions/runs/45265672229/job/138011798506)
+
 ## M6 RSA0 residual normality in R (2026-11-23)
 
 Version `0.1.0.9009` returns the public Doornik–Hansen residual normality
