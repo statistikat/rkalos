@@ -56,7 +56,7 @@ tramo_tr0_result estimate_tramo_tr0(const std::vector<double>& series, int start
     if (!std::isfinite(fit.log_likelihood) || fit.coefficients[1].size() != 1 || fit.coefficients[3].size() != 1)
         throw std::runtime_error("estimate_tramo_tr0: estimation produced no likelihood point");
 
-    const auto dy = detail::pinned_backfilter_apply(
+    auto dy = detail::pinned_backfilter_apply(
         detail::pinned_differencing_polynomial(period, request.d, request.seasonal_d), series);
     const auto& theta = fit.coefficients[1];
     const auto& btheta = fit.coefficients[3];
@@ -73,6 +73,22 @@ tramo_tr0_result estimate_tramo_tr0(const std::vector<double>& series, int start
     result.log_likelihood = likelihood->log_likelihood;
     result.effective_observations = static_cast<int>(dy.size());
     result.estimated_parameters = estimated;
+
+    // RegArimaUtility.fullResiduals: remove drift from the stationary
+    // response, then run FastKalmanFilter.process on the fitted MA model.
+    for (double& v : dy) v -= result.mean_coefficient;
+    auto residuals = detail::pinned_fast_kalman_residuals(dy, 0, 0, 1, 1, period,
+                                                          {theta.front(), btheta.front()});
+    if (!residuals || residuals->size() != dy.size())
+        throw std::runtime_error("estimate_tramo_tr0: residual filter failed");
+    const auto start = TimeDomain(start_year, start_month, period, series.size()).at(difference_order);
+    result.residuals.start_year = start.first;
+    result.residuals.start_month = start.second;
+    result.residuals.values = std::move(*residuals);
+    // TsResiduals excludes the regression and free ARMA parameters from
+    // its degrees of freedom. The fitted variance counts separately.
+    result.residuals.standard_error = std::sqrt(result.residual_ssq /
+        (result.effective_observations - (estimated - 1)));
     auto& model = result.model;
     model.series = std::move(description.interpolated);
     model.start_year = start_year;

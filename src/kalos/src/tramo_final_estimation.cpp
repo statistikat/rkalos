@@ -9,6 +9,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -355,14 +356,17 @@ std::vector<double> hr_start_to_jvm(const std::array<std::vector<double>, 4>& c)
     return jvm;
 }
 
-} // namespace
-
-TramoFinalEstimatorRunResult tramo_final_estimator_run(
-    const TramoFinalEstimatorRunRequest& request) {
-    if (request.n <= 0) {
+TramoFinalEstimatorRunResult run_final_estimator(
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>* observations) {
+    if (observations && (observations->size() > static_cast<std::size_t>(std::numeric_limits<int>::max()) ||
+        (request.n != 0 && static_cast<std::size_t>(request.n) != observations->size()))) {
+        refuse("response length does not match the supplied observations");
+    }
+    const int n = observations ? static_cast<int>(observations->size()) : request.n;
+    if (n <= 0) {
         refuse("the response length must be positive");
     }
-    if (request.family == TramoEstFamily::TwoOutliers && request.n <= 60) {
+    if (!observations && request.family == TramoEstFamily::TwoOutliers && n <= 60) {
         refuse("the TwoOutliers family reaches past the response");
     }
     if (!std::isfinite(request.eps) || request.eps <= 0.0
@@ -381,10 +385,10 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
             }
         }
     }
-    if (orders.d + 12 * orders.bd >= request.n) {
+    if (orders.d + 12LL * orders.bd >= n) {
         refuse("the differencing consumes the response");
     }
-    if (request.mean && request.n - orders.d - 12 * orders.bd <= 1) {
+    if (request.mean && n - orders.d - 12 * orders.bd <= 1) {
         refuse("the differenced design needs a non-trivial response");
     }
 
@@ -392,7 +396,15 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
     // column, the specification (orders + arima parameters, empty while the
     // arima_ field is nulled behind a setSpecification) and the estimation
     // slot (0 null, 1 full with point, 2 zero-parameter).
-    const std::vector<double> y = est_family_series(request.family, request.n);
+    std::vector<double> family_series;
+    if (observations) {
+        for (double v : *observations)
+            if (!std::isfinite(v))
+                refuse("the model-scale observations must be finite");
+    } else {
+        family_series = est_family_series(request.family, n);
+    }
+    const auto& y = observations ? *observations : family_series;
     const int period = 12;
     const auto differencing = [&] {
         return detail::pinned_differencing_polynomial(period, orders.d, orders.bd);
@@ -456,7 +468,7 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
         // m.estimate(computer): ModelDescription.estimate over
         // desc.regarima() with RegSarimaComputer
         // (minimizer LM, precision eps, computeExactFinalDerivatives true).
-        const int dly_size = request.n - orders.d - 12 * orders.bd;
+        const int dly_size = n - orders.d - 12 * orders.bd;
         const auto dly = detail::pinned_backfilter_apply(differencing(), y);
         std::vector<std::vector<double>> design_cols; // machine (differenced-domain) view
         if (request.mean) {
@@ -507,10 +519,10 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
 
         SarimaEstimationRequest est_request;
         est_request.series.values = y;
-        est_request.series.missing.assign(static_cast<std::size_t>(request.n), 0);
+        est_request.series.missing.assign(static_cast<std::size_t>(n), 0);
         if (request.mean) {
             est_request.design.columns = 1;
-            est_request.design.values.assign(static_cast<std::size_t>(request.n), 1.0);
+            est_request.design.values.assign(static_cast<std::size_t>(n), 1.0);
             est_request.design.coefficients.assign(1, 0.0);
             est_request.design.fixed.assign(1, 0);
         } else {
@@ -716,6 +728,18 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
             return finish(false, 0);
         }
     }
+}
+
+} // namespace
+
+TramoFinalEstimatorRunResult tramo_final_estimator_run(
+    const TramoFinalEstimatorRunRequest& request) {
+    return run_final_estimator(request, nullptr);
+}
+
+TramoFinalEstimatorRunResult tramo_final_estimator_run(
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>& model_series) {
+    return run_final_estimator(request, &model_series);
 }
 
 } // namespace kalos

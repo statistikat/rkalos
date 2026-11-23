@@ -35,8 +35,8 @@
 //    derived from the seam stream and its result compared bit-exactly with
 //    the seam fact the kernel machine already validated (result,
 //    specification, mean, picks, module events). Envelope-excluded seams
-//    (outlier-column warm-ML differencing states, the estimateModel
-//    attempts outside the F.2 family domain) are recorded fact-only,
+//    (outlier-column warm-ML differencing states and final estimation
+//    attempts without a qualified entry design) are recorded fact-only,
 //    never approximated;
 //  * the final surface with the D9 coefficient covariance: the regression
 //    block covariance is recomputed natively as unscaledCovariance *
@@ -132,7 +132,7 @@ struct TramoFitSpec {
     double ub1 = 0.97, ub2 = 0.91;
     // EstimateSpec.
     double precision = 1e-7;            // EstimateSpec.getTol()
-    double intermediate_precision = 1e-7;
+    double intermediate_precision = 1e-5;
     // RegressionSpec.
     bool mean_is_test = false;          // RegressionSpec.getMean().isTest()
     bool mean_used = true;              // RegressionSpec.getMean().isUsed()
@@ -153,6 +153,7 @@ struct TramoFitSpec {
     // templates register SarimaSpec.AIRLINE, which is request data the
     // b512ec2 shape did not carry. Unused (period 0) under auto modelling.)
     tramo_sarima_spec fixed_arima;
+    double final_unit_root_threshold = 0.96; // EstimateSpec.getUbp()
 };
 
 // One differencing/arma/scan seam of the cross-check record: which landed
@@ -229,9 +230,12 @@ struct TramoFitSeamInputs {
     int pass = 0, round = 0;            // kernel fields at the call
     int entry_nobs = 0;                 // regarima().getObservationsCount()
     // arma seams (the 23-D contract owns them as the JVM-pinned hand-over):
-    std::vector<double> ols_residuals;  // optional verification when the entry has only a mean or no regressors
+    std::vector<double> ols_residuals;  // optional verification when every entry regressor can be reconstructed
     int nobs = 0;                       // regarima().getObservationsCount()
     int spc = -1;                       // the comespa gate readout (-1: none)
+    // Optional ordered, dated AO/LS design at ARMA entry. Coefficients are
+    // re-estimated by OLS, and any supplied raw column must match its factory.
+    std::vector<TramoFitVariable> entry_variables{};
 };
 
 struct TramoFitRequest {

@@ -23,6 +23,9 @@ enum class OutlierType : int {
     SeasonalOutlier = 3,
 };
 
+// Monthly IOutlier.defaultName for a zero-based position on the original calendar.
+std::string monthly_outlier_name(OutlierType type, std::size_t position, int first_year, int first_month);
+
 // ---- Critical values -------------------------------------------------------
 // standard_normal_lower_cdf is the pinned jdplus Utility.intProbability
 // Cody/branch transcription for the lower tail (THRSH = 0.66291, the 0/1/2

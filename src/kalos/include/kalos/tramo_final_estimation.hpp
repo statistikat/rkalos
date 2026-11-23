@@ -275,6 +275,12 @@ struct TramoFinalEstimatorRunResult {
 TramoFinalEstimatorRunResult tramo_final_estimator_run(
     const TramoFinalEstimatorRunRequest& request);
 
+// Run the same monthly estimator on complete observations in the model's
+// level/log channel, with an optional mean. n may be zero (inferred) or
+// equal the series length. The synthetic family setting is unused.
+TramoFinalEstimatorRunResult tramo_final_estimator_run(
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>& model_series);
+
 } // namespace kalos
 
 #endif

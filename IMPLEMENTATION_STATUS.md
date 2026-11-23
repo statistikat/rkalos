@@ -4,6 +4,14 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 integration checkpoint for RSA0 preprocessing residuals (2026-11-23)
+
+Both locks and the CI tools pin Kalos `5c95dc158324e76243d1d7e161d993651edff57b`.
+The core exposes dated public RSA0 residuals and their scalar standard
+error. Offline verification passed for **192 core, 112 fixture and 345
+evidence files**. The checkpoint includes the six-case public JVM
+residual capture and intervening live automatic-TRAMO estimation changes.
+
 ## M5/M6 RSA0 original-series forecast errors (2026-11-23)
 
 Version `0.1.0.9005` exposes the preprocessing `y_ef` projection as a

@@ -21,10 +21,13 @@
 
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/detail/ssq_deviances.hpp"
+#include "kalos/outlier_scoring.hpp"
 #include "mlj_engine.hpp"
 
 #include <kalos/tramo_arma_selection.hpp>
 #include <kalos/tramo_differencing_decision.hpp>
+#include <kalos/tramo_final_estimation.hpp>
+#include <kalos/tramo_outlier_rounds.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -61,6 +64,36 @@ std::vector<double> differenced_response(std::vector<double> y, bool log, int pe
     return result;
 }
 
+std::vector<double> arma_residuals(const tramo_build_result& built, bool log,
+                                    const TramoFitSeamInputs& in) {
+    const int period = built.annual_frequency;
+    const int d = in.entry_orders.d, bd = in.entry_orders.bd;
+    auto y = differenced_response(built.interpolated, log, period, d, bd);
+    std::vector<std::vector<double>> columns;
+    if (in.entry_mean) columns.emplace_back(y.size(), 1.0);
+    require(in.entry_variables.size() == in.entry_outliers.size(), "incomplete ARMA entry design");
+    for (std::size_t j = 0; j < in.entry_variables.size(); ++j) {
+        const auto& var = in.entry_variables[j];
+        require(var.name == in.entry_outliers[j] && var.position >= 0 &&
+                    static_cast<std::size_t>(var.position) < built.interpolated.size(),
+                "invalid ARMA entry outlier name or position");
+        require(var.type == TramoOutlierKind::Ao || var.type == TramoOutlierKind::Ls,
+                "ARMA entry design requires AO or LS");
+        std::vector<double> column(built.interpolated.size());
+        const auto type = var.type == TramoOutlierKind::Ao ? OutlierType::Additive : OutlierType::LevelShift;
+        fill_outlier_column(type, var.position, period, 0., column);
+        require(var.column.empty() || var.column == column, "ARMA outlier column disagrees with factory");
+        columns.push_back(differenced_response(std::move(column), false, period, d, bd));
+    }
+    if (columns.empty()) return y;
+    const auto beta = detail::pinned_ols_coefficients(y, columns);
+    require(beta && beta->size() == columns.size(), "ARMA input regression failed");
+    for (std::size_t j = 0; j < columns.size(); ++j)
+        for (std::size_t i = 0; i < y.size(); ++i)
+            y[i] += -(*beta)[j] * columns[j][i];
+    return y;
+}
+
 std::string stage_word(TramoKernelStageResult r) {
     switch (r) {
         case TramoKernelStageResult::changed: return "Changed";
@@ -79,6 +112,72 @@ std::string orders_word(const TramoOrders& o) {
 
 bool orders_equal(const TramoOrders& a, const TramoOrders& b) {
     return orders_word(a) == orders_word(b);
+}
+
+void check_scan(const TramoFitSpec& spec, const tramo_build_result& built, bool log,
+                const TramoFitSeamInputs& in, const TramoKernelSeam& expected) {
+    TramoOutlierScanRequest request{};
+    request.y = built.interpolated;
+    request.frequency = built.annual_frequency;
+    request.mean = in.entry_mean;
+    request.log = log;
+    const auto& o = in.entry_orders;
+    request.p = o.p;
+    request.d = o.d;
+    request.q = o.q;
+    request.bp = o.bp;
+    request.bd = o.bd;
+    request.bq = o.bq;
+    request.ao = spec.ao;
+    request.ls = spec.ls;
+    request.tc = spec.tc;
+    request.so = spec.so;
+    request.tc_rate = spec.delta_tc;
+    request.precision = spec.intermediate_precision;
+    request.maximum_likelihood = spec.outliers_ml;
+    // The pinned builder stores its two default caps in crossed fields.
+    request.max_round = 30;
+    request.max_outliers = 50;
+    request.cv = expected.critical_value;
+    request.upper_bound = built.estimation_length;
+    const auto scan = tramo_outlier_rounds(request);
+    const auto outcome = scan.status == TramoOutlierRoundsResult::Status::Failed ? TramoKernelStageResult::failed :
+        scan.outliers.empty() ? TramoKernelStageResult::unchanged : TramoKernelStageResult::changed;
+    require(outcome == expected.result, "live scan outcome disagrees with the module witness");
+    std::vector<OutlierType> factories;
+    if (spec.ao) factories.push_back(OutlierType::Additive);
+    if (spec.ls) factories.push_back(OutlierType::LevelShift);
+    if (spec.tc) factories.push_back(OutlierType::TransitoryChange);
+    if (spec.so) factories.push_back(OutlierType::SeasonalOutlier);
+    std::vector<std::string> names;
+    for (const auto& selected : scan.outliers)
+        names.push_back(monthly_outlier_name(factories.at(selected[1]), selected[0],
+                                            built.domain_year, built.domain_position + 1));
+    require(names == expected.outliers, "live scan selection disagrees with the ordered outlier witness");
+    require(orders_equal(o, expected.orders) && expected.mean == in.entry_mean,
+            "live scan description disagrees with the module witness");
+}
+
+void check_final_estimation(const TramoFitSpec& spec, const std::vector<double>& y,
+                            const TramoKernelSeam& entry, const TramoKernelSeam& expected) {
+    TramoFinalEstimatorRunRequest options;
+    const auto& o = entry.orders;
+    options.orders = {o.p, o.d, o.q, o.bp, o.bd, o.bq};
+    options.mean = entry.mean;
+    options.eps = spec.precision;
+    options.ur = spec.final_unit_root_threshold;
+    options.pass = expected.pass_at_call;
+    options.ami = spec.using_auto_model;
+    options.outliers = spec.outliers_used;
+    const auto estimate = tramo_final_estimator_run(options, y);
+    const auto& t = estimate.orders_after;
+    require(estimate.returned == (expected.returned != 0) && estimate.nnsig == expected.nnsig,
+            "live final estimation decision disagrees with the module witness");
+    require(orders_equal({t.p, t.d, t.q, t.bp, t.bd, t.bq}, expected.orders) &&
+            expected.outliers.empty(), "live final estimation specification disagrees with the witness");
+    require(std::equal(estimate.parameters_after.begin(), estimate.parameters_after.end(),
+                       expected.parameters.begin(), expected.parameters.end(), bit_equal),
+            "live final estimation parameters disagree with the module witness");
 }
 
 bool outliers_equal(const std::vector<std::string>& a,
@@ -301,6 +400,21 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
             ctx_seasonal = seam.seasonal_after;
             continue;
         }
+        if (seam.kind == TramoKernelSeamKind::estimation_model) {
+            TramoFitSeamCheck check{s, "final_estimator_run", "fact", "entry regression design unavailable"};
+            if (!has_fixed_regressors && s > 0 && seams[s - 1].kind == TramoKernelSeamKind::scan &&
+                seams[s - 1].outliers.empty()) {
+                const auto y = differenced_response(built.interpolated, prestage.log, built.annual_frequency, 0, 0);
+                check_final_estimation(spec, y, seams[s - 1], seam);
+                check.tier = "live";
+                check.note = "match final estimation decision, orders and parameters";
+                ++result.seams_live;
+            } else {
+                ++result.seams_fact;
+            }
+            result.seam_checks.push_back(std::move(check));
+            continue;
+        }
         if (seam.kind != TramoKernelSeamKind::differencing &&
             seam.kind != TramoKernelSeamKind::arma &&
             seam.kind != TramoKernelSeamKind::scan)
@@ -341,7 +455,8 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
             break;
         }
 
-        const bool only_optional_mean = in.entry_outliers.empty() && !has_fixed_regressors;
+        const bool can_derive_arma = !has_fixed_regressors &&
+            (in.entry_outliers.empty() || !in.entry_variables.empty());
         if (seam.kind == TramoKernelSeamKind::differencing &&
             in.entry_outliers.empty() && !spec.outliers_ml &&
             in.round == 1) {
@@ -399,18 +514,17 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
             check.tier = "live";
             check.note = "match " + stage_word(mapped) + " " +
                          orders_word(post);
+        } else if (seam.kind == TramoKernelSeamKind::scan && !has_fixed_regressors &&
+                   in.entry_outliers.empty() &&
+                   (in.entry_orders.d > 0 || in.entry_orders.bd > 0)) {
+            check_scan(spec, built, prestage.log, in, seam);
+            check.tier = "live";
+            check.note = "match " + stage_word(seam.result) + ", ordered outlier selection";
         } else if (seam.kind == TramoKernelSeamKind::arma &&
-                   (only_optional_mean || !in.ols_residuals.empty())) {
+                   (can_derive_arma || !in.ols_residuals.empty())) {
             TramoArmaSelectionRequest areq;
-            if (only_optional_mean) {
-                areq.residuals = differenced_response(built.interpolated, prestage.log,
-                    spec.annual_frequency, in.entry_orders.d, in.entry_orders.bd);
-                if (in.entry_mean) {
-                    const auto beta = detail::pinned_ols_coefficients(areq.residuals,
-                        {std::vector<double>(areq.residuals.size(), 1.0)});
-                    require(beta && beta->size() == 1, "ARMA input mean regression failed");
-                    for (auto& value : areq.residuals) value -= beta->front();
-                }
+            if (can_derive_arma) {
+                areq.residuals = arma_residuals(built, prestage.log, in);
                 areq.nobs = built.estimation_length;
                 if (!in.ols_residuals.empty()) {
                     require(areq.nobs == in.nobs && areq.residuals.size() == in.ols_residuals.size() &&
@@ -462,9 +576,7 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
             check.tier = "fact";
             if (seam.kind == TramoKernelSeamKind::scan)
                 check.note =
-                    "the outliers machine is qualified in the "
-                    "tramo-outlier-rounds corpus; the fit seam rides as a "
-                    "fact (curva witness)";
+                    "outside the live scan design or differencing envelope";
             else if (seam.kind == TramoKernelSeamKind::arma)
                 check.note = "no olsResiduals hand-over captured";
             else

@@ -8,9 +8,37 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 
 namespace kalos {
+
+std::string monthly_outlier_name(OutlierType type, std::size_t position,
+                         int first_year, int first_period) {
+  const char* code = "AO";
+  switch (type) {
+    case OutlierType::Additive: code = "AO"; break;
+    case OutlierType::LevelShift: code = "LS"; break;
+    case OutlierType::TransitoryChange: code = "TC"; break;
+    case OutlierType::SeasonalOutlier: code = "SO"; break;
+  }
+  const auto index = first_period - 1 + static_cast<std::int64_t>(position);
+  const auto year = first_year + index / 12;
+  const int month = index % 12 + 1;
+  std::ostringstream stream;
+  if (year < 0) {
+    stream << '-';
+  }
+  const unsigned magnitude = year < 0 ? static_cast<unsigned>(-year)
+                                      : static_cast<unsigned>(year);
+  if (magnitude < 10) stream << "000";
+  else if (magnitude < 100) stream << "00";
+  else if (magnitude < 1000) stream << '0';
+  stream << magnitude << '-';
+  if (month < 10) stream << '0';
+  stream << month << "-01";
+  return std::string(code) + " (" + stream.str() + ")";
+}
 
 namespace {
 

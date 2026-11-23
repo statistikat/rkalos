@@ -2,7 +2,17 @@
 
 #include "kalos/tramo_seats_model_validator.hpp"
 
+#include <cstdint>
+
 namespace kalos {
+
+// Public preprocessing residuals (residuals.tsres and residuals.ser).
+struct tramo_tr0_residuals {
+    std::int64_t start_year = 0;
+    int start_month = 0;
+    std::vector<double> values;
+    double standard_error = 0;
+};
 
 // Fitted projection consumed by the monthly RSA0 decomposition. The model
 // carries the two estimated MA coefficients, date, observations and variance.
@@ -13,6 +23,7 @@ struct tramo_tr0_result {
     double residual_ssq = 0;
     int effective_observations = 0;
     int estimated_parameters = 0;
+    tramo_tr0_residuals residuals;
 };
 
 // The fully specified TR0 airline model estimates both MA coefficients and

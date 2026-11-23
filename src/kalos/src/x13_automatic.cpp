@@ -49,7 +49,6 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -159,39 +158,6 @@ double ma_evaluate_at_1(const std::vector<double>& maK) {
 int arma_dim_of(const std::array<std::vector<double>, 4>& blocks) {
   return static_cast<int>(blocks[0].size() + blocks[1].size() +
                           blocks[2].size() + blocks[3].size());
-}
-
-// ---------------------------------------------------------------------------
-// Period labels / outlier names. IOutlier.defaultName(code, period) probed
-// through jshell: "AO (1951-05-01)" for TsPeriod.monthly(1951, 5); the
-// monthly day is always 01.
-// ---------------------------------------------------------------------------
-
-std::string outlier_name(OutlierType type, std::size_t position,
-                         int first_year, int first_period) {
-  const char* code = "AO";
-  switch (type) {
-    case OutlierType::Additive: code = "AO"; break;
-    case OutlierType::LevelShift: code = "LS"; break;
-    case OutlierType::TransitoryChange: code = "TC"; break;
-    case OutlierType::SeasonalOutlier: code = "SO"; break;
-  }
-  const auto index = first_period - 1 + static_cast<std::int64_t>(position);
-  const auto year = first_year + index / 12;
-  const int month = index % 12 + 1;
-  std::ostringstream stream;
-  if (year < 0) {
-    stream << '-';
-  }
-  const unsigned magnitude = year < 0 ? static_cast<unsigned>(-year)
-                                      : static_cast<unsigned>(year);
-  if (magnitude < 10) stream << "000";
-  else if (magnitude < 100) stream << "00";
-  else if (magnitude < 1000) stream << '0';
-  stream << magnitude << '-';
-  if (month < 10) stream << '0';
-  stream << month << "-01";
-  return std::string(code) + " (" + stream.str() + ")";
 }
 
 // SaVariable.defaultComponentTypeOf(IOutlier), re-derived from the bytecode
@@ -877,7 +843,7 @@ class AutomaticPipeline {
         variable.position = decision.position;
         variable.effect = outlier_effect(decision.type);
         variable.name =
-            outlier_name(decision.type, decision.position,
+            monthly_outlier_name(decision.type, decision.position,
                          request_.first_year, request_.first_period);
         model_.desc.variables.push_back(std::move(variable));
       }
