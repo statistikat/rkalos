@@ -68,13 +68,14 @@ tramo_seats_model_request make_tramo_seats_model(const TramoFitResult& fit) {
 
     std::vector<double> effect(input.size(), 0.0);
     for (const auto& var : fit.variables) {
-        require(var.type == TramoOutlierKind::Ao || var.type == TramoOutlierKind::Ls,
-                "only AO and LS effects are qualified");
+        require(var.type == TramoOutlierKind::Ao || var.type == TramoOutlierKind::Ls ||
+                (var.type == TramoOutlierKind::Tc && var.tc_rate == 0.7),
+                "qualified effects are AO, LS and TC with monthly decay 0.7");
         require(var.position >= 0 && static_cast<std::size_t>(var.position) < input.size() &&
                 std::isfinite(var.coefficient), "invalid fitted outlier");
         std::vector<double> column(input.size(), 0.0);
-        const auto type = var.type == TramoOutlierKind::Ao ? OutlierType::Additive : OutlierType::LevelShift;
-        fill_outlier_column(type, static_cast<std::size_t>(var.position), 12, 0.0, column);
+        fill_outlier_column(static_cast<OutlierType>(var.type), static_cast<std::size_t>(var.position),
+                            12, var.tc_rate, column);
         require(var.column.empty() || var.column == column, "outlier column disagrees with its factory");
         for (std::size_t i = 0; i < input.size(); ++i) effect[i] += var.coefficient * column[i];
     }

@@ -4,6 +4,13 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 integration checkpoint for monthly transitory changes (2026-11-24)
+
+Kalos `bf5c08f1fafc5c8a6729b94213f40e520e12ef7a` supplies stock
+monthly TC restoration on both model scales and a paired four-case
+public oracle. Both locks and the CI toolchain agree. Offline verification
+passed for **194 core, 112 fixture and 363 evidence files**.
+
 ## M5 additive AO and LS effects in R (2026-11-24)
 
 Version `0.1.0.9012` restores additive outlier effects in both

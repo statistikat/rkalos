@@ -43,7 +43,7 @@ bool orders_equal(const TramoOrders& a, const TramoOrders& b) {
 }
 
 // desc.arima().phi(1) / bphi(1) over the carried parameter vector
-// [phi(p)..., theta(q)..., bphi(bp)..., btheta(bq)...] (the p2dbg pars
+// [phi(p)..., bphi(bp)..., theta(q)..., btheta(bq)...] (the p2dbg pars
 // line). The shape guards read the coefficient only when the matching
 // order is 1; no kr corpus case reaches a guard (all 34 gate echoes
 // keep), so this indexing is decode-qualified, not corpus-witnessed.
@@ -455,8 +455,7 @@ TramoKernelRoundsRun tramo_run_kernel_rounds(
                             ? arima_phi(0, fact.parameters)
                             : 0.0;
             gate.bphi1 = fact.arima_orders.bp >= 1
-                             ? arima_phi(fact.arima_orders.p +
-                                             fact.arima_orders.q,
+                             ? arima_phi(fact.arima_orders.p,
                                          fact.parameters)
                              : 0.0;
             gate.ljung_box_complement = 1.0 - fact.stats.ljung_box_pvalue;
@@ -501,6 +500,9 @@ TramoKernelRoundsRun tramo_run_kernel_rounds(
             d.curva_after = g.curva;
             d.need_auto_modelling_after = g.need_auto_modelling;
             d.need_outliers_after = g.need_outliers;
+            d.orders_after = g.orders_after;
+            d.mean_after = g.mean_after;
+            d.outliers_after = g.outliers_after;
 
             // JVM-echoed verdict cross-checks (the rule id rides as
             // data; the landed 23-E corpus owns the A..F attribution).

@@ -102,6 +102,7 @@ struct TramoFitVariable {
     int position = 0;
     double coefficient = 0.0;
     std::vector<double> column;
+    double tc_rate = 0.7;  // monthly decay for extrapolating a fitted transitory change
 };
 
 // The resolved TramoSpec scalars of the fit request (one-for-one with the

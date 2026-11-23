@@ -8,5 +8,6 @@
     "jdplus-tramoseats-base-api-3.9.0.jar": "9efd66f0581da262309ec5beb74afc6ace7e54402706cb13db62a23ffc7fb5b8",
     "jdplus-tramoseats-base-core-3.9.0.jar": "f919fda9f88dcae01bc122f049889ba1ac37747cc409a1f9fdf793ac4bb09db9"
   },
-  "inputs_sha256": "be09660e3a75442523856c31dde7ba3eea3f15e6c6920cc11e5f49b54a5d422f"
+  "inputs_sha256": "be09660e3a75442523856c31dde7ba3eea3f15e6c6920cc11e5f49b54a5d422f",
+  "calendar_inputs_sha256": "b3ef12f5fcfca445444b0c28d679f26be290366178314b2ec95632dc8d96603f"
 }

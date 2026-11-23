@@ -63,8 +63,8 @@ std::vector<Row> merge(const std::vector<double>& original, const std::vector<Tr
         const bool ls = var.type == TramoOutlierKind::Ls;
         auto& target = ls ? trend : irregular;
         std::vector<double> column(target.size());
-        fill_outlier_column(ls ? OutlierType::LevelShift : OutlierType::Additive,
-                            nb + static_cast<std::size_t>(var.position), 12, 0, column);
+        fill_outlier_column(static_cast<OutlierType>(var.type),
+                            nb + static_cast<std::size_t>(var.position), 12, var.tc_rate, column);
         for (std::size_t i = 0; i < column.size(); ++i) target[i] += column[i] * var.coefficient;
     }
     if (model.log) {
