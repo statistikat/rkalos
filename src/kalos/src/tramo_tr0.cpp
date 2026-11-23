@@ -2,6 +2,8 @@
 
 #include "kalos/detail/ssq_deviances.hpp"
 #include "kalos/estimation_control.hpp"
+#include "kalos/forecast_information.hpp"
+#include "kalos/preparation.hpp"
 #include "kalos/tramo_model_builder.hpp"
 
 #include <algorithm>
@@ -84,6 +86,53 @@ tramo_tr0_result estimate_tramo_tr0(const std::vector<double>& series, int start
     if (model.innovation_variance == 0)
         throw std::runtime_error("estimate_tramo_tr0: fitted innovation variance underflow");
     return result;
+}
+
+tramo_tr0_forecast_errors_result tramo_tr0_forecast_errors(const tramo_tr0_result& fit, int months) {
+    const auto& model = fit.model;
+    if (months < 0) throw std::invalid_argument("tramo_tr0_forecast_errors: negative forecast count");
+    if (model.frequency != 12 || model.period != 12 || model.d != 1 || model.bd != 1 || model.log ||
+        !model.mean_correction || !model.phi.empty() || !model.bphi.empty() ||
+        model.theta.size() != 1 || model.btheta.size() != 1)
+        throw std::invalid_argument("tramo_tr0_forecast_errors: requires the fitted TR0 airline model");
+    if (fit.estimated_parameters != 4 || fit.effective_observations <= fit.estimated_parameters ||
+        model.series.size() != static_cast<std::size_t>(fit.effective_observations) + 13 ||
+        !std::isfinite(fit.residual_ssq) || fit.residual_ssq <= 0.0)
+        throw std::invalid_argument("tramo_tr0_forecast_errors: inconsistent TR0 likelihood");
+    if (months == 0) return {"no_requested_predictions", {}};
+    if (model.series.size() > static_cast<std::size_t>(std::numeric_limits<int>::max() - months))
+        throw std::length_error("tramo_tr0_forecast_errors: extended domain exceeds the index range");
+
+    std::array<ArmaParameterBlock, 4> blocks{};
+    blocks[1] = {model.theta, {1}};
+    blocks[3] = {model.btheta, {1}};
+    for (const double value : {model.theta.front(), model.btheta.front()}) {
+        const auto check = arma_admissibility({value}, true);
+        if (check.status != "admissible") return {check.status, {}};
+    }
+    const ArmaParameterMap map(blocks);
+    const TimeDomain observed(model.start_year, model.start_month, 12, model.series.size());
+    auto drift = prepare_regression(align_regressors(observed, {}, 0, months), {}, 1, 1, 0, false, true);
+    auto context = std::move(drift.design);
+    context.values = std::move(drift.regressors.values);
+    const MaskedSeries series{model.series, std::vector<std::uint8_t>(model.series.size(), 0)};
+    const auto projected = forecast_information(series, context, 0, months, map, {}, 12, 1, 1);
+    if (projected.status != "available") return {projected.status, {}};
+
+    // RegSarimaModel.internalForecasts scales the process innovation by the
+    // estimated-parameter count (including variance); the independently
+    // fitted mean block uses ConcentratedLikelihood.covariance(k,true).
+    const int df = fit.effective_observations - fit.estimated_parameters;
+    const double process_scale = fit.residual_ssq / df;
+    const double mean_scale = fit.residual_ssq / (df + 1);
+    std::vector<double> errors(months);
+    for (int i = 0; i < months; ++i) {
+        const double process = (*projected.known_regression_covariance)(i, i) / projected.variance;
+        const double mean = (*projected.regression_covariance)(i, i) / projected.variance;
+        errors[i] = std::sqrt(process * process_scale + mean * mean_scale);
+        if (!std::isfinite(errors[i])) return {"covariance_range", {}};
+    }
+    return {"available", std::move(errors)};
 }
 
 }  // namespace kalos

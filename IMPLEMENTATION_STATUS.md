@@ -4,6 +4,14 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 integration checkpoint for preprocessing forecast uncertainty (2026-11-23)
+
+Both locks and the CI tools use Kalos `2fe3d8e8c8b6bfeae9fa4224517e9e0c12228fe8`.
+The core computes RSA0 preprocessing forecast standard deviations separately
+from the SEATS component uncertainty. Offline verification passed for
+**192 core, 112 fixture and 344 evidence files**, including the six-case
+paired JVM forecast-error reference.
+
 ## M5 raw-series TRAMO/SEATS RSA0 (2026-11-23)
 
 Version `0.1.0.9004` exposes `native_tramoseats_fit()`. On complete

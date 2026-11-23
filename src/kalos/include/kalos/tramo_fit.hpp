@@ -229,7 +229,7 @@ struct TramoFitSeamInputs {
     int pass = 0, round = 0;            // kernel fields at the call
     int entry_nobs = 0;                 // regarima().getObservationsCount()
     // arma seams (the 23-D contract owns them as the JVM-pinned hand-over):
-    std::vector<double> ols_residuals;  // RegArimaUtility.olsResiduals at the call
+    std::vector<double> ols_residuals;  // optional verification when the entry has only a mean or no regressors
     int nobs = 0;                       // regarima().getObservationsCount()
     int spc = -1;                       // the comespa gate readout (-1: none)
 };

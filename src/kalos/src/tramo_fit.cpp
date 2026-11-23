@@ -20,6 +20,7 @@
 #include <kalos/tramo_fit.hpp>
 
 #include "kalos/detail/fdlibm.hpp"
+#include "kalos/detail/ssq_deviances.hpp"
 #include "mlj_engine.hpp"
 
 #include <kalos/tramo_arma_selection.hpp>
@@ -42,6 +43,22 @@ void require(bool condition, const std::string& what) {
 
 bool bit_equal(double a, double b) {
     return std::memcmp(&a, &b, sizeof(double)) == 0;
+}
+
+std::vector<double> differenced_response(std::vector<double> y, bool log, int period, int d, int bd) {
+    if (log) {
+        for (double& v : y) {
+            require(v > 0.0, "non-positive value under the log channel");
+            v = detail::fdlibm_log(v);
+        }
+    }
+    auto filter = mlj::differencing_filter(period, d, bd);
+    if (filter.size() <= 1) return y;
+    std::reverse(filter.begin(), filter.end());
+    require(y.size() >= filter.size(), "series too short for the differencing filter");
+    std::vector<double> result(y.size() - filter.size() + 1);
+    mlj::apply_backfilter(filter, y, 0, result);
+    return result;
 }
 
 std::string stage_word(TramoKernelStageResult r) {
@@ -274,6 +291,8 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
     // carry the context mutations (TramoKernelSeam.seasonal_after, from the
     // per-step rsnap witness); the gs2 / shortfail pass-3 modules are created
     // after a "scontroller res Changed" flip back to seasonal.
+    const bool has_fixed_regressors = std::any_of(built.variables.begin(), built.variables.end(),
+        [](const auto& var) { return var.kind != tramo_variable_kind::trend_constant; });
     bool ctx_seasonal = prestage.seasonal;
     std::size_t next_input = 0;
     for (std::size_t s = 0; s < seams.size(); ++s) {
@@ -322,6 +341,7 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
             break;
         }
 
+        const bool only_optional_mean = in.entry_outliers.empty() && !has_fixed_regressors;
         if (seam.kind == TramoKernelSeamKind::differencing &&
             in.entry_outliers.empty() && !spec.outliers_ml &&
             in.round == 1) {
@@ -380,11 +400,28 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
             check.note = "match " + stage_word(mapped) + " " +
                          orders_word(post);
         } else if (seam.kind == TramoKernelSeamKind::arma &&
-                   !in.ols_residuals.empty()) {
-            // Live 23-D re-run over the JVM-pinned olsResiduals hand-over.
+                   (only_optional_mean || !in.ols_residuals.empty())) {
             TramoArmaSelectionRequest areq;
-            areq.residuals = in.ols_residuals;
-            areq.nobs = in.nobs;
+            if (only_optional_mean) {
+                areq.residuals = differenced_response(built.interpolated, prestage.log,
+                    spec.annual_frequency, in.entry_orders.d, in.entry_orders.bd);
+                if (in.entry_mean) {
+                    const auto beta = detail::pinned_ols_coefficients(areq.residuals,
+                        {std::vector<double>(areq.residuals.size(), 1.0)});
+                    require(beta && beta->size() == 1, "ARMA input mean regression failed");
+                    for (auto& value : areq.residuals) value -= beta->front();
+                }
+                areq.nobs = built.estimation_length;
+                if (!in.ols_residuals.empty()) {
+                    require(areq.nobs == in.nobs && areq.residuals.size() == in.ols_residuals.size() &&
+                            std::equal(areq.residuals.begin(), areq.residuals.end(),
+                                       in.ols_residuals.begin(), bit_equal),
+                            "seam " + std::to_string(s) + ": native ARMA residuals differ from the witness");
+                }
+            } else {
+                areq.residuals = in.ols_residuals;
+                areq.nobs = in.nobs;
+            }
             areq.period = spec.annual_frequency;
             areq.p0 = in.entry_orders.p;
             areq.d0 = in.entry_orders.d;
@@ -491,25 +528,8 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
     // lands at JVM +0.0 where negating the ascending result would give
     // -0.0 (the fit_fct_air witness at index 99), so the reversed filter is
     // applied as the JVM builds it).
-    std::vector<double> y = built.interpolated;
-    if (fin.log) {
-        for (double& v : y) {
-            require(v > 0.0, "non-positive value under the log channel");
-            v = detail::fdlibm_log(v);
-        }
-    }
-    std::vector<double> filter = mlj::differencing_filter(
-        spec.annual_frequency, fin.orders.d, fin.orders.bd);
-    std::reverse(filter.begin(), filter.end());
-    std::vector<double> w;
-    if (filter.size() > 1) {
-        require(y.size() > filter.size() - 1,
-                "series too short for the differencing filter");
-        w.assign(y.size() - (filter.size() - 1), 0.0);
-        mlj::apply_backfilter(filter, y, 0, w);
-    } else {
-        w = y;
-    }
+    const auto w = differenced_response(built.interpolated, fin.log, spec.annual_frequency,
+                                        fin.orders.d, fin.orders.bd);
     require(w.size() == fin.differenced_response.size(),
             "the recomputed differenced response length disagrees");
     for (std::size_t i = 0; i < w.size(); ++i) {

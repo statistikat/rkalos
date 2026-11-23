@@ -264,7 +264,8 @@ if(KALOS_BUILD_TESTS)
     endif()
     if(test_name STREQUAL "test_tramo_seats_rsa0")
       target_compile_definitions(${test_name} PRIVATE
-        KALOS_RSA0_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-x86_64.txt")
+        KALOS_RSA0_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-x86_64.txt"
+        KALOS_RSA0_ERRORS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-forecast-errors-x86_64.txt")
     endif()
     if(test_name STREQUAL "test_tramo_seats_bridge")
       target_compile_definitions(${test_name} PRIVATE
