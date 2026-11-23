@@ -518,6 +518,44 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_tramo_critical_value
+double native_tramo_critical_value(int observations);
+RcppExport SEXP _rkalos_native_tramo_critical_value(SEXP observationsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type observations(observationsSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_tramo_critical_value(observations));
+    return rcpp_result_gen;
+END_RCPP
+}
+// native_tramo_seasonality
+Rcpp::List native_tramo_seasonality(const std::vector<double>& values);
+RcppExport SEXP _rkalos_native_tramo_seasonality(SEXP valuesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type values(valuesSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_tramo_seasonality(values));
+    return rcpp_result_gen;
+END_RCPP
+}
+// native_tramo_transform_decision
+Rcpp::List native_tramo_transform_decision(std::vector<double> values, bool mean, bool detect_seasonality, bool spec_seasonality, double log_preference, double precision);
+RcppExport SEXP _rkalos_native_tramo_transform_decision(SEXP valuesSEXP, SEXP meanSEXP, SEXP detect_seasonalitySEXP, SEXP spec_seasonalitySEXP, SEXP log_preferenceSEXP, SEXP precisionSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<double> >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< bool >::type mean(meanSEXP);
+    Rcpp::traits::input_parameter< bool >::type detect_seasonality(detect_seasonalitySEXP);
+    Rcpp::traits::input_parameter< bool >::type spec_seasonality(spec_seasonalitySEXP);
+    Rcpp::traits::input_parameter< double >::type log_preference(log_preferenceSEXP);
+    Rcpp::traits::input_parameter< double >::type precision(precisionSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_tramo_transform_decision(values, mean, detect_seasonality, spec_seasonality, log_preference, precision));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_transform
 Rcpp::List native_transform(SEXP values, SEXP transformation);
 RcppExport SEXP _rkalos_native_transform(SEXP valuesSEXP, SEXP transformationSEXP) {
@@ -1042,6 +1080,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_regression_likelihood", (DL_FUNC) &_rkalos_native_regression_likelihood, 13},
     {"_rkalos_native_stationary_likelihood", (DL_FUNC) &_rkalos_native_stationary_likelihood, 7},
     {"_rkalos_native_arma_likelihood", (DL_FUNC) &_rkalos_native_arma_likelihood, 8},
+    {"_rkalos_native_tramo_critical_value", (DL_FUNC) &_rkalos_native_tramo_critical_value, 1},
+    {"_rkalos_native_tramo_seasonality", (DL_FUNC) &_rkalos_native_tramo_seasonality, 1},
+    {"_rkalos_native_tramo_transform_decision", (DL_FUNC) &_rkalos_native_tramo_transform_decision, 6},
     {"_rkalos_native_transform", (DL_FUNC) &_rkalos_native_transform, 2},
     {"_rkalos_native_inverse_transform", (DL_FUNC) &_rkalos_native_inverse_transform, 2},
     {"_rkalos_native_x11_b_pass", (DL_FUNC) &_rkalos_native_x11_b_pass, 10},

@@ -1,9 +1,30 @@
 # rkalos implementation status
 
-Updated: **2026-11-15**. Initial independent R package implemented and locally
-qualified. Persephone requires rkalos; this package has no Persephone or Java
-dependency. Numerical roadmap and canonical reference evidence belong to
+Updated **2026-11-23**. Persephone uses the independent rkalos package.
+The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
+
+## M5 R checkpoint — TRAMO preprocessing (2026-11-23)
+
+The installed R package exposes `tramo_critical_value()`, `tramo_seasonality()`
+and `tramo_transform_decision()` on the existing Kalos `0e064dd` snapshot.
+The detector returns both tests and dated differences. The transform decision
+returns the model, status, log and level criteria, transform choice and remarks.
+
+The 23-B exit gate passed on macOS ARM64 with R 4.5.2, Clang 23.1.5 and
+checksum-pinned LP64 OpenBLAS 0.3.34 in a serial package build. All **196
+assertions** passed. The installed-package test replayed 10 critical-value
+grid points, five detector series, 10 non-robust decisions and four robust
+requests that require the separate AO/LS stage. Captured numerical facts
+were compared exactly, including the differenced series, both log/level
+criteria and the degenerate Friedman test. Calendar and malformed-input
+checks also passed. The test ran without loading Java or JDemetra packages.
+
+The source archive built and installed. Offline verification matched all
+186 core files, 112 fixtures and 331 evidence files at the existing pin.
+The capability list advertises the three primitives. A public TRAMO/SEATS
+fit still depends on the 24-D assembly and its end-to-end qualification.
+[23-B contract](https://github.com/statistikat/kalos/blob/0e064dd18eb45568fc35e1bed337161598ace36f/docs/contracts/tramo-transform-decision-contract.md) · [R fixture replay](inst/tinytest/test-native-tramo-transform.R)
 
 ## Completed split steps
 
@@ -1336,5 +1357,5 @@ experimental package does not implement full seasonal-adjustment fitting.
 4. Expand platform qualification through the configured Linux/macOS/Windows CI.
    Remote workflow configuration is not a claim that those runs have passed.
 
-The unresolved sigma-weight default for numerical item 22b.3a belongs to Kalos;
-it is unrelated to the completed required-dependency decision.
+The shipped X-13 routes use the documented legacy sigma-weight default at
+the R boundary. The next full-method capability gate is TRAMO/SEATS 24-D.

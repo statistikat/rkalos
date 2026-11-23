@@ -19,6 +19,10 @@ Java-free. Existing `persephone_native_*` result class names are retained for
 serialization compatibility. Persephone consumes this package as a required
 runtime dependency; its application objects stay in Persephone.
 
+For TRAMO preprocessing, use `tramo_critical_value()` for the outlier threshold,
+`tramo_seasonality()` for the monthly detector, and `tramo_transform_decision()`
+for the non-robust log/level decision. The full TRAMO/SEATS fit is pending.
+
 Install OpenBLAS with CBLAS and LAPACKE (qualification version 0.3.34). Set `KALOS_OPENBLAS_ROOT` to its prefix before building and installing the source archive. For custom or static providers, set `KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler and linker flags including dependencies.
 C++17 and Rcpp are required. Configure probes optional OpenMP with R's actual
 compiler; failed probes select serial execution. `KALOS_NUM_THREADS` takes

@@ -13,6 +13,8 @@ OBJECTS = RcppExports.o \
   rcpp_preparation.o \
   rcpp_regression_likelihood.o \
   rcpp_state_space.o \
+  rcpp_tramo_transform.o \
+  kalos/src/tramo_transform_decision.o \
   rcpp_transforms.o \
   rcpp_x11_b_pass.o \
   rcpp_x11_c_pass.o \

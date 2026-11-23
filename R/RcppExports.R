@@ -117,6 +117,18 @@
     .Call(`_rkalos_native_arma_likelihood`, values, ar, ma, seasonal_ar, seasonal_ma, period, mean, variance)
 }
 
+.native_tramo_critical_value <- function(observations) {
+    .Call(`_rkalos_native_tramo_critical_value`, observations)
+}
+
+.native_tramo_seasonality <- function(values) {
+    .Call(`_rkalos_native_tramo_seasonality`, values)
+}
+
+.native_tramo_transform_decision <- function(values, mean, detect_seasonality, spec_seasonality, log_preference, precision) {
+    .Call(`_rkalos_native_tramo_transform_decision`, values, mean, detect_seasonality, spec_seasonality, log_preference, precision)
+}
+
 .native_transform <- function(values, transformation = NULL) {
     .Call(`_rkalos_native_transform`, values, transformation)
 }
