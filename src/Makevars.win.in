@@ -115,3 +115,7 @@ OBJECTS = RcppExports.o \
   kalos/src/arima_forecasts.o \
   kalos/src/hostlineage.o \
   kalos/src/hostlineage_tables.o
+
+# Every wrapper and vendored translation unit must agree on core structure layouts.
+all: $(SHLIB)
+$(OBJECTS): kalos/include/kalos/revision.hpp

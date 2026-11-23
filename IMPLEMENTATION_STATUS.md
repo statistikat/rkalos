@@ -4,6 +4,16 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Incremental installs after a Kalos pin change (2026-11-23)
+
+The new fitted TRAMO record changed the C++ structure layout. An incremental
+install reused an older R wrapper object and crashed on the previously
+qualified fitted SEATS entry. Both Makevars templates now rebuild all
+wrapper and vendored objects when the generated core revision changes.
+Repeating the two incremental installs in their existing build trees
+rebuilt the stale wrapper and passed all **1,160/1,160** fitted SEATS
+checks plus **7,676/7,676** fixed-model WK checks in each build.
+
 ## M5 integration checkpoint for raw monthly TR1 preprocessing (2026-11-23)
 
 Both locks and the CI toolchain now pin Kalos
