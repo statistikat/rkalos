@@ -205,18 +205,17 @@ Rcpp::List native_x11_c_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP p
     const auto result=kalos::x11_c_pass(series,period,first,initial,finals,trend,
         name=="legacy"?kalos::X11SigmaPolicy::legacy:kalos::X11SigmaPolicy::accurate,
         b,lower,upper,[] {Rcpp::checkUserInterrupt();});
-    using kalos_x11_rcpp::values;
     Rcpp::IntegerVector resolved_initial(result.initial_filters.begin(),result.initial_filters.end());
     Rcpp::IntegerVector resolved_final(result.final_filters.begin(),result.final_filters.end());
     // The 14 pinned C tables in label order.
     Rcpp::List tables=Rcpp::List::create(
-        Rcpp::_["C1"]=values(result.c1),Rcpp::_["C2"]=values(result.c2),
-        Rcpp::_["C4"]=values(result.c4),Rcpp::_["C5"]=values(result.c5),
-        Rcpp::_["C5a"]=values(result.c5a),Rcpp::_["C6"]=values(result.c6),
-        Rcpp::_["C7"]=values(result.c7),Rcpp::_["C9"]=values(result.c9),
-        Rcpp::_["C10"]=values(result.c10),Rcpp::_["C10a"]=values(result.c10a),
-        Rcpp::_["C11"]=values(result.c11),Rcpp::_["C13"]=values(result.c13),
-        Rcpp::_["C17"]=values(result.c17),Rcpp::_["C20"]=values(result.c20));
+        Rcpp::_["C1"]=kalos_x11_rcpp::values(result.c1),Rcpp::_["C2"]=kalos_x11_rcpp::values(result.c2),
+        Rcpp::_["C4"]=kalos_x11_rcpp::values(result.c4),Rcpp::_["C5"]=kalos_x11_rcpp::values(result.c5),
+        Rcpp::_["C5a"]=kalos_x11_rcpp::values(result.c5a),Rcpp::_["C6"]=kalos_x11_rcpp::values(result.c6),
+        Rcpp::_["C7"]=kalos_x11_rcpp::values(result.c7),Rcpp::_["C9"]=kalos_x11_rcpp::values(result.c9),
+        Rcpp::_["C10"]=kalos_x11_rcpp::values(result.c10),Rcpp::_["C10a"]=kalos_x11_rcpp::values(result.c10a),
+        Rcpp::_["C11"]=kalos_x11_rcpp::values(result.c11),Rcpp::_["C13"]=kalos_x11_rcpp::values(result.c13),
+        Rcpp::_["C17"]=kalos_x11_rcpp::values(result.c17),Rcpp::_["C20"]=kalos_x11_rcpp::values(result.c20));
     return Rcpp::List::create(Rcpp::_["schema_version"]=1,Rcpp::_["type"]="x11_c_pass",
         Rcpp::_["policy"]=name,Rcpp::_["frequency"]=period,Rcpp::_["start_period"]=first,
         Rcpp::_["trend_length"]=result.trend_length,Rcpp::_["c2drop"]=static_cast<int>(result.c2drop),
@@ -225,7 +224,7 @@ Rcpp::List native_x11_c_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP p
         Rcpp::_["tables"]=tables,Rcpp::_["round"]=correction_round(result.round),
         // The pinned reference-series echo (S3): the exact series this C pass
         // consumed, which the D pass coupling is checked against.
-        Rcpp::_["reference_series"]=values(result.reference_series),
+        Rcpp::_["reference_series"]=kalos_x11_rcpp::values(result.reference_series),
         Rcpp::_["mode"]=kalos_x11_rcpp::mode_name(result.mode),
         Rcpp::_["mode_source"]="inherited from the B-pass result",
         Rcpp::_["status"]=result.status,

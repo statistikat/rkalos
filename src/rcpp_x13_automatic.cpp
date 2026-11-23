@@ -2,6 +2,7 @@
 #include "rcpp_x11_selection_records.hpp"
 #include "kalos/x13_automatic.hpp"
 #include <cmath>
+#include <limits>
 #include <cstddef>
 #include <optional>
 #include <stdexcept>
@@ -24,6 +25,20 @@ std::optional<kalos::X11SigmaPolicy> sigma_policy(SEXP value) {
         throw std::invalid_argument("x13 automatic fit sigma weight policy must be legacy or accurate");
     return kalos_x11_rcpp::parse_policy(Rcpp::as<std::string>(value),
         "x13 automatic fit sigma weight policy");
+}
+int integer_at(SEXP value, R_xlen_t index, const char* name, int minimum) {
+    if ((TYPEOF(value) != INTSXP && TYPEOF(value) != REALSXP) || Rf_isFactor(value) ||
+        !Rf_isNull(Rf_getAttrib(value, R_DimSymbol)))
+        Rcpp::stop("%s must contain whole numbers", name);
+    const double number = TYPEOF(value) == REALSXP ? REAL(value)[index] : INTEGER(value)[index];
+    if (!std::isfinite(number) || std::floor(number) != number ||
+        number < minimum || number > std::numeric_limits<int>::max())
+        Rcpp::stop("%s must contain whole numbers in the supported range", name);
+    return static_cast<int>(number);
+}
+int integer_scalar(SEXP value, const char* name, int minimum = -std::numeric_limits<int>::max()) {
+    if (Rf_xlength(value) != 1) Rcpp::stop("%s must be a scalar", name);
+    return integer_at(value, 0, name, minimum);
 }
 bool flag(SEXP value,const char* label) {
     if(TYPEOF(value)!=LGLSXP || Rf_xlength(value)!=1 || LOGICAL(value)[0]==NA_LOGICAL ||
@@ -270,21 +285,21 @@ Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period
     SEXP upper_sigma,SEXP msr_policy,SEXP mode,SEXP backcast,SEXP forecast) {
     kalos::X13AutomaticRequest request;
     request.input=kalos_x13_rcpp::reals_in(values,"x13 automatic fit input");
-    request.frequency=Rcpp::as<int>(frequency);
-    request.first_period=Rcpp::as<int>(start_period);
-    request.first_year=Rcpp::as<int>(first_year);
+    request.frequency=integer_scalar(frequency,"frequency");
+    request.first_period=integer_scalar(start_period,"start_period");
+    request.first_year=integer_scalar(first_year,"first_year");
     request.aicc_log_correction=Rcpp::as<double>(aicc_log_correction);
-    request.max_d=Rcpp::as<int>(max_d);
-    request.max_bd=Rcpp::as<int>(max_bd);
+    request.max_d=integer_scalar(max_d,"max_d");
+    request.max_bd=integer_scalar(max_bd,"max_bd");
     request.ub1=Rcpp::as<double>(ub1);
     request.ub2=Rcpp::as<double>(ub2);
     request.cancel=Rcpp::as<double>(cancel);
     request.differencing_precision=Rcpp::as<double>(differencing_precision);
-    request.models_count=Rcpp::as<int>(models_count);
-    request.max_p=Rcpp::as<int>(max_p);
-    request.max_q=Rcpp::as<int>(max_q);
-    request.max_bp=Rcpp::as<int>(max_bp);
-    request.max_bq=Rcpp::as<int>(max_bq);
+    request.models_count=integer_scalar(models_count,"models_count");
+    request.max_p=integer_scalar(max_p,"max_p");
+    request.max_q=integer_scalar(max_q,"max_q");
+    request.max_bp=integer_scalar(max_bp,"max_bp");
+    request.max_bq=integer_scalar(max_bq,"max_bq");
     request.balanced=flag(balanced,"x13 automatic fit balanced must be TRUE or FALSE");
     request.mixed=flag(mixed,"x13 automatic fit mixed must be TRUE or FALSE");
     request.arma_accept_white_noise=flag(accept_white_noise,
@@ -297,13 +312,16 @@ Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period
         request.outlier_types.push_back(outlier_type(STRING_ELT(otypes,i)));
     if(Rf_isNull(span))request.outlier_span=std::nullopt;
     else {
-        const auto span_in=Rcpp::as<std::vector<int>>(span); // shape checked by the matrix
-        if(span_in.size()!=2)
+        if (Rf_xlength(span) != 2)
             throw std::invalid_argument("x13 automatic fit outlier span must be NULL or a length-2 integer vector");
-        request.outlier_span=std::make_pair(span_in[0]-1,span_in[1]-1); // 1-based input
+        const int first = integer_at(span, 0, "span", 1);
+        const int last = integer_at(span, 1, "span", first);
+        if (static_cast<std::size_t>(last) > request.input.size())
+            throw std::invalid_argument("outlier span exceeds the observed series");
+        request.outlier_span = std::make_pair(first - 1, last - 1);
     }
-    request.outlier_max_round=static_cast<std::size_t>(Rcpp::as<long long>(outlier_max_round));
-    request.outlier_max_outliers=static_cast<std::size_t>(Rcpp::as<long long>(outlier_max_outliers));
+    request.outlier_max_round = integer_scalar(outlier_max_round, "outlier_max_round", 0);
+    request.outlier_max_outliers = integer_scalar(outlier_max_outliers, "outlier_max_outliers", 0);
     request.tcrate=Rcpp::as<double>(tcrate);
     request.precision=Rcpp::as<double>(precision);
     request.mean_precision=Rcpp::as<double>(mean_precision);
@@ -331,8 +349,21 @@ Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period
     const auto msr_name=Rcpp::as<std::string>(msr_policy);
     request.msr_policy=kalos_x11_rcpp::parse_msr_policy(msr_name);
     request.mode=kalos_x11_rcpp::parse_mode(mode,"x13 automatic fit decomposition mode");
-    request.backcast=Rcpp::as<int>(backcast);
-    request.forecast=Rcpp::as<int>(forecast);
+    request.backcast=integer_scalar(backcast,"backcast");
+    request.forecast=integer_scalar(forecast,"forecast");
+    // Also guard the installed snapshot, which predates checked core normalization.
+    if (request.frequency == 12) {
+        if (!request.input.empty() && request.first_period >= 1 && request.first_period <= 12) {
+            const auto last = Rf_xlength(values) - 1 + static_cast<long long>(request.first_period - 1);
+            if (last > std::numeric_limits<int>::max() ||
+                request.first_year + last / 12 > std::numeric_limits<int>::max())
+                throw std::invalid_argument("observed calendar exceeds the supported year range");
+        }
+        const auto months = [](int n) { return n < 0 ? -12LL * n : static_cast<long long>(n); };
+        if (months(request.backcast) + months(request.forecast) + Rf_xlength(values) >
+            std::numeric_limits<int>::max())
+            throw std::invalid_argument("x13 automatic fit extended series exceeds the supported index range");
+    }
     // The provenance echo is complete whatever the outcome: the module state
     // exactly as the boundary received it (1-based span kept 1-based).
     Rcpp::List out=Rcpp::List::create(Rcpp::_["schema_version"]=2,
@@ -382,6 +413,8 @@ Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period
     openblas_set_num_threads(1);
     const auto result=kalos::x13_automatic_fit(request);
     out["status"]=result.status;
+    out["effective_backcast"] = result.fit.backcast;
+    out["effective_forecast"] = result.fit.forecast;
     out["mode_requested"]=kalos_x11_rcpp::mode_name(result.fit.mode_requested);
     if(!result.chain.empty()) { // the pinned fail-closed matrix refuses before any state
         Rcpp::List chain;
@@ -397,11 +430,14 @@ Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period
         out["preadjustment"]=kalos_x13_rcpp::preadjustment_list(result.fit.preadjustment,result.fit.log);
     }
     if(!result.fit.selection.status.empty()) { // the run over out, same record shape
+        const int f = result.fit.frequency;
+        const int extended_period = ((result.fit.first_period - 1 - result.fit.backcast) % f + f) % f + 1;
         out["selection"]=kalos_x11_rcpp::selection_result(result.fit.selection,
             kalos_x11_rcpp::policy_name(result.fit.sigma),msr_name,
             kalos_x11_rcpp::mode_name(result.fit.mode_effective),
             "automatic_fit_selection_run",result.fit.lower_sigma,result.fit.upper_sigma,
-            result.fit.frequency,result.fit.first_period,result.fit.trend_length,0,0,
+            f,extended_period,result.fit.trend_length,
+            result.fit.backcast,result.fit.forecast,
             Rcpp::CharacterVector(seasonal));
     }
     if(result.status=="available") { // the final description and the tables

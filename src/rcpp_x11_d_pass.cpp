@@ -180,7 +180,6 @@ Rcpp::List native_x11_d_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP p
     const auto result=kalos::x11_d_pass(series,period,first,initial,finals,trend,
         name=="legacy"?kalos::X11SigmaPolicy::legacy:kalos::X11SigmaPolicy::accurate,
         c,back,fc,[] {Rcpp::checkUserInterrupt();});
-    using kalos_x11_rcpp::values;
     Rcpp::IntegerVector resolved_initial(result.initial_filters.begin(),result.initial_filters.end());
     Rcpp::IntegerVector resolved_final(result.final_filters.begin(),result.final_filters.end());
     Rcpp::IntegerVector seas(result.seas_filter.begin(),result.seas_filter.end());
@@ -188,14 +187,14 @@ Rcpp::List native_x11_d_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP p
     // alias of D9bis in the fixed corrector mode (the null D9g is not
     // delivered, exactly like the core).
     Rcpp::List tables=Rcpp::List::create(
-        Rcpp::_["D1"]=values(result.d1),Rcpp::_["D2"]=values(result.d2),
-        Rcpp::_["D4"]=values(result.d4),Rcpp::_["D5"]=values(result.d5),
-        Rcpp::_["D6"]=values(result.d6),Rcpp::_["D7"]=values(result.d7),
-        Rcpp::_["D8"]=values(result.d8),Rcpp::_["D9"]=values(result.d9),
-        Rcpp::_["D9bis"]=values(result.d9bis),Rcpp::_["D9_g_bis"]=values(result.d9bis),
-        Rcpp::_["D10"]=values(result.d10),Rcpp::_["D10bis"]=values(result.d10bis),
-        Rcpp::_["D11"]=values(result.d11),Rcpp::_["D11bis"]=values(result.d11bis),
-        Rcpp::_["D12"]=values(result.d12),Rcpp::_["D13"]=values(result.d13));
+        Rcpp::_["D1"]=kalos_x11_rcpp::values(result.d1),Rcpp::_["D2"]=kalos_x11_rcpp::values(result.d2),
+        Rcpp::_["D4"]=kalos_x11_rcpp::values(result.d4),Rcpp::_["D5"]=kalos_x11_rcpp::values(result.d5),
+        Rcpp::_["D6"]=kalos_x11_rcpp::values(result.d6),Rcpp::_["D7"]=kalos_x11_rcpp::values(result.d7),
+        Rcpp::_["D8"]=kalos_x11_rcpp::values(result.d8),Rcpp::_["D9"]=kalos_x11_rcpp::values(result.d9),
+        Rcpp::_["D9bis"]=kalos_x11_rcpp::values(result.d9bis),Rcpp::_["D9_g_bis"]=kalos_x11_rcpp::values(result.d9bis),
+        Rcpp::_["D10"]=kalos_x11_rcpp::values(result.d10),Rcpp::_["D10bis"]=kalos_x11_rcpp::values(result.d10bis),
+        Rcpp::_["D11"]=kalos_x11_rcpp::values(result.d11),Rcpp::_["D11bis"]=kalos_x11_rcpp::values(result.d11bis),
+        Rcpp::_["D12"]=kalos_x11_rcpp::values(result.d12),Rcpp::_["D13"]=kalos_x11_rcpp::values(result.d13));
     // The D9 MSRE diagnostic: the pinned per-phase table on the dropped
     // original calendar (phase indices 0..frequency-1 of the pinned table
     // at getPosition(backcast)) plus the count-weighted global ratio.

@@ -1,7 +1,7 @@
 Package: rkalos
 Type: Package
 Title: R Interface to the Kalos Time Series Engine
-Version: 0.1.0
+Version: 0.1.0.9001
 Authors@R: c(
   person("Angelika", "Meraner", email = "angelika.meraner@statistik.gv.at", role = c("aut","cre")),
   person("Alexander", "Kowarik", email = "alexander.kowarik@statistik.gv.at", role = c("ctb")),
@@ -24,4 +24,4 @@ LinkingTo: Rcpp
 SystemRequirements: C++17, OpenMP (optional), OpenBLAS C API (cblas.h and
     lapacke.h with linkable CBLAS/LAPACKE symbols; KALOS_OPENBLAS_ROOT points
     at a non-standard installation)
-Suggests: tinytest
+Suggests: tinytest, jsonlite

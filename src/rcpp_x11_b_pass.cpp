@@ -98,22 +98,21 @@ Rcpp::List native_x11_b_pass(SEXP values,SEXP frequency,SEXP start_period,SEXP p
     const auto result=kalos::x11_b_pass(series,period,first,initial,finals,trend,
         name=="legacy"?kalos::X11SigmaPolicy::legacy:kalos::X11SigmaPolicy::accurate,
         lower,upper,decomp,[] {Rcpp::checkUserInterrupt();});
-    using kalos_x11_rcpp::values;
     Rcpp::IntegerVector resolved_initial(result.initial_filters.begin(),result.initial_filters.end());
     Rcpp::IntegerVector resolved_final(result.final_filters.begin(),result.final_filters.end());
     // The 19 pinned member tables in label order; the B9d detection series
     // lives in the correction history (round 2 detection) below.
     Rcpp::List tables=Rcpp::List::create(
-        Rcpp::_["B1"]=values(result.b1),Rcpp::_["B2"]=values(result.b2),
-        Rcpp::_["B3"]=values(result.b3),Rcpp::_["B4"]=values(result.b4),
-        Rcpp::_["B4a"]=values(result.b4a),Rcpp::_["B4anorm"]=values(result.b4anorm),
-        Rcpp::_["B4d"]=values(result.b4d),Rcpp::_["B4g"]=values(result.b4g),
-        Rcpp::_["B5"]=values(result.b5),Rcpp::_["B6"]=values(result.b6),
-        Rcpp::_["B7"]=values(result.b7),Rcpp::_["B8"]=values(result.b8),
-        Rcpp::_["B9"]=values(result.b9),Rcpp::_["B9g"]=values(result.b9g),
-        Rcpp::_["B10"]=values(result.b10),Rcpp::_["B11"]=values(result.b11),
-        Rcpp::_["B13"]=values(result.b13),Rcpp::_["B17"]=values(result.b17),
-        Rcpp::_["B20"]=values(result.b20));
+        Rcpp::_["B1"]=kalos_x11_rcpp::values(result.b1),Rcpp::_["B2"]=kalos_x11_rcpp::values(result.b2),
+        Rcpp::_["B3"]=kalos_x11_rcpp::values(result.b3),Rcpp::_["B4"]=kalos_x11_rcpp::values(result.b4),
+        Rcpp::_["B4a"]=kalos_x11_rcpp::values(result.b4a),Rcpp::_["B4anorm"]=kalos_x11_rcpp::values(result.b4anorm),
+        Rcpp::_["B4d"]=kalos_x11_rcpp::values(result.b4d),Rcpp::_["B4g"]=kalos_x11_rcpp::values(result.b4g),
+        Rcpp::_["B5"]=kalos_x11_rcpp::values(result.b5),Rcpp::_["B6"]=kalos_x11_rcpp::values(result.b6),
+        Rcpp::_["B7"]=kalos_x11_rcpp::values(result.b7),Rcpp::_["B8"]=kalos_x11_rcpp::values(result.b8),
+        Rcpp::_["B9"]=kalos_x11_rcpp::values(result.b9),Rcpp::_["B9g"]=kalos_x11_rcpp::values(result.b9g),
+        Rcpp::_["B10"]=kalos_x11_rcpp::values(result.b10),Rcpp::_["B11"]=kalos_x11_rcpp::values(result.b11),
+        Rcpp::_["B13"]=kalos_x11_rcpp::values(result.b13),Rcpp::_["B17"]=kalos_x11_rcpp::values(result.b17),
+        Rcpp::_["B20"]=kalos_x11_rcpp::values(result.b20));
     Rcpp::List rounds=Rcpp::List::create(correction_round(result.rounds[0]),
         correction_round(result.rounds[1]),correction_round(result.rounds[2]));
     return Rcpp::List::create(Rcpp::_["schema_version"]=1,Rcpp::_["type"]="x11_b_pass",

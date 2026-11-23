@@ -18,7 +18,7 @@
 # 13-case replay (test-native-x13-automatic.R).
 source("helpers/fixtures.R", local = TRUE)
 local({
-  fit<-getFromNamespace('native_x13_fit_automatic','rkalos')
+  fit<-rkalos::native_x13_fit_automatic
   bits<-function(a,b) {a<-as.vector(a);b<-as.vector(b)
     identical(is.na(a),is.na(b)) && identical(a[!is.na(a)],b[!is.na(b)])}
   # Oracle tier semantics (the main file's single(), one for one): bit-equal or
@@ -61,7 +61,7 @@ local({
     if(length(v)==0)"" else v[1]}
   facts_of<-function(id,key)facts$value[facts$id==id&facts$key==key]
   reals<-function(field){t<-strsplit(field,';',fixed=TRUE)[[1]]
-    as.numeric(t[nchar(t)>0])}
+    fixture_doubles(t[nchar(t)>0])}
   modes<-c(Additive='additive',Multiplicative='multiplicative',
     LogAdditive='log_additive',PseudoAdditive='pseudo_additive',Undefined='additive')
   TYPE<-c(AO=0L,LS=1L,TC=2L,SO=3L)
@@ -103,11 +103,12 @@ local({
       used=identical(req$outliers,'on'),
       types=if(identical(req$outliers,'on'))otypes else NULL)
   }
-  fit_case<-function(id) {
+  fit_case<-function(id, as_ts=FALSE) {
     m<-case_modules(id);req<-m$req
     ca<-cases[match(id,cases$id),]
     sigma_cut<-as.numeric(strsplit(req$sigma,';',fixed=TRUE)[[1]])
-    fit(series=m$y,transform=list(aicc=as.numeric(req$aicdiff)),
+    series <- if (as_ts) stats::ts(m$y, start=c(m$first_year, m$start_period), frequency=12) else m$y
+    fit(series=series,transform=list(aicc=as.numeric(req$aicdiff)),
       automodel=list(max_d=2L,max_bd=1L,ub1=1/as.numeric(req$ub1),
         ub2=1/as.numeric(req$ub2),cancel=as.numeric(req$cancel),precision=1e-7,
         models_count=5L,max_p=2L,max_q=2L,max_bp=1L,max_bq=1L,
@@ -150,6 +151,20 @@ local({
     res<-fit_case(id)
     expect_identical(res$status,'available',info=paste(id,'status'))
     expect_identical(res$sigma_provenance,'accurate (explicit)',info=paste(id,'provenance'))
+    expect_equal(res$selection$start_period, o %% 12 + 1)
+    expect_equal(res$selection$backcast, ca$bc)
+    expect_equal(res$selection$forecast, ca$fc)
+    for (pass_name in c("b", "c", "d")) {
+      pass <- res$selection[[pass_name]]
+      expect_equal(pass$input_domain$length, ext)
+      expect_equal(pass$input_domain$start_ordinal, o)
+      first <- paste0(toupper(pass_name), "1")
+      expect_equal(stats::tsp(pass$tables[[first]])[1L], ext_start)
+      expect_identical(pass$row_basis[[first]], seq_len(ext))
+    }
+    expect_equal(res$selection$d$original_domain$length, n)
+    if (id == "multi_b3h6")
+      expect_identical(fit_case(id, as_ts=TRUE)$selection, res$selection)
     # decisions: final description and horizon echo, BIT.
     expect_identical(res$model$log,identical(as.character(ca$log),'true'),info=paste(id,'log'))
     expect_identical(res$model$mean,identical(as.character(ca$mean),'true'),info=paste(id,'mean'))

@@ -1,6 +1,6 @@
 source("helpers/fixtures.R", local = TRUE)
 local({
-  fit<-getFromNamespace('native_x13_fit','rkalos')
+  fit<-rkalos::native_x13_fit
   raw<-getFromNamespace('.native_x13_fit','rkalos')
   bits<-function(a,b) {a<-as.vector(a);b<-as.vector(b)
     identical(is.na(a),is.na(b)) && identical(a[!is.na(a)],b[!is.na(b)])}
@@ -13,12 +13,12 @@ local({
     length(a)==length(b) && all(is.na(a)==is.na(b)) &&
       all(abs(a[!is.na(a)]-b[!is.na(b)])<=tol*pmax(1,abs(b[!is.na(b)])))}
   cases<-read.csv('fixtures/native/x13-fit/cases.csv')
-  inputs<-read.csv('fixtures/native/x13-fit/inputs.csv')
-  vars<-read.csv('fixtures/native/x13-fit/vars.csv')
-  columns<-read.csv('fixtures/native/x13-fit/columns.csv')
-  tables<-read.csv('fixtures/native/x13-fit/tables.csv')
+  inputs<-read_numeric_fixture('fixtures/native/x13-fit/inputs.csv')
+  vars<-read_numeric_fixture('fixtures/native/x13-fit/vars.csv', "coefficient")
+  columns<-read_numeric_fixture('fixtures/native/x13-fit/columns.csv')
+  tables<-read_numeric_fixture('fixtures/native/x13-fit/tables.csv')
   horizons<-read.csv('fixtures/native/x13-fit/horizons.csv')
-  fast<-read.csv('fixtures/native/x13-fit/x13fast.csv')
+  fast<-read_numeric_fixture('fixtures/native/x13-fit/x13fast.csv')
   expect_identical(nrow(cases),11L)
   classes<-c(outlier='outlier',days='days_related',holiday='moving_holiday',user='user')
   effects<-c(Undefined='undefined',Series='series',Trend='trend',Seasonal='seasonal',

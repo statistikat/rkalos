@@ -48,7 +48,7 @@ local({
     if(length(v)==0)"" else v[1]}
   facts_of<-function(id,key)facts$value[facts$id==id&facts$key==key]
   reals<-function(field){t<-strsplit(field,';',fixed=TRUE)[[1]]
-    as.numeric(t[nchar(t)>0])}
+    fixture_doubles(t[nchar(t)>0])}
   modes<-c(Additive='additive',Multiplicative='multiplicative',
     LogAdditive='log_additive',PseudoAdditive='pseudo_additive',Undefined='additive')
   TYPE<-c(AO=0L,LS=1L,TC=2L,SO=3L)
@@ -454,6 +454,11 @@ local({
     expect_error(raw0(otypes=c('AO','XX')),'AO, LS, TC or SO',info='otype throws')
     expect_error(raw0(outliers_used=TRUE,otypes=character(0)),'at least one type',
       info='empty otypes throws')
+    expect_error(raw0(outlier_max_round=-1), "outlier_max_round")
+    expect_error(raw0(outlier_max_outliers=1.5), "outlier_max_outliers")
+    expect_error(raw0(span=c(NA_integer_, 4L)), "span")
+    expect_error(raw0(span=c(3L, 2L)), "span")
+    expect_error(raw0(forecast=-.Machine$integer.max), "extended series")
     expect_error(raw0(span=c(1,2,3)),'length-2',info='span shape throws')
     expect_error(raw0(start_period=13L),'1-based month index',info='start_period throws')
     expect_error(raw0(values=m$y[1:13]),'too short',info='short series throws')
@@ -473,6 +478,13 @@ local({
       cancel=0.1,precision=1e-7,models_count=5L,max_p=2L,max_q=2L,max_bp=1L,max_bq=1L,
       balanced=FALSE,mixed=TRUE,accept_white_noise=FALSE,eps=1e-7)),'whole number',
       info='automodel integer validation')
+    expect_error(fit_case('quick',backcast=1.5),'whole number')
+    expect_error(fit_case('quick',first_year=Inf),'whole number')
+    expect_error(fit_case('quick',series=matrix(1:96, ncol=2)),'univariate')
+    expect_error(fit_case('quick',series=ts(1:96, start=2000, frequency=12)),'calendar')
+    quarterly <- fit_case('quick',frequency=.Machine$integer.max)
+    expect_identical(quarterly$status, 'unsupported:x13 automatic fit monthly series only')
+    expect_identical(quarterly$request$x11$seasonal, character())
     expect_error(fit_case('quick',sigma=42),'legacy',info='sigma label validation')
     # Item 21-H.4 horizon route at this boundary: accepted over the envelope
     # (capabilities()$automatic_fit$horizon_envelope), qualified against the

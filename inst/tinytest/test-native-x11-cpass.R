@@ -6,8 +6,8 @@ local({
   source_fixture('fixtures/native/x11-bpass-cases.R',local=TRUE)
   bits<-function(a,b) identical(is.na(a),is.na(b)) && identical(a[!is.na(a)],b[!is.na(b)])
   manifest<-read.csv('fixtures/native/x11-cpass/cases.csv')
-  inputs<-read.csv('fixtures/native/x11-cpass/inputs.csv')
-  tables<-read.csv('fixtures/native/x11-cpass/tables.csv')
+  inputs<-read_numeric_fixture('fixtures/native/x11-cpass/inputs.csv')
+  tables<-read_numeric_fixture('fixtures/native/x11-cpass/tables.csv')
   cases<-x11_bpass_cases()  # the C fixture replays the 18 B-pass cases
   expect_identical(sort(names(cases)),sort(unique(manifest$case)))
   expect_identical(nrow(manifest),length(cases))

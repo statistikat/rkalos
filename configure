@@ -49,11 +49,19 @@ capi_cppflags=${KALOS_OPENBLAS_CPPFLAGS-}
 capi_link=${KALOS_OPENBLAS_LINK-}
 if test -z "$capi_cppflags" && test -z "$capi_link" && test -n "${KALOS_OPENBLAS_ROOT-}"; then
     capi_cppflags="-isystem ${KALOS_OPENBLAS_ROOT}/include"
-    if test -f "${KALOS_OPENBLAS_ROOT}/lib/libopenblas.a"; then
-        capi_link="${KALOS_OPENBLAS_ROOT}/lib/libopenblas.a -lpthread -lm -ldl"
+    case "$(uname -s)" in
+        Darwin) shared=libopenblas.dylib ;;
+        *) shared=libopenblas.so ;;
+    esac
+    if test -f "${KALOS_OPENBLAS_ROOT}/lib/$shared" && test "$(uname -s)" = Darwin; then
+        capi_link="-L${KALOS_OPENBLAS_ROOT}/lib -lopenblas"
+    elif test -f "${KALOS_OPENBLAS_ROOT}/lib/libopenblas.a"; then
+        capi_link="${KALOS_OPENBLAS_ROOT}/lib/libopenblas.a $("$r_command" CMD config FLIBS) -lpthread -lm"
     else
-        capi_link="-L${KALOS_OPENBLAS_ROOT}/lib -lopenblas -lpthread -lm -ldl"
+        capi_link="-L${KALOS_OPENBLAS_ROOT}/lib -lopenblas"
     fi
+elif test -z "$capi_link"; then
+    capi_link="-lopenblas"
 fi
 # ELF only: keep the shared object self-contained so statically linked LAPACK
 # routines cannot be interposed by a different libblas/liblapack already loaded
@@ -62,13 +70,14 @@ local_bind='-Wl,--exclude-libs,ALL -Wl,-Bsymbolic'
 cat > "$probe_dir/capi.cpp" <<'EOF'
 #include <cblas.h>
 #include <lapacke.h>
+static_assert(sizeof(lapack_int) == 4 && sizeof(blasint) == 4, "LP64 OpenBLAS required");
 extern "C" void rkalos_capi_probe(int* output) {
     double a[4] = {2., 1., 1., 3.}, b[2] = {1., 2.}, x[2] = {0., 0.};
     double work[512];
-    int jpvt[2], rank = 0;
+    int jpvt[2] = {}, rank = 0;
     cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 2, 1, 2, 1., a, 2, b, 2, 0., x, 2);
-    LAPACKE_dgelsy_work(LAPACK_COL_MAJOR, 2, 2, 1, a, 2, b, 2, jpvt, 1e-13, &rank, work, 512);
-    *output = rank + static_cast<int>(x[0] != 4.);
+    const int info = LAPACKE_dgelsy_work(LAPACK_COL_MAJOR, 2, 2, 1, a, 2, b, 2, jpvt, 1e-13, &rank, work, 512);
+    *output = (info == 0 && rank == 2 && x[0] == 4. && openblas_get_config() != nullptr);
 }
 EOF
 capi_ok=0
@@ -76,9 +85,11 @@ for local_bind_try in "$local_bind" ''; do
     cat > "$probe_dir/Makevars" <<EOF
 CXX_STD = CXX17
 PKG_CPPFLAGS = $capi_cppflags
-PKG_LIBS = $capi_link $local_bind_try
+PKG_CXXFLAGS = -ffp-contract=off $openmp_flags
+PKG_LIBS = $openmp_flags $capi_link $local_bind_try
 EOF
-    if (cd "$probe_dir" && "$r_command" CMD SHLIB --preclean -o "capi$extension" capi.cpp) >> config.log 2>&1; then
+    if (cd "$probe_dir" && "$r_command" CMD SHLIB --preclean -o "capi$extension" capi.cpp &&
+        "$r_command" --vanilla --slave -e 'dyn.load(paste0("capi", .Platform$dynlib.ext)); stopifnot(.C("rkalos_capi_probe", integer(1))[[1]] == 1L)') >> config.log 2>&1; then
         local_bind="$local_bind_try"
         capi_ok=1
         break

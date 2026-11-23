@@ -12,3 +12,21 @@ source_fixture <- function(file, local = FALSE, ...) {
   }
   invisible(result)
 }
+
+# The frozen decimal strings encode binary64 values. On platforms where long
+# double == double, R's decimal conversion can round these one ULP away.
+fixture_doubles <- function(values) {
+  result <- rep(NA_real_, length(values))
+  finite <- !is.na(values) & !values %in% c("NA", "NaN", "")
+  if (any(finite)) {
+    json <- paste0("[", paste(values[finite], collapse=","), "]")
+    result[finite] <- jsonlite::fromJSON(json)
+  }
+  result
+}
+
+read_numeric_fixture <- function(path, columns = "value") {
+  data <- utils::read.csv(path, colClasses=stats::setNames(rep("character", length(columns)), columns))
+  for (column in columns) data[[column]] <- fixture_doubles(data[[column]])
+  data
+}

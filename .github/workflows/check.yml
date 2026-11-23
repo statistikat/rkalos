@@ -29,6 +29,36 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
+      - name: Fetch the locked OpenBLAS recipe
+        uses: actions/checkout@v5
+        with:
+          repository: statistikat/kalos
+          ref: 0e064dd18eb45568fc35e1bed337161598ace36f
+          path: .kalos-provider
+      - name: Build the pinned LP64 provider
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update && sudo apt-get install -y gfortran
+          else
+            brew install gcc
+          fi
+          python .kalos-provider/tools/build-openblas.py --prefix "$RUNNER_TEMP/openblas" --jobs 2
+          echo "KALOS_OPENBLAS_ROOT=$RUNNER_TEMP/openblas" >> "$GITHUB_ENV"
+      - name: Set up UCRT build tools for OpenBLAS
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: make mingw-w64-ucrt-x86_64-gcc-fortran mingw-w64-ucrt-x86_64-python
+      - name: Build the pinned Windows LP64 provider
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          prefix="$(cygpath -m "$RUNNER_TEMP")/openblas"
+          python .kalos-provider/tools/build-openblas.py --prefix "$prefix" --jobs 2
+          echo "KALOS_OPENBLAS_ROOT=$prefix" >> "$GITHUB_ENV"
       - name: Compiler mode
         shell: Rscript {0}
         run: |
@@ -40,6 +70,7 @@ jobs:
           packages: |
             local::.
             any::tinytest
+            any::jsonlite
             any::rcmdcheck
           dependencies: '"hard"'
       - run: python tools/sync-core.py --verify
@@ -51,7 +82,10 @@ jobs:
         run: |
           library(rkalos, lib.loc=file.path("check", "rkalos.Rcheck"))
           stopifnot(!any(c("rJava", "rjd3toolkit", "rjd3x13", "rjd3tramoseats") %in% loadedNamespaces()))
-          info <- core_version()$parallel
+          provider <- core_version()
+          stopifnot(provider$provider == "OpenBLAS", provider$blas_integer_bits == 32L,
+                    grepl("0.3.34", provider$provider_version, fixed=TRUE))
+          info <- provider$parallel
           if ("${{ matrix.serial }}" == "true") stopifnot(!info$compiled, info$probe_threads == 1L)
           if (Sys.info()[["sysname"]] == "Linux" && "${{ matrix.serial }}" == "false") stopifnot(info$probe_threads > 1L)
       - uses: actions/upload-artifact@v4

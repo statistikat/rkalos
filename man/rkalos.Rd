@@ -33,7 +33,7 @@
 \alias{x11_seasonal_normalize}
 \alias{x11_initial_additive}
 \title{Experimental Kalos Engine Interfaces}
-\description{Independent, Java-free time-series numerical interfaces. Full seasonal-adjustment fitting and automatic model selection remain unavailable.}
+\description{Independent, Java-free time-series numerical interfaces. The exported \code{native_x13_fit} accepts a fixed monthly specification and \code{native_x13_fit_automatic} accepts decoder-equivalent automatic module blocks. Consult \code{capabilities()} for route requirements and refusals.}
 \usage{
 capabilities()
 core_version()

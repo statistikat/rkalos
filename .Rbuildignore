@@ -7,3 +7,4 @@
 ^tools/migration$
 ^LICENSE\.md$
 ^config\.log$
+^\.kalos-provider$

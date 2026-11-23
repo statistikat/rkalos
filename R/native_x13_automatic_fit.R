@@ -31,13 +31,13 @@
   label<-paste0("automatic spec ",module,"$",name)
   if(is.null(value))
     stop(label," is required request data (the automatic spec promotes no defaults).",call.=FALSE)
-  if(length(value)!=1L || is.na(value)) stop(label," must be a single non-NA value.",call.=FALSE)
+  if(!is.null(dim(value)) || length(value)!=1L || is.na(value)) stop(label," must be a single non-NA value.",call.=FALSE)
   if(identical(kind,"num")) {
-    if(!is.numeric(value)) stop(label," must be a number.",call.=FALSE)
+    if(!is.numeric(value) || !is.finite(value)) stop(label," must be a number.",call.=FALSE)
     return(as.numeric(value))
   }
   if(identical(kind,"int")) {
-    if(!is.numeric(value) || as.numeric(value)!=floor(as.numeric(value)))
+    if(!is.numeric(value) || !is.finite(value) || abs(value) > .Machine$integer.max || value!=floor(value))
       stop(label," must be a whole number.",call.=FALSE)
     return(as.integer(value))
   }
@@ -84,7 +84,8 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
     max_outliers="int",tcrate="num"))
   if(!is.null(outliers[["span"]])) {
     sp<-outliers$span
-    if(!is.numeric(sp)||length(sp)!=2L||any(is.na(sp))||any(sp!=floor(sp)))
+    if(!is.numeric(sp) || !is.null(dim(sp)) || length(sp)!=2L || any(!is.finite(sp)) ||
+       any(sp!=floor(sp)) || sp[1L]<1 || sp[2L]<sp[1L] || sp[2L]>length(series))
       stop("automatic spec outliers$span must be NULL or a length-2 integer vector.",call.=FALSE)
   } else sp<-NULL
   types<-outliers[["types"]]
@@ -100,26 +101,35 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
   if(!is.character(sigma)||length(sigma)!=1L||is.na(sigma))
     stop('The sigma weight policy must be "legacy" or "accurate" (or NULL for the maintainer default).',call.=FALSE)
   provenance<-if(sigma_defaulted) "legacy (default)" else paste0(sigma," (explicit)")
-  if(is.null(frequency)||is.null(start_period)||is.null(first_year)) {
-    span<-stats::tsp(series)
-    if(is.null(span)&&is.null(frequency))
-      stop("A plain numeric series needs explicit frequency, start_period and first_year.",call.=FALSE)
-    if(!is.null(span)) {
-      if(is.null(frequency))frequency<-span[3L]
-      if(is.null(start_period))start_period<-round((span[1L]-floor(span[1L]))*frequency)+1L
-      if(is.null(first_year))first_year<-floor(span[1L])
-    } else if(is.null(start_period)||is.null(first_year))
-      stop("A plain numeric series needs explicit start_period and first_year.",call.=FALSE)
+  if (!is.numeric(series) || !is.null(dim(series)) || !length(series))
+    stop("series must be a nonempty univariate numeric vector or ts.", call.=FALSE)
+  calendar_int <- function(value, name) .auto_required_entry("calendar", name, "int", value)
+  if (stats::is.ts(series)) {
+    series_frequency <- stats::frequency(series)
+    ordinal <- round(stats::tsp(series)[1L] * series_frequency)
+    if (abs(stats::tsp(series)[1L] * series_frequency - ordinal) > 1e-6)
+      stop("series must start on an exact calendar period.", call.=FALSE)
+    calendar_value <- function(value, expected, name) {
+      if (!is.null(value) && calendar_int(value, name) != expected)
+        stop(name, " disagrees with the ts calendar.", call.=FALSE)
+      calendar_int(expected, name)
+    }
+    frequency <- calendar_value(frequency, series_frequency, "frequency")
+    start_period <- calendar_value(start_period, ordinal %% frequency + 1, "start_period")
+    first_year <- calendar_value(first_year, floor(ordinal / frequency), "first_year")
+  } else {
+    frequency <- calendar_int(frequency, "frequency")
+    start_period <- calendar_int(start_period, "start_period")
+    first_year <- calendar_int(first_year, "first_year")
   }
-  f<-as.integer(frequency)
-  tsp_orig<-stats::tsp(series)
-  y<-if(!is.null(dim(series)))as.vector(series) else series
-  if(!is.numeric(y))y<-as.numeric(y)
-  # The decoder automatic X-11 surface (contract G4): Msr for every calendar
-  # period, automatic Henderson; the refusal for a non-monthly frequency is the
-  # core's, answered before any of this state is interpreted.
-  seasonal<-rep("msr",f)
-  result<-.native_x13_fit_automatic(y,f,as.integer(start_period),as.integer(first_year),
+  f <- frequency
+  start <- c(first_year, start_period)
+  ordinal <- as.double(first_year) * f + start_period - 1
+  backcast <- calendar_int(backcast, "backcast")
+  forecast <- calendar_int(forecast, "forecast")
+  y <- as.numeric(series)
+  seasonal <- if (f == 12L) rep("msr", 12L) else character()
+  result<-.native_x13_fit_automatic(y,f,start_period,first_year,
     tr$aicc,am$max_d,am$max_bd,am$ub1,am$ub2,am$cancel,am$precision,am$models_count,
     am$max_p,am$max_q,am$max_bp,am$max_bq,am$balanced,am$mixed,am$accept_white_noise,am$eps,
     ou$used,types,sp,ou$max_round,ou$max_outliers,
@@ -128,19 +138,10 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
     rg$tsig,calendar,easter,trading_days,user_variables,seasonal,sigma,lower_sigma,
     upper_sigma,msr_policy,mode,as.integer(backcast),as.integer(forecast))
   result$sigma_provenance<-provenance
-  ordinal<-if(!is.null(tsp_orig))round(tsp_orig[1L]*f) else f+as.integer(start_period)-1L
-  start<-if(!is.null(tsp_orig))
-    c(floor(tsp_orig[1L]),as.integer(round((tsp_orig[1L]-floor(tsp_orig[1L]))*f))+1L)
-    else c(as.integer(first_year),as.integer(start_period))
-  # The horizon calendars (item 21-H.4): the core normalizes a negative count to
-  # |h| annual frequencies (kAnnualFrequency at the initialStep route); the
-  # extended composition tables (out, d10..c17) carry bc months before the input
-  # calendar start, the n-length tables keep the start above unchanged.
-  bc_eff<-as.integer(backcast);if(bc_eff<0L)bc_eff<--bc_eff*12L
-  year_ordinal<-if(!is.null(tsp_orig))round(tsp_orig[1L]*f) else
-    as.integer(first_year)*f+as.integer(start_period)-1L
-  ext_start<-if(bc_eff>0L){o<-year_ordinal-bc_eff
-    c(floor(o/f),as.integer(o%%f)+1L)} else start
+  extended_ordinal <- ordinal - result$effective_backcast
+  extended_length <- length(y) + result$effective_backcast + result$effective_forecast
+  ext_start <- if (result$effective_backcast > 0L)
+    c(floor(extended_ordinal / f), extended_ordinal %% f + 1L) else start
   if(!is.null(result[["preadjustment"]])) { # past the fail-closed guards
     basis<-list();avail<-list()
     for(name in names(result$preadjustment$tables)) {
@@ -154,7 +155,7 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
     result$preadjustment$available_rows<-avail
   }
   if(!is.null(result[["selection"]])) { # the same record the selection wrapper delivers
-    result$selection<-.x11_decorate_selection_record(result$selection,ordinal,f,length(y))
+    result$selection<-.x11_decorate_selection_record(result$selection,extended_ordinal,f,extended_length)
   }
   if(identical(result$status,"available")) {
     for(name in c("d10","d11","d12","d13","c17"))
@@ -163,7 +164,7 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
     result$finals$tables<-.x13_decorate_tables(result$finals$tables,start,f)
     for(name in c("finalSA","finalTrend","finalIrregular"))
       result[[name]]<-stats::ts(result[[name]],start=start,frequency=f)
-    result$series<-if(!is.null(dim(series)))series else stats::ts(y,start=start,frequency=f)
+    result$series<-stats::ts(y,start=start,frequency=f)
   } else {
     result$records_only<-if(grepl("^failed:",result$status))
       "the machine threw inside the pinned calc body; the decision chain kept "
