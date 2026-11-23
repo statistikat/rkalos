@@ -18,6 +18,7 @@
 // lookup finds kalos::detail's engine helpers (Poly, SymF, cplx, the *_g /
 // *_l comparison shims) exactly as before.
 
+#include <exception>
 #include "kalos/detail/hostlineage.hpp"
 #include <algorithm>
 #include <charconv>

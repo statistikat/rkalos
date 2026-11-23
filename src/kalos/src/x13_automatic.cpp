@@ -176,8 +176,8 @@ std::string outlier_name(OutlierType type, std::size_t position,
     case OutlierType::TransitoryChange: code = "TC"; break;
     case OutlierType::SeasonalOutlier: code = "SO"; break;
   }
-  const int index = first_period - 1 + static_cast<int>(position);
-  const int year = first_year + index / 12;
+  const auto index = first_period - 1 + static_cast<std::int64_t>(position);
+  const auto year = first_year + index / 12;
   const int month = index % 12 + 1;
   std::ostringstream stream;
   if (year < 0) {
@@ -310,8 +310,8 @@ struct Modelling {
 class AutomaticPipeline {
  public:
   AutomaticPipeline(const X13AutomaticRequest& request,
-                    X13AutomaticFitResult& result)
-      : request_(request), result_(result) {}
+                    X13AutomaticFitResult& result, int backcast, int forecast)
+      : request_(request), result_(result), backcast_(backcast), forecast_(forecast) {}
 
   // The failed: stage/round of the last calc position (entry-point use).
   const std::string& stage() const { return stage_; }
@@ -1905,12 +1905,8 @@ class AutomaticPipeline {
     fit_result.mode_effective = forceMode(out.log, request_.mode);
     // The pinned process semantics (item 21-H.4): the spec horizons are
     // month counts; a negative value means |h| annual frequencies.
-    const int nb = request_.backcast < 0
-                       ? -request_.backcast * kAnnualFrequency
-                       : request_.backcast;
-    const int nf = request_.forecast < 0
-                       ? -request_.forecast * kAnnualFrequency
-                       : request_.forecast;
+    const int nb = backcast_;
+    const int nf = forecast_;
     fit_result.backcast = nb;
     fit_result.forecast = nf;
 
@@ -2052,6 +2048,8 @@ class AutomaticPipeline {
 
   const X13AutomaticRequest& request_;
   X13AutomaticFitResult& result_;
+  const int backcast_;
+  const int forecast_;
   std::vector<OutlierVariable> empty_variables_;
 
   Modelling model_;
@@ -2129,6 +2127,17 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
         "detection (21-I)";
     return out;
   }
+  const auto months = [](int count) -> std::int64_t {
+    return count < 0 ? -static_cast<std::int64_t>(count) * kAnnualFrequency : count;
+  };
+  const auto backcast = months(request.backcast);
+  const auto forecast = months(request.forecast);
+  const auto max_length = std::min<std::size_t>(
+      std::numeric_limits<int>::max(), request.input.max_size());
+  if (request.input.size() > max_length ||
+      static_cast<std::uint64_t>(backcast + forecast) > max_length - request.input.size()) {
+    throw std::invalid_argument("x13 automatic fit extended series exceeds the supported index range");
+  }
   if (request.outlier_span &&
       (request.outlier_span->first != 0 ||
        request.outlier_span->second !=
@@ -2137,7 +2146,7 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
     return out;
   }
 
-  AutomaticPipeline pipeline(request, out);
+  AutomaticPipeline pipeline(request, out, static_cast<int>(backcast), static_cast<int>(forecast));
   try {
     pipeline.run();
   } catch (const std::runtime_error& error) {

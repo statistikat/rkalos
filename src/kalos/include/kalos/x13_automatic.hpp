@@ -16,7 +16,7 @@
 // this kind is a distinct request/result pair behind its own entry point
 // and x13_fit.hpp/cpp carry no change.
 //
-// Delivered scope (contract envelope): frequency 12, horizons {0, 0}, the
+// Delivered scope (contract envelope): frequency 12, checked backcast and forecast horizons (21-H.4), the
 // four decomposition modes through the pinned forcing, a complete finite
 // input, outlier span = the full estimation domain, transform.function =
 // Auto (the decoder builds the LogLevelModule only in that case).
@@ -73,7 +73,7 @@ enum class X13FitSpecKind { fixed_spec, automatic_spec };
 // (mean_test_initial 1.96 / mean_test_final 1.0) and the FinalEstimator
 // tsig (builder default 1.0). The X-11 block mirrors the decoder X11Spec
 // (filters Msr allowed, Henderson 0 = automatic, REQUIRED sigma policy,
-// sigma cuttings, horizons {0, 0} only).
+// sigma cuttings and horizons in months or negative annual counts).
 struct X13AutomaticRequest {
     std::vector<double> input; // complete, finite, monthly
     int frequency=12;

@@ -5,17 +5,6 @@ option(KALOS_BUILD_TESTS "Build standalone tests" ON)
 option(KALOS_SANITIZERS "Enable address and undefined behavior sanitizers" OFF)
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(KalosOpenBLAS REQUIRED)
-include(CheckCXXSourceCompiles)
-set(CMAKE_REQUIRED_LIBRARIES Kalos::OpenBLAS)
-check_cxx_source_compiles("#include <cblas.h>
-#include <lapacke.h>
-#include <type_traits>
-static_assert(sizeof(int)==4 && std::is_same<lapack_int,int>::value, \"LP64 required\");
-int main() { return openblas_get_config() ? 0 : 1; }" KALOS_LP64_PROVIDER)
-unset(CMAKE_REQUIRED_LIBRARIES)
-if(NOT KALOS_LP64_PROVIDER)
-  message(FATAL_ERROR "Kalos requires OpenBLAS with CBLAS, LAPACKE and a 32-bit LP64 integer ABI")
-endif()
 # A committed binding snapshot supplies its own exact revision header.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/kalos/revision.hpp")
   file(READ "${CMAKE_CURRENT_SOURCE_DIR}/include/kalos/revision.hpp" KALOS_REVISION_HEADER)
@@ -88,6 +77,7 @@ add_library(kalos STATIC
   src/tramo_outlier_scan.cpp
   src/tramo_outlier_rounds.cpp
   src/tramo_regression_tests.cpp
+  src/tramo_seats_bridge.cpp
   src/tramo_seats_model_validator.cpp
   src/tramo_transform_decision.cpp
   src/transformation_decision.cpp
@@ -232,6 +222,7 @@ if(KALOS_BUILD_TESTS)
     test_tramo_model_builder
     test_tramo_outlier_scan
     test_tramo_regression_tests
+    test_tramo_seats_bridge
     test_tramo_seats_model
     test_tramo_transform_decision
     test_transformation_decision
@@ -267,6 +258,10 @@ if(KALOS_BUILD_TESTS)
       target_compile_options(${test_name} PRIVATE /UNDEBUG)
     else()
       target_compile_options(${test_name} PRIVATE -UNDEBUG)
+    endif()
+    if(test_name STREQUAL "test_tramo_seats_bridge")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_BRIDGE_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/bridge.txt")
     endif()
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES ENVIRONMENT

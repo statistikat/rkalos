@@ -8,6 +8,7 @@
 // comparison is transcribed with its exact opcode family: dcmpg yields +1
 // and dcmpl -1 for a NaN operand, which is what decides whether a NaN
 // p-value stops or continues each gate below.
+#include <string>
 #include "kalos/tramo_differencing_battery.hpp"
 
 #include <algorithm>

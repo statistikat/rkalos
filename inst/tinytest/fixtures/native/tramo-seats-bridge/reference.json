@@ -1,0 +1,12 @@
+{
+  "java_version": "21.0.11",
+  "jars": {
+    "jdplus-sa-base-api-3.9.0.jar": "3242fc40ed6e6684b9d0b8840aed234f2693457668b9d61c698c177339a6f5d6",
+    "jdplus-sa-base-core-3.9.0.jar": "265722774bd56e43888264e345a69482070e458ecc6f1e41d9ac3f6d11b2e8d4",
+    "jdplus-toolkit-base-api-3.9.0.jar": "fed5fe554c1e64e371d40a1a55d449323cc2630a0d5ea33a3a34e47f7926c2c8",
+    "jdplus-toolkit-base-core-3.9.0.jar": "1880e23dc1665be2822c30c4da11ea0f2482a8da5c3e9c80b372ff6b8375dd71",
+    "jdplus-tramoseats-base-api-3.9.0.jar": "9efd66f0581da262309ec5beb74afc6ace7e54402706cb13db62a23ffc7fb5b8",
+    "jdplus-tramoseats-base-core-3.9.0.jar": "f919fda9f88dcae01bc122f049889ba1ac37747cc409a1f9fdf793ac4bb09db9"
+  },
+  "inputs_sha256": "be09660e3a75442523856c31dde7ba3eea3f15e6c6920cc11e5f49b54a5d422f"
+}

@@ -4,6 +4,15 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 integration checkpoint — fitted SEATS bridge (2026-11-23)
+
+The separate generated snapshot advances to Kalos `ef98f14`, with
+188 core files, 112 fixtures and 335 evidence files. Offline verification
+passed. This revision contains the structured WK decomposition, the
+qualified fixed-model bridge, and the paired JVM capture for the component
+merge. The CI provider recipe follows the new lock. Binding and product
+gates remain separate from this snapshot update.
+
 ## Automatic X-13 forecast and backcast tables (2026-11-23)
 
 Version `0.1.0.9002` projects the positive-length 21-H.4 windows from Kalos

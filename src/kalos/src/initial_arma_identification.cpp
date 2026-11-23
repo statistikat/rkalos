@@ -176,12 +176,24 @@ bool all_finite(const std::vector<double>& v) {
 // pinned machine has no null return path: any numerical failure throws,
 // mirrored here as std::runtime_error (the ProcessingResult.Failed
 // equivalence, never a silent fallback).
-RegArmaBic evaluate_candidate(const SarmaOrders& orders, const std::vector<double>& cursor,
-    double eps, int stage, int slot, const Interrupt& interrupt, const char* where) {
-    const std::size_t n = cursor.size();
+SarimaEstimationResult fit_candidate(const SarmaOrders& orders,
+    const std::vector<double>& cursor, double eps, const Interrupt& interrupt) {
+    if (orders.parameters_count() == 0) {
+        // The panel consumes the JVM likelihood even when there is nothing
+        // to optimize. The public fixed-parameter estimator deliberately
+        // uses the generic physical objective for that separate API.
+        if (interrupt) interrupt();
+        const auto point = detail::pinned_deviances_evaluate(cursor, 0, 0, 0, 0,
+            orders.period, {}, {});
+        SarimaEstimationResult result{};
+        result.status = "likelihood_only";
+        result.log_likelihood = point ? point->log_likelihood
+                                      : std::numeric_limits<double>::quiet_NaN();
+        return result;
+    }
     SarimaEstimationRequest request;
     request.series.values = cursor;
-    request.series.missing.assign(n, 0);
+    request.series.missing.assign(cursor.size(), 0);
     // No design at all: the mean lives in the cursor upstream (the OLS
     // residual cursor already carries the mean correction), and the pinned
     // candidate fits a design-free ARMA. The qualified seam runs the
@@ -200,7 +212,12 @@ RegArmaBic evaluate_candidate(const SarmaOrders& orders, const std::vector<doubl
     request.control = EstimationControl{eps, 1.0e-4, true, false, true, true,
         EstimationStartingPoint::HannanRissanen, EstimationSolver::PinnedLevenbergMarquardt};
 
-    const SarimaEstimationResult result = estimate_sarima_fixed(request, interrupt);
+    return estimate_sarima_fixed(request, interrupt);
+}
+
+RegArmaBic evaluate_candidate(const SarmaOrders& orders, const std::vector<double>& cursor,
+    double eps, int stage, int slot, const Interrupt& interrupt, const char* where) {
+    const SarimaEstimationResult result = fit_candidate(orders, cursor, eps, interrupt);
     require(result.status != "start_not_evaluable", where,
         "candidate " + orders.text()
             + ": the pinned machine rejects the start point (the pinned "
@@ -236,7 +253,7 @@ RegArmaBic evaluate_candidate(const SarmaOrders& orders, const std::vector<doubl
     evaluation.fitStatus = result.status;
     evaluation.logLikelihood = result.log_likelihood;
     evaluation.coefficients = result.coefficients;
-    const double nd = static_cast<double>(n);
+    const double nd = static_cast<double>(cursor.size());
     const double k = static_cast<double>(orders.parameters_count() + 1);
     evaluation.bic = ((-2.0 * result.log_likelihood) + k * detail::fdlibm_log(nd)) / nd;
     return evaluation;
