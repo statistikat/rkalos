@@ -1,4 +1,5 @@
 #include <Rcpp.h>
+#include <kalos/arma_diagnostics.hpp>
 #include <kalos/tramo_seats_pipeline.hpp>
 
 namespace {
@@ -115,12 +116,15 @@ Rcpp::List native_tramoseats_rsa0(const std::vector<double>& series, int year, i
     const auto& decomposition = result.decomposition;
     // Both projections receive the month counts normalized at the R boundary.
     const auto errors = kalos::tramo_tr0_forecast_errors(fitted, forecast);
+    const auto lb = kalos::rsa0_residual_ljung_box(fitted.residuals.values);
     return Rcpp::List::create(
         Rcpp::_["status"] = decomposition.extraction.fact("status"),
         Rcpp::_["residuals"] = Rcpp::List::create(
             Rcpp::_["start"] = Rcpp::NumericVector::create(
                 static_cast<double>(fitted.residuals.start_year), fitted.residuals.start_month),
-            Rcpp::_["tsres"] = fitted.residuals.values, Rcpp::_["ser"] = fitted.residuals.standard_error),
+            Rcpp::_["tsres"] = fitted.residuals.values, Rcpp::_["ser"] = fitted.residuals.standard_error,
+            Rcpp::_["lb"] = Rcpp::List::create(Rcpp::_["value"] = lb.value, Rcpp::_["pvalue"] = lb.p,
+                Rcpp::_["df"] = lb.df, Rcpp::_["lags"] = 24)),
         Rcpp::_["series_forecast_stdev_status"] = errors.status,
         Rcpp::_["series_forecast_stdev"] = errors.standard_errors,
         Rcpp::_["model"] = Rcpp::List::create(

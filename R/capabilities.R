@@ -7,7 +7,7 @@ capabilities <- function() {
                 native_x13_fit_restricted = TRUE,
                 native_x13_fit_automatic = TRUE,
                 tramo_seats_fit = list(available = TRUE, templates = "RSA0", aliases = "TR0",
-                  series_forecast_stdev = TRUE, residuals = c("tsres", "ser"),
+                  series_forecast_stdev = TRUE, residuals = c("tsres", "ser", "lb"),
                   frequency = 12L, complete_finite_input_only = TRUE, mode = "additive",
                   entry_point = "native_tramoseats_fit"),
                 restricted_fit = list(

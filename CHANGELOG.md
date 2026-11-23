@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9007 adds the public RSA0 residual Ljung–Box statistic,
+upper-tail probability, degrees of freedom and lag count.
+
 Version 0.1.0.9006 exposes the dated RSA0 preprocessing residual series
 and its scalar standard error.
 

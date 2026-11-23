@@ -4,6 +4,23 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 RSA0 residual independence diagnostic (2026-11-23)
+
+Version `0.1.0.9007` returns `fit$residuals$lb` with the public
+Ljung–Box statistic, upper-tail probability, 22 degrees of freedom and
+24 lags. This public residual test uses zero-mean autocorrelations.
+The statistic and probability are undefined for 24 or fewer residuals.
+The installed serial and two-worker OpenMP packages each passed
+**41/41** explicit diagnostic checks
+covering the six original series and three short public fits, alongside
+**42/42** residual, **62/62** forecast-error and **498/498** fit checks.
+All seven finite pairs matched the paired JVM capture bit-for-bit.
+
+At `9e87b84`, the complete serial suite passed **301,116/301,116** over
+58 files. A fresh OpenMP run at `e92f076` using independent R processes
+also passed **301,078/301,078** across all 57 files in a single run.
+[Public diagnostic replay](inst/tinytest/test-native-tramoseats-ljung-box.R)
+
 ## M6 integration checkpoint for public residual independence (2026-11-23)
 
 Kalos `aea3d152c63ca365b8dc53887aa16048c38323dd` supplies the public
