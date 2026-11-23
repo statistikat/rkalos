@@ -71,6 +71,13 @@ x$outliers <- bad
 expect_error(do.call(rkalos::seats_from_tramo, x), "position")
 x$outliers$position <- 1L
 expect_identical(do.call(rkalos::seats_from_tramo, x)$status, "ok")
+x$outliers$type <- "SO"
+expect_error(do.call(rkalos::seats_from_tramo, x), "AO, LS or TC")
 x$outliers$type <- "TC"
-expect_error(do.call(rkalos::seats_from_tramo, x), "AO or LS")
+x$outliers$tc_rate <- 0.8
+expect_error(do.call(rkalos::seats_from_tramo, x), "tc_rate")
+x$outliers$tc_rate <- NA_real_
+expect_error(do.call(rkalos::seats_from_tramo, x), "tc_rate")
+x$outliers$tc_rate <- 0.7
+expect_identical(do.call(rkalos::seats_from_tramo, x)$status, "ok")
 expect_true("seats_from_tramo" %in% rkalos::capabilities()$primitives)

@@ -50,7 +50,7 @@ AR-to-MA refit, including the merged product series for fitted AO/LS effects.
 
 Use `native_tramoseats_fit(series, "RSA1")` for monthly TR1 estimation
 and SEATS extraction from the original observations. It restores detected
-outlier effects in the final components. Its per-template capability
+additive outliers, level shifts and transitory changes (monthly decay 0.7) in the final components. Its per-template capability
 descriptor lists available residual diagnostics and forecast errors.
 
 `native_tramo_preprocess(series, "TR1")` fits the stock monthly TR1

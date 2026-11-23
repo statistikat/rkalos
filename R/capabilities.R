@@ -14,6 +14,7 @@ capabilities <- function() {
                     RSA0 = list(modes = "additive", residuals = c("tsres", "ser", "lb", "doornikhansen"),
                                 series_forecast_stdev = TRUE),
                     RSA1 = list(modes = c("additive", "multiplicative"), residuals = "tsres",
+                                outlier_types = c("AO", "LS", "TC"), tc_rate = 0.7,
                                 series_forecast_stdev = FALSE)),
                   series_forecast_stdev = TRUE, residuals = c("tsres", "ser", "lb", "doornikhansen"),
                   frequency = 12L, complete_finite_input_only = TRUE, mode = c("additive", "multiplicative"),

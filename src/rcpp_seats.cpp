@@ -95,7 +95,10 @@ Rcpp::List native_seats_from_tramo(const Rcpp::List& spec, const Rcpp::List& cal
     const Rcpp::NumericVector coefficients = outliers["coefficient"];
     for (R_xlen_t i = 0; i < types.size(); ++i) {
         kalos::TramoFitVariable variable;
-        variable.type = types[i] == "AO" ? kalos::TramoOutlierKind::Ao : kalos::TramoOutlierKind::Ls;
+        if (types[i] == "AO") variable.type = kalos::TramoOutlierKind::Ao;
+        else if (types[i] == "LS") variable.type = kalos::TramoOutlierKind::Ls;
+        else if (types[i] == "TC") variable.type = kalos::TramoOutlierKind::Tc;
+        else Rcpp::stop("Unknown fitted outlier type.");
         variable.position = positions[i] - 1;
         variable.coefficient = coefficients[i];
         fit.variables.push_back(variable);

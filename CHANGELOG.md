@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9013 restores stock monthly transitory changes in raw RSA1
+and caller-supplied TRAMO fits on both level and log scales.
+
 Version 0.1.0.9012 restores additive AO and LS effects to fitted and raw
 monthly SEATS decompositions. The raw RSA1 fit now returns the public
 products for the two level-scale outlier cases.

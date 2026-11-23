@@ -1,8 +1,22 @@
 # rkalos implementation status
 
-Updated **2026-11-23**. Persephone uses the independent rkalos package.
+Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
+
+## M5 monthly transitory changes in R (2026-11-24)
+
+Version `0.1.0.9013` restores stock monthly TC effects in raw RSA1
+and caller-supplied TRAMO decompositions. `seats_from_tramo()` accepts
+dated TC coefficients with the stock monthly decay of 0.7 on both
+scales. The 12 fits match **120 component rows and 7,560 public JVM
+values bit-for-bit**, including four cases that estimate TCs.
+
+Serial and two-worker OpenMP each passed **853/853** RSA1 assertions,
+all four related numerical suites and isolated Java-free smoke tests.
+The complete OpenMP source check at `0.1.0.9011` passed all
+**302,491/302,491** assertions with the two known compiler warnings.
+[RSA1 product replay](inst/tinytest/test-native-tramoseats-rsa1.R)
 
 ## M5 integration checkpoint for monthly transitory changes (2026-11-24)
 

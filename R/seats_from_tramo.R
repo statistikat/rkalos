@@ -12,15 +12,21 @@ seats_from_tramo <- function(series, ssq, effective, estimated, d = 0L, bd = 0L,
     stop("The fitted likelihood requires positive ssq and 0 <= estimated < effective <= length(series).",
          call. = FALSE)
   if (is.null(outliers)) outliers <- data.frame(type = character(), position = integer(), coefficient = numeric())
-  if (!is.data.frame(outliers) || !setequal(names(outliers), c("type", "position", "coefficient")) ||
-      length(names(outliers)) != 3L || !is.character(outliers$type) || !is.null(dim(outliers$type)) ||
-      any(!outliers$type %in% c("AO", "LS")) ||
+  if (!is.data.frame(outliers) || !setequal(setdiff(names(outliers), "tc_rate"), c("type", "position", "coefficient")) ||
+      anyDuplicated(names(outliers)) > 0L || !is.character(outliers$type) || !is.null(dim(outliers$type)) ||
+      any(!outliers$type %in% c("AO", "LS", "TC")) ||
       !is.numeric(outliers$position) || is.complex(outliers$position) || !is.null(dim(outliers$position)) ||
       any(!is.finite(outliers$position)) || any(outliers$position != floor(outliers$position)) ||
       any(outliers$position < 1L | outliers$position > length(series)) ||
       !is.numeric(outliers$coefficient) || is.complex(outliers$coefficient) ||
       !is.null(dim(outliers$coefficient)) || any(!is.finite(outliers$coefficient)))
-    stop("outliers must have AO or LS type, one-based observed position and finite coefficient.", call. = FALSE)
+    stop("outliers must have AO, LS or TC type, one-based observed position and finite coefficient.", call. = FALSE)
+  if ("tc_rate" %in% names(outliers)) {
+    rates <- outliers$tc_rate[outliers$type == "TC"]
+    if (!is.numeric(outliers$tc_rate) || is.complex(outliers$tc_rate) ||
+        !is.null(dim(outliers$tc_rate)) || anyNA(rates) || any(rates != 0.7))
+      stop("Monthly TC outliers require the stock tc_rate of 0.7.", call. = FALSE)
+  }
   outliers$position <- as.integer(outliers$position)
   result <- .native_seats_from_tramo(spec, domain, as.numeric(series), outliers)
   seats_date_components(result, domain$frequency, c("initial", "final", "merged"))
