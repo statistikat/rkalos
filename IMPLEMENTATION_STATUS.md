@@ -32,6 +32,30 @@ The capability list advertises the three primitives. A public TRAMO/SEATS
 fit still depends on the 24-D assembly and its end-to-end qualification.
 [23-B contract](https://github.com/statistikat/kalos/blob/0e064dd18eb45568fc35e1bed337161598ace36f/docs/contracts/tramo-transform-decision-contract.md) · [R fixture replay](inst/tinytest/test-native-tramo-transform.R)
 
+### Full R suite and exact fixture replay
+
+The serial macOS ARM64 run completed all 51 files. **291,938 of 291,997
+assertions passed**. The remaining 59 compare locally regenerated inputs
+to the frozen X-11 inputs, in the sigma (51 of 125 cases) and replacement
+(8 of 22 cases) tests. All native assertions on the captured inputs passed,
+including the exact weights, replacement values, pass tables and X-13
+allocation results. The three decomposition-mode suites passed 13,518/13,518.
+
+Before the fixture-reader update, the seven affected files had 5,147 failures.
+All seven reproduced with the same counts against the pre-M5 installed
+binary. The tests now read the frozen numerical columns with a round-trip
+binary64 parser, preserving signed infinities, and run the native routines
+on the captured input for each case. The independent regeneration
+assertions still compare the local R formulas at full precision.
+
+A separate replay using the pinned glibc sine and cosine kernels matched
+all 22 replacement inputs and 123 of 125 sigma inputs. Reading the two
+large constants in the sigma generator (`1e300` and `1e298`) at their
+correctly rounded binary64 values reproduced the final two cases. The
+standard suite continues to report the host-R differences. The fixture
+bytes, native calculations and tolerances were preserved.
+[Exact fixture reader](inst/tinytest/helpers/fixtures.R) · [Sigma replay](inst/tinytest/test-native-x11-sigma.R) · [Replacement replay](inst/tinytest/test-native-x11-replacement.R)
+
 ## Completed split steps
 
 1. Preserved 102 relevant historical commits and original-to-filtered maps.

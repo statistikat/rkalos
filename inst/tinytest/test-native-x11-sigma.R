@@ -5,16 +5,15 @@ local({
   source_fixture('fixtures/native/x11-sigma-cases.R',local=TRUE)
   bits<-function(a,b) identical(is.na(a),is.na(b)) && identical(a[!is.na(a)],b[!is.na(b)])
   manifest<-read.csv('fixtures/native/x11-sigma/cases.csv')
-  inputs<-read.csv('fixtures/native/x11-sigma/inputs.csv')
-  weights<-read.csv('fixtures/native/x11-sigma/weights.csv')
-  disp1<-read.csv('fixtures/native/x11-sigma/dispersions.csv')
-  disp2<-read.csv('fixtures/native/x11-sigma/dispersions-pass2.csv')
+  inputs<-read_numeric_fixture('fixtures/native/x11-sigma/inputs.csv', 'value')
+  weights<-read_numeric_fixture('fixtures/native/x11-sigma/weights.csv', 'weight')
+  disp1<-read_numeric_fixture('fixtures/native/x11-sigma/dispersions.csv', 'dispersion')
+  disp2<-read_numeric_fixture('fixtures/native/x11-sigma/dispersions-pass2.csv', 'dispersion')
   cases<-x11_sigma_cases()
   expect_identical(sort(names(cases)),sort(unique(manifest$case)))
   expect_identical(nrow(manifest),length(cases))
   for(ca in cases) {
     inp<-x11_sigma_input(ca);v<-inp$values;v[inp$missing]<-NA_real_
-    before<-serialize(v,NULL)
     pinned<-manifest[manifest$case==ca$id,]
     expect_identical(as.integer(pinned$frequency),ca$frequency)
     expect_identical(as.integer(pinned$n),length(v))
@@ -22,7 +21,12 @@ local({
     iv<-inputs$value[rows][order(as.integer(inputs$row[rows]))]
     im<-inputs$missing[rows][order(as.integer(inputs$row[rows]))]
     expect_identical(is.na(v),im,info=paste(ca$id,'input mask'))
-    expect_true(bits(v[!im],iv[!im]),info=paste(ca$id,'input values'))
+    expect_true(bits(v[!im],iv[!im]),info=paste(ca$id,'regenerated input vs capture'))
+    # The native replay consumes the same binary64 inputs as the JVM capture.
+    # Keep the independent local generator comparison above.
+    v <- iv
+    v[im] <- NA_real_
+    before <- serialize(v, NULL)
     ro<-order(as.integer(weights$row[weights$case==ca$id]))
     w<-weights$weight[weights$case==ca$id][ro];p<-weights$pass[weights$case==ca$id][ro]
     final<-w[p==max(p)];first<-w[p==1]

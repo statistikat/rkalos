@@ -17,7 +17,11 @@ x11_mode_qualification <- function(tag, mode, b20_correct, pinned_label,
   pubs<-getFromNamespace('native_x11_selection_pass','rkalos')
   bits<-function(a,b) identical(is.na(a),is.na(b)) && identical(a[!is.na(a)],b[!is.na(a)])
   num<-function(x)as.integer(strsplit(x,' ')[[1]])
-  csv<-function(dir,file) read.csv(paste0('fixtures/native/x11-',dir,'-',tag,'/',file))
+  csv <- function(dir, file, columns = NULL) {
+    path <- paste0('fixtures/native/x11-', dir, '-', tag, '/', file)
+    if (is.null(columns)) return(utils::read.csv(path))
+    read_numeric_fixture(path, columns)
+  }
   read_input<-function(obj,id) {
     rows<-which(obj$case==id);o<-order(as.integer(obj$row[rows]))
     v<-obj$value[rows][o];if('missing' %in% names(obj))v[obj$missing[rows][o]]<-NA_real_
@@ -32,7 +36,7 @@ x11_mode_qualification <- function(tag, mode, b20_correct, pinned_label,
     'D11','D11bis','D12','D13')
   dcenter<-c('D2','D4')
   # ---------------- the fixed B-pass sweep (24 cases) ----------------
-  bman<-csv('bpass','cases.csv'); binp<-csv('bpass','inputs.csv'); btab<-csv('bpass','tables.csv')
+  bman<-csv('bpass','cases.csv'); binp<-csv('bpass','inputs.csv','value'); btab<-csv('bpass','tables.csv','value')
   expect_identical(nrow(bman),24L)
   expect_identical(unique(bman$mode),pinned_label)
   for(i in seq_len(nrow(bman))) {
@@ -67,7 +71,7 @@ x11_mode_qualification <- function(tag, mode, b20_correct, pinned_label,
     expect_identical(serialize(v,NULL),before,paste(tag,id,'input untouched'))
   }
   # ---------------- the fixed C-pass sweep (24 cases) ----------------
-  cman<-csv('cpass','cases.csv'); cinp<-csv('cpass','inputs.csv'); ctab<-csv('cpass','tables.csv')
+  cman<-csv('cpass','cases.csv'); cinp<-csv('cpass','inputs.csv','value'); ctab<-csv('cpass','tables.csv','value')
   expect_identical(nrow(cman),24L)
   expect_identical(unique(cman$mode),pinned_label)
   expect_true(identical(sort(unique(cman$case)),sort(unique(bman$case))),
@@ -109,8 +113,8 @@ x11_mode_qualification <- function(tag, mode, b20_correct, pinned_label,
     expect_identical(again,c,info=paste(tag,id,'determinism'))
   }
   # ---------------- the fixed D-pass sweep (28 cases) ----------------
-  dman<-csv('dpass','cases.csv'); dinp<-csv('dpass','inputs.csv'); dtab<-csv('dpass','tables.csv')
-  dmsr<-csv('dpass','msr.csv')
+  dman<-csv('dpass','cases.csv','global_msr'); dinp<-csv('dpass','inputs.csv','value'); dtab<-csv('dpass','tables.csv','value')
+  dmsr<-csv('dpass','msr.csv',c('ri', 'rs', 'msr'))
   expect_identical(nrow(dman),28L)
   expect_identical(sum(dman$category=='extended'),4L)
   expect_identical(unique(dman$mode),pinned_label)
@@ -189,9 +193,9 @@ x11_mode_qualification <- function(tag, mode, b20_correct, pinned_label,
       'differs from the C pass input',info=paste(tag,id,'reference-series coupling'))
   }
   # ---------------- the selection sweep (15 cases) ----------------
-  sman<-csv('selection','cases.csv'); sinp<-csv('selection','inputs.csv')
-  stab<-csv('selection','tables.csv'); ssels<-csv('selection','selections.csv')
-  smsr<-csv('selection','msr.csv')
+  sman<-csv('selection','cases.csv','icratio'); sinp<-csv('selection','inputs.csv','value')
+  stab<-csv('selection','tables.csv','value'); ssels<-csv('selection','selections.csv','ic_ratio')
+  smsr<-csv('selection','msr.csv','global_msr')
   expect_identical(nrow(sman),15L)
   expect_identical(unique(sman$mode),pinned_label)
   rq<-function(x) {y<-as.integer(strsplit(x,',')[[1]])

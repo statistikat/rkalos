@@ -17,7 +17,9 @@ source_fixture <- function(file, local = FALSE, ...) {
 # double == double, R's decimal conversion can round these one ULP away.
 fixture_doubles <- function(values) {
   result <- rep(NA_real_, length(values))
-  finite <- !is.na(values) & !values %in% c("NA", "NaN", "")
+  result[values %in% c("Inf", "+Inf")] <- Inf
+  result[values %in% "-Inf"] <- -Inf
+  finite <- !is.na(values) & !values %in% c("NA", "NaN", "", "Inf", "+Inf", "-Inf")
   if (any(finite)) {
     json <- paste0("[", paste(values[finite], collapse=","), "]")
     result[finite] <- jsonlite::fromJSON(json)

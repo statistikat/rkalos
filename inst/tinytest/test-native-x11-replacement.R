@@ -7,25 +7,29 @@ local({
   bits<-function(a,b) identical(is.na(a),is.na(b)) && identical(a[!is.na(a)],b[!is.na(b)])
   kindmap<-c('none','four_neighbors','period_average','outside_span')
   manifest<-read.csv('fixtures/native/x11-replacement/cases.csv')
-  inputs<-read.csv('fixtures/native/x11-replacement/inputs.csv')
-  weights<-read.csv('fixtures/native/x11-replacement/weights.csv')
-  repls<-read.csv('fixtures/native/x11-replacement/replacements.csv')
+  inputs<-read_numeric_fixture('fixtures/native/x11-replacement/inputs.csv', 'value')
+  weights<-read_numeric_fixture('fixtures/native/x11-replacement/weights.csv', 'weight')
+  repls<-read_numeric_fixture('fixtures/native/x11-replacement/replacements.csv', 'replacement')
   kinds<-read.csv('fixtures/native/x11-replacement/kinds.csv')
   neigh<-read.csv('fixtures/native/x11-replacement/neighbors.csv')
-  avgs<-read.csv('fixtures/native/x11-replacement/averages.csv')
-  factors<-read.csv('fixtures/native/x11-replacement/factors.csv')
-  corrected<-read.csv('fixtures/native/x11-replacement/corrected.csv')
+  avgs<-read_numeric_fixture('fixtures/native/x11-replacement/averages.csv', 'average')
+  factors<-read_numeric_fixture('fixtures/native/x11-replacement/factors.csv', 'factor')
+  corrected<-read_numeric_fixture('fixtures/native/x11-replacement/corrected.csv', 'value')
   cases<-x11_replacement_cases()
   expect_identical(sort(names(cases)),sort(unique(manifest$case)))
   for(ca in cases) {
     inp<-x11_replacement_input(ca);v<-inp$values;v[inp$missing]<-NA_real_
-    before<-serialize(v,NULL)
     pinned<-manifest[manifest$case==ca$id,]
     expect_identical(as.integer(pinned$n),length(v))
     rows<-order(as.integer(inputs$row[inputs$case==ca$id]))
     iv<-inputs$value[inputs$case==ca$id][rows];im<-inputs$missing[inputs$case==ca$id][rows]
     expect_identical(is.na(v),im,info=paste(ca$id,'input mask'))
-    expect_true(bits(v[!im],iv[!im]),info=paste(ca$id,'input values'))
+    expect_true(bits(v[!im],iv[!im]),info=paste(ca$id,'regenerated input vs capture'))
+    # The native replay consumes the same binary64 inputs as the JVM capture.
+    # Keep the independent local generator comparison above.
+    v <- iv
+    v[im] <- NA_real_
+    before <- serialize(v, NULL)
     # Chain: the final item 22b.3a legacy weights are exactly the fixture input.
     chained<-sigma(v,ca$frequency,ca$start_period,'legacy',ca$backcasts,ca$forecasts,
       ca$exclude,ca$lsig,ca$usig,ca$multiplicative)

@@ -13,10 +13,10 @@ local({
     length(a)==length(b) && all(is.na(a)==is.na(b)) &&
       all(abs(a[!is.na(a)]-b[!is.na(b)])<=1e-15*pmax(1,abs(b[!is.na(b)])))}
   cases<-read.csv('fixtures/native/x13-allocation/cases.csv')
-  inputs<-read.csv('fixtures/native/x13-allocation/inputs.csv')
-  vars<-read.csv('fixtures/native/x13-allocation/vars.csv')
-  columns<-read.csv('fixtures/native/x13-allocation/columns.csv')
-  tables<-read.csv('fixtures/native/x13-allocation/tables.csv')
+  inputs<-read_numeric_fixture('fixtures/native/x13-allocation/inputs.csv', 'value')
+  vars<-read_numeric_fixture('fixtures/native/x13-allocation/vars.csv', 'coefficient')
+  columns<-read_numeric_fixture('fixtures/native/x13-allocation/columns.csv', c('coef', 'value'))
+  tables<-read_numeric_fixture('fixtures/native/x13-allocation/tables.csv', 'value')
   expect_identical(nrow(cases),7L)
   # The boundary vocabulary of the allocation contract, mapped from the
   # capture's pinned Java spellings.
