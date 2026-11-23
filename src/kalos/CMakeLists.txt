@@ -83,6 +83,7 @@ add_library(kalos STATIC
   src/tramo_seats_bridge.cpp
   src/tramo_seats_model_validator.cpp
   src/tramo_tr0.cpp
+  src/tramo_tr1_forecast.cpp
   src/tramo_seats_pipeline.cpp
   src/tramo_transform_decision.cpp
   src/transformation_decision.cpp

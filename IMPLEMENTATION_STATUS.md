@@ -4,6 +4,15 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## RSA1 original-series forecast error checkpoint (2026-11-24)
+
+Kalos `5a72228cacc78ede80d460a56f9f317c58ddfea5` supplies the
+TR1 forecast projection on the original scale, including fitted-regressor
+uncertainty and the log-to-level correction. Both R platform builds
+compile the dedicated source. The source, installed lock and CI pin
+agree. Offline verification passed for **199 core files, 112 fixtures
+and 369 evidence files**.
+
 ## M5 monthly TR3 and RSA3 at the R boundary (2026-11-24)
 
 Version `0.1.0.9015` accepts TR3/RSA3 in preprocessing and complete

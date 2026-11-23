@@ -41,4 +41,9 @@ struct tramo_tr0_forecast_errors_result {
 // no_requested_predictions. Numerical failures retain the covariance status.
 tramo_tr0_forecast_errors_result tramo_tr0_forecast_errors(const tramo_tr0_result& fit, int months);
 
+struct TramoFitResult;
+// Public y_ef on a complete monthly stock TR1 fit with an estimated drift,
+// including AO, LS and stock TC effects and the lognormal back-transformation.
+tramo_tr0_forecast_errors_result tramo_tr1_forecast_errors(const TramoFitResult& fit, int months);
+
 }  // namespace kalos
