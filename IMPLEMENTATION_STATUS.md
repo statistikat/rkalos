@@ -4,6 +4,23 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 additive AO and LS effects in R (2026-11-24)
+
+Version `0.1.0.9012` restores additive outlier effects in both
+`seats_from_tramo()` and `native_tramoseats_fit(series, "RSA1")`.
+Two more raw monthly series select the level transformation and estimate
+one AO and an LS/AO pair. The affected series, adjustment, components
+and forecasts matched **20 JVM rows and 1,200 values** bit-for-bit.
+
+The complete eight-case RSA1 comparison passed **563/563** assertions
+in serial and two-worker OpenMP, including **80 rows and 5,160 values**.
+Both builds passed the fitted-model, WK, TR1 preprocessing and RSA0 fit
+suites and their isolated Java-free smoke tests. The preceding
+`0.1.0.9011` passed **302,487/302,487** full serial checks across 62
+files. At `0.1.0.9009` all **301,942/301,942** OpenMP source checks
+passed with two existing compiler warnings and zero errors.
+[RSA1 product replay](inst/tinytest/test-native-tramoseats-rsa1.R)
+
 ## M5 integration checkpoint for additive AO and LS effects (2026-11-24)
 
 Kalos `be98d5405b3f44c30035247779d3b252c1adbb66` restores level-scale

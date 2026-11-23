@@ -1,6 +1,9 @@
 source("helpers/fixtures.R", local = TRUE)
 dir <- system.file("tinytest/fixtures/native/tramo-seats-bridge", package = "rkalos")
 cases <- fixture_named_rsa0_cases(file.path(dir, "rsa1-x86_64.txt"))
+level_cases <- fixture_named_rsa0_cases(file.path(dir, "rsa1-level-effects-x86_64.txt"))
+names(level_cases) <- paste0("level_", names(level_cases))
+cases <- c(cases, level_cases)
 tokens <- function(line) strsplit(line, " ", fixed = TRUE)[[1L]]
 keys <- c(Trend = "finalTrend", SeasonallyAdjusted = "finalSA", Seasonal = "finalSeasonal", Irregular = "finalIrregular")
 nrows <- points <- 0L
@@ -38,7 +41,7 @@ for (id in names(cases)) {
     points <- points + length(values)
   }
   nrows <- nrows + nrow(fit$merged)
-  if (id == "fit_multi") {
+  if (id == "fit_multi" || id %in% names(level_cases)) {
     # The raw route and independently constructed fitted bridge receive the same
     # estimated AO/LS model and custom forecast and backcast month counts.
     model <- pre$model
@@ -50,7 +53,7 @@ for (id in names(cases)) {
     for (key in c("status", "initial", "final", "merged")) expect_identical(fit[[key]], bridge[[key]], info = key)
   }
 }
-expect_identical(c(length(cases), nrows, points), c(6L, 60L, 3960L))
+expect_identical(c(length(cases), nrows, points), c(8L, 80L, 5160L))
 zero <- rkalos::native_tramoseats_fit(AirPassengers, "RSA1", forecast = 0L)
 expect_identical(unique(zero$merged$information), "Value")
 expect_identical(zero$series_forecast_stdev_status, "no_requested_predictions")

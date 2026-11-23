@@ -14,7 +14,7 @@ seats_from_tramo(series, ssq, effective, estimated, d = 0L, bd = 0L,
 \item{d, bd}{Fitted regular and seasonal differencing orders.}
 \item{phi, theta, bphi, btheta}{Fitted regular and seasonal AR and MA coefficients in Kalos convention.}
 \item{log, mean_correction}{Fitted model's log transformation and mean flag.}
-\item{outliers}{Optional data frame with character \code{type} (AO or LS), one-based observation \code{position}, and numeric fitted \code{coefficient}, in fitted model order. Outlier effects are supported on the log scale.}
+\item{outliers}{Optional data frame with character \code{type} (AO or LS), one-based observation \code{position}, and numeric fitted \code{coefficient}, in fitted model order. Effects are restored on the fitted level or log scale.}
 \item{forecast, backcast}{Extension counts. Negative counts denote years.}
 }
 \description{Runs the fixed fitted-model bridge, Wiener--Kolmogorov extraction and deterministic-effects merge. The envelope requires full-span estimation with the supplied outliers and no additional calendar or user regressors, missing observations or length-of-period adjustment. Monthly legacy retries use the model families described in \code{\link{seats_extract_wk}}.}

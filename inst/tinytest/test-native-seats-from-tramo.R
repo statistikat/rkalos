@@ -70,7 +70,7 @@ bad <- data.frame(type = "AO", position = 0L, coefficient = 1)
 x$outliers <- bad
 expect_error(do.call(rkalos::seats_from_tramo, x), "position")
 x$outliers$position <- 1L
-expect_error(do.call(rkalos::seats_from_tramo, x), "level-model outlier")
+expect_identical(do.call(rkalos::seats_from_tramo, x)$status, "ok")
 x$outliers$type <- "TC"
 expect_error(do.call(rkalos::seats_from_tramo, x), "AO or LS")
 expect_true("seats_from_tramo" %in% rkalos::capabilities()$primitives)
