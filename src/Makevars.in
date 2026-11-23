@@ -15,6 +15,7 @@ OBJECTS = RcppExports.o \
   rcpp_state_space.o \
   rcpp_seats.o \
   kalos/src/tramo_seats_bridge.o \
+  kalos/src/tramo_tr0.o \
   kalos/src/tramo_seats_pipeline.o \
   kalos/src/seats_extract_wk.o \
   kalos/src/tramo_seats_model_validator.o \

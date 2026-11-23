@@ -2,6 +2,10 @@
 
 ## Development version
 
+Version 0.1.0.9004 adds native monthly RSA0 estimation and decomposition
+from the observed series, including fitted likelihood, uncertainty and
+dated product forecasts and backcasts.
+
 Added deterministic-effects restoration and merged product components for
 supplied full-span fitted monthly TRAMO model coefficients.
 

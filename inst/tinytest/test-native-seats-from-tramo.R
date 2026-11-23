@@ -1,13 +1,8 @@
+source("helpers/fixtures.R", local = TRUE)
 dir <- system.file("tinytest/fixtures/native/tramo-seats-bridge", package = "rkalos")
 cases <- function(file) {
   lines <- readLines(file.path(dir, file))
   split(lines, cumsum(startsWith(lines, "case ")))
-}
-hex_values <- function(tokens) {
-  b <- vapply(seq(1L, 15L, 2L), function(i) strtoi(substr(tokens, i, i + 1L), 16L),
-              integer(length(tokens)))
-  stream <- if (length(tokens) == 1L) b else t(b)
-  readBin(as.raw(stream), double(), n = length(tokens), endian = "big")
 }
 fitted <- list()
 for (lines in cases("bridge.txt")) {
@@ -16,19 +11,19 @@ for (lines in cases("bridge.txt")) {
   start <- as.integer(domain[2:3])
   model <- fields("model")
   likelihood <- fields("likelihood")
-  request <- list(series = stats::ts(hex_values(domain[-seq_len(4)]), start = start, frequency = 12),
-    ssq = hex_values(likelihood[3L]), effective = as.integer(likelihood[5L]),
+  request <- list(series = stats::ts(fixture_hex_doubles(domain[-seq_len(4)]), start = start, frequency = 12),
+    ssq = fixture_hex_doubles(likelihood[3L]), effective = as.integer(likelihood[5L]),
     estimated = as.integer(likelihood[7L]), d = as.integer(model[9L]), bd = as.integer(model[11L]),
     mean_correction = model[5L] == "true", log = model[3L] == "true")
   for (name in c("phi", "bphi", "theta", "btheta")) {
     params <- fields(name)[-c(1L, 2L)]
-    request[[name]] <- if (length(params)) hex_values(sub("/Fixed$", "", params)) else numeric()
+    request[[name]] <- if (length(params)) fixture_hex_doubles(sub("/Fixed$", "", params)) else numeric()
   }
   for (line in lines[startsWith(lines, "variable AO ") | startsWith(lines, "variable LS ")]) {
     tokens <- strsplit(line, " ", fixed = TRUE)[[1L]]
     date <- as.integer(strsplit(gsub("[()]", "", tokens[3L]), "-", fixed = TRUE)[[1L]])
     row <- data.frame(type = tokens[2L], position = 1L + (date[1L] - start[1L]) * 12L + date[2L] - start[2L],
-                      coefficient = hex_values(tail(tokens, 1L)))
+                      coefficient = fixture_hex_doubles(tail(tokens, 1L)))
     request$outliers <- rbind(request$outliers, row)
   }
   fitted[[fields("case")[2L]]] <- request
@@ -60,7 +55,7 @@ for (lines in cases("merge-x86_64.txt")) {
       if (length(values)) {
         expect_identical(as.integer(stats::start(values)), as.integer(row[4:5]), info = id)
         expect_identical(stats::frequency(values), 12, info = id)
-        expected <- hex_values(row[-seq_len(6)])
+        expected <- fixture_hex_doubles(row[-seq_len(6)])
         expect_identical(writeBin(as.numeric(values), raw()), writeBin(expected, raw()), info = id)
         points <- points + length(values)
       }

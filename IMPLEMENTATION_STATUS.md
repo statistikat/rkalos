@@ -4,6 +4,26 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 raw-series TRAMO/SEATS RSA0 (2026-11-23)
+
+Version `0.1.0.9004` exposes `native_tramoseats_fit()`. On complete
+monthly RSA0/TR0 data, it estimates the mean and airline MA coefficients
+and returns the likelihood, dated WK uncertainty, additive final
+components and horizon series. Four observed-domain aliases preserve the
+input's exact time attributes. Other templates, missing or quarterly
+data, insufficient residual degrees of freedom and unsupported native
+decompositions remain outside this gate. Product consumers can query
+`capabilities()$tramo_seats_fit$templates`.
+
+The installed serial R package passed **460/460** RSA0 assertions. All
+**30 fitted values and 3,960 product values** matched the six public JVM
+cases bit-for-bit. Custom spans, zero-horizon output, date preservation
+and refusal paths passed. Adjacent fitted-model, WK and first-round
+differencing tests passed **718/718**, **7,369/7,369** and **142/142**.
+At the preceding published checkpoint `5f57f09`, the complete OpenMP
+suite passed **299,658/299,658** across 53 files.
+[Fit API](man/native_tramoseats_fit.Rd) · [JVM replay](inst/tinytest/test-native-tramoseats-fit.R)
+
 ## M5 integration checkpoint for ordinary monthly RSA0 (2026-11-23)
 
 The checked snapshot advances to Kalos `fa7edeae3c68862e163633c7debce3d102248223`.

@@ -14,6 +14,9 @@ capabilities <- function() {
                 status = "unimplemented", fit = FALSE,
                 native_x13_fit_restricted = TRUE,
                 native_x13_fit_automatic = TRUE,
+                tramo_seats_fit = list(available = TRUE, templates = "RSA0", aliases = "TR0",
+                  frequency = 12L, complete_finite_input_only = TRUE, mode = "additive",
+                  entry_point = "native_tramoseats_fit"),
                 restricted_fit = list(
                   schema_version = 2L,     # 2L: sigma_policy_required -> sigma_policy_default (maintainer 2026-11-17)
                   native_x13_fit_restricted = TRUE,
@@ -85,7 +88,7 @@ capabilities <- function() {
                                "tramo_differencing_decision", "seats_from_tramo"),
                 methods = character(), specification_blocks = character(),
                 packages_available = NA, runtime_checked = FALSE,
-                reason = "Native seasonal-adjustment fitting is not implemented; the restricted fixed-coefficient X-13 fit of restricted_fit and the automatic-spec X-13 fit of automatic_fit are qualified.")
+                reason = "Unrestricted fitting is unavailable. Qualified methods are described by restricted_fit, automatic_fit and tramo_seats_fit.")
 }
 
 core_version <- function() {

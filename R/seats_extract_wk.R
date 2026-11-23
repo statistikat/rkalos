@@ -46,7 +46,7 @@ seats_model_domain <- function(series, spec) {
     if (!is.numeric(x) || is.complex(x) || !is.null(dim(x)) || any(!is.finite(x)))
       stop(key, " must be a finite numeric vector.", call. = FALSE)
   }
-  for (key in c("d", "bd", "forecast", "backcast")) {
+  for (key in c("d", "bd")) {
     x <- spec[[key]]
     if (!is.numeric(x) || is.complex(x) || !is.null(dim(x)) || length(x) != 1L || !is.finite(x) ||
         x != trunc(x) || abs(x) > .Machine$integer.max)
@@ -54,12 +54,22 @@ seats_model_domain <- function(series, spec) {
   }
   if (spec$d < 0 || spec$bd < 0 || spec$d + as.double(spec$bd) * domain$frequency >= length(series))
     stop("Differencing must leave observed data.", call. = FALSE)
-  counts <- c(as.double(spec$backcast), as.double(spec$forecast))
-  counts[counts < 0] <- -counts[counts < 0] * domain$frequency
-  if (length(series) + sum(counts) > .Machine$integer.max)
-    stop("The extended SEATS series exceeds the native index range.", call. = FALSE)
+  seats_validate_horizons(spec$backcast, spec$forecast, domain$frequency, length(series))
   for (key in c("log", "mean_correction")) native_regression_flag(spec[[key]], key)
   if (spec$log && any(series <= 0))
     stop("SEATS log transformation requires positive observations.", call. = FALSE)
   domain
+}
+
+seats_validate_horizons <- function(backcast, forecast, frequency, observations) {
+  for (x in list(backcast, forecast)) {
+    if (!is.numeric(x) || is.complex(x) || !is.null(dim(x)) || length(x) != 1L || !is.finite(x) ||
+        x != trunc(x) || abs(x) > .Machine$integer.max)
+      stop("SEATS horizon must be an integer in the native index range.", call. = FALSE)
+  }
+  counts <- c(as.double(backcast), as.double(forecast))
+  counts[counts < 0] <- -counts[counts < 0] * frequency
+  if (observations + sum(counts) > .Machine$integer.max)
+    stop("The extended SEATS series exceeds the native index range.", call. = FALSE)
+  invisible(NULL)
 }

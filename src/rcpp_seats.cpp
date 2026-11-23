@@ -105,3 +105,31 @@ Rcpp::List native_seats_from_tramo(const Rcpp::List& spec, const Rcpp::List& cal
         Rcpp::_["final"] = component_table(result.extraction.final_components()),
         Rcpp::_["merged"] = component_table(result.finals));
 }
+
+// [[Rcpp::export(name = ".native_tramoseats_rsa0", rng = false)]]
+Rcpp::List native_tramoseats_rsa0(const std::vector<double>& series, int year, int month,
+        int backcast, int forecast) {
+    const auto result = kalos::run_tramo_seats_rsa0(series, year, month, backcast, forecast);
+    const auto& fitted = result.preprocessing;
+    const auto& model = fitted.model;
+    const auto& decomposition = result.decomposition;
+    return Rcpp::List::create(
+        Rcpp::_["status"] = decomposition.extraction.fact("status"),
+        Rcpp::_["model"] = Rcpp::List::create(
+            Rcpp::_["d"] = model.d, Rcpp::_["bd"] = model.bd,
+            Rcpp::_["orders"] = Rcpp::IntegerVector::create(
+                Rcpp::_["p"] = static_cast<int>(model.phi.size()), Rcpp::_["d"] = model.d,
+                Rcpp::_["q"] = static_cast<int>(model.theta.size()), Rcpp::_["bp"] = static_cast<int>(model.bphi.size()),
+                Rcpp::_["bd"] = model.bd, Rcpp::_["bq"] = static_cast<int>(model.btheta.size())),
+            Rcpp::_["phi"] = model.phi, Rcpp::_["bphi"] = model.bphi,
+            Rcpp::_["theta"] = model.theta, Rcpp::_["btheta"] = model.btheta,
+            Rcpp::_["log"] = model.log, Rcpp::_["mean_correction"] = model.mean_correction,
+            Rcpp::_["mean_coefficient"] = fitted.mean_coefficient,
+            Rcpp::_["innovation_variance"] = model.innovation_variance),
+        Rcpp::_["likelihood"] = Rcpp::List::create(
+            Rcpp::_["log_likelihood"] = fitted.log_likelihood, Rcpp::_["ssq"] = fitted.residual_ssq,
+            Rcpp::_["effective"] = fitted.effective_observations, Rcpp::_["estimated"] = fitted.estimated_parameters),
+        Rcpp::_["initial"] = component_table(decomposition.extraction.initial_components()),
+        Rcpp::_["final"] = component_table(decomposition.extraction.final_components()),
+        Rcpp::_["merged"] = component_table(decomposition.finals));
+}

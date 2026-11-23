@@ -51,3 +51,10 @@ read_numeric_fixture <- function(path, columns = "value") {
   for (column in columns) data[[column]] <- fixture_doubles(data[[column]])
   data
 }
+
+fixture_hex_doubles <- function(tokens) {
+  b <- vapply(seq(1L, 15L, 2L), function(i) strtoi(substr(tokens, i, i + 1L), 16L),
+              integer(length(tokens)))
+  stream <- if (length(tokens) == 1L) b else t(b)
+  readBin(as.raw(stream), double(), n = length(tokens), endian = "big")
+}
