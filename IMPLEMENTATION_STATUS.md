@@ -4,6 +4,23 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 TRAMO differencing decision (2026-11-23)
+
+`tramo_differencing_decision()` runs the ordinary-input 23-C first-round
+module on complete monthly and quarterly series after outlier adjustment.
+It accepts the builder's named SARIMA orders and reports the resulting
+orders, mean, mean-test statistic, fallback decisions and processing log.
+The installed serial package passed **142/142** assertions. All 22
+captured direct and battery-entry decisions matched the JVM, including the
+binary64 mean-test statistics. Short-series airline and already-airline
+branches and invalid input checks also passed. The subsequent
+controller battery and complete TRAMO fit have separate gates.
+
+The full serial suite at `6b47f31` passed **299,515/299,515** assertions
+across 52 files. A clean OpenMP source build at `5f57f09` completed
+`R CMD check --no-tests --no-manual` with the two documented compiler
+warnings and zero errors.
+
 ## M5 standard TRAMO model preparation (2026-11-23)
 
 `tramo_prepare_model(series, template)` invokes the pinned 23-A builder and

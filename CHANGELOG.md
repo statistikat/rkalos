@@ -2,6 +2,9 @@
 
 ## Development version
 
+Added the pinned TRAMO first-round differencing decision for monthly and
+quarterly series with standard module thresholds.
+
 Version 0.1.0.9003 adds standard TRAMO template model preparation and
 fixed-model SEATS component extraction with dated initial and final series
 and their standard deviations.

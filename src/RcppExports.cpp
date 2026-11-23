@@ -541,6 +541,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_tramo_differencing
+Rcpp::List native_tramo_differencing(std::vector<double> values, int period, Rcpp::IntegerVector orders, bool mean, bool log, bool seasonal, bool initial);
+RcppExport SEXP _rkalos_native_tramo_differencing(SEXP valuesSEXP, SEXP periodSEXP, SEXP ordersSEXP, SEXP meanSEXP, SEXP logSEXP, SEXP seasonalSEXP, SEXP initialSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< std::vector<double> >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< int >::type period(periodSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type orders(ordersSEXP);
+    Rcpp::traits::input_parameter< bool >::type mean(meanSEXP);
+    Rcpp::traits::input_parameter< bool >::type log(logSEXP);
+    Rcpp::traits::input_parameter< bool >::type seasonal(seasonalSEXP);
+    Rcpp::traits::input_parameter< bool >::type initial(initialSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_tramo_differencing(values, period, orders, mean, log, seasonal, initial));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_tramo_prepare_model
 Rcpp::List native_tramo_prepare_model(std::vector<double> values, std::string name, int year, int month, int frequency);
 RcppExport SEXP _rkalos_native_tramo_prepare_model(SEXP valuesSEXP, SEXP nameSEXP, SEXP yearSEXP, SEXP monthSEXP, SEXP frequencySEXP) {
@@ -1119,6 +1135,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_seats_extract_wk", (DL_FUNC) &_rkalos_native_seats_extract_wk, 3},
     {"_rkalos_native_stationary_likelihood", (DL_FUNC) &_rkalos_native_stationary_likelihood, 7},
     {"_rkalos_native_arma_likelihood", (DL_FUNC) &_rkalos_native_arma_likelihood, 8},
+    {"_rkalos_native_tramo_differencing", (DL_FUNC) &_rkalos_native_tramo_differencing, 7},
     {"_rkalos_native_tramo_prepare_model", (DL_FUNC) &_rkalos_native_tramo_prepare_model, 5},
     {"_rkalos_native_tramo_critical_value", (DL_FUNC) &_rkalos_native_tramo_critical_value, 1},
     {"_rkalos_native_tramo_seasonality", (DL_FUNC) &_rkalos_native_tramo_seasonality, 1},
