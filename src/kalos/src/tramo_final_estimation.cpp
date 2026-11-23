@@ -357,7 +357,8 @@ std::vector<double> hr_start_to_jvm(const std::array<std::vector<double>, 4>& c)
 }
 
 TramoFinalEstimatorRunResult run_final_estimator(
-    const TramoFinalEstimatorRunRequest& request, const std::vector<double>* observations) {
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>* observations,
+    const std::vector<std::vector<double>>& regressors) {
     if (observations && (observations->size() > static_cast<std::size_t>(std::numeric_limits<int>::max()) ||
         (request.n != 0 && static_cast<std::size_t>(request.n) != observations->size()))) {
         refuse("response length does not match the supplied observations");
@@ -403,6 +404,13 @@ TramoFinalEstimatorRunResult run_final_estimator(
                 refuse("the model-scale observations must be finite");
     } else {
         family_series = est_family_series(request.family, n);
+    }
+    if (regressors.size() > 32U - static_cast<unsigned>(request.mean))
+        refuse("too many regression columns");
+    for (const auto& column : regressors) {
+        if (column.size() != static_cast<std::size_t>(n) ||
+            !std::all_of(column.begin(), column.end(), [](double v) { return std::isfinite(v); }))
+            refuse("regression columns must be finite and span the model series");
     }
     const auto& y = observations ? *observations : family_series;
     const int period = 12;
@@ -479,9 +487,12 @@ TramoFinalEstimatorRunResult run_final_estimator(
                 std::vector<double>(static_cast<std::size_t>(dly_size), 1.0));
         }
 
+        for (const auto& column : regressors)
+            design_cols.push_back(detail::pinned_backfilter_apply(differencing(), column));
+
         if (dim == 0) {
             // The zero-parameter shortcut: DEFAULT_COMPUTER.compute(m4).
-            auto cl = request.mean
+            auto cl = !design_cols.empty()
                 ? detail::pinned_deviances_evaluate_multi(dly, 0, 0, 0, 0, period,
                     design_cols, {}, detail::PinnedComputerShape::Fixed)
                 : detail::pinned_deviances_evaluate(dly, 0, 0, 0, 0, period, {}, {});
@@ -492,7 +503,7 @@ TramoFinalEstimatorRunResult run_final_estimator(
             estimation_state = 2; // no landing point
             cl_dim = static_cast<int>(cl->e.size());
             cl_ssq = cl->ssq_err;
-            cl_coefs = request.mean ? cl->b : std::vector<double>{};
+            cl_coefs = cl->b;
             rec.shortcircuit = true;
             rec.nnsig_after = nnsig;
             rec.outcome = "return_true";
@@ -503,12 +514,11 @@ TramoFinalEstimatorRunResult run_final_estimator(
         // HannanRissanenInitializer (stabilize, useDefaultIfFailed) over the
         // differenced model, then the RAPC chain warm-started from it.
         RegressionDesign hr_design;
-        hr_design.columns = design_cols.empty() ? 0 : design_cols.size();
-        if (!design_cols.empty()) {
-            hr_design.values = design_cols[0];
-            hr_design.coefficients.assign(design_cols.size(), 0.0);
-            hr_design.fixed.assign(design_cols.size(), 0);
-        }
+        hr_design.columns = design_cols.size();
+        for (const auto& column : design_cols)
+            hr_design.values.insert(hr_design.values.end(), column.begin(), column.end());
+        hr_design.coefficients.assign(hr_design.columns, 0.0);
+        hr_design.fixed.assign(hr_design.columns, 0);
         const HannanRissanenStart hr = hannan_rissanen_start(dly, hr_design,
             HannanRissanenOrders{orders.p, orders.bp, orders.q, orders.bq, period});
         rec.hr_source = hr.source == HannanRissanenStart::Source::Fitted
@@ -520,14 +530,13 @@ TramoFinalEstimatorRunResult run_final_estimator(
         SarimaEstimationRequest est_request;
         est_request.series.values = y;
         est_request.series.missing.assign(static_cast<std::size_t>(n), 0);
-        if (request.mean) {
-            est_request.design.columns = 1;
+        est_request.design.columns = design_cols.size();
+        if (request.mean)
             est_request.design.values.assign(static_cast<std::size_t>(n), 1.0);
-            est_request.design.coefficients.assign(1, 0.0);
-            est_request.design.fixed.assign(1, 0);
-        } else {
-            est_request.design.columns = 0;
-        }
+        for (const auto& column : regressors)
+            est_request.design.values.insert(est_request.design.values.end(), column.begin(), column.end());
+        est_request.design.coefficients.assign(design_cols.size(), 0.0);
+        est_request.design.fixed.assign(design_cols.size(), 0);
         const std::size_t block_sizes[4] = {static_cast<std::size_t>(orders.p),
             static_cast<std::size_t>(orders.q), static_cast<std::size_t>(orders.bp),
             static_cast<std::size_t>(orders.bq)};
@@ -578,7 +587,7 @@ TramoFinalEstimatorRunResult run_final_estimator(
         }
         rec.landing = pars;
 
-        auto cl = request.mean
+        auto cl = !design_cols.empty()
             ? detail::pinned_deviances_evaluate_multi(dly,
                 static_cast<std::size_t>(orders.p), static_cast<std::size_t>(orders.bp),
                 static_cast<std::size_t>(orders.q), static_cast<std::size_t>(orders.bq),
@@ -594,7 +603,7 @@ TramoFinalEstimatorRunResult run_final_estimator(
         estimation_state = 1;
         cl_dim = static_cast<int>(cl->e.size());
         cl_ssq = cl->ssq_err;
-        cl_coefs = request.mean ? cl->b : std::vector<double>{};
+        cl_coefs = cl->b;
 
         // The Point tail, the RegArmaProcessor.compute exact-derivatives
         // branch (computeExactFinalDerivatives, the FE's computer flag):
@@ -734,12 +743,18 @@ TramoFinalEstimatorRunResult run_final_estimator(
 
 TramoFinalEstimatorRunResult tramo_final_estimator_run(
     const TramoFinalEstimatorRunRequest& request) {
-    return run_final_estimator(request, nullptr);
+    return run_final_estimator(request, nullptr, {});
 }
 
 TramoFinalEstimatorRunResult tramo_final_estimator_run(
     const TramoFinalEstimatorRunRequest& request, const std::vector<double>& model_series) {
-    return run_final_estimator(request, &model_series);
+    return run_final_estimator(request, &model_series, {});
+}
+
+TramoFinalEstimatorRunResult tramo_final_estimator_run(
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>& model_series,
+    const std::vector<std::vector<double>>& regressors) {
+    return run_final_estimator(request, &model_series, regressors);
 }
 
 } // namespace kalos

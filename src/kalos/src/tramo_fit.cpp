@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -114,7 +115,13 @@ bool orders_equal(const TramoOrders& a, const TramoOrders& b) {
     return orders_word(a) == orders_word(b);
 }
 
-void check_scan(const TramoFitSpec& spec, const tramo_build_result& built, bool log,
+struct DetectedOutlier {
+    OutlierType type;
+    int position;
+    std::string name;
+};
+
+std::vector<DetectedOutlier> check_scan(const TramoFitSpec& spec, const tramo_build_result& built, bool log,
                 const TramoFitSeamInputs& in, const TramoKernelSeam& expected) {
     TramoOutlierScanRequest request{};
     request.y = built.interpolated;
@@ -150,16 +157,30 @@ void check_scan(const TramoFitSpec& spec, const tramo_build_result& built, bool 
     if (spec.tc) factories.push_back(OutlierType::TransitoryChange);
     if (spec.so) factories.push_back(OutlierType::SeasonalOutlier);
     std::vector<std::string> names;
-    for (const auto& selected : scan.outliers)
-        names.push_back(monthly_outlier_name(factories.at(selected[1]), selected[0],
-                                            built.domain_year, built.domain_position + 1));
+    std::vector<DetectedOutlier> variables;
+    for (const auto& selected : scan.outliers) {
+        const auto type = factories.at(selected[1]);
+        names.push_back(monthly_outlier_name(type, selected[0], built.domain_year, built.domain_position + 1));
+        variables.push_back({type, selected[0], names.back()});
+    }
     require(names == expected.outliers, "live scan selection disagrees with the ordered outlier witness");
     require(orders_equal(o, expected.orders) && expected.mean == in.entry_mean,
             "live scan description disagrees with the module witness");
+    // ModelDescription.sortVariables stably orders automatic outliers by date
+    // before estimating the regression. The scan witness uses detection order.
+    std::stable_sort(variables.begin(), variables.end(),
+                     [](const auto& a, const auto& b) { return a.position < b.position; });
+    return variables;
 }
 
+struct EstimationEntry {
+    TramoOrders orders;
+    bool mean;
+    std::vector<DetectedOutlier> variables;
+};
+
 void check_final_estimation(const TramoFitSpec& spec, const std::vector<double>& y,
-                            const TramoKernelSeam& entry, const TramoKernelSeam& expected) {
+                            EstimationEntry& entry, const TramoKernelSeam& expected) {
     TramoFinalEstimatorRunRequest options;
     const auto& o = entry.orders;
     options.orders = {o.p, o.d, o.q, o.bp, o.bd, o.bq};
@@ -169,12 +190,21 @@ void check_final_estimation(const TramoFitSpec& spec, const std::vector<double>&
     options.pass = expected.pass_at_call;
     options.ami = spec.using_auto_model;
     options.outliers = spec.outliers_used;
-    const auto estimate = tramo_final_estimator_run(options, y);
+    std::vector<std::vector<double>> columns;
+    std::vector<std::string> names;
+    for (const auto& var : entry.variables) {
+        names.push_back(var.name);
+        columns.emplace_back(y.size());
+        fill_outlier_column(var.type, var.position, spec.annual_frequency, spec.delta_tc, columns.back());
+    }
+    const auto estimate = tramo_final_estimator_run(options, y, columns);
     const auto& t = estimate.orders_after;
     require(estimate.returned == (expected.returned != 0) && estimate.nnsig == expected.nnsig,
             "live final estimation decision disagrees with the module witness");
-    require(orders_equal({t.p, t.d, t.q, t.bp, t.bd, t.bq}, expected.orders) &&
-            expected.outliers.empty(), "live final estimation specification disagrees with the witness");
+    entry.orders = {t.p, t.d, t.q, t.bp, t.bd, t.bq};
+    entry.mean = estimate.mean_out;
+    require(orders_equal(entry.orders, expected.orders) &&
+            names == expected.outliers, "live final estimation specification disagrees with the witness");
     require(std::equal(estimate.parameters_after.begin(), estimate.parameters_after.end(),
                        expected.parameters.begin(), expected.parameters.end(), bit_equal),
             "live final estimation parameters disagree with the module witness");
@@ -394,18 +424,28 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
         [](const auto& var) { return var.kind != tramo_variable_kind::trend_constant; });
     bool ctx_seasonal = prestage.seasonal;
     std::size_t next_input = 0;
+    std::optional<EstimationEntry> final_entry;
     for (std::size_t s = 0; s < seams.size(); ++s) {
         const TramoKernelSeam& seam = seams[s];
+        if (s == 0 && seam.kind == TramoKernelSeamKind::estimation && prestage.outliers.empty()) {
+            final_entry = EstimationEntry{prestage.orders, prestage.mean, {}};
+            continue;
+        }
+        if (final_entry && seam.kind == TramoKernelSeamKind::regression_test && seam.retry_site &&
+            s > 0 && seams[s - 1].kind == TramoKernelSeamKind::estimation_model) {
+            final_entry->mean = seam.mean;
+            continue;
+        }
         if (seam.kind == TramoKernelSeamKind::seasonality_controller) {
             ctx_seasonal = seam.seasonal_after;
+            final_entry.reset();
             continue;
         }
         if (seam.kind == TramoKernelSeamKind::estimation_model) {
             TramoFitSeamCheck check{s, "final_estimator_run", "fact", "entry regression design unavailable"};
-            if (!has_fixed_regressors && s > 0 && seams[s - 1].kind == TramoKernelSeamKind::scan &&
-                seams[s - 1].outliers.empty()) {
+            if (!has_fixed_regressors && final_entry) {
                 const auto y = differenced_response(built.interpolated, prestage.log, built.annual_frequency, 0, 0);
-                check_final_estimation(spec, y, seams[s - 1], seam);
+                check_final_estimation(spec, y, *final_entry, seam);
                 check.tier = "live";
                 check.note = "match final estimation decision, orders and parameters";
                 ++result.seams_live;
@@ -415,6 +455,11 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
             result.seam_checks.push_back(std::move(check));
             continue;
         }
+        // An intervening stage can replace the description. Carry an entry
+        // only across its immediately verified predecessor or mean-test retry.
+        final_entry.reset();
+        if (seam.kind == TramoKernelSeamKind::scan && seam.outliers.empty())
+            final_entry = EstimationEntry{seam.orders, seam.mean, {}};
         if (seam.kind != TramoKernelSeamKind::differencing &&
             seam.kind != TramoKernelSeamKind::arma &&
             seam.kind != TramoKernelSeamKind::scan)
@@ -517,7 +562,8 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
         } else if (seam.kind == TramoKernelSeamKind::scan && !has_fixed_regressors &&
                    in.entry_outliers.empty() &&
                    (in.entry_orders.d > 0 || in.entry_orders.bd > 0)) {
-            check_scan(spec, built, prestage.log, in, seam);
+            final_entry = EstimationEntry{in.entry_orders, in.entry_mean,
+                check_scan(spec, built, prestage.log, in, seam)};
             check.tier = "live";
             check.note = "match " + stage_word(seam.result) + ", ordered outlier selection";
         } else if (seam.kind == TramoKernelSeamKind::arma &&
@@ -570,6 +616,8 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
                     "seam " + std::to_string(s) +
                         ": live arma orders disagree with the seam fact");
             check.tier = "live";
+            if (in.entry_outliers.empty())
+                final_entry = EstimationEntry{post, in.entry_mean, {}};
             check.note = "match " + stage_word(mapped) + " " +
                          orders_word(post);
         } else {

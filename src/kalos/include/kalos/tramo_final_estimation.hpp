@@ -281,6 +281,13 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
 TramoFinalEstimatorRunResult tramo_final_estimator_run(
     const TramoFinalEstimatorRunRequest& request, const std::vector<double>& model_series);
 
+// Estimate free regression columns supplied in model-description order. Each
+// column spans the original monthly model domain; the optional mean remains
+// a separate option. The estimator differences the other columns internally.
+TramoFinalEstimatorRunResult tramo_final_estimator_run(
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>& model_series,
+    const std::vector<std::vector<double>>& regressors);
+
 } // namespace kalos
 
 #endif

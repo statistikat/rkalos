@@ -12,6 +12,7 @@
 #include "mlj_engine.hpp"
 
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 
 namespace kalos {
@@ -97,17 +98,10 @@ int calc_lb_length(int annual_frequency, int neff) {
     return k;
 }
 
-LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp) {
-    const int n = static_cast<int>(seq.size());
-    if (n == 0) {
-        throw std::invalid_argument("ljung_box_test needs a non-empty sequence");
-    }
-    // calcLb: mean = tmp.sum() / n; tmp.sub(mean) (here on the local copy).
-    const double mean = sum_of(seq) / static_cast<double>(n);
-    std::vector<double> data(seq.size());
-    for (std::size_t i = 0; i < seq.size(); ++i) {
-        data[i] = seq[i] - mean;
-    }
+namespace {
+
+LjungBoxTest ljung_box_at_zero(const std::vector<double>& data, int k, int nhp) {
+    const int n = static_cast<int>(data.size());
     // value(): sign filter is the default 0 (add every term); lag = 1.
     double acc = 0.0;
     for (int i = 1; i <= k; ++i) {
@@ -124,6 +118,35 @@ LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp) {
     }
     const double p = detail::chi2_upper_p(df, stat);
     return LjungBoxTest{true, stat, p, df};
+}
+
+} // namespace
+
+LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp) {
+    const int n = static_cast<int>(seq.size());
+    if (n == 0) {
+        throw std::invalid_argument("ljung_box_test needs a non-empty sequence");
+    }
+    // calcLb: mean = tmp.sum() / n; tmp.sub(mean) (here on the local copy).
+    const double mean = sum_of(seq) / static_cast<double>(n);
+    std::vector<double> data(seq.size());
+    for (std::size_t i = 0; i < seq.size(); ++i) {
+        data[i] = seq[i] - mean;
+    }
+    return ljung_box_at_zero(data, k, nhp);
+}
+
+LjungBoxTest rsa0_residual_ljung_box(const std::vector<double>& residuals) {
+    if (residuals.empty() || residuals.size() > static_cast<std::size_t>(std::numeric_limits<int>::max() - 2)) {
+        throw std::invalid_argument("RSA0 residual count is outside the supported range");
+    }
+    if (residuals.size() <= 24) {
+        for (double value : residuals) {
+            if (!std::isfinite(value)) throw std::invalid_argument("RSA0 residuals must be finite");
+        }
+        return {true, std::nan(""), std::nan(""), 22.0};
+    }
+    return ljung_box_at_zero(residuals, 24, 2);
 }
 
 double calc_res_stat_rtval(const std::vector<double>& seq) {

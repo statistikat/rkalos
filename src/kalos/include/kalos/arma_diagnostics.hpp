@@ -49,6 +49,11 @@ struct LjungBoxTest {
 
 LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp);
 
+// Public RSA0 residuals.lb (NiidTests.ljungBox): uses autocorrelations at
+// a known zero mean, 24 monthly lags and two fitted ARMA parameters.
+// Residual lengths <= 24 give the JVM's undefined statistic and p-value.
+LjungBoxTest rsa0_residual_ljung_box(const std::vector<double>& residuals);
+
 // ModelController.calcResStat side effect: mean / sqrt(var / n) with
 // mean = sum / n and var = ssq / n - mean * mean (var / n under the root).
 double calc_res_stat_rtval(const std::vector<double>& seq);

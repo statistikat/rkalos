@@ -4,6 +4,14 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 integration checkpoint for public residual independence (2026-11-23)
+
+Kalos `aea3d152c63ca365b8dc53887aa16048c38323dd` supplies the public
+RSA0 Ljung–Box diagnostic and its nine-case JVM evidence. It also
+includes the faster original-series forecast error projection. Offline
+verification passed for **192 core, 112 fixture and 346 evidence
+files**, with matching source and installed locks and CI toolchain pin.
+
 ## M6 RSA0 preprocessing residual diagnostics (2026-11-23)
 
 Version `0.1.0.9006` publishes `fit$residuals$tsres` as a dated monthly

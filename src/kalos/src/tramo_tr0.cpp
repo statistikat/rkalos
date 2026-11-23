@@ -2,11 +2,11 @@
 
 #include "kalos/detail/ssq_deviances.hpp"
 #include "kalos/estimation_control.hpp"
-#include "kalos/forecast_information.hpp"
-#include "kalos/preparation.hpp"
+#include "kalos/arma_parameters.hpp"
 #include "kalos/tramo_model_builder.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -119,34 +119,79 @@ tramo_tr0_forecast_errors_result tramo_tr0_forecast_errors(const tramo_tr0_resul
     if (model.series.size() > static_cast<std::size_t>(std::numeric_limits<int>::max() - months))
         throw std::length_error("tramo_tr0_forecast_errors: extended domain exceeds the index range");
 
-    std::array<ArmaParameterBlock, 4> blocks{};
-    blocks[1] = {model.theta, {1}};
-    blocks[3] = {model.btheta, {1}};
-    for (const double value : {model.theta.front(), model.btheta.front()}) {
+    TimeDomain(model.start_year, model.start_month, model.frequency, model.series.size());
+    if (!std::all_of(model.series.begin(), model.series.end(), [](double v) { return std::isfinite(v); }))
+        throw std::invalid_argument("tramo_tr0_forecast_errors: complete finite observations required");
+
+    const double theta = model.theta.front(), seasonal_theta = model.btheta.front();
+    const double interaction = theta * seasonal_theta;
+    for (const double value : {theta, seasonal_theta}) {
         const auto check = arma_admissibility({value}, true);
         if (check.status != "admissible") return {check.status, {}};
     }
-    const ArmaParameterMap map(blocks);
-    const TimeDomain observed(model.start_year, model.start_month, 12, model.series.size());
-    auto drift = prepare_regression(align_regressors(observed, {}, 0, months), {}, 1, 1, 0, false, true);
-    auto context = std::move(drift.design);
-    context.values = std::move(drift.regressors.values);
-    const MaskedSeries series{model.series, std::vector<std::uint8_t>(model.series.size(), 0)};
-    const auto projected = forecast_information(series, context, 0, months, map, {}, 12, 1, 1);
-    if (projected.status != "available") return {projected.status, {}};
 
-    // RegSarimaModel.internalForecasts scales the process innovation by the
-    // estimated-parameter count (including variance); the independently
-    // fitted mean block uses ConcentratedLikelihood.covariance(k,true).
+    // The differenced airline series is an MA polynomial with nonzero lags
+    // 0, 1, 12 and 13. Condition the last 13 innovations on the observations.
+    // Filtering a unit response in parallel gives the sensitivity to the
+    // estimated drift and its unit-variance information.
+    constexpr int lags = 13;
+    using State = std::array<double, lags>;
+    std::array<State, lags> covariance{};
+    State drift_state{};
+    for (int i = 0; i < lags; ++i) covariance[i][i] = 1.0;
+    double drift_information = 0.0;
+    for (int t = 0; t < fit.effective_observations; ++t) {
+        State cross{};
+        for (int i = 0; i < lags; ++i)
+            cross[i] = theta * covariance[i][0] + seasonal_theta * covariance[i][11]
+                     + interaction * covariance[i][12];
+        const double variance = 1.0 + theta * cross[0] + seasonal_theta * cross[11]
+                              + interaction * cross[12];
+        if (!(variance > 0.0) || !std::isfinite(variance)) return {"covariance_range", {}};
+        const double innovation = 1.0 - theta * drift_state[0] - seasonal_theta * drift_state[11]
+                                - interaction * drift_state[12];
+        drift_information += innovation * innovation / variance;
+        // Shift in a new independent unit innovation, then condition the
+        // shifted state on the observed value by a rank-one covariance update.
+        State gain{};
+        gain[0] = 1.0;
+        std::copy_n(cross.begin(), lags - 1, gain.begin() + 1);
+        for (int i = lags - 1; i >= 0; --i) {
+            drift_state[i] = (i ? drift_state[i - 1] : 0.0) + gain[i] * innovation / variance;
+            for (int j = lags - 1; j >= 0; --j) {
+                const double prior = i && j ? covariance[i - 1][j - 1] : double(i == 0 && j == 0);
+                covariance[i][j] = prior - gain[i] * gain[j] / variance;
+            }
+        }
+    }
+    if (!(drift_information > 0.0) || !std::isfinite(drift_information)) return {"covariance_range", {}};
+
+    // g is the impulse response of 1 / ((1-B)(1-B^12)). Future
+    // innovations are independent of the conditioned boundary state.
+    const auto g = [](int k) { return k < 0 ? 0.0 : double(1 + k / 12); };
     const int df = fit.effective_observations - fit.estimated_parameters;
     const double process_scale = fit.residual_ssq / df;
-    const double mean_scale = fit.residual_ssq / (df + 1);
+    const double drift_scale = (fit.residual_ssq / (df + 1)) / drift_information;
+    double future_variance = 0.0, drift_sum = 0.0;
     std::vector<double> errors(months);
-    for (int i = 0; i < months; ++i) {
-        const double process = (*projected.known_regression_covariance)(i, i) / projected.variance;
-        const double mean = (*projected.regression_covariance)(i, i) / projected.variance;
-        errors[i] = std::sqrt(process * process_scale + mean * mean_scale);
-        if (!std::isfinite(errors[i])) return {"covariance_range", {}};
+    for (int h = 1; h <= months; ++h) {
+        const double psi = g(h - 1) + theta * g(h - 2) + seasonal_theta * g(h - 13)
+                         + interaction * g(h - 14);
+        future_variance += psi * psi;
+        drift_sum += g(h - 1);
+        State weights{};
+        for (int k = 0; k < lags; ++k) {
+            if (k == 0) weights[k] += theta * g(h - 1);
+            if (k < 12) weights[k] += seasonal_theta * g(h - 12 + k);
+            weights[k] += interaction * g(h - 13 + k);
+        }
+        double process = future_variance, drift = drift_sum;
+        for (int i = 0; i < lags; ++i) {
+            drift -= weights[i] * drift_state[i];
+            for (int j = 0; j < lags; ++j) process += weights[i] * covariance[i][j] * weights[j];
+        }
+        errors[h - 1] = std::sqrt(process * process_scale + drift * drift * drift_scale);
+        if (!std::isfinite(errors[h - 1])) return {"covariance_range", {}};
     }
     return {"available", std::move(errors)};
 }
