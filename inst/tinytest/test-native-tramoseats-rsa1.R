@@ -10,6 +10,8 @@ cases <- c(cases, additional_cases("rsa1-level-effects-x86_64.txt", "level_"),
            additional_cases("rsa1-log-tc-x86_64.txt", "log_tc_"))
 diagnostics <- fixture_named_rsa0_cases(file.path(dir, "rsa1-residual-diagnostics-x86_64.txt"))
 expect_identical(sort(names(diagnostics)), sort(names(cases)))
+forecast_errors <- fixture_named_rsa0_cases(file.path(dir, "rsa1-forecast-errors-x86_64.txt"))
+expect_identical(sort(names(forecast_errors)), sort(names(cases)))
 tokens <- function(line) strsplit(line, " ", fixed = TRUE)[[1L]]
 keys <- c(Trend = "finalTrend", SeasonallyAdjusted = "finalSA", Seasonal = "finalSeasonal", Irregular = "finalIrregular")
 nrows <- points <- 0L
@@ -41,8 +43,18 @@ for (id in names(cases)) {
   expect_identical(fit$mode, if (pre$model$log) "multiplicative" else "additive", info = id)
   product <- tokens(lines[startsWith(lines, "product ")])
   expect_identical(fit$model_changed, product[4] == "true", info = id)
-  expect_identical(fit$series_forecast_stdev_status, "not_qualified", info = id)
-  expect_identical(fit$series_forecast_stdev, numeric(), info = id)
+  errors <- forecast_errors[[id]]
+  se <- tokens(errors[startsWith(errors, "y_ef ")])
+  public_errors <- fixture_hex_doubles(se[-seq_len(4L)])
+  actual_errors <- fit$series_forecast_stdev
+  expect_identical(fit$series_forecast_stdev_status, "available", info = id)
+  expect_identical(as.integer(stats::start(actual_errors)), as.integer(se[2:3]), info = id)
+  expect_identical(stats::frequency(actual_errors), 12, info = id)
+  expect_identical(length(actual_errors), as.integer(se[4L]), info = id)
+  expect_true(all(abs(as.numeric(actual_errors) - public_errors) <= 2e-8 * (1 + abs(public_errors))), info = id)
+  wk <- tokens(errors[startsWith(errors, "wk_series_stdev_forecast ")])
+  wk_row <- which(fit$final$component == "Series" & fit$final$information == "StdevForecast")
+  expect_identical(as.numeric(fit$final$values[[wk_row]]), fixture_hex_doubles(wk[-seq_len(4L)]), info = id)
   oracle <- lines[startsWith(lines, "merged ")]
   expect_identical(nrow(fit$merged), length(oracle), info = id)
   for (i in seq_along(oracle)) {
@@ -66,6 +78,11 @@ for (id in names(cases)) {
     # estimated outlier model and custom forecast and backcast month counts.
     model <- pre$model
     fit <- rkalos::native_tramoseats_fit(series, "tr1", forecast = 6L, backcast = 3L)
+    custom_errors <- fit$series_forecast_stdev
+    expect_identical(length(custom_errors), 6L, info = id)
+    expect_identical(stats::start(custom_errors), stats::start(actual_errors), info = id)
+    expect_true(all(abs(as.numeric(custom_errors) - head(public_errors, 6L)) <=
+                    2e-8 * (1 + abs(head(public_errors, 6L)))), info = id)
     bridge <- rkalos::seats_from_tramo(series, pre$likelihood$ssq, pre$likelihood$effective,
       pre$likelihood$estimated, d = model$orders[["d"]], bd = model$orders[["bd"]],
       theta = model$theta, btheta = model$btheta, log = model$log, mean_correction = model$mean_correction,
@@ -76,6 +93,7 @@ for (id in names(cases)) {
 expect_identical(c(length(cases), nrows, points), c(12L, 120L, 7560L))
 zero <- rkalos::native_tramoseats_fit(AirPassengers, "RSA1", forecast = 0L)
 expect_identical(unique(zero$merged$information), "Value")
+expect_identical(zero$series_forecast_stdev, numeric())
 expect_identical(zero$series_forecast_stdev_status, "no_requested_predictions")
 short <- rkalos::native_tramoseats_fit(stats::ts(as.numeric(AirPassengers)[1:37], frequency = 12), "RSA1")
 expect_identical(length(short$residuals$tsres), 24L)
@@ -87,6 +105,6 @@ expect_identical(scope$RSA1$residuals, c("tsres", "ser", "lb", "doornikhansen"))
 expect_identical(scope$RSA1$residuals, rkalos::capabilities()$tramo_preprocessing$residuals)
 expect_identical(scope$RSA1$outlier_types, c("AO", "LS", "TC"))
 expect_identical(scope$RSA1$tc_rate, 0.7)
-expect_false(scope$RSA1$series_forecast_stdev)
+expect_true(scope$RSA1$series_forecast_stdev)
 expect_true(scope$RSA0$series_forecast_stdev)
 expect_error(rkalos::native_tramoseats_fit(stats::ts(1:23, frequency = 12), "RSA1"), "two years")

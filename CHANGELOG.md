@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9016 adds dated original-series forecast standard errors
+from the fitted RSA1 preprocessing model on the level and log scales.
+
 Version 0.1.0.9015 adds monthly TR3 automatic identification and the
 RSA3 decomposition for fits accepted by the first reference comparison
 and the subsequent controllers without an automatic restart.

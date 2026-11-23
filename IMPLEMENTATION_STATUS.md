@@ -4,6 +4,23 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 public original-series forecast errors on RSA1 (2026-11-24)
+
+Version `0.1.0.9016` exposes the dated TR1 preprocessing standard errors
+in `native_tramoseats_fit(series, "RSA1")$series_forecast_stdev`.
+Twelve level and log models matched all **288** values in the public
+24-month JVM projection within `2e-8 * (1 + abs(reference))`.
+Their 288 distinct SEATS conditional standard errors remained bit-exact.
+Seven fits also matched the first six public errors with a custom
+3-month backcast and 6-month forecast. A zero horizon returns an empty
+vector and the model reports its own numerical availability status.
+
+Serial and two-worker OpenMP each passed **990/990** RSA1,
+**448/448** RSA3 and **498/498** RSA0 checks and the isolated Java-free
+smoke check. The complete OpenMP source check at `0.1.0.9014` passed
+**302,994/302,994** tests, with two known platform compiler warnings.
+[RSA1 forecasts and uncertainty](inst/tinytest/test-native-tramoseats-rsa1.R)
+
 ## RSA1 original-series forecast error checkpoint (2026-11-24)
 
 Kalos `5a72228cacc78ede80d460a56f9f317c58ddfea5` supplies the

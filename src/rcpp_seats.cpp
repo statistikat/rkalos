@@ -161,7 +161,12 @@ Rcpp::List wrap_automatic_seats(const kalos::tramo_seats_automatic_result& fit, 
 // [[Rcpp::export(name = ".native_tramoseats_rsa1", rng = false)]]
 Rcpp::List native_tramoseats_rsa1(const std::vector<double>& series, int year, int month,
         int backcast, int forecast) {
-    return wrap_automatic_seats(kalos::run_tramo_seats_rsa1(series, year, month, backcast, forecast), true);
+    const auto fit = kalos::run_tramo_seats_rsa1(series, year, month, backcast, forecast);
+    const auto errors = kalos::tramo_tr1_forecast_errors(fit.preprocessing, forecast);
+    auto result = wrap_automatic_seats(fit, true);
+    result["series_forecast_stdev_status"] = errors.status;
+    result["series_forecast_stdev"] = errors.standard_errors;
+    return result;
 }
 
 // [[Rcpp::export(name = ".native_tramoseats_rsa3", rng = false)]]
