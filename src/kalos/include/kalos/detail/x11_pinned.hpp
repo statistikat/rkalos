@@ -8,6 +8,7 @@
 // Henderson endpoints. Nothing here is public API or stable across releases;
 // see docs/contracts/x11-bpass-contract.md, x11-cpass-contract.md and
 // x11-dpass-contract.md for the qualification evidence.
+#include "kalos/detail/hostlineage.hpp"
 #include "../numerics.hpp"
 #include "../parallel.hpp"
 #include "../x11_decomposition.hpp"
@@ -195,7 +196,7 @@ inline void check_decomposition(const char*,X11DecompositionMode mode,
 inline MaskedSeries log_domain(const MaskedSeries& series) {
     auto out=series;
     for(std::size_t row=0;row<out.values.size();++row)
-        if(!out.missing[row]) out.values[row]=std::log(out.values[row]);
+        if(!out.missing[row]) out.values[row]=kalos::detail::glibc_log(out.values[row]);
     return out;
 }
 // X11Context.makePositivity over the raw pinned values: every row with a

@@ -1,0 +1,8 @@
+"id","jdplus.tramoseats.base.core.tramo.SeasonalityController","jdplus.tramoseats.base.core.tramo.RegularUnderDifferencingTest","jdplus.tramoseats.base.core.tramo.SeasonalUnderDifferencingTest","jdplus.tramoseats.base.core.tramo.RegularUnderDifferencingTest2","jdplus.tramoseats.base.core.tramo.SeasonalUnderDifferencingTest2","jdplus.tramoseats.base.core.tramo.SeasonalOverDifferencingTest","jdplus.tramoseats.base.core.tramo.ModelEstimator","jdplus.tramoseats.base.core.tramo.ModelStatistics","jdplus.tramoseats.base.core.tramo.ModelComparator","jdplus.sa.base.core.tests.SpectralPeaks","jdplus.sa.base.core.tests.SeasonalityTests","jdplus.toolkit.base.core.dstats.F","jdplus.toolkit.base.core.dstats.SpecialFunctions"
+"f_ru1",1,1,1,1,1,1,1,2,3,3,0,1,1
+"f_mean",1,1,1,1,1,1,1,2,3,3,0,1,1
+"f_su2",1,1,1,1,1,1,1,2,3,3,0,1,1
+"f_ru2q",1,1,1,1,1,1,1,2,3,3,0,1,1
+"f_peaks",1,1,1,1,1,1,1,2,3,3,0,1,1
+"f_qpeaks",1,1,1,1,1,1,1,2,3,3,0,1,1
+"rw0",1,1,1,1,1,1,1,2,3,3,0,1,1

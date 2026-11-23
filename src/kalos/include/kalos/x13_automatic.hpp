@@ -24,7 +24,9 @@
 // deferred to 21-I and answered with the explicit unsupported status;
 // SeasonalityDetector and the FRegressionTest joint branch are dead in the
 // current jar and not wired; the estimation adapter uses the qualified
-// call-site recipes (row 1: HannanRissanen + Bfgs; rows 3/4: the 21-C
+// call-site recipes (row 1: HannanRissanen + PinnedLevenbergMarquardt —
+// the landing estimate runs on the transcribed JVM LM machine per the
+// CI-FDLIBM ruling recorded in the pipeline contract; rows 3/4: the 21-C
 // sweep recipe with the Multiple start; the PinnedLevenbergMarquardt solver
 // stays inside the qualified 21-D/E/F units). Every module scalar arrives
 // as request data - the core promotes nothing.

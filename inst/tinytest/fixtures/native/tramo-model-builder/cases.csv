@@ -1,0 +1,23 @@
+"id","note","freq","start","n","status","auto","log","mean","p","d","q","bp","bd","bq","period","nvar","nevents"
+"tr0","template TR0: fixed airline start (autoModel off), levels, mean free",12,"1990 1",96,"ok","n","n","y","0","1","1","0","1","1","12",0,0
+"tr1","template TR1: outliers on, autoModel off, undefined airline withPeriod(12)",12,"1990 1",96,"ok","n","n","y","0","1","1","0","1","1","12",0,0
+"tr2","template TR2: calendar TD2+LeapYear+Easter(test) - all builder-gated, no variables",12,"1990 1",96,"ok","n","n","y","0","1","1","0","1","1","12",0,0
+"tr3","template TR3 (rsa3 default): autoModel start airline + mean true",12,"1990 1",96,"ok","y","n","y","0","1","1","0","1","1","12",0,0
+"tr4","template TR4: TR3 + TD2 test-calendar - gated, same builder facts as TR3",12,"1990 1",96,"ok","y","n","y","0","1","1","0","1","1","12",0,0
+"tr5","template TR5: TR3 + TD7 test-calendar - gated, same builder facts as TR3",12,"1990 1",96,"ok","y","n","y","0","1","1","0","1","1","12",0,0
+"trfull","template TRfull: autoMethod FTEST + IncludeEaster(test) - all gated (TR3-identical)",12,"1990 1",96,"ok","y","n","y","0","1","1","0","1","1","12",0,0
+"fixed_order","autoModel off, defined (1,1,0)(1,1,1) with fixed coefficients: setArimaSpec(withPeriod) branch",12,"1990 1",96,"ok","n","n","y","1","1","0","1","1","1","12",0,0
+"log_forced","forced Log transform on TR1: setLogTransformation(true)",12,"1990 1",96,"ok","n","y","y","0","1","1","0","1","1","12",0,0
+"mean_off","MeanSpec.none() with autoModel OFF: final mean stays false",12,"1990 1",96,"ok","n","n","n","0","1","1","0","1","1","12",0,0
+"mean_auto_off","MeanSpec.none() with autoModel ON: initializeMean(false) then initializeArima overwrites mean true",12,"1990 1",96,"ok","y","n","y","0","1","1","0","1","1","12",0,0
+"mean_fixed","fixed mean coefficient: const TrendConstant(d,bd,est-start) + Fixed coef, mean false",12,"1990 1",96,"ok","n","n","n","0","1","1","0","1","1","12",1,0
+"missing_lead","leading NaN run: forward-filled with the first finite value, missing list pinned",12,"1990 1",96,"ok","n","n","y","0","1","1","0","1","1","12",0,0
+"missing_interior","interior NaN runs: (left+right)/2 fills, missing positions pinned",12,"1990 1",96,"ok","n","n","y","0","1","1","0","1","1","12",0,0
+"missing_trail","trailing NaN run: backward-filled with the last finite value",12,"1990 1",96,"ok","n","n","y","0","1","1","0","1","1","12",0,0
+"outliers_manual","manual AO/LS/TC/SO (+XX, +lowercase ao skipped, +preset regeffect=Trend kept): factories, regeffect vocabulary, position sort",12,"1990 1",96,"ok","n","n","y","0","1","1","0","1","1","12",5,0
+"user_absent","user variable without context: ""<name>: not found (removed from the model)"" warning, no registration",12,"1990 1",96,"ok","n","n","y","0","1","1","0","1","1","12",0,1
+"ramp_interv","ramp + intervention variables register as-is (no regeffect attribute), user-category sort",12,"1990 1",96,"ok","n","n","y","0","1","1","0","1","1","12",2,0
+"calendar_fixed","fixed TD2 + LeapYear LoP + Easter(Standard, no test) + transform adjust=LeapYear: td/lp/easter register with regeffect=CalendarEffect",12,"1990 1",96,"ok","n","n","y","0","1","1","0","1","1","12",3,0
+"feb_start","non-January monthly start (1990:2): domain/estimation-domain shift, est-start reference of the fixed-mean rule unaffected",12,"1990 2",96,"ok","y","n","y","0","1","1","0","1","1","12",0,0
+"annual","ANNUAL frequency on TR3 (record): setAirline(false) -> m011(1), mean true; unit refuses per D11",1,"1990 1",24,"ok","y","n","y","0","1","1","0","0","0","1",0,0
+"quarterly","QUARTERLY frequency on TR3 (record): airline withPeriod(4), Feb start; unit refuses per D11",4,"1990 2",40,"ok","y","n","y","0","1","1","0","1","1","4",0,0

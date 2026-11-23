@@ -1,4 +1,7 @@
+#include "kalos/detail/hostlineage.hpp"
 #include "kalos/outlier_scoring.hpp"
+
+#include "kalos/detail/fdlibm.hpp"
 
 #include "outlier_detail.hpp"
 
@@ -63,7 +66,7 @@ double int_probability_lower(double x) {
         double r = (num + C[7]) / (den + D[7]);
         const double i = std::floor(1.6 * ax) / 1.6;
         const double f = (ax - i) * (ax + i);
-        r = std::exp(-i * i * 0.5) * std::exp(-f * 0.5) * r;
+        r = detail::fdlibm_exp(-i * i * 0.5) * detail::fdlibm_exp(-f * 0.5) * r;
         res = x > 0 ? 1.0 - r : r;
     } else {
         const double t = 1.0 / (x * x);
@@ -77,7 +80,7 @@ double int_probability_lower(double x) {
         r = (kSqrpi - r) / ax;
         const double i = std::floor(1.6 * x) / 1.6; // Signed x in this region.
         const double f = (x - i) * (x + i);
-        r = std::exp(-i * i * 0.5) * std::exp(-f * 0.5) * r;
+        r = detail::fdlibm_exp(-i * i * 0.5) * detail::fdlibm_exp(-f * 0.5) * r;
         res = x > 0 ? 1.0 - r : r;
     }
     return res;
@@ -105,7 +108,7 @@ double stn_val(double t) {
         sgn = -1.0;
         u = t;
     }
-    const double w = std::sqrt(-2.0 * std::log(u));
+    const double w = std::sqrt(-2.0 * detail::fdlibm_log(u));
     return (w + calc_poly(XNUM, 5, w) / calc_poly(XDENOM, 5, w)) * sgn;
 }
 
@@ -115,7 +118,7 @@ double int_probability_inverse(double p) {
     double z = stn_val(t);
     for (int it = 0; it < 200; ++it) {
         const double err = int_probability_lower(z) - t;
-        const double step = err / (kSqrpi * std::exp(-0.5 * z * z));
+        const double step = err / (kSqrpi * detail::fdlibm_exp(-0.5 * z * z));
         z = z - step;
         if (!(dcmpg(std::fabs(step / z), TOL) > 0)) return p > 0.5 ? -z : z;
     }
@@ -128,11 +131,11 @@ double calc_val(int n, double alpha) {
     if (n == 1) return 1.96;
     const double dn = static_cast<double>(n);
     const double k = 2.0 - std::sqrt(1.0 + alpha);
-    const double d7 = std::sqrt(2.0 * std::log(dn));
+    const double d7 = std::sqrt(2.0 * detail::fdlibm_log(dn));
     // Pinned stack order: the divisor pushed last (2 * v7) divides the earlier
     // S, and v9 = v7 - S / (2 * v7).
-    const double d9 = (std::log(std::log(dn)) + std::log(12.566370614359172)) / (2.0 * d7);
-    const double d11 = -std::log(-0.5 * std::log(k));
+    const double d9 = (detail::fdlibm_log(detail::fdlibm_log(dn)) + detail::fdlibm_log(12.566370614359172)) / (2.0 * d7);
+    const double d11 = -detail::fdlibm_log(-0.5 * detail::fdlibm_log(k));
     return d11 / d7 + (d7 - d9);
 }
 
@@ -150,17 +153,17 @@ double advanced_critical_value(int n, double alpha) {
     for (int r = 0; r < 3; ++r) {
         M[0 * 3 + static_cast<std::size_t>(r)] = 1.0;
         M[2 * 3 + static_cast<std::size_t>(r)] =
-            std::sqrt(2.0 * std::log(static_cast<double>(nodes[r])));
+            std::sqrt(2.0 * detail::fdlibm_log(static_cast<double>(nodes[r])));
         M[1 * 3 + static_cast<std::size_t>(r)] =
-            (std::log(std::log(static_cast<double>(nodes[r]))) + std::log(12.566370614359172)) /
+            (detail::fdlibm_log(detail::fdlibm_log(static_cast<double>(nodes[r]))) + detail::fdlibm_log(12.566370614359172)) /
             (2.0 * M[2 * 3 + static_cast<std::size_t>(r)]);
     }
     v[0] = int_probability_inverse((1.0 + std::sqrt(1.0 - alpha)) / 2.0);
     for (int r = 1; r < 3; ++r) v[r] = calc_val(nodes[r], alpha);
     std::vector<double> rhs(v, v + 3);
     robust_lu_solve(M, 3, rhs);
-    const double d9 = std::sqrt(2.0 * std::log(dn));
-    const double d11 = (std::log(std::log(dn)) + std::log(12.566370614359172)) / (2.0 * d9);
+    const double d9 = std::sqrt(2.0 * detail::fdlibm_log(dn));
+    const double d11 = (detail::fdlibm_log(detail::fdlibm_log(dn)) + detail::fdlibm_log(12.566370614359172)) / (2.0 * d9);
     return rhs[0] + rhs[1] * d11 + rhs[2] * d9;
 }
 
@@ -198,7 +201,14 @@ double transitory_change_rate(int frequency, double monthly_rate) {
     if (frequency <= 0 || 12 % frequency != 0) {
         throw std::invalid_argument("Invalid frequnecy"); // Pinned message, sic.
     }
-    return std::pow(monthly_rate, 12 / frequency);
+    // Raw libm, intentionally (ledger): the JVM site is Math.pow(monthly,
+    // 12.0/frequency), whose HotSpot dispatch is the _dpow intrinsic onto the
+    // HOST libm (probe 2026-11-21: Math.pow != StrictMath.pow=FdLibm.Pow on
+    // 6.4% of integral-exponent pairs), so no platform-independent fdlibm
+    // target exists here. The recorded corpus-reached domain is the single
+    // pair (0.9999, 12), where Math.pow, StrictMath.pow and glibc pow are all
+    // bit-identical (0x3feff62ccd1f502a).
+    return kalos::detail::glibc_pow(monthly_rate, 12 / frequency);
 }
 
 OutlierZone outlier_excluding_zone(OutlierType type, int period) {

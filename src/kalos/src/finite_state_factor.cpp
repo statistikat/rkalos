@@ -4,6 +4,7 @@
 // The finite-factor Joseph update and concatenated disturbance propagation are
 // independently assembled from P=C C'; no numerical filter is translated.
 #include "kalos/detail/lapack.hpp"
+#include "kalos/detail/hostlineage.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -131,7 +132,7 @@ FiniteObservation FiniteStateFactor::observation(const std::vector<double>& z, d
     const auto w = observation_loading(z, interrupt);
     const auto m = dimension();
     double norm = std::sqrt(h);
-    for (const auto value : w) norm = checked(std::hypot(norm, value));
+    for (const auto value : w) norm = checked(kalos::detail::glibc_hypot(norm, value));
     const auto variance = checked(static_cast<long double>(norm) * norm);
     if (norm != 0 && variance == 0) throw std::underflow_error("finite innovation variance underflows");
     std::vector<double> pz(m, 0);

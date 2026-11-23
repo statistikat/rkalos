@@ -49,6 +49,33 @@ std::optional<double> special_inc_gamma(double a, double x);
 // constructor and is not re-checked here.
 double chi2_upper_p(double df, double x);
 
+// SpecialFunctions.incBeta(a, b, x): the regularized incomplete beta ratio
+// (item 23-C.2, the F-CDF prerequisite). The JVM guard pair uses dcmpg on
+// both sides ("Parameters a and b must be strictly positive" / "Parameter x
+// must be between 0 and 1 inclusive"), so NaN slips past both guards and the
+// iteration bound of incBetaCf turns it into the "Too many iterations in
+// search procedure" throw; the bt factor skips logGamma/log/exp for x == 0
+// or x == 1 exactly; the branch test is the JVM dcmpg of x against
+// (a + 1) / (a + b + 2) (a NaN x or NaN threshold takes the complement).
+// nullopt maps the three throw sites.
+std::optional<double> special_inc_beta(double a, double b, double x);
+
+// SpecialFunctions.incBetaCf(a, b, x): the modified-Lentz continued fraction
+// behind incBeta (tiny 1e-65 floors on h and d, convergence test
+// |del2 - 1| >= 1e-16 evaluated through dcmpg so a NaN del2 keeps looping).
+// nullopt is the m_maxiter = 1000 "Too many iterations in search procedure"
+// throw.
+std::optional<double> special_inc_beta_cf(double a, double b, double x);
+
+// SpecialFunctions.FProbability(value, df1, df2) - the F upper-tail
+// probability consumed by the SeasonalFTest p-value through F.getProbability
+// (F.getProbability returns 1 - FProbability for Lower, FProbability itself
+// for Upper). The JVM reduction is incBeta(df2 / 2, df1 / 2,
+// df2 / (df2 + df1 * value)); the operand order of the third argument
+// (denominator k2 + k1 * value) is pinned by the bytecode. The DStatException
+// surface becomes NaN, mirroring chi2_upper_p.
+double f_upper_p(double value, double df1, double df2);
+
 } // namespace kalos::detail
 
 #endif

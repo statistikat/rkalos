@@ -1,4 +1,6 @@
 #include "kalos/transforms.hpp"
+
+#include "kalos/detail/fdlibm.hpp"
 #include "kalos/parallel.hpp"
 
 #include <cmath>
@@ -25,7 +27,7 @@ TransformedSeries transform_series(const MaskedSeries& series, Transform transfo
             if (series.values[i] <= 0.0) {
                 throw std::invalid_argument("log transformation requires positive observed values");
             }
-            const double value = std::log(series.values[i]);
+            const double value = detail::fdlibm_log(series.values[i]);
             if (!std::isfinite(value)) {
                 throw std::overflow_error("log transformation produced a non-finite value");
             }
@@ -43,7 +45,7 @@ MaskedSeries inverse_transform(const MaskedSeries& series, Transform transform,
     MaskedSeries result = series;
     parallel_for(series.values.size(), 1, interrupt, [&](std::size_t i) {
         if (series.missing[i] || transform == Transform::none) return;
-        const double value = std::exp(series.values[i]);
+        const double value = detail::fdlibm_exp(series.values[i]);
         if (!std::isfinite(value) || value <= 0.0) {
             throw std::overflow_error("inverse log transformation overflowed or underflowed");
         }

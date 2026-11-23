@@ -1,0 +1,56 @@
+"id","note","kind","built","threw","decision","spec_after","lbp","nevents"
+"ms_airline","real airline fit on the clean seasonal base","MS","1","-","","","1.4543921622589550e-14",0
+"ms_airline_mean","real airline fit with the mean regressor","MS","1","-","","","3.3306690738754696e-16",0
+"ms_outliers","real fit carrying two ami-identified outliers","MS","1","-","","","3.3306690738754696e-16",0
+"ms_walk","real airline fit on the seasonal walk","MS","1","-","","","0.52413096125779090",0
+"ms_craft_flat","crafted likelihood, no regressors, unit ssq","MS","1","-","","","0.0000000000000000",0
+"ms_craft_zerossq","crafted likelihood with ssq = 0 (sigma2 = 0, bic = -Inf)","MS","1","-","","","0.0000000000000000",0
+"ms_craft_nancoef","crafted likelihood with a NaN coefficient and covariance","MS","1","-","","","0.0000000000000000",0
+"ms_short","n = 20 slice: m = n/2 with the seasonal block","MS","1","-","","","0.0054233959674936380",0
+"ms_quarter","quarterly shape (D11 refusal evidence, record only)","MS","1","-","","","0.52463899111777750",0
+"ms_craft_dfneg","crafted likelihood with k = m (df = 0): the Chi2 throw ","MS","0","java.lang.IllegalArgumentException","","","",0
+"fr_reject","mean test rejects the mean (|t| 0.52 < 1.96) on the clean base","FR","NA","","Changed","0,1,1,0,1,1@12","",0
+"fr_boundary","meanThreshold = |t| of the machine addmu arm: >= accepts","FR","NA","","Changed","0,1,1,0,1,1@12","",0
+"fr_nomeantest","testMean off: the mean branch never runs","FR","NA","","Unchanged","0,1,1,0,1,1@12","",0
+"fr_nomean","no mean regressor: the mean test is inert","FR","NA","","Unchanged","0,1,1,0,1,1@12","",0
+"fr_inert_regs","outliers and a user regressor are inert in Fast","FR","NA","","Changed","0,1,1,0,1,1@12","",0
+"fr_nonauto_cal","plain (non-ami) td/lp/easter are inert in Fast","FR","NA","","Changed","0,1,1,0,1,1@12","",0
+"fr_seam_td","SEAM: ami td (the JVM T kernel runs, the unit refuses)","FR","NA","","Changed","0,1,1,0,1,1@12","",0
+"fr_seam_td_lp","SEAM: ami td plus ami lp (the lp fallback runs)","FR","NA","","Changed","0,1,1,0,1,1@12","",0
+"fr_seam_easter","SEAM: ami easter (mhTest path)","FR","NA","","Changed","0,1,1,0,1,1@12","",0
+"fr_walk_reject","mean test on the seasonal walk (different t bits)","FR","NA","","Changed","0,1,1,0,1,1@12","",0
+"fr_boundary_walk","boundary on the walk (exact |t| plus one ulp)","FR","NA","","Changed","0,1,1,0,1,1@12","",0
+"fr_mean_reject_noise","mean test on white noise with a wide threshold","FR","NA","","Unchanged","0,1,1,0,1,1@12","",0
+"dr_unprocessed","no calendar field and no mean test: Unprocessed","DR","NA","","Unprocessed","0,1,1,0,1,1@12","",0
+"dr_reject","mean test rejects (test-model estimation echoed)","DR","NA","","Changed","0,1,1,0,1,1@12","",0
+"dr_nomean","no mean regressor and no calendar field: Unprocessed","DR","NA","","Unchanged","0,1,1,0,1,1@12","",0
+"dr_join","joinTest with no calendar field (F kernel never built)","DR","NA","","Changed","0,1,1,0,1,1@12","",0
+"dr_adjust","adjust with no calendar field: the adjust arm cannot run","DR","NA","","Changed","0,1,1,0,1,1@12","",0
+"dr_seam_td","SEAM: calendar td field (the JVM builds and tests it)","DR","NA","","Changed","0,1,1,0,1,1@12","",0
+"dr_seam_lp","SEAM: calendar leap-year field","DR","NA","","Changed","0,1,1,0,1,1@12","",0
+"dr_seam_easter","SEAM: calendar easter field","DR","NA","","Changed","0,1,1,0,1,1@12","",0
+"dr_walk","mean test on the seasonal walk","DR","NA","","Changed","0,1,1,0,1,1@12","",0
+"dr_noise_boundary","boundary on white noise (test-model |t| exactly)","DR","NA","","Changed","0,1,1,0,1,1@12","",0
+"pg_null_ref","refAuto null: the model becomes the reference","PG","NA","","0","0,1,1,0,1,1@12","",0
+"pg_skip","skip rule: nr > nb keeps the reference and evolves pcr","PG","NA","","1","1,1,1,1,1,1@12","",0
+"pg_revert_A","revert arm A: both LB p-values weak and the reference se wins","PG","NA","","1","0,1,1,0,1,1@12","",0
+"pg_revert_pass1","revert arm at pass 1: current LB fine, reference weak","PG","NA","","1","0,1,1,0,1,1@12","",0
+"pg_revert_se","revert arm at pass 2 (the se branch after the LB band)","PG","NA","","1","0,1,1,0,1,1@12","",0
+"pg_shapeA","shapeA revert: d = 0 bd = 1 p = 1 phi(1) <= -0.82 bq = 1","PG","NA","","1","0,1,1,0,1,1@12","",0
+"pg_shapeA_miss","shapeA near miss: phi(1) = -0.8 keeps the current model","PG","NA","","1","1,0,1,0,1,1@12","",0
+"pg_shapeB","shapeB revert: d = 1 bd = 0 p = 0 q = 1 bp = 1 bphi(1) <= -0.65","PG","NA","","1","0,1,1,0,1,1@12","",0
+"pg_shapeB_miss","shapeB near miss: bphi(1) = -0.6 keeps","PG","NA","","1","0,1,1,1,0,1@12","",0
+"pg_nan_ref","crafted NaN reference rows: the dcmpg/dcmpl ordering","PG","NA","","1","0,1,1,0,1,1@12","",0
+"pg_real_ref","both sides live (real reference statistics)","PG","NA","","1","1,1,1,0,0,0@12","",0
+"pg_remark","pass 1 continue: reduceVa(curva) and the critical-value remark","PG","NA","","0","0,1,1,0,1,1@12","",1
+"pg_last_solution","pass 4 after the gate: the last-chance rewrite","PG","NA","","0","3,1,1,0,1,1@12","",1
+"pg_keep_low_lbp","no revert with the weak-LB current model (branch D)","PG","NA","","1","0,1,1,0,1,1@12","",0
+"pg_revert_C","revert arm C at pass 2: reference se wins with lbp above 0.95","PG","NA","","1","0,1,1,0,1,1@12","",0
+"pg_revert_A_short","revert arm A with the short (n = 20) model","PG","NA","","1","1,1,1,0,0,0@12","",0
+"am_TR0","readAmiOptions for TR0","AM","NA","","","","",0
+"am_TR1","readAmiOptions for TR1","AM","NA","","","","",0
+"am_TR2","readAmiOptions for TR2","AM","NA","","","","",0
+"am_TR3","readAmiOptions for TR3","AM","NA","","","","",0
+"am_TR4","readAmiOptions for TR4","AM","NA","","","","",0
+"am_TR5","readAmiOptions for TR5","AM","NA","","","","",0
+"am_TRfull","readAmiOptions for TRfull","AM","NA","","","","",0

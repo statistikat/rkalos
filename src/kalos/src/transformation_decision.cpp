@@ -1,5 +1,7 @@
 #include "kalos/transformation_decision.hpp"
 
+#include "kalos/detail/fdlibm.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -55,7 +57,7 @@ TransformationBranchReport run_branch(SarimaEstimationRequest request, bool log_
     if (log_branch) {
         // Pinned LogTransformation: log on finite values, others untouched.
         for (auto& value : request.series.values) {
-            if (std::isfinite(value)) value = std::log(value);
+            if (std::isfinite(value)) value = detail::fdlibm_log(value);
         }
         // Pinned LogJacobian on the estimation window with no missing
         // positions: sum the transformed values left-to-right over

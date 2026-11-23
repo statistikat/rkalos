@@ -1,0 +1,91 @@
+# 23-F F.1 FinalEstimator goldens. One section per case line; output blocks
+# delimited by "end <id>". Tokens per type:
+#  fe_sr id ur  (re im)*            private searchur per single-root array
+#  fe_mr id -   (c)*                Polynomial([1,c...]).mirror().roots() bits
+#  fe_ru id ur  p d q bp bd bq np phi.. nbp bphi.. nq th.. nbq bth..
+#  fe_cur id cancel p d q bp bd bq np phi.. nbp bphi.. nq th.. nbq bth..
+#  fe_tc id fam tsig p q bp bq      live estimation + private test cascade
+#  fe_est id fam n mean eps ur pass ami outliers orders(p,d,q,bp,bd,bq|air)
+# searchur: strict |r|>ur AND |im|<=0.05 (dcmpg) AND re>0 (dcmpl)
+fe_sr sr01 0.9 0.9 0
+fe_sr sr02 0.9 0.9000000000000001 0
+fe_sr sr03 0.9 0.95 0.05
+fe_sr sr04 0.9 0.95 0.05000000000000001
+fe_sr sr05 0.9 0.95 -0.05
+fe_sr sr06 0.9 -0.95 0
+fe_sr sr07 0.9 0 0
+fe_sr sr08 0.9 nan 0.5
+fe_sr sr09 0.9 0.95 nan
+fe_sr sr10 0.9 0.95 inf
+fe_sr sr11 0.9 0.95 -inf
+fe_sr sr12 0.9 0.95 0.03
+fe_sr sr13 nan 0.95 0
+fe_sr sr14 0 1e-300 0
+fe_sr sr15 0.9 -0 -0
+fe_sr sr16 0.9 inf 0
+fe_sr sr17 0.9 0.8999999999999999 0
+fe_sr sr18 0.96 0.96 0.049999999999999996
+# roots bits: mirror of crafted polynomial (p_roots pin, deg 1..6)
+fe_mr mr01 - 0.5
+fe_mr mr02 - -1.5 0.5
+fe_mr mr03 - 0.5 0.9
+fe_mr mr04 - 0.5 0.4 0.3
+fe_mr mr05 - 0.1 -0.2 0.3 0.05
+fe_mr mr06 - 0.9 0
+fe_mr mr07 - 0.5 0.4 0.3 0.2 0.1 0.05
+fe_mr mr08 - 0.99 0.05 0.01
+fe_mr mr09 - 1 -1 0.5
+fe_mr mr10 - 0.7071067811865476 0.7071067811865476 0.5 0.25 0.1
+# checkUnitRoots: d<2 / bd<1 gates, STRICT > semantics, both-order promotion
+fe_ru ru01 0.9 1 1 0 0 0 0 1 0.999 0 0 0
+fe_ru ru02 1.5 1 1 0 0 0 0 1 0.999 0 0 0
+fe_ru ru03 0.9 1 2 0 0 0 0 1 0.999 0 0 0
+fe_ru ru04 0.9 0 0 0 1 0 0 0 1 0.999 0 0
+fe_ru ru05 0.9 0 0 0 1 1 0 0 1 0.999 0 0
+fe_ru ru06 0.9 1 1 0 1 0 0 1 0.999 1 0.999 0 0
+fe_ru ru07 0.9 0 1 1 0 1 1 0 0 1 -0.9 1 0.3
+fe_ru ru08 0.9 2 1 0 0 0 0 2 1.5 -0.5625 0 0 0
+fe_ru ru09 0.9 1 1 0 0 0 0 1 nan 0 0 0
+fe_ru ru10 0.9 1 0 0 0 0 0 1 0.999 0 0 0
+fe_ru ru11 0.9 1 1 0 0 0 0 1 0.9 0 0 0
+fe_ru ru12 0.96 1 1 0 0 0 0 1 0.95 0 0 0
+fe_ru ru13 0.9 1 1 0 0 0 0 1 -0.99 0 0 0
+# negative-coefficient triggers (mirror root = coefficient sign): the
+# promotion arms. getRegularAR()=1+phi*B so phi=-0.999 (root +0.999) fires.
+fe_ru ru14 0.9 0 0 0 1 0 0 0 1 -0.999 0 0
+fe_ru ru15 0.9 0 0 0 1 1 0 0 1 -0.999 0 0
+fe_ru ru16 0.9 1 1 0 1 0 0 1 -0.999 1 -0.999 0 0
+fe_ru ru17 0.7 2 1 0 0 0 0 2 -1.5 0.5625 0 0 0
+fe_ru ru18 0.99 0 0 0 1 0 0 0 1 -0.99 0 0
+fe_ru ru19 0.9 2 1 0 0 0 0 2 -1.9 0.9025 0 0 0
+# checkCommonRoots: live default cancel 0.044; NaN never cancels
+fe_cur cr01 0.044 0 1 0 1 1 1 0 1 0.5 0 1 0.52
+fe_cur cr02 0.044 0 1 0 1 1 1 0 1 0.5 0 1 0.6
+fe_cur cr03 0.044 1 1 1 1 1 1 1 0.3 1 0.5 1 -0.4 1 0.52
+fe_cur cr04 0.044 0 1 0 1 1 1 0 1 nan 0 1 0.5
+fe_cur cr05 0.044 0 1 0 2 1 1 0 2 0.5 0.1 0 1 0.5
+fe_cur cr06 0.5 0 1 0 1 1 1 0 1 0.5 0 1 0.9
+fe_cur cr07 0.044 0 1 0 1 1 0 0 1 0.5 0 0
+fe_cur cr08 0.044 0 1 0 1 1 1 0 1 0.5 0 1 0.5439999999999999
+fe_cur cr09 0.044 0 1 0 1 1 1 0 1 0 0 1 0x3fa6872b020c49ba
+# test cascade: live landings, tsig injection (live value 1.0)
+fe_tc tc01 none 0 0 1 0 1
+fe_tc tc02 none 1 0 1 0 1
+fe_tc tc03 none 3 0 1 0 1
+fe_tc tc04 none 3 1 1 1 1
+fe_tc tc05 ls 3 1 1 1 1
+fe_tc tc06 ao 1 1 1 1 1
+fe_tc tc07 none 30 0 1 0 1
+fe_tc tc08 none 30 1 1 0 0
+fe_tc tc09 out2 30 1 1 1 1
+# live estimate() driver (exact kernel builder chain, defaults 0.044/1.0)
+fe_est es01 none 96 y 1e-8 0.96 0 y n air
+fe_est es02 none 96 n 1e-8 0.96 0 y n 0,0,0,0,0,0
+fe_est es03 none 96 y 1e-8 0.96 0 n n air
+fe_est es04 ls 96 y 1e-8 0.5 0 y y 1,1,0,0,0,0
+fe_est es05 none 96 y 1e-8 0.96 2 y y 0,1,0,1,1,1
+fe_est es06 out2 96 y 1e-8 0.96 1 y y air
+fe_est es07 none 240 y 1e-8 0.96 0 y y air
+fe_est es08 none 96 y 1e-8 0.96 0 y n 0,1,0,1,1,1
+fe_est es09 none 96 y 1e-8 0.96 1 y y 0,1,0,1,1,1
+fe_est es10 none 96 y 1e-8 0.96 0 y y 0,1,0,1,1,1

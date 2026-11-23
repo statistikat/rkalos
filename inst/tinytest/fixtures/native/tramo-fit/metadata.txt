@@ -1,0 +1,67 @@
+Item 23-F F.4 TRAMO automatic-fit assembly corpus.
+
+Probe: Scratch23f.java is the Scratch23r manual-driver probe (see
+../tramo-kernel-rounds/metadata.txt for the dual-driver design and the
+identity gates) EXTENDED with the fit-level capture surface the tramo_fit
+unit consumes:
+
+  "KER <id> resolved ..."     the resolved TramoSpec scalars every stage
+      reads (transform fct, va/pcr/tsig/pc/cancel, tol, ub1/ub2, the mean
+      test flag, autoMethod) plus the "amth <NAME>" auto-method witness
+      token appended to the resolved line (UNUSED/FTEST/WALD/BIC/AIC);
+  "fitbuild ..."              the builder output the pre-stage consumes
+      (orders, mean, log, nvars, miss, misspos, the interpolated series
+      bit row);
+  "fitdec ..."                the jar TramoSeasonalityDetector verdict on
+      the RAW series (Qs/Fr statistics and p-values as raw doubles, the
+      score, toint), the 23-B cross-check target;
+  "fitll ..."                 the LogLevelModule side-echo (a FRESH kernel
+      over the same built description: testSeasonality then the builder
+      chain logPreference(Math.log(fct)).estimationPrecision(intermediate
+      Precision).seasonal(ctx), log/level/slog raw bits, choosingLog, the
+      log correction, the resulting description log flag);
+  "fitseam <idx> diff|arma|scan ..."  the module ENTRY states (orders,
+      mean, outliers, pass, round, regarima().getObservationsCount(), the
+      scan curva) - what the module saw on entry, as opposed to the kr
+      seam facts' post-states;
+  "fitresid <idx> spc <s> nobs <n> <count> <bits...>" the arma-seam
+      hand-over: the comespa gate readout and RegArimaUtility.olsResiduals
+      (public static, javap-pinned to ArmaModule.process offset 160) as
+      raw bit rows;
+  "fitcl/fitcoef/fituc/fitdy" the ConcentratedLikelihoodWithMissing views
+      of the FINAL estimation (dim, nx, nmiss, ssq, logDeterminant,
+      isScalingFactor, k = getArimaSpec().freeParametersCount(); all-
+      Coefficients; the unscaledCovariance() upper triangle; the
+      differenced response), emitted once per case for BOTH driver arms;
+  "rfinal/mfinal ... parcov"  the ParametersEstimation.getCovariance upper
+      triangle on the final-model dumps - the ARMA-tail covariance surface,
+      captured to witness its separation from the coefficientsCovariance
+      regression block (register D9); "cov" remains the regression-block
+      surface (the D9 replay target).
+
+Case grammar as in F.3 ("KER <id> <alias+flags [key=value]> <freq>
+<startY> <startM>" + "values ..." lines), with the F.4 flag extensions
++nomean (MeanSpec.none()), +easter (EasterSpec test), +fs (transform
+None), amth=<UNUSED|FTEST|WALD|BIC|AIC>. gen_cases.py regenerates
+cases.txt (35 cases): the sc_*/mr_* planted-outlier series copied verbatim
+from ../tramo-outlier-rounds/cases.txt, the airline series from R
+datasets::AirPassengers (airline.txt), and the two deterministic boundary
+series documented in gen_cases.py (nearur near-unit-root LCG series; the
+constant-100 series the pinned engine aborts on - its row is the
+capture-level failure witness).
+
+Run recipe: ./run.sh cases.txt <tag> [witness]; one JVM per case,
+G2 intrinsic-disable recipe (_dexp/_dlog), -Xss16m; witness mode adds
+-Xlog:class+load per case aggregated to <tag>.classload.log.
+
+Gate results (2026-11-23, OpenJDK 21.0.11, jdplus jars 3.9.0):
+  fit-capture-1.out == fit-capture-2.out == fit-witness.out byte-identical
+  (double capture + witness-mode capture); 35 identity rows: 34 all-1 and
+  the pinned fit_const row (events 0 / final 1 / all 0: both arms throw the
+  identical DStatException "Too many iterations in search procedure" before
+  any round event, the rfinal dump still bit-identical).
+  Witness gate on fit-classload.log: ZERO jdplus.spec.x13 loads; the only
+  FinalEstimator loads are jdplus.tramoseats.base.core.tramo.FinalEstimator
+  (33 = one per completed case); TramoKernel, TramoKernel$AmiOptions,
+  TramoSeasonalityDetector, SeasonalityTests and LogLevelModule all loaded
+  from the pinned tramoseats jars.

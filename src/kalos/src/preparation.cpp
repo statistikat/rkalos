@@ -1,3 +1,4 @@
+#include "kalos/detail/hostlineage.hpp"
 #include "kalos/preparation.hpp"
 #include <algorithm>
 #include <cmath>
@@ -126,12 +127,12 @@ PreparedRegression prepare_regression(PreparedRegressors regressors,
             const int order = d + seasonal_d;
             double divisor = 1;
             for (int i = 2; i <= order; ++i) divisor *= i;
-            divisor *= std::pow(regressors.observed.frequency(), seasonal_d);
+            divisor *= kalos::detail::glibc_pow(regressors.observed.frequency(), seasonal_d);
             for (std::size_t i = 0; i < static_cast<std::size_t>(rows); ++i) {
                 poll(interrupt, i);
                 const double time = static_cast<double>(i) + 1 + static_cast<double>(source_first) -
                     static_cast<double>(regressors.observed_offset);
-                const double value = std::pow(time, order) / divisor;
+                const double value = kalos::detail::glibc_pow(time, order) / divisor;
                 if (!std::isfinite(value)) throw std::overflow_error("Generated drift exceeds the finite numeric range.");
                 regressors.values[old_size + i] = value;
             }

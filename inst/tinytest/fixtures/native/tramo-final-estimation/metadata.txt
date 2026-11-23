@@ -1,0 +1,58 @@
+Item 23-F F.1 FinalEstimator decision-layer corpus.
+
+Probe: Scratch23f.java (split package jdplus.tramoseats.base.core.tramo;
+reflection ONLY for the four private ladder methods searchur/checkUnitRoots/
+checkCommonRoots/test and the final tsig field; every decision runs the
+pinned bytecode).  Runner: run.sh (javac --release 21 + java 21 with the
+G2 intrinsic-disable recipe -XX:+UnlockDiagnosticVMOptions
+-XX:DisableIntrinsic=_dexp -XX:DisableIntrinsic=_dlog via _JAVA_OPTIONS).
+Jars: the pinned rjd3 3.9.0 set (jdplus-sa-base-api/core,
+jdplus-toolkit-base-api/core, protobuf-java-4.36.1, toolkit/sa protobuf+r,
+jdplus-tramoseats-base-* 3.9.0) under
+~R/x86_64-pc-linux-gnu-library/4.5/rjd3{jars,toolkit,tramoseats}/java.
+
+Requests: cases-fe1.txt (75 cases: fe_sr 18, fe_mr 10, fe_ru 19, fe_cur 9,
+fe_tc 9, fe_est 10).  Numeric tokens parse like the probe tok(): "nan",
+"inf", "-inf", 0x-hex raw-IEEE-754-bits, otherwise decimal (round-trip
+correctly rounded on both sides).  All %.17g values are printed with their
+raw IEEE-754 bits as value#hex16.
+
+Captures: fe1-capture-1.out / fe1-capture-2.out from independent JVM
+processes, byte-identical (REPRO gate); fe1-witness.out is a third run,
+byte-identical to the captures, whose class-loading trace
+(fe1-classload.log) shows jdplus.tramoseats.base.core.tramo.FinalEstimator
+and FinalEstimator$Builder loaded from the pinned
+jdplus-tramoseats-base-core-3.9.0.jar with ZERO loads of
+jdplus.x13.base.core.x13.regarima.FinalEstimator (the 21-H fork side).
+The fe_est rows drive the live estimate() driver (rounds/estimation); their
+replay lands with the 23-F F.2 driver layer and is inert in the F.1 golden.
+
+Regenerate the C++ golden:
+  python3 tools/gen_tramo_final_estimation_golden.py \
+      validation/evidence/native/tramo-final-estimation tests/jvm_tramo_final_estimation.h
+
+F.2 ROUND-STEP CLUSTER (2026-11-23): Scratch23n.java consumes the same
+cases-fe1.txt fe_est rows and prints, per case, (r) a real
+FinalEstimator.estimate run in the F.1 grammar plus (m) a MANUAL replay of
+the decoded estimate() driver (tmp_opencode/kalos-m5-pinning.md SECTION 29)
+over the same public machinery, with per-round dumps: entry spec/pars
+(the SarimaMapping2 default parameters), HannanRissanenInitializer
+(stabilize, useDefaultIfFailed) start, warm (stationaryMapping
+parametersOf), validate, landing, cl (dim/ssq/logDeterminant/allCoefficients),
+Point rows (max parameters, score = -LM gradientAtMinimum, information =
+LM curvatureAtMinimum lazily from Evaluation.ssqDerivatives), and
+asymptoticCovariance = SymmetricMatrix.inverse(information). Gates:
+n23-capture-1.out == n23-capture-2.out byte-identical (REPRO); the r rows
+reproduce every fe_est fact of fe1-capture-1.out (est_return/nnsig/orders/
+pars/cl/coef/vd; es09/es10 print the same estimation-null fact under a
+cleaner label); the m rows match the r rows BIT-EXACTLY on all 10 cases
+(180 fact lines) — the decoded driver is confirmed, including the
+es05/08/09/10 seasonal-cancel path (LM lands exactly at the saddle [0,0]
+from the zero warm start, |bphi(1)-btheta(1)| = 0 < cancel 0.044, nnsig=2,
+the dim==0 round-2 short-circuit returning true with nnsig untouched) and
+the es09/10 return-false path leaving the estimation nulled by
+setSpecification. n23-classload.log: tramo.FinalEstimator loaded once from
+the pinned jar, ZERO x13 regarima.FinalEstimator loads;
+RegSarimaComputer/HannanRissanenInitializer/RegArmaProcessor/
+LevenbergMarquardtMinimizer all pinned-jar loads; NO outlier detector loads
+(the es shapes never touch the ODM).

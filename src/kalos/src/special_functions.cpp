@@ -150,4 +150,114 @@ double chi2_upper_p(double df, double x) {
   return 1.0 - *lower;
 }
 
+std::optional<double> special_inc_beta_cf(double a, double b, double x) {
+  // incBetaCf (bytecode 960-1145 of the pinned SpecialFunctions dump): the
+  // modified-Lentz machine with tiny = 1e-65 floors. Every |.| < tiny test
+  // is a dcmpg ifge skip, so a NaN h/d keeps its value (the JVM never
+  // replaces it); the convergence test |del2 - 1| >= 1e-16 is a dcmpg ifge
+  // continue, so a NaN del2 never converges and the loop exits through the
+  // "Too many iterations in search procedure" throw (nullopt).
+  constexpr double kBetaTiny = 1.0e-65;
+  const double aa = a - 1.0;    // local 8
+  const double qab = a + 1.0;   // local 10
+  const double apb = a + b;     // local 12
+  double d = 1.0;               // local 14
+  double h = 1.0 - (apb * x) / qab;  // local 16
+  if (std::abs(h) < kBetaTiny) {
+    h = kBetaTiny;
+  }
+  h = 1.0 / h;
+  double del = h;               // local 18
+  bool converged = false;
+  for (int m = 1; m < kMaxIter; ++m) {
+    const double md = static_cast<double>(m);
+    const double m2 = static_cast<double>(2 * m);  // imul before i2d
+    double an = ((md * (b - md)) * x) / ((aa + m2) * (a + m2));
+    h = 1.0 + an * h;
+    if (std::abs(h) < kBetaTiny) {
+      h = kBetaTiny;
+    }
+    d = 1.0 + an / d;
+    if (std::abs(d) < kBetaTiny) {
+      d = kBetaTiny;
+    }
+    h = 1.0 / h;
+    del = del * (d * h);
+    an = ((-(a + md)) * (apb + md) * x) / ((a + m2) * (qab + m2));
+    h = 1.0 + an * h;
+    if (std::abs(h) < kBetaTiny) {
+      h = kBetaTiny;
+    }
+    d = 1.0 + an / d;
+    if (std::abs(d) < kBetaTiny) {
+      d = kBetaTiny;
+    }
+    h = 1.0 / h;
+    const double del2 = d * h;
+    del = del * del2;
+    if (std::abs(del2 - 1.0) < 1.0e-16) {
+      converged = true;  // the JVM sets its flag and breaks
+      break;
+    }
+  }
+  if (!converged) {
+    return std::nullopt;  // DStatException "Too many iterations"
+  }
+  return del;
+}
+
+std::optional<double> special_inc_beta(double a, double b, double x) {
+  // Guards (dcmpg at 0-49): "a and b must be strictly positive" fires only
+  // below zero (a == 0 and NaN pass the bytecode guards), and x only outside
+  // [0, 1] (NaN passes both tests). A zero a or b still fails later: the bt
+  // factor routes it into logGamma's own throw, and the division by a/b
+  // makes the ratio degenerate exactly as in the JVM.
+  if (a < 0.0 || b < 0.0 || x < 0.0 || x > 1.0) {
+    return std::nullopt;
+  }
+  double bt = 0.0;
+  if (x != 0.0 && x != 1.0) {
+    // exp(((lg(a+b) - lg(a)) - lg(b) + a * log(x)) + b * log(1 - x));
+    // operand order per bytecode 73-107.
+    const auto lg_ab = special_log_gamma(a + b);
+    const auto lg_a = special_log_gamma(a);
+    const auto lg_b = special_log_gamma(b);
+    if (!lg_ab || !lg_a || !lg_b) {
+      return std::nullopt;
+    }
+    double t = *lg_ab - *lg_a;
+    t = t - *lg_b;
+    t = t + a * fdlibm_log(x);
+    t = t + b * fdlibm_log(1.0 - x);
+    bt = fdlibm_exp(t);
+  }
+  // Branch test dcmpg(x, (a + 1) / (a + b + 2)) ifge complement: NaN on
+  // either side takes the complement (the JVM cmp pushes +1).
+  const double thr = (a + 1.0) / (a + b + 2.0);
+  if (!(x < thr)) {
+    const auto cf = special_inc_beta_cf(b, a, 1.0 - x);
+    if (!cf) {
+      return std::nullopt;
+    }
+    return 1.0 - ((*cf * bt) / b);
+  }
+  const auto cf = special_inc_beta_cf(a, b, x);
+  if (!cf) {
+    return std::nullopt;
+  }
+  return (*cf * bt) / a;
+}
+
+double f_upper_p(double value, double df1, double df2) {
+  // FProbability(value, k1, k2) = incBeta(k2 / 2, k1 / 2,
+  // k2 / (k2 + k1 * value)) with the denominator built as k2 + (k1 * value)
+  // per bytecode 300-316. F.getProbability(value, Upper) returns this
+  // directly; Lower returns 1 - this. The DStatException surface (guard or
+  // iteration throws inside incBeta) becomes NaN, as TestsUtility.pvalue
+  // turns it into a NaN p-value upstream.
+  const double z = df2 / (df2 + df1 * value);
+  const auto p = special_inc_beta(df2 / 2.0, df1 / 2.0, z);
+  return p.value_or(std::nan(""));
+}
+
 }  // namespace kalos::detail

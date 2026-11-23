@@ -114,7 +114,7 @@ bool to_coordinates(const ArmaParameterMap& map,
         const auto check = arma_admissibility(physical[b], b == 1 || b == 3, map.margin());
         if (check.status != "admissible") return false;
         for (const double reflection : check.reflections) {
-            const double coordinate = std::atanh(reflection / (1 - map.margin()));
+            const double coordinate = detail::fdlibm_atanh(reflection / (1 - map.margin()));
             if (!std::isfinite(coordinate)) return false;
             out.push_back(coordinate);
         }
@@ -128,6 +128,10 @@ struct PassOutcome {
     std::size_t evaluations = 0;
     double log_likelihood = unavailable();
     std::array<std::vector<double>, 4> coefficients;
+    // Item 23-F F.2 landing seam (set when the pinned sum-of-squares path
+    // ran and request_landing_point was asked; the FinalEstimator round
+    // driver reads it as the machine-failure seam).
+    bool landing_derivatives = false;
 };
 
 bool pinned_solver(const SarimaEstimationRequest& request) {
@@ -153,10 +157,13 @@ public:
         std::size_t q, std::size_t bq, const Interrupt& interrupt)
         : request_(request), interrupt_(interrupt), domain_(static_cast<int>(p),
               static_cast<int>(bp), static_cast<int>(q), static_cast<int>(bq)) {
-        // Qualify the pinned deviances machine (21-D.2) for this request: the
-        // machine carries no missing observations, needs a seasonal period,
-        // and knows the design-free (sfilter) and constant-regressor
-        // (mfilter) machines. Anything else keeps the 21-A GLS provider.
+        // Qualify the pinned deviances machine (21-D.2, multi-column
+        // generalization item 23-F F.2) for this request: the machine carries
+        // no missing observations, needs a seasonal period, and knows the
+        // design-free (sfilter), constant-regressor (mfilter, the 1x1
+        // machine) and full pivoting-QR multi-column (mfilter, hwp_n)
+        // machines. Missing observations and sub-period seasonality keep the
+        // 21-A GLS provider.
         if (request_.period < 2 || request_.d < 0 || request_.seasonal_d < 0) {
             return;
         }
@@ -168,25 +175,59 @@ public:
         for (const double value : request_.series.values) {
             if (!std::isfinite(value)) return;
         }
-        machine_y_ = detail::pinned_backfilter_apply(
-            detail::pinned_differencing_polynomial(request_.period, request_.d,
-                request_.seasonal_d),
-            request_.series.values);
+        const std::vector<double> kernel = detail::pinned_differencing_polynomial(
+            request_.period, request_.d, request_.seasonal_d);
+        machine_y_ = detail::pinned_backfilter_apply(kernel, request_.series.values);
         if (machine_y_.empty()) return;
         if (request_.design.columns == 0) {
             machine_usable_ = true;
             return;
         }
-        if (request_.design.columns != 1 || request_.design.values.size() !=
-                request_.series.values.size() ||
-            (!request_.design.fixed.empty() && request_.design.fixed[0] != 0)) {
+        if (!request_.design.fixed.empty()) {
+            for (const std::uint8_t flag : request_.design.fixed) {
+                if (flag != 0) return; // fixed design entries are not qualified
+            }
+        }
+        const std::size_t rows = request_.series.values.size();
+        if (request_.design.values.size() != rows * request_.design.columns) {
             return;
         }
-        for (const double value : request_.design.values) {
-            if (value != 1.0) return; // the pinned seam machine is the
-                                      // meanCorrection constant column
+        // The raw-domain columns map to the machine view the pinned
+        // ConcentratedLikelihoodComputer sees (mirror of the scan machine's
+        // design()): an all-ones column is the meanCorrection constant, 1.0
+        // over the differenced domain; every other column carries the
+        // unit-root filter.
+        std::vector<std::vector<double>> cols;
+        cols.reserve(request_.design.columns);
+        for (std::size_t c = 0; c < request_.design.columns; ++c) {
+            std::vector<double> raw(request_.design.values.begin()
+                    + static_cast<std::ptrdiff_t>(c * rows),
+                request_.design.values.begin()
+                    + static_cast<std::ptrdiff_t>((c + 1) * rows));
+            bool constant = true;
+            for (const double value : raw) {
+                if (value != 1.0) {
+                    constant = false;
+                    break;
+                }
+            }
+            if (constant) {
+                if (request_.design.columns == 1) {
+                    machine_design_.assign(machine_y_.size(), 1.0);
+                    machine_usable_ = true; // the verified 1x1 constant machine
+                    return;
+                }
+                cols.push_back(std::vector<double>(machine_y_.size(), 1.0));
+            } else {
+                cols.push_back(detail::pinned_backfilter_apply(kernel, raw));
+                if (cols.back().empty()) return;
+            }
         }
-        machine_design_.assign(machine_y_.size(), 1.0);
+        if (cols.size() != request_.design.columns) {
+            return; // defensive: the column walk above must consume all
+        }
+        machine_cols_ = std::move(cols);
+        machine_multi_ = true;
         machine_usable_ = true;
     }
 
@@ -204,8 +245,11 @@ public:
             // vector the machine runs on; a rejected evaluation mirrors the
             // pinned Evaluation constructor throwing, which the pinned
             // iterateQR catch feeds to the damping tail.
-            const auto point = detail::pinned_deviances_evaluate(
-                machine_y_, p, bp, q, bq, request_.period, machine_design_, x);
+            const auto point = machine_multi_
+                ? detail::pinned_deviances_evaluate_multi(
+                      machine_y_, p, bp, q, bq, request_.period, machine_cols_, x)
+                : detail::pinned_deviances_evaluate(
+                      machine_y_, p, bp, q, bq, request_.period, machine_design_, x);
             if (!point || point->e.size() != machine_y_.size() ||
                 !std::isfinite(point->ssq_e)) {
                 return std::nullopt;
@@ -290,8 +334,11 @@ public:
                 for (const double v : c[2]) jvm.push_back(-v);
                 for (const double v : c[1]) jvm.push_back(v);
                 for (const double v : c[3]) jvm.push_back(v);
-                const auto point = detail::pinned_deviances_evaluate(
-                    machine_y_, p, bp, q, bq, request_.period, machine_design_, jvm);
+                const auto point = machine_multi_
+                    ? detail::pinned_deviances_evaluate_multi(
+                          machine_y_, p, bp, q, bq, request_.period, machine_cols_, jvm)
+                    : detail::pinned_deviances_evaluate(
+                          machine_y_, p, bp, q, bq, request_.period, machine_design_, jvm);
                 if (point && std::isfinite(point->log_likelihood)) {
                     return point->log_likelihood;
                 }
@@ -327,8 +374,10 @@ private:
     // qualify for (missing observations, multi-column or non-constant
     // designs, sub-period seasonality).
     bool machine_usable_ = false;
+    bool machine_multi_ = false;
     std::vector<double> machine_y_;
     std::vector<double> machine_design_;
+    std::vector<std::vector<double>> machine_cols_;
 };
 
 const char* pinned_lm_status(int stop) {
@@ -396,6 +445,9 @@ PassOutcome run_pass_pinned_lm(const SarimaEstimationRequest& request,
     }
     const auto landing = flip_ar(from_jvm_coordinates(lm.parameters, p, bp, q));
     outcome.optimizer_status = pinned_lm_status(lm.stop);
+    if (request.request_landing_point) {
+        outcome.landing_derivatives = true;
+    }
     if (provider.machine_active()) {
         // The pinned landing likelihood is the machine's concentrated
         // likelihood at the landing (21-D.2); it is bit-identical to the
@@ -675,26 +727,46 @@ SarimaEstimationResult estimate_sarima_fixed(
             physical[b].assign(request.blocks[b].initial.size(), fill);
         }
     } else {
+        // The meanCorrection seam (the pinned airline-model constant column
+        // lives on the differenced scale) enters the initializer as that
+        // constant, on the single-polynomial differenced response the pinned
+        // deviances machine runs on (the JVM reads it from the same
+        // differenced model). Every other design keeps the sequential
+        // per-pass differencing of the 22-series seam.
+        const bool mean_correction = request.design.columns == 1 &&
+            request.design.values.size() == request.series.values.size() &&
+            std::all_of(request.design.values.begin(), request.design.values.end(),
+                [](double value) { return value == 1.0; });
+        const auto differenced_response = mean_correction
+            ? detail::pinned_backfilter_apply(detail::pinned_differencing_polynomial(
+                  request.period, request.d, request.seasonal_d),
+                request.series.values)
+            : difference_series(
+                request.series.values, request.d, request.seasonal_d, request.period);
         RegressionDesign differenced;
         differenced.columns = request.design.columns;
         differenced.coefficients = request.design.coefficients;
         differenced.fixed = request.design.fixed;
-        for (std::size_t c = 0; c < request.design.columns; ++c) {
-            std::vector<double> column(request.design.values.begin() +
-                    static_cast<std::ptrdiff_t>(c) * request.series.values.size(),
-                request.design.values.begin() +
-                    static_cast<std::ptrdiff_t>(c + 1) * request.series.values.size());
-            auto filtered = difference_series(std::move(column), request.d, request.seasonal_d,
-                request.period);
-            differenced.values.insert(differenced.values.end(), filtered.begin(), filtered.end());
+        if (mean_correction) {
+            differenced.values.assign(differenced_response.size(), 1.0);
+        } else {
+            for (std::size_t c = 0; c < request.design.columns; ++c) {
+                std::vector<double> column(request.design.values.begin() +
+                        static_cast<std::ptrdiff_t>(c) * request.series.values.size(),
+                    request.design.values.begin() +
+                        static_cast<std::ptrdiff_t>(c + 1) * request.series.values.size());
+                auto filtered = difference_series(std::move(column), request.d,
+                    request.seasonal_d, request.period);
+                differenced.values.insert(
+                    differenced.values.end(), filtered.begin(), filtered.end());
+            }
         }
         const HannanRissanenOrders orders{static_cast<int>(request.blocks[0].initial.size()),
             static_cast<int>(request.blocks[2].initial.size()),
             static_cast<int>(request.blocks[1].initial.size()),
             static_cast<int>(request.blocks[3].initial.size()), request.period};
         const auto start = hannan_rissanen_start(
-            difference_series(request.series.values, request.d, request.seasonal_d, request.period),
-            differenced, orders, interrupt);
+            differenced_response, differenced, orders, interrupt);
         // The HR unit hands back [ar, sar, ma, sma] (the m_pi extraction
         // order); the request blocks are [ar, ma, sar, sma].
         const std::size_t permutation[4] = {0, 2, 1, 3};
@@ -862,6 +934,9 @@ SarimaEstimationResult optimize_sarima_from(const SarimaEstimationRequest& reque
     result.log_likelihood = pass.log_likelihood;
     result.converged = pass.optimizer_status == "converged_gradient";
     result.status = result.converged ? "converged" : std::move(pass.optimizer_status);
+    if (request.request_landing_point && pass.landing_derivatives) {
+        result.has_landing_point = true;
+    }
     return result;
 }
 

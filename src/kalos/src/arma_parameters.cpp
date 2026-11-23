@@ -1,5 +1,7 @@
 #include "kalos/arma_parameters.hpp"
 
+#include "kalos/detail/fdlibm.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -95,7 +97,7 @@ ArmaParameterMap::ArmaParameterMap(std::array<ArmaParameterBlock, 4> blocks, dou
             fixed == block.initial.size() ? "fixed" : "coefficient";
         for (std::size_t j = 0; j < block.initial.size(); ++j) {
             if (block.fixed[j]) continue;
-            coordinates_.push_back(fixed == 0 ? std::atanh(check.reflections[j] / (1 - margin_)) : block.initial[j]);
+            coordinates_.push_back(fixed == 0 ? detail::fdlibm_atanh(check.reflections[j] / (1 - margin_)) : block.initial[j]);
             if (!std::isfinite(coordinates_.back())) throw std::invalid_argument("initial ARMA coordinates are not representable");
         }
     }
@@ -119,7 +121,7 @@ ArmaDecoded ArmaParameterMap::decode(const std::vector<double>& coordinates) con
                 if (!std::isfinite(coordinate)) {
                     finite = false;
                 }
-                k = (1 - margin_) * std::tanh(coordinate);
+                k = (1 - margin_) * detail::fdlibm_tanh(coordinate);
                 if (std::abs(k) >= 1 - margin_) boundary[b] = true;
             }
             coefficients = finite ? from_reflections(reflection, b == 1 || b == 3) :

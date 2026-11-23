@@ -1,0 +1,17 @@
+"id","note","result","spec_after","pcnt","direct","nevents"
+"a_base","clean seasonal base on the airline entry: pcnt 3 full run","Unchanged","a_base spec (0,1,1)(0,1,1) mean 1","a_base 3","a_base (0,1)(0,1)",3
+"a_srw","seasonal walk on the airline entry: dense panel","Changed","a_srw spec (1,1,0)(0,1,1) mean 1","a_srw 3","a_srw (1,0)(0,1)",3
+"a_wnflag","acceptWhiteNoise on the clean base","Unchanged","a_wnflag spec (0,1,1)(0,1,1) mean 1","a_wnflag 3","a_wnflag (0,1)(0,1)",3
+"a_noseas","seasonal = false two-stage path","Changed","a_noseas spec (0,1,1)(0,1,0) mean 1","a_noseas 3","a_noseas (0,1)(0,0)",3
+"a_noise_noseas","pure noise, seasonal = false: white-noise return gate","Changed","a_noise_noseas spec (0,1,2)(0,1,0) mean 1","a_noise_noseas 3","a_noise_noseas (0,2)(0,0)",3
+"a_noise_wn","pure noise with acceptWhiteNoise","Unchanged","a_noise_wn spec (0,1,1)(0,1,1) mean 1","a_noise_wn 3","a_noise_wn (0,1)(0,1)",3
+"a_noise_flat","pure noise on the flat entry","Changed","a_noise_flat spec (0,0,1)(0,0,0) mean 1","a_noise_flat 3","a_noise_flat (0,1)(0,0)",3
+"a_m2","n = 64 slice: pcnt 2, stage-1 panel without merge","Changed","a_m2 spec (0,1,1)(1,1,0) mean 1","a_m2 2","a_m2 (0,1)(1,0)",3
+"a_short","n = 56 slice: pcnt 0 on the airline, Unprocessed","Unprocessed","a_short spec (0,1,1)(0,1,1) mean 1","a_short 0","",3
+"a_default","n = 56 flat entry: default-model Changed fill","Changed","a_default spec (0,1,1)(0,1,1) mean 1","a_default 0","",3
+"a_flat96","clean base flat entry: bd = 0 with bp = 1 maxspec","Changed","a_flat96 spec (1,0,0)(1,0,1) mean 1","a_flat96 3","a_flat96 (1,0)(1,1)",3
+"a_dsem_flat","deterministic seasonal flat entry: strong selection change","Changed","a_dsem_flat spec (2,0,0)(1,0,0) mean 1","a_dsem_flat 3","a_dsem_flat (2,0)(1,0)",3
+"a_rw","random walk on the airline entry","Changed","a_rw spec (0,1,0)(0,1,1) mean 1","a_rw 3","a_rw (0,0)(0,1)",3
+"a_growth_log","growth series through the log channel","Changed","a_growth_log spec (1,1,0)(0,1,1) mean 1","a_growth_log 3","a_growth_log (1,0)(0,1)",3
+"a_const","constant series: empty panel, null selection, Failed","Failed","a_const spec (0,1,1)(0,1,1) mean 1","a_const 3","",3
+"a_quarter","quarterly shape (D11 refusal evidence, record only)","Unchanged","a_quarter spec (0,1,1)(0,1,1) mean 1","a_quarter 3","a_quarter (0,1)(0,1)",3

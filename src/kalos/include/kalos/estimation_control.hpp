@@ -89,6 +89,11 @@ struct SarimaEstimationRequest {
     EstimationControl control;
     // Qualified 20b solver controls; function_tolerance is replaced by eps.
     OptimizerControl optimizer;
+    // Item 23-F F.2: ask the pinned sum-of-squares path to attach the landing
+    // point derivatives (SsqLmResult tail) to the result, the machine behind
+    // the pinned gradientAtMinimum()/curvatureAtMinimum() used by the
+    // FinalEstimator round driver. Ignored by every other entry point.
+    bool request_landing_point = false;
 };
 
 // One decision record of the control layer: the starting-point provenance,
@@ -119,6 +124,12 @@ struct SarimaEstimationResult {
     // Final coefficients, Kalos convention; fixed entries preserved exactly.
     std::array<std::vector<double>, 4> coefficients;
     double log_likelihood; // NaN when the retained candidate is unavailable.
+    // Landing seam of the pinned sum-of-squares path (item 23-F F.2), set
+    // only when request_landing_point was asked and the pinned solver ran;
+    // it doubles as the machine-failure seam for the FinalEstimator round
+    // driver. The Point tail itself lands in the final_information producer
+    // (the residuals-based deviance, not here).
+    bool has_landing_point = false;
     // Chronological decision records: initialize (HannanRissanen starts
     // only), the internal-precision multiple_first./multiple_second. chains
     // (Multiple only), then the final eps chain estimate, ur_regular,

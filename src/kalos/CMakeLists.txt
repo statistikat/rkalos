@@ -41,6 +41,8 @@ add_library(kalos STATIC
   src/arma_refinement.cpp
   src/arma_residuals.cpp
   src/arima_forecasts.cpp
+  src/calendar_generation.cpp
+  src/decompose_ucarima.cpp
   src/differencing_decision.cpp
   src/diffuse_state_space.cpp
   src/estimation_control.cpp
@@ -51,6 +53,8 @@ add_library(kalos STATIC
   src/forecast_arma_information.cpp
   src/forecast_information.cpp
   src/hannan_rissanen.cpp
+  src/hostlineage.cpp
+  src/hostlineage_tables.cpp
   src/information.cpp
   src/initial_arma_identification.cpp
   src/interpolation_arma_information.cpp
@@ -68,11 +72,24 @@ add_library(kalos STATIC
   src/regression_variable_tests.cpp
   src/residual_information.cpp
   src/sarima_stabilization.cpp
+  src/seats_extract_wk.cpp
   src/sparse_history.cpp
   src/special_functions.cpp
   src/ssq_levmar.cpp
   src/ssq_deviances.cpp
   src/state_space.cpp
+  src/tramo_arma_selection.cpp
+  src/tramo_differencing_battery.cpp
+  src/tramo_differencing_decision.cpp
+  src/tramo_final_estimation.cpp
+  src/tramo_fit.cpp
+  src/tramo_kernel_rounds.cpp
+  src/tramo_model_builder.cpp
+  src/tramo_outlier_scan.cpp
+  src/tramo_outlier_rounds.cpp
+  src/tramo_regression_tests.cpp
+  src/tramo_seats_model_validator.cpp
+  src/tramo_transform_decision.cpp
   src/transformation_decision.cpp
   src/transforms.cpp
   src/vector_jacobian.cpp
@@ -175,6 +192,8 @@ if(KALOS_BUILD_TESTS)
     test_arma_refinement
     test_arma_residuals
     test_arima_forecasts
+    test_calendar_generation
+    test_decompose_ucarima
     test_differencing_decision
     test_diffuse_state_space
     test_estimation_control
@@ -200,8 +219,21 @@ if(KALOS_BUILD_TESTS)
     test_regression_likelihood
     test_regression_variable_tests
     test_residual_information
+    test_seats_extract_wk
+    test_seats_linear_filters
     test_special_functions
     test_state_space
+    test_tramo_arma
+    test_tramo_differencing
+    test_tramo_differencing_battery
+    test_tramo_final_estimation
+    test_tramo_fit
+    test_tramo_kernel_rounds
+    test_tramo_model_builder
+    test_tramo_outlier_scan
+    test_tramo_regression_tests
+    test_tramo_seats_model
+    test_tramo_transform_decision
     test_transformation_decision
     test_transforms
     test_vector_jacobian
@@ -243,6 +275,26 @@ if(KALOS_BUILD_TESTS)
       # One full automatic search with outlier detection on the probe corpus
       # shape runs ~250 s (suite wall time ~5 min single-process); the
       # sanitizer lane multiplies this several-fold.
+      set_tests_properties(${test_name} PROPERTIES TIMEOUT 3600)
+    endif()
+    if(test_name STREQUAL "test_tramo_regression_tests")
+      # 23-E golden replay over the double-captured tramo-regression-tests
+      # corpus (ModelStatistics rows, both tstats arms, the refStats gate and
+      # the two regression-test machines); generous for the sanitizer lane.
+      set_tests_properties(${test_name} PROPERTIES TIMEOUT 3600)
+    endif()
+    if(test_name STREQUAL "test_tramo_kernel_rounds")
+      # 23-F.3 golden replay over the double-captured tramo-kernel-rounds
+      # corpus (the ami() round-driver seam, 34 monthly cases + the
+      # quarterly D11 refusal); generous for the sanitizer lane.
+      set_tests_properties(${test_name} PROPERTIES TIMEOUT 3600)
+    endif()
+    if(test_name STREQUAL "test_tramo_fit")
+      # 23-F.4 golden replay over the triple-captured tramo-fit corpus
+      # (the automatic-fit assembly: live 23-A/23-B mirrors, the F.3
+      # driver, live 23-C/23-D seam re-runs, the D9 covariance); the
+      # planted-outlier cases replay full estimation histories natively -
+      # generous for the sanitizer lane.
       set_tests_properties(${test_name} PROPERTIES TIMEOUT 3600)
     endif()
   endforeach()

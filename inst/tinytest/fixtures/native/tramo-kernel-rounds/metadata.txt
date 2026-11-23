@@ -1,0 +1,41 @@
+Item 23-F F.3 TramoKernel round-driver corpus.
+
+Probe: Scratch23r.java runs TWO drivers per case in the same JVM:
+
+  (a) the REAL pinned kernel: TramoKernel.of(spec, new ModellingContext()).
+      process(ts, observer). The observer hooks the "round N" step events and
+      snapshots the kernel fields (pass, pass3, needOutliers, needAutoModelling,
+      curva, pcr, refAuto/refStats presence, seasonal flags) by reflection
+      ("rsnap ..." lines); the returned RegSarimaModel is dumped bit-wise
+      ("rfinal ..." lines: ok/spec/freq, outliers, coefficients, covariance,
+      fullResiduals, LikelihoodStatistics values);
+
+  (b) a MANUAL driver: a bytecode-faithful transcription of
+      TramoKernel.process / build / isFullySpecified / initProcessing / ami /
+      iterate / estimateModel / pass2 / restore / lastSolution / reduceVa /
+      testRegression / testSeasonality / testTransformation, writing the real
+      kernel fields through reflection at every putfield and calling the pinned
+      jar machines as primitives (the kernel's own private module factories,
+      FinalEstimator, FastRegressionTest, ModelStatistics.of,
+      SeasonalityController / ModelController), emitting the same seam lines
+      ("seam ..." lines: module results + post-stage states, pass2 gate values,
+      regtest results, estimation seams).
+
+  Per-case gates: "identity <id> events {0,1} final {0,1} all {0,1}" with
+  events = identical ProcessingLog push/step/remark/warn/info sequences
+  (including the kernel-field snapshots at "round" steps) and final =
+  identical final-model bit dumps. 35/35 cases all 1 at capture.
+
+Case grammar: "KER <id> <alias+flags [key=value]> <freq> <startY>:<startM>"
+plus "values ..." lines; alias K = TR3; flags/kv per gen_cases.py (which
+regenerates cases.txt: sc_*/mr_* series copied verbatim from
+../tramo-outlier-rounds/cases.txt, airline series from R
+datasets::AirPassengers pinned in airline.txt).
+
+Run recipe: ./run.sh cases.txt <tag> [witness] [mode]; one JVM per case,
+G2 intrinsic-disable recipe (_dexp/_dlog), -Xss16m; witness mode adds
+-Xlog:class+load per case aggregated to <tag>.classload.log.
+
+Gate results (2026-11-23, OpenJDK 21, jars 3.9.0):
+  kr-capture-1.out == kr-capture-2.out == kr-witness.out byte-identical
+  (double capture + witness-mode capture); 35 identity rows, all all-1.

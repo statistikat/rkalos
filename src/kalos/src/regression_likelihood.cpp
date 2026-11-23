@@ -4,6 +4,7 @@
 // Numerical factorizations use R's declared LAPACK ABI. Regression whitening
 // and concentrated Gaussian likelihood equations are independently assembled.
 #include "kalos/detail/lapack.hpp"
+#include "kalos/detail/hostlineage.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -31,7 +32,7 @@ double checked(long double value) {
 
 double norm(const std::vector<double>& values) {
     double result = 0;
-    for (const auto value : values) result = checked(std::hypot(result, value));
+    for (const auto value : values) result = checked(kalos::detail::glibc_hypot(result, value));
     return result;
 }
 

@@ -5,6 +5,7 @@
 // homogeneous functions and their original-history normalization are
 // independently derived; no filtering implementation is copied.
 #include "kalos/detail/lapack.hpp"
+#include "kalos/detail/hostlineage.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -201,7 +202,7 @@ void SparseHistoryBasis::rebuild(const Interrupt& interrupt) {
     if (columns == 0) return;
     auto initial = evaluate(1, interrupt);
     for (std::size_t j = 0; j < columns; ++j) {
-        for (std::size_t i = 0; i < rows; ++i) column_scales_[j] = std::hypot(column_scales_[j], initial[i + rows * j]);
+        for (std::size_t i = 0; i < rows; ++i) column_scales_[j] = kalos::detail::glibc_hypot(column_scales_[j], initial[i + rows * j]);
         if (!std::isfinite(column_scales_[j]) || column_scales_[j] == 0) throw std::runtime_error("sparse history initial-coordinate function is numerically unresolved");
         for (std::size_t i = 0; i < rows; ++i) initial[i + rows * j] /= column_scales_[j];
     }

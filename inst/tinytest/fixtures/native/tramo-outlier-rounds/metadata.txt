@@ -1,0 +1,76 @@
+Item 23-F F.2 multi-round outlier-machine corpus.
+
+Probe: Scratch23g.java runs TWO machines per case in the same JVM:
+
+  (a) the REAL pinned module: tramo.internal.OutliersDetectionModule.make +
+      process (identical setup to the 23-B TramoOutlierScanProbe), whose
+      ProcessingResult facts and full ProcessingLog event sequence the probe
+      dumps as "real ..." lines; and
+
+  (b) a MANUAL step machine: a line-by-line transcription of
+      FastOutliersDetector.process's bytecode (offsets 0-241, the RuntimeException
+      catch at 238) driving the driver's own private estimateModel /
+      verifyModel / addOutlier / removeOutlier / clear through reflection and
+      the real SingleOutlierDetector.process, dumping the complete machine
+      state ("st ..." lines: round, rflag, estimationStep, backwardStep, exit,
+      outliers, lastremoved, coeff, tstats, res, regarima ARIMA pars), the sod
+      table facts ("sod ..." lines: length, mad, bounds, allowed-cell counts
+      per factory, maxT, pick, coefficient) and the add events.
+
+Dump-not-trust gates (all recorded green on the 37-case file):
+
+  * IDENTITY GATE: the (a) lines of the 26 23-B cases reproduce
+    ../../tramo-outlier-scan/{scan-facts,scan-events}.csv 1:1 (status,
+    after-vars, need-estimation, spec, estdom, full event sequences) - the
+    manual setup is the committed corpus's setup.
+  * AGREEMENT GATE: the (b) machine's final outlier set ("manouts") equals
+    the (a) module's terminal odmInfo set for all 34 non-Failed cases; the
+    3 Failed cases (sc_shortfail, sc_s30, sc_s30ml) fail at make() in (a)
+    and have no (b) run, as pinned.
+  * REPRO GATE: mr-capture-1.out / mr-capture-2.out from independent JVM
+    processes are byte-identical; mr-witness.out is a third byte-identical
+    run whose class-loading trace (mr-classload.log) shows the pinned
+    jdplus.toolkit.base.core.regsarima.ami.FastOutliersDetector (3.9.0,
+    toolkit-base-core jar), regarima.outlier.{Single,Fast}OutlierDetector and
+    jdplus.tramoseats.base.core.tramo.internal.OutliersDetectionModule with
+    ZERO loads of any jdplus.x13 class.
+
+Runner: run.sh <case-file> <tag> [witness] - javac --release 21 + java 21,
+one JVM per case, G2 intrinsic-disable recipe via _JAVA_OPTIONS
+(-XX:+UnlockDiagnosticVMOptions -XX:DisableIntrinsic=_dexp
+-XX:DisableIntrinsic=_dlog), -Xss16m. The witness mode writes -Xlog to its
+own file (stdout interleaving splices large println lines - the first
+witness attempt corrupted data lines that way).
+
+Jars: the pinned rjd3 3.9.0 set under
+~R/x86_64-pc-linux-gnu-library/4.5/rjd3{jars,toolkit,tramoseats}/java
+(identical bytes to the tmp_opencode/jarcache pins, 23-B lineage).
+
+Cases: cases.txt, 37 cases, blank-line separated "SCAN <id> ..." +
+"values ..." blocks (the SCAN grammar is 23-B's; the two fields after the
+ml flag are "maxround maxout" IN BUILDER ORDER). The 26 sc_* rows are the
+committed 23-B corpus 1:1 (identity gate); the 11 mr_* rows cover the
+multi-round surface: mr_outcap / mr_roundcapx the two cap exits under the
+Builder->ctor maxRound/maxOutliers CROSS (the FastOutliersDetector
+constructor stores its 3rd argument into field maxOutliers and its 4th into
+field maxRound, so builder maxround lands on the OUTLIER-COUNT cap and
+builder maxout on the ROUND cap: the live defaults are effectively
+maxRound=30, maxOutliers=50); mr_stack six-AO stack (deep adds, gate exit);
+mr_sostack monthly spikes (LS@1 verdict); mr_lsstart LS-only mix at
+position 1; mr_swap a removal with one outlier kept; mr_spanmid a remove-
+then-re-pick exit pair; mr_tcmix two planted TCs at tcrate 0.9; mr_missing the
+missing-prefix interaction (allCoefficients keeps its leading
+missing-correction entries while tstats views from nmissing - verifyModel
+indexes outliers from the tstats TAIL: base = tstats.length -
+outliers.size()); mr_ml2 / mr_growml mvx multi-round chains where the JVM's
+optimizeModel succeeds with outlier columns in the design - the C++ port
+fails closed outside the qualified warm seam (D3, like sc_pexao47).
+
+Constant decode (javap, pinned jars): OutliersDetectionModule clinit
+DEF_MAXROUND 50 / DEF_MAXOUTLIERS 30 / EPS 1.0E-7 (live defaults through
+the Builder); FastOutliersDetector clinit DEF_MAXROUND 100 /
+DEF_MAXOUTLIERS 50 (record-only: the ODM builder overrides); Builder eps
+1.0E-7; the Builder->constructor cross as above.
+
+The C++ replay lands with the tramo_outlier_rounds unit (23-F F.2); its
+golden generator will read this directory.

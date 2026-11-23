@@ -1,4 +1,6 @@
 #include "kalos/arma_information.hpp"
+
+#include "kalos/detail/fdlibm.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -114,7 +116,7 @@ ArmaInformation arma_information(const MaskedSeries& series,
             // score unchanged. Centering log determinants and normalizing by
             // sqrt(Q0) avoids needless overflow and response-unit sensitivity.
             const auto log_scale=(detail->log_determinant-result.residual_center->log_determinant)/(2*static_cast<double>(n));
-            const auto scale=std::exp(log_scale)/std::sqrt(result.residual_center->sum_squares);
+            const auto scale=detail::fdlibm_exp(log_scale)/std::sqrt(result.residual_center->sum_squares);
             if(!(scale>0) || !std::isfinite(scale)) return ResidualSample{"residual_normalization_range",{},0,detail};
             auto z=detail->residuals;
             for(auto& value:z) {
@@ -143,11 +145,11 @@ ArmaInformation arma_information(const MaskedSeries& series,
             // fit, a structurally redundant model or nonpositive residual df.
             if(result.information.status!="available" && result.information.status!="no_free_parameters") return result;
             const auto& state=*legacy_state; const auto& center=*result.residual_center;
-            const auto log_q=std::log(center.sum_squares)+center.log_determinant/static_cast<double>(n);
-            if(state.effective_count!=n || std::abs(std::log(state.normalized_sum_squares)-log_q)>1e-8) {
+            const auto log_q=detail::fdlibm_log(center.sum_squares)+center.log_determinant/static_cast<double>(n);
+            if(state.effective_count!=n || std::abs(detail::fdlibm_log(state.normalized_sum_squares)-log_q)>1e-8) {
                 throw std::invalid_argument("legacy covariance state does not match the effective domain or normalized residual scale");
             }
-            result.normalized_legacy_damping=state.damping==0 ? 0 : std::exp(std::log(state.damping)-log_q);
+            result.normalized_legacy_damping=state.damping==0 ? 0 : detail::fdlibm_exp(detail::fdlibm_log(state.damping)-log_q);
             if(!std::isfinite(result.normalized_legacy_damping) || (state.damping>0 && result.normalized_legacy_damping==0)) {
                 throw std::overflow_error("legacy damping normalization exceeds the numeric range");
             }

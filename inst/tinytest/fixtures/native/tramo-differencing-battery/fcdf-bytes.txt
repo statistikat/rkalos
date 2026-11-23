@@ -1,0 +1,3 @@
+fcdf_capture1_equals_capture2 TRUE
+fcdf_rows 18489
+fcdf_corpus_rows 90

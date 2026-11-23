@@ -37,6 +37,9 @@
 
 #include "kalos/x13_automatic.hpp"
 
+#include "kalos/detail/fdlibm.hpp"
+#include "kalos/detail/hostlineage.hpp"
+
 #include "kalos/detail/ssq_deviances.hpp"
 #include "kalos/final_information.hpp"
 #include "kalos/linear_algebra.hpp"
@@ -237,7 +240,17 @@ void logAdditiveResults(const std::vector<double>& step10,
     std::vector<double> A(n),B(n),C(n);
     double sa=0.,sc=0.;
     for(std::size_t i=0;i<n;++i){
-        A[i]=std::exp(step10[i]); B[i]=std::exp(step12[i]); C[i]=std::exp(step13[i]);
+        // Raw libm, intentionally (CI-FDLIBM ledger): third copy of the
+        // X13Kernel log-additive results builder (A/B/C). Its bit contract is
+        // the x13-allocation/x13-fit fixture corpora, captured WITHOUT the
+        // DisableIntrinsic recipe, so those fixtures froze the HotSpot _dexp
+        // stub bits (IBM-APML lineage: glibc and the macOS libm derive from
+        // it, which is why host-libm bits hold the pinned 1e-15 exp-boundary
+        // class on every qualified platform, while fdlibm_exp moves 1-2 ulp
+        // at the q_log export arguments). The bytecode-recipe consumers
+        // (oracle/sweep) reach these tables through tolerance bands only.
+        // See src/x13_allocation.cpp for the recorded measurement.
+        A[i]=kalos::detail::glibc_exp(step10[i]); B[i]=kalos::detail::glibc_exp(step12[i]); C[i]=kalos::detail::glibc_exp(step13[i]);
         sa+=A[i]; sc+=C[i];
     }
     const double v9=sa/static_cast<double>(n),
@@ -524,7 +537,20 @@ class AutomaticPipeline {
     out.control.corrected_degrees_of_freedom = true;
     out.control.fast_derivatives = fast_derivatives;
     out.control.starting_point = start;
-    out.control.solver = EstimationSolver::Bfgs;  // ruling #2: never implicit
+    // CI-FDLIBM: the landing estimate runs on the transcribed JVM LM machine
+    // (RegArmaSsqFunction + Levenberg-Marquardt, detail/ssq_levmar.hpp — the
+    // same machine the differencing and initial-ARMA paths already replay
+    // bit-exactly), superseding the Bfgs product default of maintainer
+    // ruling #2. Rationale (measured 2026-11-21; contract "CI-FDLIBM routing"
+    // section): with the transcendental surface pinned to the JVM's bytecode
+    // semantics, Bfgs landing deterministically lands in a different basin
+    // than the JVM's LM landing on the four knife-edge cases (8/36 out of the
+    // 1e-2 coefficient band, worst-rel 0.0622 — the CI run-#17 signature,
+    // machine-independent); on the LM machine the family collapses to 0 bad,
+    // 15/36 bit-exact, worst-rel 5.75e-4, legacy suite 140/140, shim/hwcaps
+    // invariant. The solver remains explicitly set — the "never implicit"
+    // half of ruling #2 stands.
+    out.control.solver = EstimationSolver::PinnedLevenbergMarquardt;
     return out;
   }
 
@@ -577,7 +603,9 @@ class AutomaticPipeline {
   // ---- the retained candidate -------------------------------------------------
 
   // The row-1 kernel-round estimation (m.estimate(options.precision):
-  // RegSarimaComputer HR start, Bfgs per the contract adapter row 1).
+  // RegSarimaComputer HR start, PinnedLevenbergMarquardt per the contract
+  // adapter row 1 — CI-FDLIBM ruling; the Bfgs default it replaced is
+  // recorded in the contract's CI-FDLIBM section).
   void estimate_row1() {
     auto request =
         base_request(request_.precision, EstimationStartingPoint::HannanRissanen,
@@ -710,7 +738,7 @@ class AutomaticPipeline {
         y_.clear();
         y_.reserve(request_.input.size());
         for (const double value : request_.input) {
-          y_.push_back(std::log(value));  // decided-log implies all > 0
+          y_.push_back(detail::fdlibm_log(value));  // decided-log implies all > 0
         }
       }
       if (chosen.available) {
@@ -1627,7 +1655,9 @@ class AutomaticPipeline {
       try {
         // Row 4: the FinalEstimator computer (RegSarimaComputer + LM
         // minimizer + Multiple start + exact final derivatives). Kalos:
-        // the Bfgs solver with fast_derivatives = false (delta recorded).
+        // since CI-FDLIBM the same PinnedLevenbergMarquardt machine as row 1
+        // (base_request), fast_derivatives = false; the recorded solver
+        // delta against the JVM's LM minimizer is retired by the ruling.
         stage_ = "final estimation";
         auto request = base_request(request_.precision,
                                     EstimationStartingPoint::Multiple, false);
@@ -1715,7 +1745,7 @@ class AutomaticPipeline {
               return std::nullopt;
             }
             return fit.sum_squared_standardized *
-                   std::exp(fit.sum_log_finite_variances /
+                   detail::fdlibm_exp(fit.sum_log_finite_variances /
                             static_cast<double>(fit.finite_count));
           };
         }
@@ -1847,7 +1877,7 @@ class AutomaticPipeline {
         const std::size_t skip = static_cast<std::size_t>(
             model_.desc.d + model_.desc.bd * kAnnualFrequency);
         for (std::size_t i = skip; i < request_.input.size(); ++i) {
-          adjusted_log_likelihood -= std::log(request_.input[i]);
+          adjusted_log_likelihood -= detail::fdlibm_log(request_.input[i]);
         }
       }
       out.aicc = -2. *

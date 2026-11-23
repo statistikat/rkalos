@@ -1,5 +1,7 @@
 #include "kalos/arma_optimizer.hpp"
 
+#include "kalos/detail/fdlibm.hpp"
+
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -20,7 +22,7 @@ OptimizationResult optimize_arma_objective(const MaskedSeries& series,
     auto working=start;
     for(std::size_t j=0;j<working.size();++j) {
         if(!std::isfinite(start[j])) throw std::invalid_argument("optimizer start coordinates must be finite");
-        if(reflection[j]) working[j]=std::tanh(start[j]);
+        if(reflection[j]) working[j]=detail::fdlibm_tanh(start[j]);
     }
     bool first=true;
     const ObjectiveFunction function=[&](const std::vector<double>& candidate) {
@@ -31,7 +33,7 @@ OptimizationResult optimize_arma_objective(const MaskedSeries& series,
                 if(!std::isfinite(candidate[j]) || std::abs(candidate[j])>=1) {
                     return ObjectiveSample{std::numeric_limits<double>::quiet_NaN(),"parameter_boundary",{}};
                 }
-                coordinates[j]=std::atanh(candidate[j]);
+                coordinates[j]=detail::fdlibm_atanh(candidate[j]);
             }
         }
         auto detail=std::make_shared<ArmaOptimizationPoint>();

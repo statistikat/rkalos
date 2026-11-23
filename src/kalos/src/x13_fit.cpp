@@ -5,6 +5,9 @@
 // finals — with the unsupported-domain guards of docs/contracts/
 // x13-fit-contract.md in front.
 #include "kalos/x13_fit.hpp"
+
+#include "kalos/detail/fdlibm.hpp"
+#include "kalos/detail/hostlineage.hpp"
 #include <cmath>
 #include <stdexcept>
 namespace kalos {
@@ -36,7 +39,11 @@ void logAdditiveResults(const std::vector<double>& step10,
     std::vector<double> A(n),B(n),C(n);
     double sa=0.,sc=0.;
     for(std::size_t i=0;i<n;++i){
-        A[i]=std::exp(step10[i]); B[i]=std::exp(step12[i]); C[i]=std::exp(step13[i]);
+        // Raw libm, intentionally (CI-FDLIBM ledger): results-builder copy —
+        // bit contract is the stub-lineage x13-fit fixture corpus (capture ran
+        // without DisableIntrinsic); see src/x13_allocation.cpp for the full
+        // recorded root cause. Bytecode-recipe consumers ride tolerance bands.
+        A[i]=kalos::detail::glibc_exp(step10[i]); B[i]=kalos::detail::glibc_exp(step12[i]); C[i]=kalos::detail::glibc_exp(step13[i]);
         sa+=A[i]; sc+=C[i];
     }
     const double v9=sa/static_cast<double>(n),

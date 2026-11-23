@@ -253,11 +253,14 @@ std::optional<std::vector<double>> acf_values(    const std::vector<double>& ar,
     std::vector<double> ac;
     if (ardeg == 0) {
         // SymmetricFilter.convolutionOf(BackFilter(ma), 1): c[k] accumulates
-        // w[u] * w[u + k] in the pinned u-major sweep; ivar enters as 1.
-        std::vector<double> c(ma.size(), 0.0);
-        for (std::size_t u = 0; u < ma.size(); ++u) {
-            for (std::size_t v = u; v < ma.size(); ++v) {
-                c[v - u] += ma[u] * ma[v];
+        // w[u] * w[u + k] in the pinned u-major sweep over the REVERSED ma
+        // coefficients (BackFilter.weightsToArray), i.e. descending in the
+        // ma index; ivar enters as 1.
+        const std::vector<double> w(ma.rbegin(), ma.rend());
+        std::vector<double> c(w.size(), 0.0);
+        for (std::size_t u = 0; u < w.size(); ++u) {
+            for (std::size_t v = u; v < w.size(); ++v) {
+                c[v - u] += w[u] * w[v];
             }
         }
         ac = std::move(c);
@@ -718,6 +721,281 @@ ls_solution least_squares(const hwp_1col& hwp, const std::vector<double>& w,
     return out;
 }
 
+// DataPointer.fastNorm2: sqrt of the plain ssq sweep (RPointer.ssq has no
+// scaling, no zero skip; a NaN coordinate propagates through the sum).
+double data_fast_norm2(const double* p, std::size_t n) {
+    double acc = 0.0;
+    for (std::size_t t = 0; t < n; ++t) {
+        const double v = p[t];
+        acc += v * v;
+    }
+    return std::sqrt(acc);
+}
+
+// HouseholderWithPivoting over a general m x n column-major design, the
+// multi-column sibling of hwp_1col (item 23-B): the fixed-column block runs
+// Reflector.larfg plus lapply over the trailing window, the dqrdc2 branch
+// adds the LINPACK norm bookkeeping, the pivot search (a dcmpl compare, a NaN
+// candidate loses), the column/pivot swap and the norm update with the
+// sqrt(epsilon) dcmpg split. pivot stays empty exactly when the JVM leaves
+// the pivot null (nfixed == n), which least_squares_n honors for the b
+// scatter.
+struct hwp_n {
+    std::vector<double> qr;
+    std::size_t m = 0;
+    std::size_t n = 0;
+    std::size_t nfixed = 0;
+    std::vector<double> beta;
+    std::vector<int> pivot; // empty mirrors the null pivot
+
+    // Reflector.larfg over (xstart, len): rewrites the storage tail into the
+    // reflector and the entry into 1 + x0 / norm; hands back alpha = -norm.
+    double larfg(std::size_t xstart, std::size_t len) {
+        double x0 = qr[xstart];
+        const double s0 = kSafeMin / kEpsilon;
+        double norm = data_norm2(qr.data() + xstart, len);
+        int count = 0;
+        if (norm != 0.0 && std::isless(norm, s0)) { // dcmpg ifge: NaN skips
+            while (true) {
+                const double sc = 1.0 / s0;
+                for (std::size_t t = 1; t < len; ++t) {
+                    qr[xstart + t] *= sc;
+                }
+                x0 *= sc;
+                norm *= sc;
+                if (!std::isless(norm, s0)) { // dcmpg ifge: NaN recomputes
+                    norm = data_norm2(qr.data() + xstart, len);
+                    break;
+                }
+                ++count;
+                if (count >= 4) {
+                    norm = data_norm2(qr.data() + xstart, len);
+                    break;
+                }
+            }
+        }
+        if (std::isless(x0, 0.0)) { // dcmpg ifge: NaN keeps the sign
+            norm = -norm;
+        }
+        for (int t = 0; t < count; ++t) {
+            norm *= s0;
+        }
+        const double b = norm == 0.0 ? 0.0 : norm / (norm + x0);
+        beta[xstart / (m + 1)] = b;
+        for (std::size_t t = 1; t < len; ++t) {
+            qr[xstart + t] /= norm;
+        }
+        qr[xstart] = 1.0 + x0 / norm;
+        return -norm;
+    }
+
+    // Reflector.lapply over the trailing columns k + 1..n - 1 of the current
+    // window (rows k..m - 1), the reflector reading its own storage tail.
+    void lapply(std::size_t k, std::size_t len) {
+        const std::size_t xstart = k * (m + 1);
+        const double b = beta[k];
+        for (std::size_t j = k + 1; j < n; ++j) {
+            const std::size_t cpos = j * m + k;
+            double s = qr[cpos] / b;
+            for (std::size_t t = 1; t < len; ++t) {
+                s += qr[cpos + t] * qr[xstart + t];
+            }
+            if (s != 0.0) { // dcmpl ifeq: a NaN s applies
+                qr[cpos] -= s;
+                const double c = -s * b;
+                for (std::size_t t = 1; t < len; ++t) {
+                    qr[cpos + t] += c * qr[xstart + t];
+                }
+            }
+        }
+    }
+
+    void decompose(const std::vector<std::vector<double>>& xcols, std::size_t nfixed_) {
+        m = xcols.empty() ? 0 : xcols[0].size();
+        n = xcols.size();
+        nfixed = nfixed_;
+        qr.assign(m * n, 0.0);
+        for (std::size_t j = 0; j < n; ++j) {
+            for (std::size_t i = 0; i < m; ++i) {
+                qr[j * m + i] = xcols[j][i];
+            }
+        }
+        beta.assign(n, 0.0);
+        std::size_t pos = 0;
+        const std::size_t kmax_fixed = std::min(m, nfixed);
+        for (std::size_t k = 0; k < kmax_fixed; ++k) {
+            const double alpha = larfg(pos, m - k);
+            if (n - k - 1 > 0 && beta[k] != 0.0) { // dcmpl ifeq: NaN applies
+                lapply(k, m - k);
+            }
+            qr[pos] = alpha;
+            pos += m + 1;
+        }
+        if (nfixed == n) {
+            return; // the pinned early return leaves the pivot null
+        }
+        const std::size_t kmax = std::min(m, n);
+        std::vector<double> vnrm(kmax, 0.0);
+        std::vector<double> anrm(kmax, 0.0);
+        pivot.assign(kmax, 0);
+        for (std::size_t k = 0; k < kmax; ++k) {
+            pivot[k] = static_cast<int>(k);
+        }
+        for (std::size_t k = nfixed; k < kmax; ++k) {
+            // DataPointer.of(qr, nfixed * (m + 1)) advanced by m per free
+            // column: the norm runs over ROWS [nfixed, m) of column k.
+            const double nv =
+                data_fast_norm2(qr.data() + k * m + nfixed, m - nfixed);
+            anrm[k] = nv;
+            vnrm[k] = nv;
+        }
+        const double safe = std::sqrt(kEpsilon);
+        for (std::size_t k = nfixed; k < kmax; ++k) {
+            std::size_t jp = k;
+            for (std::size_t j = k + 1; j < kmax; ++j) {
+                if (vnrm[j] > vnrm[jp]) { // dcmpl ifle: NaN loses the search
+                    jp = j;
+                }
+            }
+            if (jp != k) {
+                for (std::size_t i = 0; i < m; ++i) {
+                    const double v = qr[k * m + i];
+                    qr[k * m + i] = qr[jp * m + i];
+                    qr[jp * m + i] = v;
+                }
+                std::swap(pivot[k], pivot[jp]);
+                vnrm[jp] = vnrm[k];
+                anrm[jp] = anrm[k];
+            }
+            const double alpha = larfg(pos, m - k);
+            if (n - k - 1 > 0 && beta[k] != 0.0) {
+                lapply(k, m - k);
+            }
+            qr[pos] = alpha;
+            std::size_t p2 = pos + m; // row k of column k + 1
+            for (std::size_t j = k + 1; j < kmax; ++j) {
+                const double v = vnrm[j];
+                if (v != 0.0) { // dcmpl ifeq: a NaN norm updates
+                    double q = qr[p2] / v;
+                    q = std::max(1.0 - q * q, 0.0); // Java max: NaN wins
+                    const double s = v / anrm[j];
+                    const double ss = (q * s) * s;
+                    if (std::islessequal(ss, safe)) { // dcmpg ifgt: NaN defers
+                        const double rn =
+                            data_fast_norm2(qr.data() + p2 + 1, m - k - 1);
+                        anrm[j] = rn;
+                        vnrm[j] = rn;
+                    } else {
+                        vnrm[j] = v * std::sqrt(q);
+                    }
+                }
+                p2 += m;
+            }
+            pos += m + 1;
+        }
+    }
+
+    // QRDecomposition.applyQt over the full reflector chain.
+    void apply_qt(std::vector<double>& x) const {
+        for (std::size_t k = 0, sp = 0; k < n; ++k, sp += m + 1) {
+            if (beta[k] == 0.0) { // dcmpl ifeq: a NaN beta still applies
+                continue;
+            }
+            double s = x[k] / beta[k];
+            for (std::size_t i = k + 1, q = sp + 1; i < m; ++i, ++q) {
+                s += x[i] * qr[q];
+            }
+            if (s != 0.0) { // dcmpl ifeq: a NaN s applies
+                x[k] -= s;
+                const double c = -s * beta[k];
+                for (std::size_t i = k + 1, q = sp + 1; i < m; ++i, ++q) {
+                    x[i] += c * qr[q];
+                }
+            }
+        }
+    }
+
+    // UpperTriangularMatrix.rank: |R(j, j)| > tol counts (the lambda dcmpl
+    // never counts a NaN diagonal), counted over the whole diagonal.
+    std::size_t rank(double tol) const {
+        std::size_t r = 0;
+        const std::size_t kmax = std::min(m, n);
+        for (std::size_t k = 0; k < kmax; ++k) {
+            if (std::isgreater(std::abs(qr[k * (m + 1)]), tol)) {
+                ++r;
+            }
+        }
+        return r;
+    }
+
+    // UpperTriangularMatrix.solveUx at tolerance 0 on the leading rank block,
+    // in place on x; false mirrors the m_err_sing MatrixException (the
+    // |x| < tol escape at tolerance 0 fires only for a NaN entry, which the
+    // dcmpl comparison walks around into the zero assignment).
+    bool solve_ux(std::size_t rank_, std::vector<double>& x) const {
+        for (std::size_t ii = rank_; ii-- > 0;) {
+            const double xi = x[ii];
+            const double u = qr[ii * (m + 1)];
+            if (!std::isgreater(std::abs(u), 0.0)) {
+                if (std::isgreaterequal(std::abs(xi), 0.0)) {
+                    return false;
+                }
+                x[ii] = 0.0;
+                continue;
+            }
+            const double q = xi / u;
+            x[ii] = q;
+            std::size_t p = ii * m + ii - 1;
+            for (std::size_t jj = ii; jj-- > 0; --p) {
+                x[jj] -= q * qr[p];
+            }
+        }
+        return true;
+    }
+};
+
+// QRLeastSquaresSolver.leastSquares(decomposition, y, rcond) for the general
+// shape: rank, applyQt, the residual slice, solveUx and the pivot-scattered
+// b; singular mirrors the MatrixException the pinned tail throws.
+struct ls_solution_n {
+    std::size_t rank = 0;
+    std::vector<double> b;
+    double ssq_err = 0.0;
+    bool singular = false;
+};
+
+ls_solution_n least_squares_n(const hwp_n& decomp, const std::vector<double>& y,
+    double rcond) {
+    ls_solution_n out;
+    out.rank = decomp.rank(rcond);
+    std::vector<double> x = y;
+    decomp.apply_qt(x);
+    if (!decomp.solve_ux(out.rank, x)) {
+        out.singular = true;
+        return out;
+    }
+    out.b.assign(decomp.n, 0.0);
+    if (decomp.pivot.empty()) {
+        for (std::size_t k = 0; k < out.rank; ++k) {
+            out.b[k] = x[k];
+        }
+    } else {
+        for (std::size_t k = 0; k < out.rank; ++k) {
+            out.b[static_cast<std::size_t>(decomp.pivot[k])] = x[k];
+        }
+    }
+    // DataBlock.ssq over the residual slice: ascending, skipping the
+    // non-finite coordinates.
+    double acc = 0.0;
+    for (std::size_t i = out.rank; i < x.size(); ++i) {
+        if (std::isfinite(x[i])) {
+            acc += x[i] * x[i];
+        }
+    }
+    out.ssq_err = acc;
+    return out;
+}
+
 // SarimaModel.getRegularAR/getRegularMA: [1, c...] through ofInternal.
 std::vector<double> raw_poly(const std::vector<double>& c) {
     std::vector<double> p;
@@ -952,6 +1230,611 @@ std::optional<PinnedMachinePoint> pinned_deviances_evaluate(
         }
     }
     return pt;
+}
+
+std::optional<PinnedMachinePoint> pinned_deviances_evaluate_multi(
+    const std::vector<double>& y, std::size_t p, std::size_t bp, std::size_t q, std::size_t bq,
+    int period, const std::vector<std::vector<double>>& design, const std::vector<double>& jvm,
+    PinnedComputerShape shape) {
+    if (jvm.size() != p + bp + q + bq || period < 2 || y.empty() || design.empty()) {
+        return std::nullopt;
+    }
+    for (const auto& col : design) {
+        if (col.size() != y.size()) {
+            return std::nullopt;
+        }
+    }
+    const default_fp_environment fp_guard;
+    for (const double v : jvm) {
+        if (!std::isfinite(v)) {
+            return std::nullopt;
+        }
+    }
+    auto split = [&](std::size_t off, std::size_t len) {
+        return std::vector<double>(
+            jvm.begin() + static_cast<std::ptrdiff_t>(off),
+            jvm.begin() + static_cast<std::ptrdiff_t>(off + len));
+    };
+    const auto phi = split(0, p);
+    const auto bphi = split(p, bp);
+    const auto th = split(p + bp, q);
+    const auto bth = split(p + bp + q, bq);
+
+    const auto reg_ar = raw_poly(phi);
+    const auto seas_ar = seasonal_poly(bphi, period);
+    const auto ar = poly_times(reg_ar, seas_ar);
+    const auto reg_ma = raw_poly(th);
+    const auto seas_ma = seasonal_poly(bth, period);
+    const auto ma = poly_times(reg_ma, seas_ma);
+
+    const std::size_t ar_order = p + static_cast<std::size_t>(period) * bp;
+    const std::size_t ma_order = q + static_cast<std::size_t>(period) * bq;
+    const std::size_t dim = std::max(ar_order, ma_order + 1);
+
+    auto acf = acf_values(ar, ma, dim);
+    if (!acf || acf->size() < dim) {
+        return std::nullopt; // "acgf of non stationary model"
+    }
+    acf->resize(dim);
+
+    kalman kf;
+    kf.multi_use = true;
+    kf.prepare(ar, std::move(*acf), y.size(), dim);
+    if (kf.failed) {
+        return std::nullopt;
+    }
+
+    PinnedMachinePoint pt;
+    const std::vector<double> w = kf.mfilter(y);
+    std::vector<std::vector<double>> xx;
+    xx.reserve(design.size());
+    for (const auto& col : design) {
+        xx.push_back(kf.mfilter(col));
+    }
+    pt.ldet = kf.ldet;
+
+    hwp_n decomp;
+    // The ssq function's default cll is DEFAULT_FULL_COMPUTER: xfixed = false,
+    // so process hands HouseholderWithPivoting nfixed = nmissing (0 for a
+    // missing-free design), i.e. full column pivoting. There is no
+    // rank-equals-columns requirement here (that is the xfixed computer,
+    // which is the estimateModel landing seam, pinned_gls_point). The Fixed
+    // shape (item 23-F F.2, the zero-parameter FinalEstimator round) fixes
+    // every whitened column and takes the rank requirement: rank below the
+    // column count is the pinned "Gls failed" throw.
+    decomp.decompose(xx, shape == PinnedComputerShape::Fixed ? xx.size() : 0);
+    const ls_solution_n sol = least_squares_n(decomp, w, kRcond);
+    if (sol.singular) {
+        return std::nullopt;
+    }
+    pt.rank = sol.rank;
+    pt.b = sol.b;
+    if (shape == PinnedComputerShape::Fixed && sol.rank < xx.size()) {
+        return std::nullopt; // "Gls failed" (EcoException at the caller)
+    }
+    if (sol.rank == 0) {
+        // ConcentratedLikelihoodComputer: the rank-0 branch profiles no
+        // regressor and uses w.ssq() with the raw residuals.
+        double wssq = 0.0;
+        for (const double v : w) {
+            if (std::isfinite(v)) {
+                wssq += v * v;
+            }
+        }
+        pt.ssq_err = wssq;
+    } else {
+        pt.ssq_err = sol.ssq_err;
+    }
+
+    const double n = static_cast<double>(y.size());
+    pt.factor = fdlibm_exp(pt.ldet / n);
+    if (!std::isfinite(pt.factor)) {
+        return std::nullopt;
+    }
+    pt.ssq_e = pt.ssq_err * pt.factor;
+    pt.log_likelihood =
+        -0.5 * (n * kLogTwoPi + n * (1.0 + fdlibm_log(pt.ssq_err / n)) + pt.ldet);
+
+    // ConcentratedLikelihoodComputer.process residual assembly: w minus the
+    // per-column dneg/addAY walk in design-column order.
+    std::vector<double> res = w;
+    if (sol.rank > 0) {
+        for (std::size_t j = 0; j < xx.size(); ++j) {
+            const double b = sol.b[j];
+            for (std::size_t i = 0; i < res.size(); ++i) {
+                res[i] += -b * xx[j][i];
+            }
+        }
+    }
+    const double root = std::sqrt(pt.factor);
+    pt.e.clear();
+    pt.e.reserve(res.size());
+    for (const double v : res) {
+        if (!std::isfinite(v)) {
+            continue; // DoubleSeq.select(isFinite)
+        }
+        pt.e.push_back(pt.factor == 1.0 ? v : v * root); // dcmpl ifne shortcut
+    }
+    return pt;
+}
+
+std::vector<double> pinned_polynomial_times(const std::vector<double>& a,
+    const std::vector<double>& b) {
+    return poly_times(a, b);
+}
+
+std::vector<double> pinned_rational_weights(const std::vector<double>& num,
+    const std::vector<double>& den, std::size_t k) {
+    return rf_coefficients(num, den, k);
+}
+
+std::optional<std::vector<double>> pinned_ls_divide(const std::vector<double>& a,
+    const std::vector<double>& b) {
+    // LeastSquaresDivision.divide(a, b): the divisor block copied down one
+    // column at a time (rows j .. j + m), fastLeastSquares (Householder2, no
+    // pivoting, rcond 0) and the quotient from getB(). A refused divide (a
+    // divisor longer than the dividend, a MatrixException from the solve) and
+    // the isExact miss both map onto nullopt; isExact compares ssqErr / m with
+    // sqrt(epsilon) through dcmpg, so a NaN error counts as exact.
+    const std::size_t n = a.size();
+    const std::size_t m = b.size();
+    if (m > n || m == 0) {
+        return std::nullopt;
+    }
+    const std::size_t k = n - m + 1;
+    std::vector<std::vector<double>> xcols(k, std::vector<double>(n, 0.0));
+    for (std::size_t j = 0; j < k; ++j) {
+        for (std::size_t t = 0; t < m; ++t) {
+            xcols[j][j + t] = b[t];
+        }
+    }
+    hwp_n decomp;
+    decomp.decompose(xcols, k); // all columns fixed == Householder2
+    const ls_solution_n sol = least_squares_n(decomp, a, 0.0);
+    if (sol.singular) {
+        return std::nullopt;
+    }
+    const double err = sol.ssq_err / static_cast<double>(m);
+    const double eps = std::sqrt(kEpsilon);
+    if (std::isgreaterequal(err, eps)) { // dcmpg ifge: NaN stays exact
+        return std::nullopt;
+    }
+    return sol.b; // getQuotient: Polynomial.of over the k coefficients
+}
+
+namespace {
+
+// The stationary-model pieces the Kalman-family machines consume: JVM-
+// convention [phi, bphi, theta, btheta] coordinates -> the product AR and MA
+// polynomials, the dim = max(arOrder, maOrder + 1) window and its acf. False
+// mirrors "acgf of non stationary model" (or a rejected coordinate vector).
+bool stationary_setup(const std::vector<double>& jvm, std::size_t p, std::size_t bp,
+    std::size_t q, std::size_t bq, int period, std::vector<double>& ar,
+    std::vector<double>& ma, std::size_t& dim, std::vector<double>& acf) {
+    if (jvm.size() != p + bp + q + bq || period < 2) {
+        return false;
+    }
+    for (const double v : jvm) {
+        if (!std::isfinite(v)) {
+            return false;
+        }
+    }
+    auto split = [&](std::size_t off, std::size_t len) {
+        return std::vector<double>(
+            jvm.begin() + static_cast<std::ptrdiff_t>(off),
+            jvm.begin() + static_cast<std::ptrdiff_t>(off + len));
+    };
+    const auto phi = split(0, p);
+    const auto bphi = split(p, bp);
+    const auto th = split(p + bp, q);
+    const auto bth = split(p + bp + q, bq);
+    ar = poly_times(raw_poly(phi), seasonal_poly(bphi, period));
+    ma = poly_times(raw_poly(th), seasonal_poly(bth, period));
+    const std::size_t ar_order = p + static_cast<std::size_t>(period) * bp;
+    const std::size_t ma_order = q + static_cast<std::size_t>(period) * bq;
+    dim = std::max(ar_order, ma_order + 1);
+    auto got = acf_values(ar, ma, dim);
+    if (!got || got->size() < dim) {
+        return false;
+    }
+    acf = std::move(*got);
+    acf.resize(dim);
+    return true;
+}
+
+} // namespace
+
+std::optional<std::vector<double>> pinned_ols_coefficients(const std::vector<double>& y,
+    const std::vector<std::vector<double>>& xcols) {
+    // OlsComputer.compute: a response whose scaled norm misses
+    // Constants.epsilon yields the null result (the dcmpg comparison lets a
+    // NaN norm through); the matrix tail runs
+    // QRLeastSquaresSolver.robustLeastSquares (nfixed = 0, rcond 1e-9) and a
+    // MatrixException from the solve maps onto the null result the driver
+    // turns into "Ols failed".
+    if (std::isless(data_norm2(y.data(), y.size()), kEpsilon)) {
+        return std::nullopt;
+    }
+    for (const auto& col : xcols) {
+        if (col.size() != y.size()) {
+            return std::nullopt; // the pinned machine would fail the solve
+        }
+    }
+    if (xcols.empty()) {
+        return std::vector<double>{}; // LeastSquaresResults with no estimation
+    }
+    hwp_n decomp;
+    decomp.decompose(xcols, 0);
+    const ls_solution_n sol = least_squares_n(decomp, y, 1e-9);
+    if (sol.singular) {
+        return std::nullopt;
+    }
+    return sol.b;
+}
+
+std::optional<std::vector<double>> pinned_gls_coefficients(const std::vector<double>& y,
+    std::size_t p, std::size_t bp, std::size_t q, std::size_t bq, int period,
+    const std::vector<std::vector<double>>& xcols, const std::vector<double>& jvm) {
+    // ConcentratedLikelihoodComputer.DEFAULT_COMPUTER at a coordinate vector
+    // (item 23-B initmodel seam): multi-use KalmanFilter whitening of the
+    // response and every design column, HouseholderWithPivoting with all
+    // columns fixed (DEFAULT_COMPUTER runs xfixed = true, which passes
+    // nfixed = ncols) and QRLeastSquaresSolver.leastSquares at the machine
+    // rcond. xfixed = true turns a rank below the column count into
+    // "Gls failed"; the scan machine runs with xfixed = true.
+    if (y.empty() || xcols.empty()) {
+        return std::nullopt; // the scan seam always carries the mean column
+    }
+    const default_fp_environment fp_guard;
+    std::vector<double> ar, ma, acf;
+    std::size_t dim = 0;
+    if (!stationary_setup(jvm, p, bp, q, bq, period, ar, ma, dim, acf)) {
+        return std::nullopt;
+    }
+    for (const auto& col : xcols) {
+        if (col.size() != y.size()) {
+            return std::nullopt;
+        }
+    }
+    kalman kf;
+    kf.multi_use = true;
+    kf.prepare(ar, std::move(acf), y.size(), dim);
+    if (kf.failed) {
+        return std::nullopt;
+    }
+    const std::vector<double> w = kf.mfilter(y);
+    std::vector<std::vector<double>> whitened;
+    whitened.reserve(xcols.size());
+    for (const auto& col : xcols) {
+        whitened.push_back(kf.mfilter(col));
+    }
+    hwp_n decomp;
+    decomp.decompose(whitened, whitened.size());
+    const ls_solution_n sol = least_squares_n(decomp, w, kRcond);
+    if (sol.singular || sol.rank != whitened.size()) {
+        return std::nullopt;
+    }
+    return sol.b;
+}
+
+std::optional<PinnedGlsPoint> pinned_gls_point(const std::vector<double>& y,
+    std::size_t p, std::size_t bp, std::size_t q, std::size_t bq, int period,
+    const std::vector<std::vector<double>>& xcols, const std::vector<double>& jvm,
+    std::size_t nmissing) {
+    // The same DEFAULT_COMPUTER solve as pinned_gls_coefficients, additionally
+    // assembling the ConcentratedLikelihoodWithMissing views the outlier
+    // rounds' updateLikelihood reads (item 23-F F.2): QRLeastSquaresSolution
+    // .unscaledCovariance() = SymmetricMatrix.UUt applied to
+    // UpperTriangularMatrix.inverse of the rawR (0, rank) block, pivot-
+    // scattered over the n-column design; CLWM.unscaledCovariance() then
+    // extracts the (nmissing, nx) diagonal block, so ser() reads the
+    // surviving diagonal entries. UUt's (k, k) cell is the serial ascending
+    // dot of row k with itself (plain dmul/dadd, no fused pass); inverse()
+    // throws on a diagonal exactly equal to zero (dcmpg, so a NaN defers to
+    // the solveUx walk, mirrored by solve_ux) and solves the identity's
+    // columns through the same solveUx the b vector went through.
+    if (y.empty() || xcols.empty()) {
+        return std::nullopt;
+    }
+    const default_fp_environment fp_guard;
+    std::vector<double> ar, ma, acf;
+    std::size_t dim = 0;
+    if (!stationary_setup(jvm, p, bp, q, bq, period, ar, ma, dim, acf)) {
+        return std::nullopt;
+    }
+    for (const auto& col : xcols) {
+        if (col.size() != y.size()) {
+            return std::nullopt;
+        }
+    }
+    kalman kf;
+    kf.multi_use = true;
+    kf.prepare(ar, std::move(acf), y.size(), dim);
+    if (kf.failed) {
+        return std::nullopt;
+    }
+    const std::vector<double> w = kf.mfilter(y);
+    std::vector<std::vector<double>> whitened;
+    whitened.reserve(xcols.size());
+    for (const auto& col : xcols) {
+        whitened.push_back(kf.mfilter(col));
+    }
+    hwp_n decomp;
+    decomp.decompose(whitened, whitened.size());
+    const ls_solution_n sol = least_squares_n(decomp, w, kRcond);
+    if (sol.singular || sol.rank != whitened.size()) {
+        return std::nullopt;
+    }
+
+    PinnedGlsPoint pt;
+    pt.b = sol.b;
+    pt.ssq_err = sol.ssq_err;
+    const std::size_t r = sol.rank; // == whitened.size() here, square
+    for (std::size_t k = 0; k < r; ++k) { // inverse()'s m_err_sing precheck
+        if (std::isgreater(decomp.qr[k * (decomp.m + 1)], 0.0)
+            || std::isless(decomp.qr[k * (decomp.m + 1)], 0.0)) {
+            continue; // dcmpg != 0: a nonzero diagonal passes
+        }
+        if (!std::isnan(decomp.qr[k * (decomp.m + 1)])) {
+            return std::nullopt; // exactly zero (signed zero included)
+        }
+    }
+    // U = inverse(R block): identity columns, ascending, through solve_ux
+    // (the rank-bounded loop reads only x[0..rank), so an r-long column is
+    // the extracted block's column).
+    std::vector<double> uc_full(decomp.n, 0.0);
+    std::vector<std::vector<double>> ucols;
+    ucols.reserve(r);
+    for (std::size_t j = 0; j < r; ++j) {
+        std::vector<double> x(r, 0.0);
+        x[j] = 1.0;
+        if (!decomp.solve_ux(r, x)) {
+            return std::nullopt; // MatrixException
+        }
+        ucols.push_back(std::move(x));
+    }
+    for (std::size_t k = 0; k < r; ++k) {
+        double acc = 0.0;
+        for (std::size_t j = 0; j < r; ++j) { // UUt row dot, ascending j
+            const double v = ucols[j][k];
+            acc += v * v;
+        }
+        if (decomp.pivot.empty()) {
+            uc_full[k] = acc;
+        } else {
+            uc_full[static_cast<std::size_t>(decomp.pivot[k])] = acc;
+        }
+    }
+    const std::size_t nx = decomp.n - nmissing; // nx() = b.length - nmissing
+    pt.uc_diag.assign(uc_full.begin() + static_cast<std::ptrdiff_t>(nmissing),
+        uc_full.begin() + static_cast<std::ptrdiff_t>(nmissing + nx));
+    return pt;
+}
+
+std::optional<std::vector<double>> pinned_fast_kalman_residuals(const std::vector<double>& x,
+    std::size_t p, std::size_t bp, std::size_t q, std::size_t bq, int period,
+    const std::vector<double>& jvm) {
+    // FastKalmanFilter.process(x).e(): the Durbin-Magenau innovations with
+    // the (c, c4) pair and the sticky steady-state switch, running on the
+    // stationary model at the coordinates. The innovations use f = e / sqrt(h)
+    // in the state sweep (no zero-innovation branch), the pair update uses
+    // r = c4[0] / h and runs while the machine is not fast; h clamps at the
+    // innovation variance 1.0 (a NaN h stays NaN) and the switch fires when
+    // (h - sa2) <= eps, the dcmpg comparison letting a NaN h keep the
+    // machine slow.
+    if (x.empty()) {
+        return std::vector<double>{};
+    }
+    const default_fp_environment fp_guard;
+    std::vector<double> ar, ma, acf;
+    std::size_t dim = 0;
+    if (!stationary_setup(jvm, p, bp, q, bq, period, ar, ma, dim, acf)) {
+        return std::nullopt;
+    }
+    const std::vector<double>& phi = ar; // tlast reads the AR coefficients
+    std::vector<double> c0 = acf;
+    const double h0 = c0[0];
+    {
+        // FastKalmanFilter.tx(c): drop gamma_0, left-shift the acf window and
+        // append the AR tail term -sum_j phi[j] * gamma[dim - j] (phi is the
+        // raw AR polynomial array, leading 1 at index 0).
+        double d = 0.0;
+        for (std::size_t j = 1; j < phi.size(); ++j) {
+            d -= phi[j] * c0[dim - j];
+        }
+        for (std::size_t j = 1; j < dim; ++j) {
+            c0[j - 1] = c0[j];
+        }
+        c0[dim - 1] = d;
+    }
+    auto tlast = [&](const std::vector<double>& v) {
+        double s = 0.0;
+        for (std::size_t j = 1; j < phi.size(); ++j) {
+            s -= phi[j] * v[dim - j];
+        }
+        return s;
+    };
+    constexpr double kEps = 1e-12; // FastKalmanFilter.eps
+    const double sa2 = 1.0;              // getInnovationVariance()
+    std::vector<double> c = c0;
+    std::vector<double> c4 = c0;
+    std::vector<double> w(dim, 0.0);
+    std::vector<double> e(x.size(), 0.0);
+    double h = h0;
+    bool fast = false;
+    const std::size_t kmax = dim - 1;
+    for (std::size_t i = 0; i < x.size(); ++i) {
+        if (std::isnan(h) || h < 0.0) {
+            return std::nullopt; // the null Likelihood the caller dereferences
+        }
+        const double root = std::sqrt(h);
+        const double innov = (x[i] - w[0]) / root;
+        e[i] = innov;
+        const double tl = tlast(w);
+        const double f = innov / root;
+        for (std::size_t j = 0; j < kmax; ++j) {
+            w[j] = w[j + 1] + c[j] * f;
+        }
+        w[kmax] = tl + c[kmax] * f;
+        if (!fast) {
+            const double c0v = c4[0];
+            const double r = c0v / h;
+            const double tl2 = tlast(c4);
+            const double last_c = c[kmax];
+            for (std::size_t j = 0; j < kmax; ++j) {
+                const double nxt = c4[j + 1];
+                if (r != 0.0) { // dcmpl ifeq: a NaN r eliminates
+                    c4[j] = nxt - c[j] * r;
+                    c[j] = c[j] - r * nxt;
+                } else {
+                    c4[j] = nxt;
+                }
+            }
+            c4[kmax] = tl2 - r * last_c;
+            c[kmax] = c[kmax] - r * tl2;
+            h = h - c0v * r;
+            if (h < sa2) { // dcmpg: a NaN h keeps NaN
+                h = sa2;
+            }
+            if (std::islessequal(h - sa2, kEps)) { // dcmpg ifgt: NaN keeps the machine slow
+                fast = true;
+            }
+        }
+    }
+    return e;
+}
+
+std::optional<std::vector<double>> pinned_fast_filter_residuals(const std::vector<double>& x,
+    std::size_t p, std::size_t bp, std::size_t q, std::size_t bq, int period,
+    const std::vector<double>& jvm) {
+    if (x.empty()) {
+        return std::nullopt;
+    }
+    const default_fp_environment fp_guard;
+    std::vector<double> ar, ma, acf;
+    std::size_t dim = 0;
+    if (!stationary_setup(jvm, p, bp, q, bq, period, ar, ma, dim, acf)) {
+        return std::nullopt;
+    }
+    const std::vector<double>& phi = ar; // tlast reads the AR coefficients
+    std::vector<double> c0 = acf;
+    const double h0 = c0[0]; // h0 is read before the tx window drop
+    {
+        // FastKalmanFilter.tx(c): the same window drop as the process(x)
+        // machine.
+        double d = 0.0;
+        for (std::size_t j = 1; j < phi.size(); ++j) {
+            d -= phi[j] * c0[dim - j];
+        }
+        for (std::size_t j = 1; j < dim; ++j) {
+            c0[j - 1] = c0[j];
+        }
+        c0[dim - 1] = d;
+    }
+    auto tlast = [&](const std::vector<double>& v) {
+        double s = 0.0;
+        for (std::size_t j = 1; j < phi.size(); ++j) {
+            s -= phi[j] * v[dim - j];
+        }
+        return s;
+    };
+    constexpr double kEps = 1e-12; // FastKalmanFilter.eps
+    const double sa2 = 1.0;              // getInnovationVariance()
+    std::vector<double> c = c0;
+    std::vector<double> c4 = c0;
+    std::vector<double> w(dim, 0.0);
+    std::vector<double> e(x.size(), 0.0);
+    double h = h0;
+    bool fast = false;
+    const std::size_t kmax = dim - 1;
+    const std::size_t tmax = std::max(phi.size(), ma.size()) - 1;
+    if (x.size() < tmax) {
+        return std::nullopt; // the JVM index failure on a short series
+    }
+    for (std::size_t i = 0; i < tmax; ++i) {
+        const double root = std::sqrt(h);
+        const double innov = (x[i] - w[0]) / root;
+        e[i] = innov;
+        const double tl = tlast(w);
+        const double f = innov / root;
+        for (std::size_t j = 0; j < kmax; ++j) {
+            w[j] = w[j + 1] + c[j] * f;
+        }
+        w[kmax] = tl + c[kmax] * f;
+        const double c0v = c4[0];
+        const double r = c0v / h;
+        h = h - c0v * r;
+        if (h < sa2) { // dcmpg: a NaN h keeps NaN
+            h = sa2;
+        }
+        if (std::isnan(h)) {
+            return std::nullopt; // the ArimaException abort
+        }
+        if (!fast) {
+            const double tl2 = tlast(c4);
+            const double last_c = c[kmax];
+            for (std::size_t j = 0; j < kmax; ++j) {
+                const double nxt = c4[j + 1];
+                if (r != 0.0) { // dcmpl ifeq: a NaN r eliminates
+                    c4[j] = nxt - c[j] * r;
+                    c[j] = c[j] - r * nxt;
+                } else {
+                    c4[j] = nxt;
+                }
+            }
+            c4[kmax] = tl2 - r * last_c;
+            c[kmax] = c[kmax] - r * tl2;
+            bool settled = true;
+            for (const double v : c4) {
+                if (!(std::fabs(v) <= kEps)) { // dcmpl ifle: NaN keeps it slow
+                    settled = false;
+                    break;
+                }
+            }
+            fast = settled;
+        }
+    }
+    // The Durbin-Magenau tail on raw series lags (no state, no h).
+    for (std::size_t t = tmax; t < x.size(); ++t) {
+        double v = x[t];
+        for (std::size_t j = 1; j < phi.size(); ++j) {
+            v += phi[j] * x[t - j];
+        }
+        for (std::size_t j = 1; j < ma.size(); ++j) {
+            v -= ma[j] * e[t - j];
+        }
+        e[t] = v;
+    }
+    return e;
+}
+
+std::optional<std::vector<double>> pinned_kalman_innovations(const std::vector<double>& y,
+    std::size_t p, std::size_t bp, std::size_t q, std::size_t bq, int period,
+    const std::vector<double>& jvm) {
+    // The design-free ConcentratedLikelihoodComputer machine: KalmanFilter
+    // .prepare over the stationary model at the coordinates followed by
+    // sfilter, whose innovations are the likelihood's e() (the empty
+    // allCoefficients branch of the item 23-B fullResiduals).
+    if (y.empty()) {
+        return std::nullopt;
+    }
+    const default_fp_environment fp_guard;
+    std::vector<double> ar, ma, acf;
+    std::size_t dim = 0;
+    if (!stationary_setup(jvm, p, bp, q, bq, period, ar, ma, dim, acf)) {
+        return std::nullopt;
+    }
+    kalman kf;
+    kf.multi_use = false;
+    kf.prepare(ar, std::move(acf), y.size(), dim);
+    if (kf.failed) {
+        return std::nullopt;
+    }
+    auto out = kf.sfilter(y);
+    if (!out || kf.failed) {
+        return std::nullopt;
+    }
+    return out;
 }
 
 } // namespace kalos::detail

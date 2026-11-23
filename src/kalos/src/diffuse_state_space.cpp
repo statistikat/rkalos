@@ -6,6 +6,7 @@
 // DLARFG is called through R's declared LAPACK ABI. Only its orthogonal
 // reflector is used; no third-party filtering implementation is incorporated.
 #include "kalos/detail/lapack.hpp"
+#include "kalos/detail/hostlineage.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -37,7 +38,7 @@ double checked(long double value) {
 
 double norm(const std::vector<double>& values) {
     double result = 0;
-    for (const auto value : values) result = checked(std::hypot(result, value));
+    for (const auto value : values) result = checked(kalos::detail::glibc_hypot(result, value));
     return result;
 }
 
@@ -75,7 +76,7 @@ DenseMatrix gram(const Basis& loading) {
     DenseMatrix result(loading.rows, loading.rows);
     for (std::size_t i = 0; i < loading.rows; ++i) {
         double row_norm = 0;
-        for (std::size_t k = 0; k < loading.columns; ++k) row_norm = checked(std::hypot(row_norm, loading(i, k)));
+        for (std::size_t k = 0; k < loading.columns; ++k) row_norm = checked(kalos::detail::glibc_hypot(row_norm, loading(i, k)));
         result(i, i) = square(row_norm);
         for (std::size_t j = i + 1; j < loading.rows; ++j) {
             long double total = 0;

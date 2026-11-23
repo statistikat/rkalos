@@ -1,4 +1,5 @@
 #include "kalos/detail/filter_utility.hpp"
+#include "kalos/detail/hostlineage.hpp"
 #include "kalos/detail/ssq_levmar.hpp"
 
 #include "kalos/linear_algebra.hpp" // polynomial_roots
@@ -39,7 +40,7 @@ bool check_roots(const double* c, std::size_t length, double limit) {
     polynomial[0] = 1.0;
     for (std::size_t i = 0; i < k; ++i) polynomial[i + 1] = c[i];
     for (const auto& root : polynomial_roots(polynomial)) {
-        const double modulus = std::hypot(root.real, root.imag);
+        const double modulus = kalos::detail::glibc_hypot(root.real, root.imag);
         if (!(1.0 / modulus < limit)) return false;
     }
     return true;

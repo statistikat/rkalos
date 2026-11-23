@@ -1,0 +1,11 @@
+{
+  "note": "Pinned inputs for tools/gen_hostlineage_tables.py. Sources: glibc tag glibc-2.39, directory sysdeps/ieee754/dbl-64/, retrieved 2026-11-22 from https://raw.githubusercontent.com/bminor/glibc/glibc-2.39/sysdeps/ieee754/dbl-64/<name>. Evidence copy: tmp_opencode/kalos-ci4-fix/glibc-2.39/ (regenerate with: python3 tools/gen_hostlineage_tables.py tmp_opencode/kalos-ci4-fix/glibc-2.39 src/hostlineage_tables.cpp).",
+  "sincostab.c": "3233d23c6085ac87d47ce1fd7471d88533213f6271ba333e664df30f3172ab85",
+  "asincos.tbl": "067c3b7047ab28b087262ba26a839ad23bf39236a843897306d5c828d69904f0",
+  "root.tbl": "f3c9d14fdf380e8db2098a183266721cd800ddeb4745ef14f2a491c35b17f5eb",
+  "powtwo.tbl": "e66e94adcd700010aa6ea5407130486ef4dba610311c1aab74bda7952bd67f53",
+  "uatan.tbl": "8072e14d43f1b897ab7013b70954e18b113ef2fcac942e8a263a579d4baf531a",
+  "e_exp_data.c": "9dee45e089bc8fac36a79da80889c7d784793aae7a00743a32066bd49dbf3434",
+  "e_log_data.c": "614b871035d0511f2ebfdbc5f7305f1974d2087ae3fba6aeed0f42dd5f091ba5",
+  "e_pow_log_data.c": "c64bee05138417398b2d2b2a08c67d96cf22a135c1b6a72509cdadb4edf633be"
+}

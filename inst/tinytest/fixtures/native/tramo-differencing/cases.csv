@@ -1,0 +1,26 @@
+"id","note","mode","diff_result","final_spec","full_spec","steps","nevents"
+"d_air","clean seasonal base from flat spec: module ladder facts","DIFF","Changed","","","",3
+"d_rw","random walk: regular unit roots at both thresholds","DIFF","Unchanged","","","",3
+"d_srw","seasonal walk: regular and seasonal root searches","DIFF","Changed","","","",3
+"d_sem","deterministic seasonal: seasonal roots below the bound","DIFF","Changed","","","",3
+"d_quarter","quarterly deterministic seasonal (freq 4)","DIFF","Changed","","","",3
+"d_noseas","module without seasonal differencing (maxbd = 0)","DIFF","Unchanged","","","",3
+"d_fixed","fixed airline re-entry (initial = n, estimated path)","DIFF","Changed","","","",3
+"d_growth_log","growth series with the log transformation","DIFF","Changed","","","",3
+"d_short","short series: comespd gate and airline fallback","DIFF","Changed","","","",3
+"d_qtr_noseas","quarterly module without seasonal differencing","DIFF","Unchanged","","","",3
+"b0","clean base, flat spec: module + Unchanged battery chain","BAT","Changed","b0 spec 1,0,1,1,1,1@12 mean 1","","step b0 ru1 Unchanged spec 1,0,1,1,1,1@12 mean 1; step b0 su1 Unchanged spec 1,0,1,1,1,1@12 mean 1; step b0 ru2 Unchanged spec 1,0,1,1,1,1@12 mean 1; step b0 su2 Unchanged spec 1,0,1,1,1,1@12 mean 1",3
+"srw0","seasonal walk: ladder/peak stage facts, over-side code","BAT","Changed","srw0 spec 1,0,1,1,1,1@12 mean 0","","step srw0 ru1 Unchanged spec 1,0,1,1,1,1@12 mean 0; step srw0 su1 Unchanged spec 1,0,1,1,1,1@12 mean 0; step srw0 ru2 Unchanged spec 1,0,1,1,1,1@12 mean 0; step srw0 su2 Unchanged spec 1,0,1,1,1,1@12 mean 0",3
+"dsem0","deterministic seasonal: battery spec change forces the over-side","BAT","Changed","dsem0 spec 1,1,1,1,1,1@12 mean 0","","step dsem0 ru1 Unchanged spec 1,1,1,1,1,1@12 mean 0; step dsem0 su1 Unchanged spec 1,1,1,1,1,1@12 mean 0; step dsem0 ru2 Unchanged spec 1,1,1,1,1,1@12 mean 0; step dsem0 su2 Unchanged spec 1,1,1,1,1,1@12 mean 0",3
+"air_in","fixed airline entry, no differencing module iteration","BAT","Changed","air_in spec 1,2,1,0,1,1@12 mean 0","","step air_in ru1 Unchanged spec 1,2,1,0,1,1@12 mean 0; step air_in su1 Unchanged spec 1,2,1,0,1,1@12 mean 0; step air_in ru2 Unchanged spec 1,2,1,0,1,1@12 mean 0; step air_in su2 Unchanged spec 1,2,1,0,1,1@12 mean 0",3
+"rw0","random walk: d ladder with the RU2 under-differencing fire","BAT","Unchanged","rw0 spec 0,1,1,0,0,0@12 mean 0","","step rw0 ru1 Unchanged spec 0,0,0,0,0,0@12 mean 1; step rw0 su1 Unchanged spec 0,0,0,0,0,0@12 mean 1; step rw0 ru2 Changed spec 0,1,1,0,0,0@12 mean 0; step rw0 su2 Unchanged spec 0,1,1,0,0,0@12 mean 0",3
+"b_io","clean base with the ODM estimation seam live","BAT","Changed","b_io spec 1,0,1,1,1,1@12 mean 1","","step b_io ru1 Unchanged spec 1,0,1,1,1,1@12 mean 1; step b_io su1 Unchanged spec 1,0,1,1,1,1@12 mean 1; step b_io ru2 Unchanged spec 1,0,1,1,1,1@12 mean 1; step b_io su2 Unchanged spec 1,0,1,1,1,1@12 mean 1",5
+"q4_0","quarterly driver segment (D11 refusal evidence)","BAT","Changed","q4_0 spec 1,1,1,1,1,1@4 mean 0","","step q4_0 ru1 Unchanged spec 1,1,1,1,1,1@4 mean 0; step q4_0 su1 Unchanged spec 1,1,1,1,1,1@4 mean 0; step q4_0 ru2 Unchanged spec 1,1,1,1,1,1@4 mean 0; step q4_0 su2 Unchanged spec 1,1,1,1,1,1@4 mean 0",3
+"growth_log","growth series with log: module and battery facts","BAT","Changed","growth_log spec 1,1,1,1,1,1@12 mean 0","","step growth_log ru1 Unchanged spec 1,1,1,1,1,1@12 mean 0; step growth_log su1 Unchanged spec 1,1,1,1,1,1@12 mean 0; step growth_log ru2 Unchanged spec 1,1,1,1,1,1@12 mean 0; step growth_log su2 Unchanged spec 1,1,1,1,1,1@12 mean 0",3
+"short_b","short base: come-spd gate through the driver segment","BAT","Changed","short_b spec 1,0,1,1,1,1@12 mean 1","","step short_b ru1 Unchanged spec 1,0,1,1,1,1@12 mean 1; step short_b su1 Unchanged spec 1,0,1,1,1,1@12 mean 1; step short_b ru2 Unchanged spec 1,0,1,1,1,1@12 mean 1; step short_b su2 Unchanged spec 1,0,1,1,1,1@12 mean 1",3
+"sem_noseas","deterministic seasonal with seasonal = false","BAT","Unchanged","sem_noseas spec 0,1,1,0,1,1@12 mean 0","","step sem_noseas ru1 Unchanged spec 0,0,0,0,0,0@12 mean 1; step sem_noseas su1 Changed spec 0,0,0,0,1,1@12 mean 0; step sem_noseas ru2 Changed spec 0,1,1,0,1,1@12 mean 0; step sem_noseas su2 Unchanged spec 0,1,1,0,1,1@12 mean 0",4
+"ao_io","AO series through the ODM-on estimation seam","BAT","Changed","ao_io spec 1,0,1,1,1,1@12 mean 1","","step ao_io ru1 Unchanged spec 1,0,1,1,1,1@12 mean 1; step ao_io su1 Unchanged spec 1,0,1,1,1,1@12 mean 1; step ao_io ru2 Unchanged spec 1,0,1,1,1,1@12 mean 1; step ao_io su2 Unchanged spec 1,0,1,1,1,1@12 mean 1",5
+"multi_io","AO+LS+TC series through the ODM-on seam","BAT","Unchanged","multi_io spec 0,1,1,0,1,1@12 mean 0","","step multi_io ru1 Unchanged spec 0,0,0,0,0,0@12 mean 1; step multi_io su1 Changed spec 0,0,0,0,1,1@12 mean 0; step multi_io ru2 Changed spec 0,1,1,0,1,1@12 mean 0; step multi_io su2 Unchanged spec 0,1,1,0,1,1@12 mean 0",6
+"f_full_b","trfull end to end on the clean base","FULL","","","f_full_b (0,0,0)(0,1,1)","",31
+"f_full_srw","trfull end to end on the seasonal walk","FULL","","","f_full_srw (2,0,0)(0,1,1)","",31
+"f_full_dsem","trfull end to end on the deterministic seasonal","FULL","","","f_full_dsem (0,1,1)(0,1,1)","",31
