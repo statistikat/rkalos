@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9002 exposes dated automatic X-13 forecast and backcast
+tables, including raw series, adjusted series, trend and seasonal factors.
+
 Added R interfaces for the TRAMO critical value, monthly seasonality detector,
 and non-robust log/level decision against the pinned Kalos 23-B contract.
 

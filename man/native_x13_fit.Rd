@@ -41,7 +41,13 @@ Enabling a deferred automatic detection module returns an unsupported status.}
 \value{A named result list carrying the core status, request provenance and,
 when available, the preadjustment, selection, results, finals and in-sample
 seasonally adjusted series, trend and irregular. Automatic fits additionally
-return their estimated model and decision chain. Inspect \code{status} before
+return their estimated model and decision chain. For positive effective
+horizons, \code{preadjustment$tables} includes the original-scale raw
+forecasts (\code{a1a}) or backcasts (\code{a1b}). The corresponding
+\code{finals$tables} entries are \code{d11a}, \code{d12a}, \code{d16a},
+\code{d18a} for forecasts, and the same roots with suffix \code{b} for
+backcasts. Each is a monthly \code{ts} on its own domain. Zero-length windows
+omit these optional names. Inspect \code{status} before
 using fitted quantities. Invalid input shapes raise errors.}
 \seealso{\code{\link{capabilities}}}
 \examples{

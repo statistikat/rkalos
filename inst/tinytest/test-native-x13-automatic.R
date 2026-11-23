@@ -158,7 +158,12 @@ local({
     ca<-cases[i,];id<-as.character(ca$id)
     cat('== case',id,'\n')
     res<-fit_case(id)
-    if(id=='quick')quick_res<-res
+    if(id=='quick') {
+      quick_res <- res
+      optional <- rkalos::capabilities()$automatic_fit$x11$horizon_tables
+      expect_false(any(optional %in% names(res$preadjustment$tables)))
+      expect_false(any(optional %in% names(res$finals$tables)))
+    }
     expect_true(inherits(res,'persephone_native_x13_automatic_fit'),info=paste(id,'class'))
     expect_true(res$fitted,info=paste(id,'fitted'))
     expect_identical(res$status,'available',info=paste(id,'status'))
@@ -559,6 +564,7 @@ local({
     # the explicit-scalar quick run.
     m<-case_modules('quick');req<-m$req
     yts<-stats::ts(m$y,start=c(1990,1),frequency=12)
+    attr(yts, "tsp")[2L] <- stats::tsp(yts)[2L] + 2^-41
     t1<-fit(series=yts,transform=list(aicc=as.numeric(req$aicdiff)),
       automodel=list(max_d=2L,max_bd=1L,ub1=1/as.numeric(req$ub1),
         ub2=1/as.numeric(req$ub2),cancel=as.numeric(req$cancel),precision=1e-7,
@@ -576,6 +582,7 @@ local({
     for(nm in names(t1$model))expect_identical(t1$model[[nm]],quick_res$model[[nm]],
       info=paste('ts inference model:',nm))
     expect_true(bits(t1$finalSA,quick_res$finalSA),info='ts inference tables bit-identical')
-    expect_identical(stats::tsp(t1$series),stats::tsp(yts))
+    for (component in c("series", "finalSA", "finalTrend", "finalIrregular"))
+      expect_identical(stats::tsp(t1[[component]]), stats::tsp(yts))
   })
 })

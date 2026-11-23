@@ -4,6 +4,20 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Automatic X-13 forecast and backcast tables (2026-11-23)
+
+Version `0.1.0.9002` projects the positive-length 21-H.4 windows from Kalos
+`0e064dd` into R. The raw series is in `preadjustment$tables$a1a` (forecast)
+or `a1b` (backcast). The corresponding `finals$tables` entries use the roots
+`d11`, `d12`, `d16`, `d18` and suffix `a` or `b`. Each series carries
+its monthly calendar. Zero-length windows omit the optional keys.
+`capabilities()$automatic_fit$x11$horizon_tables` lists the ten table names. Observed outputs preserve the source `ts` time
+attributes. The four frozen horizon cases passed all 668 window, value,
+refusal and calendar assertions in the initial projection replay. The
+13-case automatic suite also passed 1,210 assertions, including zero-horizon
+omission. An additional source-calendar precision regression runs in the
+automatic suite. [Horizon fixture replay](inst/tinytest/test-native-x13-horizon.R)
+
 ## M5 R checkpoint — TRAMO preprocessing (2026-11-23)
 
 The installed R package exposes `tramo_critical_value()`, `tramo_seasonality()`

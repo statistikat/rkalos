@@ -97,6 +97,8 @@ Rcpp::List preadjustment_list(const kalos::X13Preadjustment& pre,bool log) {
         Rcpp::_["a9u"]=reals_out(pre.a9u),Rcpp::_["a9cal"]=reals_out(pre.a9cal),
         Rcpp::_["a9sa"]=reals_out(pre.a9sa),Rcpp::_["a9ser"]=reals_out(pre.a9ser),
         Rcpp::_["out"]=reals_out(pre.out));
+    if (!pre.a1a.empty()) tables["a1a"] = reals_out(pre.a1a);
+    if (!pre.a1b.empty()) tables["a1b"] = reals_out(pre.a1b);
     return Rcpp::List::create(Rcpp::_["schema_version"]=1,Rcpp::_["type"]="x13_preadjustment",
         Rcpp::_["log"]=log,Rcpp::_["length"]=static_cast<int>(pre.a1.size()),
         Rcpp::_["tables"]=tables,Rcpp::_["status"]=pre.status,
@@ -128,12 +130,21 @@ kalos::X13Preadjustment rebuild_preadjustment(SEXP value) {
     return pre;
 }
 Rcpp::List finals_list(const kalos::X13Finals& result) {
-    return Rcpp::List::create(
+    Rcpp::List tables = Rcpp::List::create(
         Rcpp::_["d11final"]=reals_out(result.d11final),
         Rcpp::_["d12final"]=reals_out(result.d12final),
         Rcpp::_["d13final"]=reals_out(result.d13final),
         Rcpp::_["d16"]=reals_out(result.d16),Rcpp::_["d18"]=reals_out(result.d18),
         Rcpp::_["e1"]=reals_out(result.e1),Rcpp::_["e2"]=reals_out(result.e2),
         Rcpp::_["e3"]=reals_out(result.e3),Rcpp::_["e11"]=reals_out(result.e11));
+    if (!result.d11a.empty()) tables["d11a"] = reals_out(result.d11a);
+    if (!result.d12a.empty()) tables["d12a"] = reals_out(result.d12a);
+    if (!result.d16a.empty()) tables["d16a"] = reals_out(result.d16a);
+    if (!result.d18a.empty()) tables["d18a"] = reals_out(result.d18a);
+    if (!result.d11b.empty()) tables["d11b"] = reals_out(result.d11b);
+    if (!result.d12b.empty()) tables["d12b"] = reals_out(result.d12b);
+    if (!result.d16b.empty()) tables["d16b"] = reals_out(result.d16b);
+    if (!result.d18b.empty()) tables["d18b"] = reals_out(result.d18b);
+    return tables;
 }
 } // namespace kalos_x13_rcpp
