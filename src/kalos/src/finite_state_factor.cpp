@@ -7,6 +7,7 @@
 #include "kalos/detail/hostlineage.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -204,13 +205,30 @@ void FiniteStateFactor::predict(const DenseMatrix& transition,
         noise_loading.rows() != m || noise_loading.columns() > max_states) {
         throw std::invalid_argument("finite state prediction dimensions must agree and have at most 32 disturbances");
     }
+    // The monthly companion transition is mostly zeros. Store its nonzero
+    // column indices for each row in their original accumulation order.
+    const auto& transition_values = transition.values();
+    const auto& factor_values = factor_.values();
+    std::array<std::size_t, max_states + 1> row_offsets;
+    std::array<std::size_t, max_states * max_states> nonzero_columns;
+    std::size_t count = 0;
+    for (std::size_t i = 0; i < m; ++i) {
+        row_offsets[i] = count;
+        for (std::size_t k = 0; k < m; ++k)
+            if (transition_values[i + m * k] != 0) nonzero_columns[count++] = k;
+    }
+    row_offsets[m] = count;
     DenseMatrix predicted(m, m + noise_loading.columns());
+    auto& prediction = predicted.values();
     for (std::size_t j = 0; j < m; ++j) {
         checkpoint(interrupt);
         for (std::size_t i = 0; i < m; ++i) {
             long double value = 0;
-            for (std::size_t k = 0; k < m; ++k) value += static_cast<long double>(transition(i, k)) * factor_(k, j);
-            predicted(i, j) = checked(value);
+            for (std::size_t pos = row_offsets[i]; pos < row_offsets[i + 1]; ++pos) {
+                const std::size_t k = nonzero_columns[pos];
+                value += static_cast<long double>(transition_values[i + k * m]) * factor_values[k + j * m];
+            }
+            prediction[i + j * m] = checked(value);
         }
     }
     for (std::size_t j = 0; j < noise_loading.columns(); ++j) {

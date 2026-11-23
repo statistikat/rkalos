@@ -1641,6 +1641,61 @@ namespace kalos::detail {
 
 double glibc_sin(double x) { return hostlineage_src::sincos::sin_kernel(x); }
 double glibc_cos(double x) { return hostlineage_src::sincos::cos_kernel(x); }
+// Monthly SEATS spectra are evaluated on the pinned x86 HotSpot Math.cos
+// profile. Reduce to a multiple of pi/32 and recover the numerator with
+// sine and cosine series and compensated sums. The quarter-wave table was
+// generated from high-precision sin(k*pi/32), k=0..16. Each row holds
+// sin rounded to binary64, its remainder, sin minus its nearest power of
+// two, and that power. Signed reflection supplies the other three quadrants.
+double hotspot_spectrum_cos(double x) {
+    if (!(std::abs(x) < 90112.0)) return glibc_cos(x);
+    if (std::abs(x) < 0x1p-252) return 1.0;
+    struct Wave { double high, low, delta, power; };
+    static constexpr Wave quarter[] = {
+        {0x0.0p+0, 0x0.0p+0, 0x0.0p+0, 0x0.0p+0},
+        {0x1.917a6bc29b42cp-4, -0x1.e2718d26ed688p-60, -0x1.ba1650f592f50p-6, 0x1.0000000000000p-3},
+        {0x1.8f8b83c69a60bp-3, -0x1.26d19b9ff8d82p-57, -0x1.c1d1f0e5967d5p-5, 0x1.0000000000000p-2},
+        {0x1.294062ed59f06p-2, -0x1.5d28da2c4612dp-56, 0x1.4a03176acf82dp-5, 0x1.0000000000000p-2},
+        {0x1.87de2a6aea963p-2, -0x1.72cedd3d5a610p-57, -0x1.e087565455a75p-4, 0x1.0000000000000p-1},
+        {0x1.e2b5d3806f63bp-2, 0x1.e0d891d3c6841p-58, -0x1.d4a2c7f909c4ep-6, 0x1.0000000000000p-1},
+        {0x1.1c73b39ae68c8p-1, 0x1.b25dd267f6600p-55, 0x1.c73b39ae68c87p-5, 0x1.0000000000000p-1},
+        {0x1.44cf325091dd6p-1, 0x1.8076a2cfdc6b3p-57, 0x1.133cc94247758p-3, 0x1.0000000000000p-1},
+        {0x1.6a09e667f3bcdp-1, -0x1.bdd3413b26456p-55, 0x1.a827999fcef32p-3, 0x1.0000000000000p-1},
+        {0x1.8bc806b151741p-1, -0x1.2c5e12ed1336dp-55, -0x1.d0dfe53aba2fdp-3, 0x1.0000000000000p+0},
+        {0x1.a9b66290ea1a3p-1, 0x1.9f630e8b6dac8p-60, -0x1.592675bc57974p-3, 0x1.0000000000000p+0},
+        {0x1.c38b2f180bdb1p-1, -0x1.6e0b1757c8d07p-56, -0x1.e3a6873fa1279p-4, 0x1.0000000000000p+0},
+        {0x1.d906bcf328d46p-1, 0x1.457e610231ac2p-56, -0x1.37ca1866b95cfp-4, 0x1.0000000000000p+0},
+        {0x1.e9f4156c62ddap-1, 0x1.760b1e2e3f81ep-55, -0x1.60bea939d225ap-5, 0x1.0000000000000p+0},
+        {0x1.f6297cff75cb0p-1, 0x1.562172a361fd3p-56, -0x1.3ad06011469fbp-6, 0x1.0000000000000p+0},
+        {0x1.fd88da3d12526p-1, -0x1.87df6378811c7p-55, -0x1.3b92e176d6d31p-8, 0x1.0000000000000p+0},
+        {0x1.0000000000000p+0, 0x0.0p+0, 0x0.0p+0, 0x1.0000000000000p+0},
+    };
+    const auto wave = [](int index) {
+        const auto k = static_cast<unsigned>(index) & 63U;
+        const auto half = k & 31U;
+        const auto row = quarter[half <= 16U ? half : 32U - half];
+        return k < 32U ? row : Wave{-row.high, -row.low, -row.delta, -row.power};
+    };
+    const int n = static_cast<int>(x * 0x1.45f306dc9c883p+3 + std::copysign(0.5, x));
+    const double first = x - n * 0x1.921fb54400000p-4;
+    const double middle = n * 0x1.0b4611a600000p-38;
+    const double r = first - middle;
+    const double correction = n * 0x1.3198a2e037073p-73 - ((first - r) - middle);
+    const auto s = wave(n + 16), c = wave(n + 32);
+    const double r2 = r*r, r4 = r2*r2;
+    const double sin_poly = (-1.0/6 + (1.0/120)*r2) + r4*(-1.0/5040 + ((1.0/362880)*first)*r);
+    const double cos_poly = (-0.5 + (1.0/24)*r2) + r4*(-1.0/720 + ((1.0/40320)*first)*r);
+    const double slope = c.power + c.delta;
+    const double primary = c.power*r, first_sum = primary + s.high;
+    const double remainder = c.delta*r, high = remainder + first_sum;
+    double low = primary + (s.high - first_sum);
+    low += correction * (s.high*r - slope) + s.low;
+    low += (first_sum - high) + remainder;
+    low += sin_poly * ((slope*r)*r2);
+    low += cos_poly * (s.high*r2);
+    return high + low;
+}
+
 double glibc_exp(double x) { return hostlineage_src::exp::exp_kernel(x); }
 double glibc_log(double x) { return hostlineage_src::log::log_kernel(x); }
 double glibc_pow(double x, double y) {

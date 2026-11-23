@@ -4,6 +4,15 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 integration checkpoint for raw monthly RSA1 decomposition (2026-11-23)
+
+Kalos `0e0f2723fef730d5ebbe073309d553e1ab43a765` supplies the public
+RSA1 product route and its qualified x86-64 cosine implementation. Both
+locks and the CI toolchain pin agree. Offline verification passed for
+**194 core, 112 fixture and 358 evidence files**. The earlier
+`b6fb5f9` OpenMP source check passed all **301,910/301,910** assertions
+with its two existing compiler warnings and zero errors.
+
 ## M5 monthly TR1 preprocessing from observations (2026-11-23)
 
 Version `0.1.0.9010` adds `native_tramo_preprocess(series, "TR1")`,

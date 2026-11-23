@@ -841,7 +841,9 @@ seats_extract_wk_result seats_extract_wk(
       !request.mean_correction) {
     // Validate the new fit with the original xl. The seasonal AR is removed,
     // so the replacement cannot re-enter this branch.
-    return seats_extract_wk(refit_seasonal_ma(request, dec));
+    auto result = seats_extract_wk(refit_seasonal_ma(request, dec));
+    result.model_changed = result.fact("status") == "ok";
+    return result;
   }
   if (dec.approximation_required && !monthly_airline)
     throw std::invalid_argument(
@@ -858,7 +860,9 @@ seats_extract_wk_result seats_extract_wk(
     return seats_extract_wk_result(std::move(facts));
   }
   try {
-    return run_extraction(request, dec);
+    auto result = run_extraction(request, dec);
+    result.model_changed = result.fact("status") == "ok" && (dec.model_changed || dec.approximation_required);
+    return result;
   } catch (const std::invalid_argument&) {
     throw;  // envelope violation, never swallowed
   } catch (...) {

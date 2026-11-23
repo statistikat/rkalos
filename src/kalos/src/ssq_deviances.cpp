@@ -1511,7 +1511,7 @@ bool stationary_setup(const std::vector<double>& jvm, std::size_t p, std::size_t
 
 } // namespace
 
-std::optional<std::vector<double>> pinned_ols_coefficients(const std::vector<double>& y,
+std::optional<PinnedOlsFit> pinned_ols_fit(const std::vector<double>& y,
     const std::vector<std::vector<double>>& xcols) {
     // OlsComputer.compute: a response whose scaled norm misses
     // Constants.epsilon yields the null result (the dcmpg comparison lets a
@@ -1528,15 +1528,24 @@ std::optional<std::vector<double>> pinned_ols_coefficients(const std::vector<dou
         }
     }
     if (xcols.empty()) {
-        return std::vector<double>{}; // LeastSquaresResults with no estimation
+        double ssq = 0.0;
+        for (const double v : y) ssq += v * v;
+        return PinnedOlsFit{{}, 0, ssq};
     }
     hwp_n decomp;
     decomp.decompose(xcols, 0);
-    const ls_solution_n sol = least_squares_n(decomp, y, 1e-9);
+    auto sol = least_squares_n(decomp, y, 1e-9);
     if (sol.singular) {
         return std::nullopt;
     }
-    return sol.b;
+    return PinnedOlsFit{std::move(sol.b), sol.rank, sol.ssq_err};
+}
+
+std::optional<std::vector<double>> pinned_ols_coefficients(const std::vector<double>& y,
+    const std::vector<std::vector<double>>& xcols) {
+    auto fit = pinned_ols_fit(y, xcols);
+    if (!fit) return std::nullopt;
+    return std::move(fit->coefficients);
 }
 
 std::optional<std::vector<double>> pinned_gls_coefficients(const std::vector<double>& y,

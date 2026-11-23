@@ -46,5 +46,18 @@ struct TramoFullCalendarResult {
 TramoFullCalendarResult tramo_full_initial_calendar(const std::vector<double>& series,
     int start_year, int start_month, bool log);
 
+// The late TradingDaysController checks the concentrated-likelihood residuals
+// against a working-days contrast on their actual right-aligned monthly domain.
+struct TramoResidualTradingDays {
+    double statistic;
+    double upper_probability;
+    bool needs_processing;
+};
+
+// A missing result means OLS could not be evaluated; the controller skips the refit.
+std::optional<TramoResidualTradingDays> tramo_residual_trading_days(
+    const std::vector<double>& residuals, int estimation_start_year, int estimation_start_month,
+    int estimation_length, double significance);
+
 } // namespace kalos
 #endif

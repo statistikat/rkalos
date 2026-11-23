@@ -942,18 +942,16 @@ inline SymF sym_convolution(const vd& w_in, double scale) {
   return sym_of(std::move(r));
 }
 
-// Raw libm for the trig calls in rfr/fr_eval/dfr_eval below (CI-FDLIBM ledger
-// 2026-11-21): the JVM Spectrum$* counterparts dispatch through the live C2
-// dcos/dsin stubs (IBM-APML lineage == host libm), not the FdLibm bytecode;
-// routing fdlibm_cos/fdlibm_sin here would break the captured bit lineage.
-// See the note at c_arg above and the header provenance table.
+// The pinned JVM uses the x86-64 HotSpot cosine kernel for frequency
+// responses and their derivatives. The separately qualified sine path
+// retains its original host lineage.
 inline double rfr(const SymF& f, double x) {  // SymmetricFilter.realFrequencyResponse
   std::size_t stop = f.a.size();
   std::size_t k = 0;
   double u = f.a[k++];
   if (k >= stop) return u;
   double t0 = 1.0;
-  double cs = kalos::detail::glibc_cos(x);
+  double cs = kalos::detail::hotspot_spectrum_cos(x);
   double t1 = cs;
   for (;;) {
     u = u + 2.0 * t1 * f.a[k++];
@@ -972,7 +970,7 @@ inline void fr_eval(const SymF& f, double x, double& fv, double& dfv, double& d2
   dfv = 0.0;
   d2fv = 0.0;
   if (n <= 1) return;
-  double cs = kalos::detail::glibc_cos(x), sn = kalos::detail::glibc_sin(x);
+  double cs = kalos::detail::hotspot_spectrum_cos(x), sn = kalos::detail::glibc_sin(x);
   double ck = cs, sk = sn;
   for (std::size_t k = 1; k < n; ++k) {
     double ak = f.a[k];
@@ -995,7 +993,7 @@ inline double dfr_eval(const SymF& f, int d, double x) {
   for (std::size_t k = 1; k < n; ++k) {
     double t = static_cast<double>(k);
     for (int i = 1; i < d; ++i) t *= static_cast<double>(k);
-    double trig = (d % 2 == 0) ? kalos::detail::glibc_cos(x * static_cast<double>(k))
+    double trig = (d % 2 == 0) ? kalos::detail::hotspot_spectrum_cos(x * static_cast<double>(k))
                                : kalos::detail::glibc_sin(x * static_cast<double>(k));
     t = t * trig * f.a[k];
     s += t;

@@ -141,4 +141,11 @@ tramo_seats_rsa0_result run_tramo_seats_rsa0(const std::vector<double>& series, 
     return result;
 }
 
+tramo_seats_automatic_result run_tramo_seats_rsa1(const std::vector<double>& series,
+    int start_year, int start_month, int backcast_count, int forecast_count) {
+    auto fit = estimate_tramo_tr1(series, start_year, start_month);
+    auto decomposition = run_tramo_seats_pipeline(fit, backcast_count, forecast_count);
+    return {std::move(fit), std::move(decomposition)};
+}
+
 }  // namespace kalos

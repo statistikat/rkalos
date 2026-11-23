@@ -1,0 +1,4 @@
+sample 36614 8412f8406bcebe97
+frequency 40070b097e19e38e bfeeea20619d100c
+frequency 40070b097e19e38f bfeeea20619d100d
+frequency 40070b097e19e390 bfeeea20619d100f

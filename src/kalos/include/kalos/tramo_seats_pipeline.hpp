@@ -34,4 +34,14 @@ struct tramo_seats_rsa0_result {
 tramo_seats_rsa0_result run_tramo_seats_rsa0(const std::vector<double>& series,
     int start_year, int start_month, int backcast_count = 0, int forecast_count = -2);
 
+struct tramo_seats_automatic_result {
+    TramoFitResult preprocessing;
+    tramo_seats_pipeline_result decomposition;
+};
+
+// Monthly RSA1 from observations. SEATS preserves its existing status or
+// refusal for unsupported model and deterministic-effect shapes.
+tramo_seats_automatic_result run_tramo_seats_rsa1(const std::vector<double>& series,
+    int start_year, int start_month, int backcast_count = 0, int forecast_count = -2);
+
 }  // namespace kalos

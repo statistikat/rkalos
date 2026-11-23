@@ -7,6 +7,7 @@
 #include "kalos/estimation_control.hpp"
 #include "kalos/hannan_rissanen.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -144,5 +145,34 @@ TramoFullCalendarResult tramo_full_initial_calendar(const std::vector<double>& s
         std::optional<double>(tstats.at(tstats.size() - 2));
     return {comparison, tstats.front(), lp, tstats.back(), std::abs(tstats.front()) > 1.96,
             lp && std::abs(*lp) > 2.0, std::abs(tstats.back()) > 2.2};
+}
+std::optional<TramoResidualTradingDays> tramo_residual_trading_days(
+    const std::vector<double>& residuals, int estimation_start_year, int estimation_start_month,
+    int estimation_length, double significance) {
+    if (estimation_start_month < 1 || estimation_start_month > 12 ||
+        estimation_start_year < 1 || estimation_start_year > 9999 ||
+        estimation_length < 0 || residuals.size() > static_cast<std::size_t>(estimation_length))
+        throw std::invalid_argument("TRAMO residual trading-day test requires a valid monthly estimation domain");
+    if (!(significance >= 0 && significance <= 1))
+        throw std::invalid_argument("TRAMO residual trading-day significance must be in [0,1]");
+    if (residuals.size() < 2) return std::nullopt;
+    const long long residual_start = static_cast<long long>(estimation_start_year) * 12 +
+        estimation_start_month - 1 + estimation_length - static_cast<int>(residuals.size());
+    const calendar_domain domain{static_cast<int>(residual_start / 12),
+        static_cast<int>(residual_start % 12) + 1, 12, static_cast<int>(residuals.size())};
+    const auto columns = trading_days_contrast(day_clustering::td2, domain);
+    double total_ssq = 0.0;
+    for (const double value : residuals) {
+        if (!std::isfinite(value))
+            throw std::invalid_argument("TRAMO residual trading-day test requires finite residuals");
+        total_ssq += value * value;
+    }
+    const auto fit = detail::pinned_ols_fit(residuals, columns);
+    if (!fit || fit->rank != 1) return std::nullopt;
+    const double error_ssq = std::min(fit->residual_ssq, total_ssq);
+    const double error_df = static_cast<double>(residuals.size() - 1);
+    const double statistic = (total_ssq - error_ssq) / (error_ssq / error_df);
+    const double p = detail::f_upper_p(statistic, 1.0, error_df);
+    return TramoResidualTradingDays{statistic, p, p < significance};
 }
 } // namespace kalos

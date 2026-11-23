@@ -62,6 +62,7 @@ struct seats_component_series {
 };
 
 struct seats_extract_wk_result {
+  bool model_changed = false;  // successful SEATS model validation or approximation changed the model
   // JVM-faithful fact lines in probe order: "status ..." first, then
   // "dom actual|backcast|forecast n N start <year> <annualPosition>"
   // (only on status ok), then the init rows and finally the final rows,

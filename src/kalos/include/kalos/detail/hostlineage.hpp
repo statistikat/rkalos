@@ -111,6 +111,8 @@ namespace kalos::detail {
 //   acos     - ucarima_engine.hpp:1143 seasonal period recovery
 double glibc_sin(double x);
 double glibc_cos(double x);
+// x86-64 HotSpot cosine profile for bounded SEATS spectrum frequencies.
+double hotspot_spectrum_cos(double x);
 double glibc_exp(double x);
 double glibc_log(double x);
 double glibc_pow(double x, double y);
