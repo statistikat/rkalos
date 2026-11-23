@@ -207,14 +207,14 @@ inline const char* exception_class(const std::exception_ptr& e) {
 // Polynomial.plus(Polynomial) (q zero -> this; else Polynomials.plus +
 // Coefficients.ofInternal trim).
 // ---------------------------------------------------------------------------
-vd pl_plus(const vd& a, const vd& b) {  // Polynomials.plus
+inline vd pl_plus(const vd& a, const vd& b) {  // Polynomials.plus
   vd r(std::max(a.size(), b.size()), 0.0);
   for (std::size_t i = 0; i < a.size(); ++i) r[i] += a[i];
   for (std::size_t i = 0; i < b.size(); ++i) r[i] += b[i];
   return r;
 }
 
-Poly p_plus(const Poly& a, const Poly& b) {  // Polynomial.plus
+inline Poly p_plus(const Poly& a, const Poly& b) {  // Polynomial.plus
   if (b.is_zero()) return a;
   return p_raw(trim_copy(pl_plus(a.c, b.c)));
 }
@@ -222,7 +222,7 @@ Poly p_plus(const Poly& a, const Poly& b) {  // Polynomial.plus
 // Polynomial scalar ops on raw coefficient arrays (SymmetricFilter delegates
 // to exactly these; the results reach `new SymmetricFilter(Polynomial)`
 // UNLESS the delegate trims, which the comments spell out).
-vd pl_times_d(const vd& a, double d) {  // Polynomial.times(double)
+inline vd pl_times_d(const vd& a, double d) {  // Polynomial.times(double)
   if (d == 0.0 || (a.size() == 1 && a[0] == 0.0)) return {0.0};
   if (d == 1.0) return a;
   vd r = a;
@@ -230,19 +230,19 @@ vd pl_times_d(const vd& a, double d) {  // Polynomial.times(double)
   return r;
 }
 
-bool sf_is_null(const SymF& f) { return f.a.size() == 1 && f.a[0] == 0.0; }
+inline bool sf_is_null(const SymF& f) { return f.a.size() == 1 && f.a[0] == 0.0; }
 
 // SymmetricFilter instance arithmetic (every method is "new
 // SymmetricFilter(polynomial.op(...))" -- the raw constructor, no trim,
 // except times(SF), which ends in ofInternal (trim) as pinned below).
-SymF sf_times_d(const SymF& f, double d) { return SymF(pl_times_d(f.a, d)); }
-SymF sf_multiply_d(double d, const SymF& f) { return sf_times_d(f, d); }
+inline SymF sf_times_d(const SymF& f, double d) { return SymF(pl_times_d(f.a, d)); }
+inline SymF sf_multiply_d(double d, const SymF& f) { return sf_times_d(f, d); }
 
-SymF sf_plus(const SymF& a, const SymF& b) {  // plus(SF): trims
+inline SymF sf_plus(const SymF& a, const SymF& b) {  // plus(SF): trims
   return SymF(p_plus(Poly(a.a), Poly(b.a)).c);
 }
 
-SymF sf_minus(const SymF& a, const SymF& b) {  // minus(SF): trims iff equal
+inline SymF sf_minus(const SymF& a, const SymF& b) {  // minus(SF): trims iff equal
   return SymF(p_minus_p(Poly(a.a), Poly(b.a)).c);  // degrees
 }
 
@@ -411,12 +411,12 @@ inline SqrtResult iv_sqrt(const IVec& v) {
 // jdplus ...core.math.polynomials.UnitRoots + UnitRootsSolver.
 // m_n/m_d are IVector LISTS of the (1 - B^m) factor exponents.
 // ---------------------------------------------------------------------------
-void ur_int_mul(vi& a, int& len, int m) {  // UnitRoots.mul(int[], int, int)
+inline void ur_int_mul(vi& a, int& len, int m) {  // UnitRoots.mul(int[], int, int)
   for (int t = len - 1; t >= 0; --t) a[idx(t + m)] -= a[idx(t)];
   len += m;
 }
 
-int ur_int_div(vi& a, int len, int m) {  // UnitRoots.div(int[], int, int)
+inline int ur_int_div(vi& a, int len, int m) {  // UnitRoots.div(int[], int, int)
   for (int t = len - 1; t >= m; --t) {
     a[idx(t - m)] += a[idx(t)];
     a[idx(t)] = -a[idx(t)];  // verbatim JVM quirk
@@ -427,12 +427,12 @@ int ur_int_div(vi& a, int len, int m) {  // UnitRoots.div(int[], int, int)
   return len - m;
 }
 
-void ur_dbl_mul(vd& a, int& len, int m) {  // UnitRoots.mul(double[], int, int)
+inline void ur_dbl_mul(vd& a, int& len, int m) {  // UnitRoots.mul(double[], int, int)
   for (int t = len - 1; t >= 0; --t) a[idx(t + m)] -= a[idx(t)];
   len += m;
 }
 
-int ur_dbl_div(vd& a, int len, int m) {  // UnitRoots.div(double[], int, int)
+inline int ur_dbl_div(vd& a, int len, int m) {  // UnitRoots.div(double[], int, int)
   for (int t = m; t < len; ++t) a[idx(t)] += a[idx(t - m)];
   for (int t = len - m; t < len; ++t)
     if (std::fabs(a[idx(t)]) > 1.0E-8) return -1;  // NaN tolerated (dcmpg)
@@ -662,7 +662,7 @@ inline void bal(CMat& m) {
   }
 }
 
-bool is_hessenberg(const CMat& m) {  // FastMatrix.isHessenberg
+inline bool is_hessenberg(const CMat& m) {  // FastMatrix.isHessenberg
   int n = m.n;
   for (int c = 0; c + 2 < n; ++c)
     for (int r = c + 2; r < n; ++r)
@@ -1020,7 +1020,7 @@ inline Larfg larfg(std::vector<double>& storage, int xstart, int n) {
 }
 
 // Reflector.lapply over the trailing window (columns of the shrunk matrix).
-void lapply(std::vector<double>& qr, int xstart, int n, double beta, int win_start,
+inline void lapply(std::vector<double>& qr, int xstart, int n, double beta, int win_start,
             int win_cols, int ld) {
   int vend = xstart + n;
   for (int j = 0; j < win_cols; ++j) {
@@ -1180,7 +1180,7 @@ inline LsDiv ls_divide(const Poly& p, const Poly& q) {
 }
 
 // LeastSquaresDivision.isExact: err < sqrt(EPSILON).
-bool ls_exact(double err) { return err < std::sqrt(kFeEps); }
+inline bool ls_exact(double err) { return err < std::sqrt(kFeEps); }
 
 // ---------------------------------------------------------------------------
 // Polynomial$SimplifyingTool + BackFilter$SimplifyingTool (the pm /
@@ -1259,7 +1259,7 @@ inline PolySimp poly_simplify_private(const Poly& big, const Poly& small) {
   return t;
 }
 
-PolySimp poly_simplify(const Poly& p, const Poly& q) {  // public simplify
+inline PolySimp poly_simplify(const Poly& p, const Poly& q) {  // public simplify
   PolySimp t;
   if (p.c.size() >= q.c.size()) {
     t = poly_simplify_private(p, q);
@@ -1282,7 +1282,7 @@ struct BFilter {
   static BFilter one() { return BFilter{p_of(vd{1.0})}; }
 };
 
-BFilter bf_times(const BFilter& x, const BFilter& y) {  // BackFilter.times
+inline BFilter bf_times(const BFilter& x, const BFilter& y) {  // BackFilter.times
   return BFilter{p_times(x.p, y.p)};
 }
 
@@ -1291,7 +1291,7 @@ struct BackSimp {
   BFilter common, left, right;
 };
 
-BackSimp back_simplify(const BFilter& a, const BFilter& b) {  // tool
+inline BackSimp back_simplify(const BFilter& a, const BFilter& b) {  // tool
   BackSimp out;
   if (a.degree() == 0 || b.degree() == 0) return out;
   double a0 = a.p.c[0], b0 = b.p.c[0];

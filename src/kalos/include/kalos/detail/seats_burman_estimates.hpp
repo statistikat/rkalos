@@ -41,7 +41,10 @@
 #pragma once
 
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -399,9 +402,15 @@ class BurmanEstimates {
     const AModel& outer = wk_.outer;
     const int q = static_cast<int>(ma_.size()) - 1;
     const int p = static_cast<int>(ar_.size()) - 1;
-    nf = q > p ? 2 * q : p + q;
+    const auto padding = q > p ? 2LL * q : static_cast<long long>(p) + q;
+    if (padding > std::numeric_limits<int>::max())
+      throw std::invalid_argument("seats_extract_wk: filter padding exceeds the index range");
+    nf = static_cast<int>(padding);
     nbc = nf > nbcasts_ ? nf : nbcasts_;
     nfc = nf > nfcasts_ ? nf : nfcasts_;
+    const auto span = static_cast<std::uint64_t>(nbc) + nfc + data_.size();
+    if (span > std::numeric_limits<int>::max())
+      throw std::invalid_argument("seats_extract_wk: extended series exceeds the monthly index range");
 
     XfModel xm;
     xm.stat = outer.ar;

@@ -23,6 +23,8 @@
 #include "kalos/seats_extract_wk.hpp"
 
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <optional>
 #include <string>
 #include <vector>
@@ -619,7 +621,12 @@ Dec correct_logs(const BiasContext& cx) {
 // ---------------------------------------------------------------------------
 // The extraction driver.
 // ---------------------------------------------------------------------------
-int extrap(int n, int period) { return n < 0 ? -period * n : n; }
+int extrap(int n, int period) {
+  const auto months = n < 0 ? -static_cast<std::int64_t>(n) * period : n;
+  if (months < 0 || months > std::numeric_limits<int>::max())
+    throw std::invalid_argument("seats_extract_wk: horizon exceeds the monthly index range");
+  return static_cast<int>(months);
+}
 
 seats_extract_wk_result run_extraction(const tramo_seats_model_request& request,
                                        const tramo_seats_model_result& dec) {

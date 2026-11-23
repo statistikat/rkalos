@@ -4,6 +4,15 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 integration checkpoint for the fitted SEATS pipeline (2026-11-23)
+
+Kalos `c0594b9018d30b747d8834fab96391ceeb87f901` adds the deterministic
+component merge, its paired JVM architecture profiles, and the composed
+pipeline for an already fitted TRAMO model. Both installed and source
+locks agree. Offline verification passed for **190 core, 112 fixture
+and 342 evidence files**. The source CI workflow checks the matching
+toolchain revision.
+
 ## M5 TRAMO differencing decision (2026-11-23)
 
 `tramo_differencing_decision()` runs the ordinary-input 23-C first-round
