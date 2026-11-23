@@ -15,7 +15,10 @@ data, insufficient residual degrees of freedom and unsupported native
 decompositions remain outside this gate. Product consumers can query
 `capabilities()$tramo_seats_fit$templates`.
 
-The installed serial R package passed **460/460** RSA0 assertions. All
+The serial and OpenMP (two-worker) installed packages each passed
+**498/498** RSA0 assertions. All **696 conditional standard deviations**
+in the nine observed and forecast uncertainty rows matched the
+independent WK reference bit-for-bit for the TR0 AirPassengers fit. All
 **30 fitted values and 3,960 product values** matched the six public JVM
 cases bit-for-bit. Custom spans, zero-horizon output, date preservation
 and refusal paths passed. A clean OpenMP source package check completed

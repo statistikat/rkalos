@@ -49,6 +49,25 @@ for (records in rows) {
     }
     points <- points + length(value)
   }
+  if (id == "fit_tr0_air") {
+    wk <- readLines(file.path(dirname(oracle), "merge-x86_64.txt"))
+    wk <- wk[seq_len(which(startsWith(wk, "case "))[2L] - 1L)]
+    uncertainty <- wk[grepl("^wk [^ ]+ Stdev", wk)]
+    table <- fit$final[startsWith(fit$final$information, "Stdev"), , drop = FALSE]
+    expect_identical(nrow(table), length(uncertainty))
+    nvalues <- 0L
+    for (j in seq_along(uncertainty)) {
+      row <- tokens(uncertainty[j])
+      expected <- fixture_hex_doubles(row[-seq_len(6L)])
+      value <- table$values[[j]]
+      expect_identical(c(table$component[j], table$information[j]), row[2:3])
+      expect_identical(as.integer(stats::start(value)), as.integer(row[4:5]))
+      expect_identical(stats::frequency(value), 12)
+      expect_identical(writeBin(as.numeric(value), raw()), writeBin(expected, raw()))
+      nvalues <- nvalues + length(value)
+    }
+    expect_identical(c(nrow(table), nvalues), c(9L, 696L))
+  }
   cases <- cases + 1L
 }
 expect_identical(c(cases, points), c(6L, 3960L))
