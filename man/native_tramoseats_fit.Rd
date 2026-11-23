@@ -21,7 +21,7 @@ dated monthly time series per row. On success \code{finalSA}, \code{finalTrend},
 \code{finalIrregular} and \code{finalSeasonal} retain the input calendar.
 Both templates expose the dated preprocessing residuals in \code{residuals$tsres}.
 
-RSA0 also exposes \code{residuals$ser}, the residual standard error, the
+Both also expose \code{residuals$ser}, the residual standard error, the
 24-lag Ljung--Box test in \code{residuals$lb}, and the Doornik--Hansen
 normality test in \code{residuals$doornikhansen}. Both tests report \code{value},
 \code{pvalue} and \code{df}. The Ljung--Box result is undefined for at most

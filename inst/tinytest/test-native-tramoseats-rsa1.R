@@ -8,6 +8,8 @@ additional_cases <- function(file, prefix) {
 cases <- c(cases, additional_cases("rsa1-level-effects-x86_64.txt", "level_"),
            additional_cases("rsa1-level-tc-x86_64.txt", "level_tc_"),
            additional_cases("rsa1-log-tc-x86_64.txt", "log_tc_"))
+diagnostics <- fixture_named_rsa0_cases(file.path(dir, "rsa1-residual-diagnostics-x86_64.txt"))
+expect_identical(sort(names(diagnostics)), sort(names(cases)))
 tokens <- function(line) strsplit(line, " ", fixed = TRUE)[[1L]]
 keys <- c(Trend = "finalTrend", SeasonallyAdjusted = "finalSA", Seasonal = "finalSeasonal", Irregular = "finalIrregular")
 nrows <- points <- 0L
@@ -20,6 +22,20 @@ for (id in names(cases)) {
   expect_identical(fit$model, pre$model, info = id)
   expect_identical(fit$likelihood, pre$likelihood, info = id)
   expect_identical(fit$residuals, pre$residuals, info = id)
+  reference <- diagnostics[[id]]
+  expected <- function(key, positions) {
+    row <- reference[startsWith(reference, paste0("residuals.", key, " "))]
+    fixture_hex_doubles(tokens(row)[positions])
+  }
+  residuals <- fit$residuals
+  values <- function(test) c(test$value, test$pvalue)
+  expect_identical(writeBin(residuals$ser, raw()), writeBin(expected("ser", 2L), raw()), info = id)
+  for (key in c("lb", "doornikhansen")) {
+    expect_identical(writeBin(values(residuals[[key]]), raw()),
+                     writeBin(expected(key, 2:3), raw()), info = paste(id, key))
+  }
+  expect_identical(c(residuals$lb$df, residuals$doornikhansen$df), c(22, 2), info = id)
+  expect_identical(residuals$lb$lags, 24L, info = id)
   expect_identical(fit$template, "RSA1", info = id)
   expect_identical(fit$status, "ok", info = id)
   expect_identical(fit$mode, if (pre$model$log) "multiplicative" else "additive", info = id)
@@ -61,8 +77,14 @@ expect_identical(c(length(cases), nrows, points), c(12L, 120L, 7560L))
 zero <- rkalos::native_tramoseats_fit(AirPassengers, "RSA1", forecast = 0L)
 expect_identical(unique(zero$merged$information), "Value")
 expect_identical(zero$series_forecast_stdev_status, "no_requested_predictions")
+short <- rkalos::native_tramoseats_fit(stats::ts(as.numeric(AirPassengers)[1:37], frequency = 12), "RSA1")
+expect_identical(length(short$residuals$tsres), 24L)
+expect_true(is.nan(short$residuals$lb$value))
+expect_true(is.nan(short$residuals$lb$pvalue))
+expect_true(is.finite(short$residuals$doornikhansen$pvalue))
 scope <- rkalos::capabilities()$tramo_seats_fit$by_template
-expect_identical(scope$RSA1$residuals, "tsres")
+expect_identical(scope$RSA1$residuals, c("tsres", "ser", "lb", "doornikhansen"))
+expect_identical(scope$RSA1$residuals, rkalos::capabilities()$tramo_preprocessing$residuals)
 expect_identical(scope$RSA1$outlier_types, c("AO", "LS", "TC"))
 expect_identical(scope$RSA1$tc_rate, 0.7)
 expect_false(scope$RSA1$series_forecast_stdev)

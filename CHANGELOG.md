@@ -2,6 +2,10 @@
 
 ## Development version
 
+Version 0.1.0.9014 adds the public TR1 residual standard error,
+Ljung--Box independence test and Doornik--Hansen normality test to
+preprocessing and complete RSA1 seasonal adjustments.
+
 Version 0.1.0.9013 restores stock monthly transitory changes in raw RSA1
 and caller-supplied TRAMO fits on both level and log scales.
 

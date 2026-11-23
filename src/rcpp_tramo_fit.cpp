@@ -1,4 +1,20 @@
 #include "rcpp_tramo_fit.hpp"
+#include <kalos/arma_diagnostics.hpp>
+
+Rcpp::List wrap_monthly_airline_residuals(const std::vector<double>& values, double standard_error) {
+    const auto lb = kalos::monthly_airline_residual_ljung_box(values);
+    const auto normality = kalos::tramo_residual_normality(values);
+    Rcpp::RObject dh = R_NilValue;
+    if (normality) {
+        dh = Rcpp::List::create(Rcpp::_["value"] = normality->value,
+            Rcpp::_["pvalue"] = normality->p, Rcpp::_["df"] = normality->df);
+    }
+    return Rcpp::List::create(Rcpp::_["tsres"] = values, Rcpp::_["ser"] = standard_error,
+        Rcpp::_["lb"] = Rcpp::List::create(Rcpp::_["value"] = lb.value, Rcpp::_["pvalue"] = lb.p,
+            Rcpp::_["df"] = lb.df, Rcpp::_["lags"] = 24),
+        Rcpp::_["doornikhansen"] = dh);
+}
+
 
 Rcpp::List wrap_tramo_preprocessing(const kalos::TramoFitResult& fit) {
     const auto& o = fit.orders;
@@ -27,7 +43,8 @@ Rcpp::List wrap_tramo_preprocessing(const kalos::TramoFitResult& fit) {
         Rcpp::_["likelihood"] = Rcpp::List::create(Rcpp::_["log_likelihood"] = fit.ls_ll,
             Rcpp::_["transformation_adjustment"] = fit.ls_tadj, Rcpp::_["adjusted_log_likelihood"] = fit.ls_all,
             Rcpp::_["ssq"] = fit.ls_ssq, Rcpp::_["effective"] = fit.ls_eff, Rcpp::_["estimated"] = fit.ls_npar),
-        Rcpp::_["residuals"] = fit.full_residuals);
+        Rcpp::_["residuals"] = wrap_monthly_airline_residuals(fit.full_residuals,
+            kalos::tramo_residual_standard_error(fit.ls_ssq, fit.ls_eff, fit.ls_npar)));
 }
 
 // [[Rcpp::export(name = ".native_tramo_tr1", rng = false)]]

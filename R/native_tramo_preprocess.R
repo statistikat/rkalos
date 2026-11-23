@@ -20,7 +20,7 @@ format_tramo_preprocessing <- function(result, series, domain) {
   for (name in c("phi", "bphi", "theta", "btheta"))
     result$model[[name]] <- result$model$parameters[blocks == name]
   first <- domain$start_ordinal + length(series) - result$likelihood$effective
-  result$residuals <- list(tsres = stats::ts(result$residuals, frequency = 12,
-    start = c(first %/% 12, first %% 12 + 1)))
+  result$residuals$tsres <- stats::ts(result$residuals$tsres, frequency = 12,
+    start = c(first %/% 12, first %% 12 + 1))
   result
 }

@@ -4,6 +4,22 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 public residual diagnostics for TR1 and RSA1 (2026-11-24)
+
+Version `0.1.0.9014` exposes the preprocessing residual standard error,
+the 24-lag Ljung–Box test (22 degrees of freedom) and Doornik–Hansen
+normality test (2 degrees of freedom) through both monthly TR1 entry
+points. Six original, two shifted level and four monthly TC models
+matched all **60 public JVM scalars bit-for-bit**. At 24 residuals,
+the Ljung–Box result is undefined and normality remains available.
+
+Serial and two-worker OpenMP each passed all **919/919** RSA1 checks,
+**130/130** standalone TR1 checks, **498/498** RSA0 fit checks and
+**1,163/1,163** supplied-model checks, plus isolated Java-free smoke
+tests. The full serial suite at `0.1.0.9013` passed **302,924/302,924**
+checks across 62 files.
+[RSA1 diagnostic and component replay](inst/tinytest/test-native-tramoseats-rsa1.R)
+
 ## Monthly TR1 residual diagnostics checkpoint (2026-11-24)
 
 The package and CI now pin Kalos
