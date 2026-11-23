@@ -17,6 +17,6 @@ seats_from_tramo(series, ssq, effective, estimated, d = 0L, bd = 0L,
 \item{outliers}{Optional data frame with character \code{type} (AO or LS), one-based observation \code{position}, and numeric fitted \code{coefficient}, in fitted model order. Outlier effects are supported on the log scale.}
 \item{forecast, backcast}{Extension counts. Negative counts denote years.}
 }
-\description{Runs the fixed fitted-model bridge, Wiener--Kolmogorov extraction and deterministic-effects merge. The envelope requires full-span estimation with the supplied outliers and no additional calendar or user regressors, missing observations or length-of-period adjustment. Approximation-required decompositions raise the native refusal.}
+\description{Runs the fixed fitted-model bridge, Wiener--Kolmogorov extraction and deterministic-effects merge. The envelope requires full-span estimation with the supplied outliers and no additional calendar or user regressors, missing observations or length-of-period adjustment. Monthly legacy retries use the model families described in \code{\link{seats_extract_wk}}.}
 \value{A list with native \code{status} and three data frames of dated components. \code{initial} and \code{final} include conditional standard deviations from SEATS. \code{merged} contains value and extension series on the original scale after restoring fitted outlier effects.}
 \seealso{\code{\link{seats_extract_wk}}}

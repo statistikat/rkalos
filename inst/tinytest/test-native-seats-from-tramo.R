@@ -28,24 +28,20 @@ for (lines in cases("bridge.txt")) {
   }
   fitted[[fields("case")[2L]]] <- request
 }
-accepted <- refused <- points <- 0L
+accepted <- rows <- points <- 0L
 for (lines in cases("merge-x86_64.txt")) {
   header <- strsplit(lines[1L], " ", fixed = TRUE)[[1L]]
   id <- header[2L]
   request <- fitted[[id]]
   request$forecast <- as.integer(header[7L])
   request$backcast <- as.integer(header[5L])
-  if (header[11L] == "true") {
-    expect_error(do.call(rkalos::seats_from_tramo, request), "approximation_required", info = id)
-    refused <- refused + 1L
-    next
-  }
   result <- do.call(rkalos::seats_from_tramo, request)
   expect_identical(result$status, "ok", info = id)
   for (phase in c("wk", "merged")) {
     table <- if (phase == "wk") result$final else result$merged
     oracle <- lines[startsWith(lines, paste0(phase, " "))]
     expect_identical(nrow(table), length(oracle), info = id)
+    rows <- rows + nrow(table)
     for (i in seq_along(oracle)) {
       row <- strsplit(oracle[i], " ", fixed = TRUE)[[1L]]
       expect_identical(c(table$component[i], table$information[i]), row[2:3], info = id)
@@ -63,8 +59,10 @@ for (lines in cases("merge-x86_64.txt")) {
   }
   accepted <- accepted + 1L
 }
-expect_identical(c(accepted, refused), c(4L, 2L))
-expect_identical(points, 8160L)
+expect_identical(c(accepted, rows, points), c(6L, 189L, 11343L))
+# The seasonal AR-to-MA refit is qualified only without a mean term.
+expect_error(do.call(rkalos::seats_from_tramo, within(fitted$fit_multi, mean_correction <- TRUE)),
+             "outside the qualified monthly retry envelope")
 x <- fitted[[1L]]
 expect_error(do.call(rkalos::seats_from_tramo, within(x, effective <- estimated)), "likelihood")
 expect_error(do.call(rkalos::seats_from_tramo, within(x, ssq <- 0)), "likelihood")

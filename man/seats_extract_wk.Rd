@@ -19,8 +19,10 @@ seats_extract_wk(series, innovation_variance, d = 0L, bd = 0L,
 \item{phi, theta, bphi, btheta}{Fixed regular AR and MA coefficients and seasonal AR and MA coefficients, respectively, in Kalos order and sign convention.}
 \item{log, mean_correction}{Logical flags for the log-transformed model and mean correction.}
 \item{forecast, backcast}{Month counts. A negative count denotes that many years in absolute value.}
-\item{approximation}{\code{"none"} or \code{"legacy"}. A model requiring a
-legacy approximation raises the core's refusal.}
+\item{approximation}{\code{"none"} or \code{"legacy"}. Legacy monthly retries cover seasonal MA replacement for
+(0,1,q)(0,1,BQ) models with q at most one and seasonal AR-to-MA
+re-estimation for mean-free (2,1,0)(1,1,0) models. Other required
+approximations raise an error.}
 \item{method}{The qualified component estimator is \code{"burman"}.}
 \item{bias}{\code{"legacy"} or \code{"none"}.}
 \item{xl}{Parameter cutoff used by the SEATS model validator.}

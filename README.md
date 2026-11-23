@@ -41,7 +41,9 @@ fit$merged$values[[which(fit$merged$component == "Trend" &
 
 `capabilities()$tramo_seats_fit$templates` lists the qualified raw-series
 templates. Use `seats_from_tramo()` to decompose supported fitted TRAMO
-coefficients supplied by a caller.
+coefficients supplied by a caller. The monthly legacy SEATS retries cover
+airline seasonal MA replacement and the mean-free (2,1,0)(1,1,0) seasonal
+AR-to-MA refit, including the merged product series for fitted AO/LS effects.
 
 Install OpenBLAS with CBLAS and LAPACKE (qualification version 0.3.34). Set `KALOS_OPENBLAS_ROOT` to its prefix before building and installing the source archive. For custom or static providers, set `KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler and linker flags including dependencies.
 C++17 and Rcpp are required. Configure probes optional OpenMP with R's actual

@@ -4,6 +4,33 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 monthly SEATS legacy retries in R (2026-11-23)
+
+Version `0.1.0.9008` extends `seats_extract_wk()` and `seats_from_tramo()`
+to the monthly airline seasonal MA replacement and the mean-free
+(2,1,0)(1,1,0) seasonal AR-to-MA refit. The fitted mixed AO/LS example
+now returns its dated adjusted series, trend, seasonal and irregular
+components at both the default 0/24 and custom 3/6 backcast/forecast
+horizons. The degenerate airline case returns the public matrix-error
+status with empty component tables. The raw-series template remains RSA0.
+
+The installed serial and two-worker OpenMP packages each passed
+**7,676/7,676** fixed-model extraction assertions across 36 cases and
+eight extra airline threshold requests. The 1,095 frozen component rows
+contain **58,020** bit-exact values. All six fitted bridge configurations
+passed **1,160/1,160** assertions, including 7,338 WK values and 4,005
+merged product values matched bit-for-bit to the JVM. Changing the mean
+on the mixed model retains the documented refusal. Both builds passed
+the four RSA0 fit, residual and forecast-error suites (**643/643**) and
+the isolated Java-free smoke test.
+[Extraction replay](inst/tinytest/test-native-seats-extract-wk.R) and
+[fitted product replay](inst/tinytest/test-native-seats-from-tramo.R)
+
+The preceding version `0.1.0.9007` passed the full serial suite
+(**301,157/301,157** across 59 files). The OpenMP source check of
+`0.1.0.9006` passed all **301,120/301,120** assertions with its two
+existing macOS compiler warnings and zero errors.
+
 ## M5 integration checkpoint for monthly SEATS approximation (2026-11-23)
 
 Kalos `c5bcf978cc7e92d0d5d9992b3c2caa6ad9d0eb65` extends legacy

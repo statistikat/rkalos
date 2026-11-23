@@ -4,8 +4,7 @@ read <- function(file) utils::read.csv(file.path(dir, file), colClasses = "chara
 cases <- read("cases.csv")
 inputs <- read("inputs.csv")
 facts <- read("model-facts.csv")
-refusals <- c(x_airline = "approximation_required", x_crash_fixma = "approximation_required",
-              x_quarterly = "D11", x_var0 = "innovation variance 0",
+refusals <- c(x_quarterly = "D11", x_var0 = "innovation variance 0",
               x_kalman = "KalmanSmoother", x_kalman_wn = "KalmanSmoother")
 count <- points <- 0L
 for (i in seq_len(nrow(cases))) {
@@ -35,6 +34,24 @@ for (i in seq_len(nrow(cases))) {
   if (id %in% names(refusals)) {
     expect_error(invoke(), refusals[[id]], info = id)
     next
+  }
+  if (id == "x_airline") {
+    thresholds <- utils::read.csv(file.path(dirname(dir), "seats-airline-approximation", "thresholds.csv"),
+                                  colClasses = "character")
+    expect_identical(nrow(thresholds), 8L)
+    for (j in seq_len(nrow(thresholds))) {
+      threshold <- lapply(thresholds[j, ], as.double)
+      theta <- if (threshold$theta == 0) numeric() else threshold$theta
+      actual <- rkalos::seats_extract_wk(series, 0.5, d = 1, bd = 1, theta = theta, btheta = 0.8)
+      replacement <- rkalos::seats_extract_wk(series, 0.5, d = 1, bd = 1, theta = theta,
+        btheta = threshold$replacement_btheta, approximation = "none")
+      expect_identical(actual$status, "ok")
+      expect_identical(actual, replacement)
+      adjusted <- actual$final$values[[which(actual$final$component == "SeasonallyAdjusted" &
+                                             actual$final$information == "Value")]]
+      expect_identical(writeBin(as.numeric(adjusted[c(1L, length(adjusted))]), raw()),
+                       writeBin(c(threshold$first_adjusted, threshold$last_adjusted), raw()))
+    }
   }
   result <- invoke()
   expected <- facts[facts$id == id, ]
@@ -66,11 +83,13 @@ for (i in seq_len(nrow(cases))) {
   }
 }
 expect_identical(nrow(cases), 36L)
-expect_identical(count, 1055L)
-expect_identical(points, 55812L)
+expect_identical(count, 1095L)
+expect_identical(points, 58020L)
+expect_identical(rkalos::capabilities()$seats_approximation$frequency, 12L)
 expect_true("seats_extract_wk" %in% rkalos::capabilities()$primitives)
 expect_false(rkalos::capabilities()$fit)
 expect_error(rkalos::seats_extract_wk(AirPassengers, 1, forecast = -.Machine$integer.max), "index range")
+expect_error(rkalos::seats_extract_wk(AirPassengers, 1, approximation = "noisy"), "Noisy approximation")
 expect_error(rkalos::seats_extract_wk(AirPassengers, 1, phi = NA_real_), "finite numeric vector")
 expect_error(rkalos::seats_extract_wk(AirPassengers, 1, d = 0.5), "integer")
 expect_error(rkalos::seats_extract_wk(c(AirPassengers), 1), "univariate numeric ts")

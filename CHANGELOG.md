@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9008 supports two monthly legacy SEATS retries, including
+the fitted mixed AO/LS decomposition at default and custom horizons.
+
 Version 0.1.0.9007 adds the public RSA0 residual Ljung–Box statistic,
 upper-tail probability, degrees of freedom and lag count.
 

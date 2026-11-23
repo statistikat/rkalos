@@ -10,6 +10,8 @@ capabilities <- function() {
                   series_forecast_stdev = TRUE, residuals = c("tsres", "ser", "lb"),
                   frequency = 12L, complete_finite_input_only = TRUE, mode = "additive",
                   entry_point = "native_tramoseats_fit"),
+                seats_approximation = list(mode = "legacy", frequency = 12L,
+                  families = c("airline seasonal MA replacement", "mean-free (2,1,0)(1,1,0) seasonal AR-to-MA refit")),
                 restricted_fit = list(
                   schema_version = 2L,     # 2L: sigma_policy_required -> sigma_policy_default (maintainer 2026-11-17)
                   native_x13_fit_restricted = TRUE,
