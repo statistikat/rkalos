@@ -1370,6 +1370,25 @@ symbols, `core_version()$parallel$compiled = FALSE`). Isolated no-Java
 verification passes with `--native` on the new build; `R CMD build` clean;
 `DESCRIPTION` License remains the sole `GPL (>= 3)`.
 
+- **Witness sub-entries (2026-11-23, after the entry above):**
+  (a) HEAD coexistence: a tarball built from `git archive` of upstream tip
+  `2a7e650` (version 0.1.0.9001; includes this slice's vendored 0e064dd
+  closure, the surviving hostlineage OBJECTS edges, and upstream's
+  `8a7d1ba` TRAMO-transform OBJECTS additions) installs clean against the
+  qualified provider and runs the FULL suite at **292,001 assertions / 0
+  failures / 0 errors (51 files)** — HEAD coexists clean with the
+  qualified closure.
+  (b) Anomaly forensics witness outcome: the post-failure-only probe
+  (normal path byte-identical to the uninstrumented file) ran 10/10 clean
+  on the ASAN lane — the only standalone environment with a recorded
+  nonzero rate — and two full-suite witness sessions with it installed
+  were cut by harness time caps without incident. Final tally: 2 guard
+  failures in ~80 standalone file passes plus 5 completed full-suite
+  sessions at the lineage (4 clean, all baseline-identical), zero
+  sanitizer reports throughout, no forensics dump captured; the
+  mechanism remains open exactly as triaged above. No numerics-relevant
+  behavior changed; the qualification tables stand.
+
 ## Compatibility
 
 Accurate final-fit covariance and accurate residual/interpolation reporting stay
