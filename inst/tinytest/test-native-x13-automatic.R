@@ -484,7 +484,7 @@ local({
     expect_error(fit_case('quick',series=ts(1:96, start=2000, frequency=12)),'calendar')
     quarterly <- fit_case('quick',frequency=.Machine$integer.max)
     expect_identical(quarterly$status, 'unsupported:x13 automatic fit monthly series only')
-    expect_identical(quarterly$request$x11$seasonal, character())
+    expect_identical(quarterly$request$x11$seasonal, rep("msr", 12L))
     expect_error(fit_case('quick',sigma=42),'legacy',info='sigma label validation')
     # Item 21-H.4 horizon route at this boundary: accepted over the envelope
     # (capabilities()$automatic_fit$horizon_envelope), qualified against the

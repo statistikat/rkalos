@@ -128,7 +128,9 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
   backcast <- calendar_int(backcast, "backcast")
   forecast <- calendar_int(forecast, "forecast")
   y <- as.numeric(series)
-  seasonal <- if (f == 12L) rep("msr", 12L) else character()
+  # The raw selection parser requires a nonempty vector. The monthly decoder
+  # always has twelve filters; the core refuses other frequencies first.
+  seasonal <- rep("msr", 12L)
   result<-.native_x13_fit_automatic(y,f,start_period,first_year,
     tr$aicc,am$max_d,am$max_bd,am$ub1,am$ub2,am$cancel,am$precision,am$models_count,
     am$max_p,am$max_q,am$max_bp,am$max_bq,am$balanced,am$mixed,am$accept_white_noise,am$eps,
