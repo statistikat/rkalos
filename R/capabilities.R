@@ -1,14 +1,6 @@
 # Capabilities refer to the bundled, qualified surface, not planned features.
-# schema_version 2 adds the restricted_fit block and the x13 primitive names;
-# every pre-existing field keeps its schema-1 meaning. In particular fit
-# stays FALSE and keeps its schema-1 meaning: UNRESTRICTED fitting (the ARIMA
-# route: estimation, missing values, nonzero horizons, the length-of-period
-# transform, benchmarking) remains unimplemented. What is qualified is the
-# restricted fixed-coefficient X-13 fit described by restricted_fit below and
-# (additively, same schema-2 semantics) the automatic-spec X-13 fit described
-# by automatic_fit; gate on native_x13_fit_restricted / native_x13_fit_
-# automatic (or the blocks), never on fit. Field semantics are documented in
-# IMPLEMENTATION_STATUS.md.
+# The legacy fit field describes unrestricted fitting. Use restricted_fit
+# and automatic_fit for qualified X-13 routes and tramo_seats_fit for RSA0.
 capabilities <- function() {
     list(backend = "native", schema_version = 2L,
                 status = "unimplemented", fit = FALSE,

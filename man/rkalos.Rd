@@ -70,7 +70,7 @@ x11_initial_additive(...)
 }
 \arguments{\item{...}{Arguments forwarded to the corresponding engine operation. See the getting-started guide in the package README and the numerical contracts in the Kalos repository.}}
 \details{Inputs use monthly or quarterly univariate \code{ts} series. Regressors are named series or a named multivariate \code{ts}. Prepared objects and result lists preserve explicit unavailable statuses, domain metadata, missing masks and fixed/free parameter states. The accurate final-fit information policy remains the default; legacy comparison modes are explicitly requested through their operation's controls. Result classes retain their historical \code{persephone_native_*} names for serialization compatibility.}
-\value{\code{capabilities()} returns the qualified operation inventory and seasonal-adjustment availability. \code{core_version()} reports the embedded revision, provider and thread configuration. Numerical operations return named result lists, including their status and domain metadata; specification helpers return filter or model descriptions.}
+\value{\code{capabilities()} returns the qualified operation inventory and seasonal-adjustment availability. Its \code{tramo_seats_fit} block lists the monthly templates accepted by \code{\link{native_tramoseats_fit}}. \code{core_version()} reports the embedded revision, provider and thread configuration. Numerical operations return named result lists, including their status and domain metadata; specification helpers return filter or model descriptions.}
 \examples{
 core_version()
 y <- ts(100 + sin(seq_len(48)/3), start=c(2000,1), frequency=12)

@@ -18,7 +18,10 @@ decompositions remain outside this gate. Product consumers can query
 The installed serial R package passed **460/460** RSA0 assertions. All
 **30 fitted values and 3,960 product values** matched the six public JVM
 cases bit-for-bit. Custom spans, zero-horizon output, date preservation
-and refusal paths passed. Adjacent fitted-model, WK and first-round
+and refusal paths passed. A clean OpenMP source package check completed
+with zero errors and the existing Clang/R-header and floating-point flag
+warnings. The package overview example reproduced the full observed
+calendar and a 24-month trend forecast. Adjacent fitted-model, WK and first-round
 differencing tests passed **718/718**, **7,369/7,369** and **142/142**.
 At the preceding published checkpoint `5f57f09`, the complete OpenMP
 suite passed **299,658/299,658** across 53 files.

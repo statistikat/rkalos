@@ -21,7 +21,22 @@ runtime dependency; its application objects stay in Persephone.
 
 For TRAMO preprocessing, use `tramo_critical_value()` for the outlier threshold,
 `tramo_seasonality()` for the monthly detector, and `tramo_transform_decision()`
-for the non-robust log/level decision. The full TRAMO/SEATS fit is pending.
+for the non-robust log/level decision. For a complete monthly series,
+`native_tramoseats_fit()` estimates the RSA0 airline model and returns the
+seasonally adjusted series, trend, seasonal and irregular components.
+The `final` table includes component standard deviations and forecast
+uncertainty. The `merged` table contains the final product forecasts.
+
+```r
+fit <- rkalos::native_tramoseats_fit(AirPassengers, template = "RSA0")
+fit$finalSA
+fit$merged$values[[which(fit$merged$component == "Trend" &
+                         fit$merged$information == "Forecast")]]
+```
+
+`capabilities()$tramo_seats_fit$templates` lists the qualified raw-series
+templates. Use `seats_from_tramo()` to decompose supported fitted TRAMO
+coefficients supplied by a caller.
 
 Install OpenBLAS with CBLAS and LAPACKE (qualification version 0.3.34). Set `KALOS_OPENBLAS_ROOT` to its prefix before building and installing the source archive. For custom or static providers, set `KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler and linker flags including dependencies.
 C++17 and Rcpp are required. Configure probes optional OpenMP with R's actual
