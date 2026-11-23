@@ -4,6 +4,14 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 integration checkpoint for raw monthly TR1 preprocessing (2026-11-23)
+
+Both locks and the CI toolchain now pin Kalos
+`33bca9b5bbff3d57a18bf3cb6d75653c288aecad`. The checkpoint supplies
+the public six-case TR1 preprocessing reference and original-series
+estimator. Offline verification passed for **194 core, 112 fixture and
+356 evidence files**. RSA0 remains the delivered raw decomposition template.
+
 ## Windows checkout integrity for locked snapshots (2026-11-23)
 
 The Windows CI checkout converted the pinned Kalos text files to CRLF

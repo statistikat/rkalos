@@ -1,6 +1,7 @@
 #ifndef KALOS_TRAMO_CALENDAR_F_TEST_HPP
 #define KALOS_TRAMO_CALENDAR_F_TEST_HPP
 
+#include <optional>
 #include <vector>
 
 namespace kalos {
@@ -27,6 +28,23 @@ struct TramoCalendarFTestResult {
 
 TramoCalendarFTestResult tramo_calendar_f_test(const std::vector<double>& series,
     int start_year, int start_month, bool mean, double significance, double precision);
+
+// Initial TRfull regression module on a monthly airline description with a
+// mean, no existing regressors, and no length-of-period preadjustment.
+struct TramoFullCalendarResult {
+    TramoCalendarFTestResult comparison;
+    double mean_t;
+    std::optional<double> leap_year_t;
+    double easter_t;
+    bool keep_mean;
+    bool keep_leap_year;
+    bool keep_easter;
+    // The module marks changes to mean, LP and Easter in its processing status.
+    bool module_changed() const { return !keep_mean || keep_leap_year || keep_easter; }
+};
+
+TramoFullCalendarResult tramo_full_initial_calendar(const std::vector<double>& series,
+    int start_year, int start_month, bool log);
 
 } // namespace kalos
 #endif

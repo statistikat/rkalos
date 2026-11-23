@@ -228,6 +228,7 @@ if(KALOS_BUILD_TESTS)
     test_tramo_regression_tests
     test_tramo_seats_bridge
     test_tramo_seats_rsa0
+    test_tramo_seats_automatic
     test_tramo_seats_model
     test_tramo_transform_decision
     test_transformation_decision
@@ -268,6 +269,10 @@ if(KALOS_BUILD_TESTS)
       target_compile_definitions(${test_name} PRIVATE
         KALOS_RSA0_DIAGNOSTIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge")
     endif()
+    if(test_name STREQUAL "test_tramo_seats_automatic")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_AUTOMATIC_ORACLES="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge")
+    endif()
     if(test_name STREQUAL "test_tramo_seats_rsa0")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_RSA0_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-x86_64.txt"
@@ -276,7 +281,8 @@ if(KALOS_BUILD_TESTS)
     endif()
     if(test_name STREQUAL "test_tramo_calendar_f_test")
       target_compile_definitions(${test_name} PRIVATE
-        KALOS_CALENDAR_F_TEST_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/panel.txt")
+        KALOS_CALENDAR_F_TEST_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/panel.txt"
+        KALOS_FULL_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/full.txt")
     endif()
     if(test_name STREQUAL "test_tramo_seats_bridge")
       target_compile_definitions(${test_name} PRIVATE
