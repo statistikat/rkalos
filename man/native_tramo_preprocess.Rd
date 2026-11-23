@@ -1,18 +1,17 @@
 \name{native_tramo_preprocess}
 \alias{native_tramo_preprocess}
-\title{Fit the monthly TR1 preprocessing model}
+\title{Fit a monthly TR1 or TR3 preprocessing model}
 \usage{
 native_tramo_preprocess(series, template = "TR1")
 }
 \arguments{
 \item{series}{A complete, finite, univariate monthly time series with at least 24 observations.}
-\item{template}{The stock TR1 template. The case-insensitive alias RSA1 is accepted.}
+\item{template}{TR1 or TR3, also accepting RSA1 or RSA3 case-insensitively.}
 }
-\description{Fits the TR1 airline model, selects the log or level transformation
-and estimates its mean and detected outlier coefficients from the original observations.}
+\description{Selects log or level and estimates coefficients from the original observations. TR1 fits the airline orders. TR3 identifies the orders automatically through the first reference comparison and subsequent controller sweep. An additional identification round, mean-test retry or automatic restart raises an explicit error.}
 \value{An object of class \code{native_tramo_preprocess} containing \code{status},
 \code{template}, \code{model}, \code{likelihood} and a dated monthly
-residual series in \code{residuals$tsres}. The residuals list also contains
+residual series in \code{residuals$tsres}. For TR1 the residuals list also contains
 the standard error (\code{ser}), the 24-lag Ljung--Box test (\code{lb})
 and the Doornik--Hansen test (\code{doornikhansen}). The model contains its six orders,
 fitted AR and MA parameters in regular AR, seasonal AR, regular MA and

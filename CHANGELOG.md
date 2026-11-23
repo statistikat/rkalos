@@ -2,6 +2,10 @@
 
 ## Development version
 
+Version 0.1.0.9015 adds monthly TR3 automatic identification and the
+RSA3 decomposition for fits accepted by the first reference comparison
+and the subsequent controllers without an automatic restart.
+
 Version 0.1.0.9014 adds the public TR1 residual standard error,
 Ljung--Box independence test and Doornik--Hansen normality test to
 preprocessing and complete RSA1 seasonal adjustments.

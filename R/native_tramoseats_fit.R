@@ -1,8 +1,8 @@
 native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, backcast = 0L) {
-  templates <- c(RSA0 = "RSA0", TR0 = "RSA0", RSA1 = "RSA1", TR1 = "RSA1")
+  templates <- c(RSA0 = "RSA0", TR0 = "RSA0", RSA1 = "RSA1", TR1 = "RSA1", RSA3 = "RSA3", TR3 = "RSA3")
   if (!is.character(template) || !is.null(dim(template)) || length(template) != 1L ||
       is.na(template) || !toupper(template) %in% names(templates))
-    stop("The native TRAMO/SEATS fit supports RSA0 (TR0) and RSA1 (TR1).", call. = FALSE)
+    stop("The native TRAMO/SEATS fit supports RSA0 (TR0), RSA1 (TR1) and RSA3 (TR3).", call. = FALSE)
   template <- unname(templates[[toupper(template)]])
   domain <- native_regular_domain(series)
   if (domain$frequency != 12L || any(!is.finite(series)))
@@ -10,8 +10,9 @@ native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, bac
   if (abs(domain$start[1L]) > .Machine$integer.max)
     stop("The start year exceeds the supported native range.", call. = FALSE)
   months <- seats_validate_horizons(backcast, forecast, domain$frequency, length(series))
-  if (template == "RSA1") {
-    result <- .native_tramoseats_rsa1(as.numeric(series), domain$start[1L], domain$start[2L], months[1L], months[2L])
+  if (template != "RSA0") {
+    fit <- if (template == "RSA3") .native_tramoseats_rsa3 else .native_tramoseats_rsa1
+    result <- fit(as.numeric(series), domain$start[1L], domain$start[2L], months[1L], months[2L])
     result <- format_tramo_preprocessing(result, series, domain)
     result$series_forecast_stdev <- numeric()
     result$series_forecast_stdev_status <- if (months[2L]) "not_qualified" else "no_requested_predictions"

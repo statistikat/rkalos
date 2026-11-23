@@ -145,16 +145,27 @@ Rcpp::List native_tramoseats_rsa0(const std::vector<double>& series, int year, i
         Rcpp::_["merged"] = component_table(decomposition.finals));
 }
 
-// [[Rcpp::export(name = ".native_tramoseats_rsa1", rng = false)]]
-Rcpp::List native_tramoseats_rsa1(const std::vector<double>& series, int year, int month,
-        int backcast, int forecast) {
-    const auto fit = kalos::run_tramo_seats_rsa1(series, year, month, backcast, forecast);
+namespace {
+Rcpp::List wrap_automatic_seats(const kalos::tramo_seats_automatic_result& fit, bool airline_diagnostics) {
     const auto& decomposition = fit.decomposition;
-    auto result = wrap_tramo_preprocessing(fit.preprocessing);
+    auto result = wrap_tramo_preprocessing(fit.preprocessing, airline_diagnostics);
     result["status"] = decomposition.extraction.fact("status");
     result["model_changed"] = decomposition.extraction.model_changed;
     result["initial"] = component_table(decomposition.extraction.initial_components());
     result["final"] = component_table(decomposition.extraction.final_components());
     result["merged"] = component_table(decomposition.finals);
     return result;
+}
+}  // namespace
+
+// [[Rcpp::export(name = ".native_tramoseats_rsa1", rng = false)]]
+Rcpp::List native_tramoseats_rsa1(const std::vector<double>& series, int year, int month,
+        int backcast, int forecast) {
+    return wrap_automatic_seats(kalos::run_tramo_seats_rsa1(series, year, month, backcast, forecast), true);
+}
+
+// [[Rcpp::export(name = ".native_tramoseats_rsa3", rng = false)]]
+Rcpp::List native_tramoseats_rsa3(const std::vector<double>& series, int year, int month,
+        int backcast, int forecast) {
+    return wrap_automatic_seats(kalos::run_tramo_seats_rsa3(series, year, month, backcast, forecast), false);
 }

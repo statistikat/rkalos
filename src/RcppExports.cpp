@@ -547,6 +547,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_tramoseats_rsa3
+Rcpp::List native_tramoseats_rsa3(const std::vector<double>& series, int year, int month, int backcast, int forecast);
+RcppExport SEXP _rkalos_native_tramoseats_rsa3(SEXP seriesSEXP, SEXP yearSEXP, SEXP monthSEXP, SEXP backcastSEXP, SEXP forecastSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type series(seriesSEXP);
+    Rcpp::traits::input_parameter< int >::type year(yearSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< int >::type backcast(backcastSEXP);
+    Rcpp::traits::input_parameter< int >::type forecast(forecastSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_tramoseats_rsa3(series, year, month, backcast, forecast));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_stationary_likelihood
 Rcpp::List native_stationary_likelihood(SEXP values, SEXP transition, SEXP observation, SEXP noise_loading, SEXP observation_variance, SEXP mean, SEXP variance);
 RcppExport SEXP _rkalos_native_stationary_likelihood(SEXP valuesSEXP, SEXP transitionSEXP, SEXP observationSEXP, SEXP noise_loadingSEXP, SEXP observation_varianceSEXP, SEXP meanSEXP, SEXP varianceSEXP) {
@@ -607,6 +621,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type year(yearSEXP);
     Rcpp::traits::input_parameter< int >::type month(monthSEXP);
     rcpp_result_gen = Rcpp::wrap(native_tramo_tr1(series, year, month));
+    return rcpp_result_gen;
+END_RCPP
+}
+// native_tramo_tr3
+Rcpp::List native_tramo_tr3(const std::vector<double>& series, int year, int month);
+RcppExport SEXP _rkalos_native_tramo_tr3(SEXP seriesSEXP, SEXP yearSEXP, SEXP monthSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type series(seriesSEXP);
+    Rcpp::traits::input_parameter< int >::type year(yearSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_tramo_tr3(series, year, month));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1189,10 +1215,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_seats_from_tramo", (DL_FUNC) &_rkalos_native_seats_from_tramo, 4},
     {"_rkalos_native_tramoseats_rsa0", (DL_FUNC) &_rkalos_native_tramoseats_rsa0, 5},
     {"_rkalos_native_tramoseats_rsa1", (DL_FUNC) &_rkalos_native_tramoseats_rsa1, 5},
+    {"_rkalos_native_tramoseats_rsa3", (DL_FUNC) &_rkalos_native_tramoseats_rsa3, 5},
     {"_rkalos_native_stationary_likelihood", (DL_FUNC) &_rkalos_native_stationary_likelihood, 7},
     {"_rkalos_native_arma_likelihood", (DL_FUNC) &_rkalos_native_arma_likelihood, 8},
     {"_rkalos_native_tramo_differencing", (DL_FUNC) &_rkalos_native_tramo_differencing, 7},
     {"_rkalos_native_tramo_tr1", (DL_FUNC) &_rkalos_native_tramo_tr1, 3},
+    {"_rkalos_native_tramo_tr3", (DL_FUNC) &_rkalos_native_tramo_tr3, 3},
     {"_rkalos_native_tramo_prepare_model", (DL_FUNC) &_rkalos_native_tramo_prepare_model, 5},
     {"_rkalos_native_tramo_critical_value", (DL_FUNC) &_rkalos_native_tramo_critical_value, 1},
     {"_rkalos_native_tramo_seasonality", (DL_FUNC) &_rkalos_native_tramo_seasonality, 1},

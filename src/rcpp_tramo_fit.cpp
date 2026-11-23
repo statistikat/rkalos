@@ -16,7 +16,11 @@ Rcpp::List wrap_monthly_airline_residuals(const std::vector<double>& values, dou
 }
 
 
-Rcpp::List wrap_tramo_preprocessing(const kalos::TramoFitResult& fit) {
+Rcpp::List wrap_tramo_preprocessing(const kalos::TramoFitResult& fit, bool airline_diagnostics) {
+    auto residuals = airline_diagnostics
+        ? wrap_monthly_airline_residuals(fit.full_residuals,
+            kalos::tramo_residual_standard_error(fit.ls_ssq, fit.ls_eff, fit.ls_npar))
+        : Rcpp::List::create(Rcpp::_["tsres"] = fit.full_residuals);
     const auto& o = fit.orders;
     const auto n = fit.variables.size();
     Rcpp::CharacterVector names(n), types(n);
@@ -43,11 +47,15 @@ Rcpp::List wrap_tramo_preprocessing(const kalos::TramoFitResult& fit) {
         Rcpp::_["likelihood"] = Rcpp::List::create(Rcpp::_["log_likelihood"] = fit.ls_ll,
             Rcpp::_["transformation_adjustment"] = fit.ls_tadj, Rcpp::_["adjusted_log_likelihood"] = fit.ls_all,
             Rcpp::_["ssq"] = fit.ls_ssq, Rcpp::_["effective"] = fit.ls_eff, Rcpp::_["estimated"] = fit.ls_npar),
-        Rcpp::_["residuals"] = wrap_monthly_airline_residuals(fit.full_residuals,
-            kalos::tramo_residual_standard_error(fit.ls_ssq, fit.ls_eff, fit.ls_npar)));
+        Rcpp::_["residuals"] = residuals);
 }
 
 // [[Rcpp::export(name = ".native_tramo_tr1", rng = false)]]
 Rcpp::List native_tramo_tr1(const std::vector<double>& series, int year, int month) {
-    return wrap_tramo_preprocessing(kalos::estimate_tramo_tr1(series, year, month));
+    return wrap_tramo_preprocessing(kalos::estimate_tramo_tr1(series, year, month), true);
+}
+
+// [[Rcpp::export(name = ".native_tramo_tr3", rng = false)]]
+Rcpp::List native_tramo_tr3(const std::vector<double>& series, int year, int month) {
+    return wrap_tramo_preprocessing(kalos::estimate_tramo_tr3(series, year, month), false);
 }

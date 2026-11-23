@@ -4,6 +4,24 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 monthly TR3 and RSA3 at the R boundary (2026-11-24)
+
+Version `0.1.0.9015` accepts TR3/RSA3 in preprocessing and complete
+seasonal adjustment. Six automatically identified models reproduced the JVM
+orders, fitted AR/MA and regression coefficients, log/level choice,
+likelihoods, **573 dated residuals** and **3,960 values across 60 dated
+component rows** bit-for-bit. The fitted-model scope includes the first
+reference comparison and controller sweep. A 36-month series verified
+that a further identification round raises the core refusal in both APIs.
+RSA3 publishes dated residuals; template-specific residual diagnostics
+and original-series forecast errors await independent qualification.
+
+Serial and two-worker OpenMP each passed **448/448** RSA3 assertions,
+**919/919** RSA1, **130/130** TR1, **498/498** RSA0 and the Java-free
+smoke check. All **302,990/302,990** checks passed on the preceding
+`0.1.0.9014` serial source suite.
+[RSA3 replay](inst/tinytest/test-native-tramoseats-rsa3.R)
+
 ## Monthly raw TR3 and RSA3 core integration (2026-11-24)
 
 The package and CI now pin Kalos `0ac66ffaac5c8ff7bb913813485a94da9ed58748`
