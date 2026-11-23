@@ -69,6 +69,7 @@ add_library(kalos STATIC
   src/state_space.cpp
   src/tramo_calendar_f_test.cpp
   src/tramo_arma_selection.cpp
+  src/tramo_seasonal_f_test.cpp
   src/tramo_differencing_battery.cpp
   src/tramo_differencing_decision.cpp
   src/tramo_final_estimation.cpp
@@ -268,7 +269,8 @@ if(KALOS_BUILD_TESTS)
     endif()
     if(test_name STREQUAL "test_tramo_differencing_battery")
       target_compile_definitions(${test_name} PRIVATE
-        KALOS_SEASONAL_PEAKS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-differencing-battery/monthly-spectral-peaks.txt")
+        KALOS_SEASONAL_PEAKS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-differencing-battery/monthly-spectral-peaks.txt"
+        KALOS_SEASONAL_F_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-differencing-battery/seasonal-f.txt")
     endif()
     if(test_name STREQUAL "test_arma_diagnostics")
       target_compile_definitions(${test_name} PRIVATE

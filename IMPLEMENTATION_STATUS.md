@@ -4,6 +4,14 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Monthly raw TR3 and RSA3 core integration (2026-11-24)
+
+The package and CI now pin Kalos `0ac66ffaac5c8ff7bb913813485a94da9ed58748`
+for first-pass monthly TR3 identification and SEATS extraction from
+original observations. The provider builds now include the late controller
+and its seasonal F and spectrum sources. Offline verification passed for
+**197 core files, 112 fixtures and 368 evidence files**.
+
 ## M6 public residual diagnostics for TR1 and RSA1 (2026-11-24)
 
 Version `0.1.0.9014` exposes the preprocessing residual standard error,

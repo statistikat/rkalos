@@ -28,6 +28,7 @@
 // fails closed with std::runtime_error; nothing is approximated.
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <vector>
 
@@ -42,6 +43,9 @@ enum class PeakTukey : unsigned char { T, t, none, undef };
 // Six monthly seasonal frequencies. Fewer than 80 observations have no
 // Tukey test; the returned vector is empty in that case.
 std::vector<PeakTukey> tramo_monthly_tukey_peaks(const std::vector<double>& values);
+
+// Fixed-order OLS autoregressive spectrum at the six monthly harmonics.
+std::vector<PeakAr> tramo_monthly_ar_peaks(const std::vector<double>& values);
 
 struct PeakRecord {
     PeakAr ar;
@@ -62,12 +66,24 @@ struct BatteryTests {
     std::vector<PeakRecord> peaks;
 };
 
+enum class TramoSeasonalTestInput { linearized, residuals };
+// Full monthly controller panel, including both spectral tests and their
+// respective minimum sample lengths.
+BatteryTests tramo_monthly_seasonal_tests(const std::vector<double>& values, TramoSeasonalTestInput input);
+
 // The SeasonalFTest triple (StatisticalTest value, JVM-computed p-value and
 // the two degrees of freedom read from the F description string).
 struct BatteryFTest {
     bool present = false;
     double value = 0.0, pvalue = 0.0, df1 = 0.0, df2 = 0.0;
 };
+
+struct TramoOrders;
+
+// ModelDescription overload of the monthly SeasonalFTest. The series is
+// on the estimation scale, and regressors exclude the forced mean column.
+BatteryFTest tramo_seasonal_f_test(const std::vector<double>& series, int start_year, int start_month,
+    const TramoOrders& orders, const std::vector<std::vector<double>>& regressors = {});
 
 // The ten ModelStatistics getters the ModelComparator / controllers read
 // (getLjungBox, getLjungBoxPvalue, getSeasonalLjungBox(+Pvalue), getBic,
@@ -162,6 +178,22 @@ struct BatteryDecision {
     };
     std::vector<Snap> snaps;
 };
+
+using TramoControllerEstimator = std::function<std::optional<BatteryState>(const TramoOrders&, bool mean)>;
+
+struct TramoMonthlyControllerResult {
+    BatteryDecision::Result seasonality, regular1, seasonal1, regular2, seasonal2;
+    bool seasonal;
+    int seasonality_score;
+    int selected_candidate; // zero-based in estimation order; -1 retains the entry model
+    bool restart; // the kernel returns immediately on a first-pass seasonality change
+};
+
+// Apply the controllers to the current fitted state. Each selected candidate
+// becomes the input to the next controller. An estimator returning null
+// represents the JVM estimator's failed attempt.
+TramoMonthlyControllerResult tramo_monthly_controllers(const BatteryState& entry, bool seasonal,
+                                                       int seasonality_score, const TramoControllerEstimator& estimate);
 
 // Replays the SeasonalityController pass, the four battery steps and the
 // second pass over the pinned inputs. The pass-1 re-estimation and every

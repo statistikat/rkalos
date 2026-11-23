@@ -21,6 +21,7 @@
 
 #include "kalos/detail/fdlibm.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -1510,6 +1511,18 @@ bool stationary_setup(const std::vector<double>& jvm, std::size_t p, std::size_t
 }
 
 } // namespace
+
+std::optional<PinnedOlsFit> pinned_fast_ols_fit(const std::vector<double>& y,
+    const std::vector<std::vector<double>>& xcols) {
+    if (xcols.empty() || y.size() < xcols.size() ||
+        std::any_of(xcols.begin(), xcols.end(), [&](const auto& column) { return column.size() != y.size(); }))
+        return std::nullopt;
+    hwp_n qr;
+    qr.decompose(xcols, xcols.size());
+    auto solution = least_squares_n(qr, y, 0.0);
+    if (solution.singular) return std::nullopt;
+    return PinnedOlsFit{std::move(solution.b), solution.rank, solution.ssq_err};
+}
 
 std::optional<PinnedOlsFit> pinned_ols_fit(const std::vector<double>& y,
     const std::vector<std::vector<double>>& xcols) {

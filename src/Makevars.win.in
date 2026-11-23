@@ -21,6 +21,9 @@ OBJECTS = RcppExports.o \
   kalos/src/tramo_fit.o \
   kalos/src/tramo_kernel_rounds.o \
   kalos/src/tramo_outlier_rounds.o \
+  kalos/src/tramo_differencing_battery.o \
+  kalos/src/tramo_seasonal_f_test.o \
+  kalos/src/tramo_seasonal_spectrum.o \
   kalos/src/tramo_regression_tests.o \
   kalos/src/tramo_tr0.o \
   kalos/src/tramo_seats_pipeline.o \

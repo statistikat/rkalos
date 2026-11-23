@@ -145,34 +145,31 @@ FiniteObservation FiniteStateFactor::observation(const std::vector<double>& z, d
     return {variance, std::move(pz)};
 }
 
-void FiniteStateFactor::compress(const DenseMatrix& loading, const Interrupt& interrupt) {
-    loading.validate(interrupt);
-    const auto m = dimension(), columns = loading.columns();
-    if (loading.rows() != m || columns < m || columns > 2 * max_states) {
-        throw std::invalid_argument("finite state loading compression dimensions are unsupported");
-    }
+void FiniteStateFactor::compress_transpose(std::size_t rows, const Interrupt& interrupt) {
     // loading' = Q R, hence loading loading' = R' R. All m rows of R
     // are retained, including zero diagonals: this is not rank truncation.
-    std::vector<double> transpose(columns * m, 0);
-    for (std::size_t i = 0; i < m; ++i) {
-        for (std::size_t j = 0; j < columns; ++j) transpose[j + columns * i] = loading(i, j);
-    }
-    const int rows = static_cast<int>(columns), cols = static_cast<int>(m), query_size = -1;
+    const auto m = dimension();
+    const int nrows = static_cast<int>(rows), cols = static_cast<int>(m);
     int info = 0;
-    double query = 0;
-    std::vector<double> tau(m);
+    std::array<double, max_states> tau;
     checkpoint(interrupt);
-    lapack::dgeqrf(&rows, &cols, transpose.data(), &rows, tau.data(), &query, &query_size, &info);
-    checkpoint(interrupt);
-    if (info != 0) throw std::runtime_error("finite state QR workspace query failed");
-    const auto work_size = workspace_size(query, cols);
-    std::vector<double> work(static_cast<std::size_t>(work_size));
-    lapack::dgeqrf(&rows, &cols, transpose.data(), &rows, tau.data(), work.data(), &work_size, &info);
+    if (rows != qr_workspace_rows_) {
+        const int query_size = -1;
+        double query = 0;
+        lapack::dgeqrf(&nrows, &cols, qr_input_.data(), &nrows, tau.data(), &query, &query_size, &info);
+        checkpoint(interrupt);
+        if (info != 0) throw std::runtime_error("finite state QR workspace query failed");
+        qr_workspace_.resize(static_cast<std::size_t>(workspace_size(query, cols)));
+        qr_workspace_rows_ = rows;
+    }
+    const int work_size = static_cast<int>(qr_workspace_.size());
+    lapack::dgeqrf(&nrows, &cols, qr_input_.data(), &nrows, tau.data(), qr_workspace_.data(), &work_size, &info);
     checkpoint(interrupt);
     if (info != 0) throw std::runtime_error("finite state QR compression failed");
     DenseMatrix result(m, m);
+    auto& result_values = result.values();
     for (std::size_t j = 0; j < m; ++j) {
-        for (std::size_t i = j; i < m; ++i) result(i, j) = checked(transpose[j + columns * i]);
+        for (std::size_t i = j; i < m; ++i) result_values[i + m * j] = checked(qr_input_[j + rows * i]);
     }
     factor_ = std::move(result);
     ++compression_count_;
@@ -186,13 +183,18 @@ void FiniteStateFactor::update(const std::vector<double>& gain,
     if (gain.size() != m) throw std::invalid_argument("finite state gain dimensions must agree");
     for (const auto value : gain) if (!std::isfinite(value)) throw std::invalid_argument("finite state gain must be finite");
     const auto w = observation_loading(z, interrupt);
-    DenseMatrix updated(m, m + 1);
+    const auto rows = m + 1;
+    qr_input_.resize(rows * m);
+    const auto& factor = factor_.values();
     const auto root_h = std::sqrt(h);
     for (std::size_t i = 0; i < m; ++i) {
-        for (std::size_t j = 0; j < m; ++j) updated(i, j) = checked(static_cast<long double>(factor_(i, j)) - static_cast<long double>(gain[i]) * w[j]);
-        updated(i, m) = checked(static_cast<long double>(root_h) * gain[i]);
+        for (std::size_t j = 0; j < m; ++j) {
+            qr_input_[j + rows * i] = checked(static_cast<long double>(factor[i + m * j]) -
+                                              static_cast<long double>(gain[i]) * w[j]);
+        }
+        qr_input_[m + rows * i] = checked(static_cast<long double>(root_h) * gain[i]);
     }
-    compress(updated, interrupt);
+    compress_transpose(rows, interrupt);
 }
 
 void FiniteStateFactor::predict(const DenseMatrix& transition,
@@ -218,8 +220,8 @@ void FiniteStateFactor::predict(const DenseMatrix& transition,
             if (transition_values[i + m * k] != 0) nonzero_columns[count++] = k;
     }
     row_offsets[m] = count;
-    DenseMatrix predicted(m, m + noise_loading.columns());
-    auto& prediction = predicted.values();
+    const auto rows = m + noise_loading.columns();
+    qr_input_.resize(rows * m);
     for (std::size_t j = 0; j < m; ++j) {
         checkpoint(interrupt);
         for (std::size_t i = 0; i < m; ++i) {
@@ -228,13 +230,14 @@ void FiniteStateFactor::predict(const DenseMatrix& transition,
                 const std::size_t k = nonzero_columns[pos];
                 value += static_cast<long double>(transition_values[i + k * m]) * factor_values[k + j * m];
             }
-            prediction[i + j * m] = checked(value);
+            qr_input_[j + rows * i] = checked(value);
         }
     }
+    const auto& disturbance = noise_loading.values();
     for (std::size_t j = 0; j < noise_loading.columns(); ++j) {
-        for (std::size_t i = 0; i < m; ++i) predicted(i, m + j) = noise_loading(i, j);
+        for (std::size_t i = 0; i < m; ++i) qr_input_[m + j + rows * i] = disturbance[i + m * j];
     }
-    compress(predicted, interrupt);
+    compress_transpose(rows, interrupt);
 }
 
 DenseMatrix FiniteStateFactor::covariance(const Interrupt& interrupt) const {

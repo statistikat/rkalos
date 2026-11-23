@@ -156,7 +156,7 @@ public:
     PinnedSsqProvider(const SarimaEstimationRequest& request, std::size_t p, std::size_t bp,
         std::size_t q, std::size_t bq, const Interrupt& interrupt)
         : request_(request), interrupt_(interrupt), domain_(static_cast<int>(p),
-              static_cast<int>(bp), static_cast<int>(q), static_cast<int>(bq)) {
+              static_cast<int>(bp), static_cast<int>(q), static_cast<int>(bq), request.gls_sarima_mapping) {
         // Qualify the pinned deviances machine (21-D.2, multi-column
         // generalization item 23-F F.2) for this request: the machine carries
         // no missing observations, needs a seasonal period, and knows the

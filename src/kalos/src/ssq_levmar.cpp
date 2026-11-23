@@ -1,3 +1,4 @@
+#include "kalos/detail/sarima_stabilization.hpp"
 #include "kalos/detail/filter_utility.hpp"
 #include "kalos/detail/hostlineage.hpp"
 #include "kalos/detail/ssq_levmar.hpp"
@@ -260,10 +261,11 @@ bool stabilize_block(double* c, std::size_t length, double limit) {
 
 } // namespace
 
-SarimaSsqDomain::SarimaSsqDomain(int p, int bp, int q, int bq)
+SarimaSsqDomain::SarimaSsqDomain(int p, int bp, int q, int bq, bool gls_mapping)
     : sizes_{static_cast<std::size_t>(p), static_cast<std::size_t>(bp),
           static_cast<std::size_t>(q), static_cast<std::size_t>(bq)},
-      offsets_{0}, limits_{kArLimit, kArLimit, kMaLimit, kMaLimit} {
+      offsets_{0}, gls_mapping_(gls_mapping),
+      limits_{gls_mapping ? 1.0 : kArLimit, gls_mapping ? 1.0 : kArLimit, kMaLimit, kMaLimit} {
     for (const std::size_t size : sizes_) offsets_.push_back(offsets_.back() + size);
 }
 
@@ -288,7 +290,16 @@ SsqParamValidation SarimaSsqDomain::validate(std::vector<double>& x) const {
     if (x.size() != dim()) return SsqParamValidation::Invalid;
     bool changed = false;
     for (std::size_t b = 0; b < 4; ++b) {
-        if (sizes_[b] > 0 && stabilize_block(x.data() + offsets_[b], sizes_[b], limits_[b])) {
+        if (sizes_[b] == 0) continue;
+        if (gls_mapping_) {
+            auto first = x.begin() + offsets_[b];
+            if (check_roots(x.data() + offsets_[b], sizes_[b], 1.0)) continue;
+            std::vector<double> block(first, first + sizes_[b]);
+            if (stabilize_coefficient_block(block)) {
+                std::copy(block.begin(), block.end(), first);
+                changed = true;
+            }
+        } else if (stabilize_block(x.data() + offsets_[b], sizes_[b], limits_[b])) {
             changed = true;
         }
     }

@@ -165,6 +165,10 @@ struct PinnedOlsFit {
     double residual_ssq;
 };
 
+// QRLeastSquaresSolver.fastLeastSquares: fixed column order, zero rank tolerance.
+std::optional<PinnedOlsFit> pinned_fast_ols_fit(const std::vector<double>& y,
+    const std::vector<std::vector<double>>& xcols);
+
 std::optional<PinnedOlsFit> pinned_ols_fit(const std::vector<double>& y,
     const std::vector<std::vector<double>>& xcols);
 

@@ -355,15 +355,17 @@ struct Driver {
     std::size_t next_cand = 1;  // candidates[0] is the initial estimation
     BatteryDecision out;
 
+    std::function<BatteryCandidate(const Spec&, bool)> live_estimator;
+    BatteryCandidate live_candidate;
+
     explicit Driver(const BatteryCase& kase)
         : c(kase), ctx{kase.seasonal, kase.ost}, spec{spec_of(kase.after_entry)},
           mean(kase.after_entry.mean) {}
 
     const BatteryCandidate& consume(const Spec& want, bool want_mean, const char* who) {
-        if (next_cand >= c.candidates.size()) {
-            bail(who);
-        }
-        const BatteryCandidate& cand = c.candidates[next_cand];
+        if (live_estimator) live_candidate = live_estimator(want, want_mean);
+        else if (next_cand >= c.candidates.size()) bail(who);
+        const BatteryCandidate& cand = live_estimator ? live_candidate : c.candidates[next_cand];
         const Spec got{cand.p, cand.d, cand.q, cand.bp, cand.bd, cand.bq};
         if (!same_spec(got, want) || cand.mean != want_mean) {
             bail("candidate construction diverges from the captured snapshot");
@@ -676,6 +678,48 @@ struct Driver {
 };
 
 } // namespace
+
+TramoMonthlyControllerResult tramo_monthly_controllers(const BatteryState& entry, bool seasonal,
+                                                       int seasonality_score, const TramoControllerEstimator& estimate) {
+    using Result = BatteryDecision::Result;
+    BatteryCase c;
+    c.after_entry = entry;
+    c.seasonal = seasonal;
+    c.ost = seasonality_score;
+    Driver driver(c);
+    std::optional<BatteryState> trial;
+    BatteryState state = entry;
+    int calls = 0, selected = -1;
+    driver.live_estimator = [&](const Spec& want, bool mean) {
+        ++calls;
+        trial = estimate({want.p, want.d, want.q, want.bp, want.bd, want.bq}, mean);
+        BatteryCandidate candidate{want.p, want.d, want.q, want.bp, want.bd, want.bq, mean, trial.has_value(), {}};
+        if (trial) {
+            if (!same_spec(spec_of(*trial), want) || trial->mean != mean)
+                bail("controller estimator returned a different model specification");
+            candidate.mstat = trial->mstat;
+        }
+        return candidate;
+    };
+    auto accept = [&](Result result) {
+        if (result == Result::Changed && trial) {
+            state = std::move(*trial);
+            selected = calls - 1;
+        }
+        trial.reset();
+        return result;
+    };
+    const auto initial = accept(driver.pass1());
+    TramoMonthlyControllerResult result{initial, Result::Unprocessed, Result::Unprocessed, Result::Unprocessed,
+        Result::Unprocessed, driver.ctx.seasonal, driver.ctx.ost, selected, initial == Result::Changed};
+    if (result.restart) return result;
+    result.regular1 = accept(driver.ru1(state));
+    result.seasonal1 = accept(driver.su1(state));
+    result.regular2 = accept(driver.ru2(state));
+    result.seasonal2 = accept(driver.su2(state));
+    result.selected_candidate = selected;
+    return result;
+}
 
 BatteryDecision decide_tramo_differencing_battery(const BatteryCase& c) {
     if (c.candidates.empty()) {

@@ -44,4 +44,8 @@ struct tramo_seats_automatic_result {
 tramo_seats_automatic_result run_tramo_seats_rsa1(const std::vector<double>& series,
     int start_year, int start_month, int backcast_count = 0, int forecast_count = -2);
 
+// Monthly raw RSA3 for the identification/restart envelope of estimate_tramo_tr3.
+tramo_seats_automatic_result run_tramo_seats_rsa3(const std::vector<double>& series,
+    int start_year, int start_month, int backcast_count = 0, int forecast_count = -2);
+
 }  // namespace kalos

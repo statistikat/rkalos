@@ -25,6 +25,7 @@
 #include "mlj_engine.hpp"
 
 #include <kalos/tramo_arma_selection.hpp>
+#include <kalos/tramo_differencing_battery.hpp>
 #include <kalos/tramo_differencing_decision.hpp>
 #include <kalos/tramo_final_estimation.hpp>
 #include <kalos/tramo_outlier_rounds.hpp>
@@ -674,13 +675,12 @@ const char* module_name(TramoKernelSeamKind kind) {
     }
 }
 
-}  // namespace
-
-TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_year, int start_month) {
-    const auto& preset = *tramo_template("TR1");
+TramoFitSpec prepare_monthly_template(const std::vector<double>& series, int start_year, int start_month,
+                                      const char* name, TramoFitResult& result) {
+    const auto& preset = *tramo_template(name);
     require(series.size() >= 24 && series.size() <= static_cast<std::size_t>(std::numeric_limits<int>::max()) &&
             std::all_of(series.begin(), series.end(), [](double v) { return std::isfinite(v); }),
-            "TR1 requires a complete monthly series spanning at least two years");
+            std::string(name) + " requires a complete monthly series spanning at least two years");
     tramo_build_request build;
     build.values = series;
     build.start_year = start_year;
@@ -689,11 +689,11 @@ TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_y
     build.mean = preset.mean;
     build.transform_function = preset.transform_function;
     build.using_auto_model = preset.using_auto_model;
-    TramoFitResult result;
     result.builder = build_tramo_model(build);
 
     TramoFitSpec spec;
     spec.using_auto_model = preset.using_auto_model;
+    spec.mean_is_test = preset.mean.test;
     spec.ao = preset.outliers_ao;
     spec.ls = preset.outliers_ls;
     spec.tc = preset.outliers_tc;
@@ -707,6 +707,43 @@ TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_y
     transform.log_preference = detail::fdlibm_log(0.95);
     transform.precision = spec.intermediate_precision;
     result.transformation = decide_tramo_transform(transform);
+    return spec;
+}
+
+BatteryState controller_state(const FittedOutlierEffects& model, const std::vector<double>& y,
+                              int year, int month) {
+    const auto& o = model.orders;
+    BatteryState state;
+    state.p = o.p; state.d = o.d; state.q = o.q;
+    state.bp = o.bp; state.bd = o.bd; state.bq = o.bq;
+    state.mean = model.mean;
+    state.nvar = static_cast<int>(model.names.size());
+    state.phi.assign(model.parameters.begin(), model.parameters.begin() + o.p);
+    if (o.bp) state.bphi1 = model.parameters.at(o.p);
+    if (o.bq) state.btheta1 = model.parameters.at(o.p + o.bp + o.q);
+    state.resid = model.fit.cl_residuals;
+    auto panel = tramo_model_comparison_panel(model_statistics_input(model, 12, y.size()));
+    require(panel.has_value(), "controller model statistics unavailable");
+    state.mstat = *panel;
+    std::vector<std::vector<double>> columns;
+    auto linearized = y;
+    for (const auto& var : model.variables) {
+        columns.push_back(var.column);
+        // RegArimaEstimation.linearizedSeries skips the mean coefficient
+        // and subtracts the fitted regressors in model order.
+        for (std::size_t i = 0; i < y.size(); ++i) linearized[i] += -var.coefficient * var.column[i];
+    }
+    state.ctlst = tramo_monthly_seasonal_tests(linearized, TramoSeasonalTestInput::linearized);
+    state.resl = tramo_monthly_seasonal_tests(state.resid, TramoSeasonalTestInput::residuals);
+    state.ftest = tramo_seasonal_f_test(y, year, month, o, columns);
+    return state;
+}
+
+}  // namespace
+
+TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_year, int start_month) {
+    TramoFitResult result;
+    const auto spec = prepare_monthly_template(series, start_year, start_month, "TR1", result);
     const bool log = result.transformation.log_transform;
     EstimationEntry entry{{0, 1, 1, 0, 1, 1}, result.builder.mean, {}};
     const auto cv = tramo_critical_value(series.size());
@@ -721,6 +758,56 @@ TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_y
     require(effects.fit.returned && effects.fit.cl_state != 0, "TR1 final estimation failed");
     const auto record = project_fitted_record(effects, series, log, 12);
     assemble_fitted_result(result, record, spec.delta_tc);
+    result.final_model_computed = true;
+    return result;
+}
+
+TramoFitResult estimate_tramo_tr3(const std::vector<double>& series, int start_year, int start_month) {
+    TramoFitResult result;
+    const auto spec = prepare_monthly_template(series, start_year, start_month, "TR3", result);
+    const auto& built = result.builder;
+    const auto& transform = result.transformation;
+    const auto y = differenced_response(series, transform.log_transform, 12, 0, 0);
+    const TramoOrders initial{0, 1, 1, 0, transform.seasonal ? 1 : 0, transform.seasonal ? 1 : 0};
+    const auto initial_test = initial_mean_test(spec, y, initial, built.mean);
+    auto reference = fit_reference(spec, built, transform.log_transform, y, {initial, initial_test.mean, {}});
+    require(reference.has_value(), "TR3 initial reference estimation unavailable");
+    auto candidate = fit_first_candidate(spec, built, transform.log_transform, transform.seasonal, *reference);
+    require(candidate.has_value(), "TR3 first automatic candidate unavailable");
+    const auto gate = compare_first_candidate(spec, y.size(), transform.seasonal, *reference, *candidate);
+    require(gate.accepted, "TR3 reference comparison requires another identification round");
+    auto fit = gate.reverted ? std::move(*reference) : std::move(candidate->effects);
+    TramoRegressionTestRequest test;
+    test.test_mean = true;
+    test.mean = fit.mean;
+    test.mean_threshold = spec.tsig;
+    test.statistics = fitted_test_statistics(fit);
+    const auto regression = run_tramo_regression_tests(test);
+    require(!regression.estimation_cleared, "TR3 fast mean test requires an additional estimation round");
+    const auto entry = controller_state(fit, y, start_year, start_month);
+    std::vector<std::optional<FittedOutlierEffects>> trials;
+    const auto estimate = [&](const TramoOrders& orders, bool mean) -> std::optional<BatteryState> {
+        trials.emplace_back();
+        const double cv = tramo_critical_value(y.size());
+        auto scan = run_scan(spec, built, transform.log_transform, orders, mean, cv);
+        require(scan.has_value(), "TR3 controller candidate requires an unsupported outlier design");
+        EstimationEntry next{orders, mean, std::move(scan->variables)};
+        auto options = spec;
+        options.using_auto_model = false; // ModelEstimator fits the requested SARIMA orders
+        auto fitted = fit_estimation(options, y, next, 1);
+        if (!fitted.fit.returned || fitted.fit.cl_state == 0) return std::nullopt;
+        auto state = controller_state(fitted, y, start_year, start_month);
+        trials.back() = std::move(fitted);
+        return state;
+    };
+    const auto controllers = tramo_monthly_controllers(entry, transform.seasonal, transform.seasonality.to_int, estimate);
+    require(!controllers.restart, "TR3 seasonality controller requires an automatic-model restart");
+    if (controllers.selected_candidate >= 0) fit = std::move(trials.at(controllers.selected_candidate).value());
+    const auto record = project_fitted_record(fit, series, transform.log_transform, 12);
+    assemble_fitted_result(result, record, spec.delta_tc);
+    result.initial_regression_checked = true;
+    result.reference_model_computed = true;
+    result.first_candidate_computed = true;
     result.final_model_computed = true;
     return result;
 }
