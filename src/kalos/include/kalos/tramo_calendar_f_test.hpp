@@ -1,6 +1,8 @@
 #ifndef KALOS_TRAMO_CALENDAR_F_TEST_HPP
 #define KALOS_TRAMO_CALENDAR_F_TEST_HPP
 
+#include "kalos/tramo_differencing_battery.hpp"
+
 #include <optional>
 #include <vector>
 
@@ -58,6 +60,31 @@ struct TramoResidualTradingDays {
 std::optional<TramoResidualTradingDays> tramo_residual_trading_days(
     const std::vector<double>& residuals, int estimation_start_year, int estimation_start_month,
     int estimation_length, double significance);
+
+// Late TradingDaysController for a monthly airline model on its estimation
+// scale. The initial model has only an optional mean, and outlier detection
+// is disabled. A rejected candidate still appears in the fit history.
+struct TramoCalendarAirlineFit {
+    bool mean;
+    bool working_days;
+    std::vector<double> ma_parameters;
+    std::vector<double> coefficients;
+    std::vector<double> residuals;
+    double residual_ssq;
+    std::optional<double> mean_t;
+    BatteryPanel statistics;
+};
+
+struct TramoTradingDaysControllerResult {
+    TramoCalendarAirlineFit original;
+    std::optional<TramoResidualTradingDays> residual_test;
+    std::vector<TramoCalendarAirlineFit> candidates;
+    bool changed;
+    const TramoCalendarAirlineFit& selected() const { return changed ? candidates.back() : original; }
+};
+
+TramoTradingDaysControllerResult tramo_airline_trading_days_controller(const std::vector<double>& series,
+    int start_year, int start_month, bool mean, double significance, double precision);
 
 } // namespace kalos
 #endif

@@ -287,7 +287,8 @@ if(KALOS_BUILD_TESTS)
       target_compile_definitions(${test_name} PRIVATE
         KALOS_CALENDAR_F_TEST_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/panel.txt"
         KALOS_FULL_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/full.txt"
-        KALOS_RESIDUAL_TD_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/residual-td.txt")
+        KALOS_RESIDUAL_TD_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/residual-td.txt"
+        KALOS_TD_CONTROLLER_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/td-controller.txt")
     endif()
     if(test_name STREQUAL "test_tramo_seats_bridge")
       target_compile_definitions(${test_name} PRIVATE

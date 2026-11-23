@@ -4,6 +4,13 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 integration checkpoint for additive AO and LS effects (2026-11-24)
+
+Kalos `be98d5405b3f44c30035247779d3b252c1adbb66` restores level-scale
+outlier effects in monthly fitted and raw SEATS decompositions. The
+source and installed locks agree with the CI toolchain pin. Offline
+verification passed for **194 core, 112 fixture and 360 evidence files**.
+
 ## M5 monthly RSA1 product fit in R (2026-11-24)
 
 Version `0.1.0.9011` accepts RSA1 and TR1 in `native_tramoseats_fit()`.

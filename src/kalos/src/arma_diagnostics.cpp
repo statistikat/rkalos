@@ -10,8 +10,10 @@
 
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/detail/special_functions.hpp"
+#include "kalos/outlier_scoring.hpp"
 #include "mlj_engine.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -38,6 +40,57 @@ double ssq_of(const std::vector<double>& x) {
         s += v * v;
     }
     return s;
+}
+
+struct ResidualMoments {
+    double skewness;
+    double kurtosis;
+};
+
+ResidualMoments residual_moments(const std::vector<double>& residuals) {
+    const double n = static_cast<double>(residuals.size());
+    const double mean = sum_of(residuals) / n;
+    double sum2 = 0.0, sum3 = 0.0, sum4 = 0.0;
+    for (const double value : residuals) {
+        if (!std::isfinite(value)) {
+            throw std::invalid_argument("residual moments require finite residuals");
+        }
+        const double deviation = value - mean;
+        const double square = deviation * deviation;
+        const double cube = square * deviation;
+        sum2 += square;
+        sum3 += cube;
+        sum4 += cube * deviation;
+    }
+    const double variance = sum2 / n;
+    const double skewness = sum3 / (variance * std::sqrt(variance) * n);
+    const double kurtosis = sum4 / (variance * variance * n);
+
+    return {skewness, kurtosis};
+}
+
+struct ResidualSample {
+    double mean;
+    double variance;
+};
+
+ResidualSample residual_sample(const std::vector<double>& residuals, int start, int length) {
+    double sum = 0.0, ssq = 0.0;
+    for (int i = start; i < start + length; ++i) {
+        const double x = residuals[i];
+        sum += x;
+        ssq += x * x;
+    }
+    return {sum / length, ssq / length};
+}
+
+double student_two_sided(double t, double df) {
+    if (t == 0.0) return 1.0;
+    const auto beta = detail::special_inc_beta(df / 2, 0.5, df / (df + t * t));
+    if (!beta) return std::numeric_limits<double>::quiet_NaN();
+    // Preserve rounding in SpecialFunctions.studentProbability followed by T.getProbability.
+    const double delta = (1 - *beta) / 2;
+    return 2 * (t < 0 ? 0.5 - delta : 1 - (0.5 + delta));
 }
 
 } // namespace
@@ -156,22 +209,7 @@ std::optional<ResidualNormalityTest> rsa0_residual_normality(const std::vector<d
     }
     if (residuals.size() <= 7) return std::nullopt;
     const double n = static_cast<double>(residuals.size());
-    const double mean = sum_of(residuals) / n;
-    double sum2 = 0.0, sum3 = 0.0, sum4 = 0.0;
-    for (const double value : residuals) {
-        if (!std::isfinite(value)) {
-            throw std::invalid_argument("rsa0_residual_normality requires finite residuals");
-        }
-        const double deviation = value - mean;
-        const double square = deviation * deviation;
-        const double cube = square * deviation;
-        sum2 += square;
-        sum3 += cube;
-        sum4 += cube * deviation;
-    }
-    const double variance = sum2 / n;
-    const double skewness = sum3 / (variance * std::sqrt(variance) * n);
-    const double kurtosis = sum4 / (variance * variance * n);
+    const auto [skewness, kurtosis] = residual_moments(residuals);
 
     // DoornikHansen.build() transforms sample skewness to a normal score.
     const double beta = 3 * (n * n + 27 * n - 70) * (n + 1) * (n + 3)
@@ -192,6 +230,28 @@ std::optional<ResidualNormalityTest> rsa0_residual_normality(const std::vector<d
         * (std::pow(chi / (2 * alpha), 1.0 / 3.0) - 1 + 1 / (9 * alpha));
     const double value = z1 * z1 + z2 * z2;
     return ResidualNormalityTest{value, detail::chi2_upper_p(ResidualNormalityTest::df, value)};
+}
+
+TramoComparatorResidualTests tramo_comparator_residual_tests(const std::vector<double>& residuals) {
+    if (residuals.size() < 4 || residuals.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+        throw std::invalid_argument("monthly TRAMO sample comparisons require at least four residuals");
+    const int n = static_cast<int>(residuals.size());
+    const double skew = residual_moments(residuals).skewness;
+    const double lower = standard_normal_lower_cdf(skew / std::sqrt(6.0 / n));
+    const double skew_p = 2 * (skew < 0 ? lower : 1 - lower);
+
+    // ModelStatistics.of uses [0, n-drop) and [drop, n). These samples can
+    // overlap on long series. Sample.ofResiduals measures variance around zero.
+    const int drop = std::min(n / 2 + n % 2, 120);
+    const int length = n - drop;
+    const auto first = residual_sample(residuals, 0, length);
+    const auto second = residual_sample(residuals, drop, length);
+    const double df = length - 1;
+    const double pooled = (first.variance * df + second.variance * df) / (2 * df);
+    const double t = (second.mean - first.mean) / std::sqrt(pooled / length + pooled / length);
+    const double ratio = second.variance / first.variance;
+    return {std::abs(skew), skew_p, t, student_two_sided(t, 2 * df),
+            ratio, detail::f_upper_p(ratio, df, df)};
 }
 
 double calc_res_stat_rtval(const std::vector<double>& seq) {

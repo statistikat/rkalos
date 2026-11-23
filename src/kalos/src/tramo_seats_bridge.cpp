@@ -66,7 +66,6 @@ tramo_seats_model_request make_tramo_seats_model(const TramoFitResult& fit) {
     require(model.innovation_variance > 0, "transmitted variance underflow");
     copy_parameters(fit, model);
 
-    require(fit.log || fit.variables.empty(), "level-model outlier effects are outside the bridge gate");
     std::vector<double> effect(input.size(), 0.0);
     for (const auto& var : fit.variables) {
         require(var.type == TramoOutlierKind::Ao || var.type == TramoOutlierKind::Ls,

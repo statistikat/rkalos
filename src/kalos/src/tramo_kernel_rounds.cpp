@@ -33,8 +33,8 @@ int parameter_count(const TramoOrders& o) {
     return o.p + o.q + o.bp + o.bq;
 }
 
-int difference_order(const TramoOrders& o) {
-    return o.d + o.bd;
+int difference_order(const TramoOrders& o, int period) {
+    return o.d + period * o.bd;
 }
 
 bool orders_equal(const TramoOrders& a, const TramoOrders& b) {
@@ -212,7 +212,7 @@ TramoKernelRoundsRun tramo_run_kernel_rounds(
             outliers = fact.outliers;
             // pass-1 difference-order change: the ami outliers go.
             if (pass == 1 &&
-                difference_order(fact.orders) != difference_order(orders0)) {
+                difference_order(fact.orders, spec.annual_frequency) != difference_order(orders0, spec.annual_frequency)) {
                 const TramoKernelSeam& drop = expect(
                     TramoKernelSeamKind::differencing_drop,
                     "the pass-1 differencing drop");

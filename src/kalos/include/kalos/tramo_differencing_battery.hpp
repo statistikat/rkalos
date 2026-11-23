@@ -28,6 +28,7 @@
 // fails closed with std::runtime_error; nothing is approximated.
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace kalos {
@@ -73,6 +74,15 @@ struct BatteryPanel {
     double bic = 0.0, skew_abs = 0.0, skew_p = 0.0, stable_mean_p = 0.0, stable_var_p = 0.0;
     int nobs = 0, nout = 0;
 };
+
+struct TramoModelStatisticsRequest;
+
+// Build the ModelComparator inputs from a monthly concentrated likelihood.
+// A missing panel means the likelihood could not support the diagnostic tests.
+std::optional<BatteryPanel> tramo_model_comparison_panel(const TramoModelStatisticsRequest& request);
+
+// Default ModelComparator (BIC preference) in incumbent, candidate order.
+bool tramo_candidate_preferred(const BatteryPanel& incumbent, const BatteryPanel& candidate);
 
 // One observable state of the driver segment (a ":e"-style tag of the
 // capture): specification, mean, the coefficient front values the gates

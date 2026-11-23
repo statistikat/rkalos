@@ -27,12 +27,24 @@ RegressionDesign make_design(const Columns& columns) {
     return design;
 }
 
+struct CalendarLikelihood {
+    std::vector<double> ma;
+    detail::PinnedMachinePoint point;
+    detail::PinnedRegressionDiagnostics regression;
+    std::vector<double> covariance_diagonal;
+    int dimension;
+
+    std::vector<double> tstats() const {
+        return tramo_test_tstats({point.b, covariance_diagonal, point.ssq_err, dimension, 2}, true);
+    }
+};
+
 // RegArimaUtility.processor(true, precision): Hannan–Rissanen on the
 // differenced linear model, then one warm LM pass. The final likelihood uses
 // DEFAULT_COMPUTER, whose QR layout differs from the optimization objective.
-double candidate_ssq(const std::vector<double>& series, const std::vector<double>& differences,
-                     const std::vector<double>& filter, Columns columns, bool mean, double precision,
-                     std::vector<double>* tstats = nullptr) {
+CalendarLikelihood fit_calendar_likelihood(const std::vector<double>& series,
+    const std::vector<double>& differences, const std::vector<double>& filter, Columns columns,
+    bool mean, double precision, bool collect_diagnostics) {
     Columns filtered;
     if (mean) filtered.emplace_back(differences.size(), 1.0);
     for (const auto& column : columns)
@@ -56,22 +68,40 @@ double candidate_ssq(const std::vector<double>& series, const std::vector<double
     const auto fit = optimize_sarima_from(request, start);
     if (!std::isfinite(fit.log_likelihood))
         throw std::runtime_error("TRAMO calendar F-test candidate estimation failed");
-    const std::vector<double> ma{fit.coefficients[1].front(), fit.coefficients[3].front()};
+    std::vector<double> ma{fit.coefficients[1].front(), fit.coefficients[3].front()};
     detail::PinnedRegressionDiagnostics diagnostics;
-    const auto likelihood = filtered.empty()
+    auto likelihood = filtered.empty() && !collect_diagnostics
         ? detail::pinned_deviances_evaluate(differences, 0, 0, 1, 1, 12, {}, ma)
         : detail::pinned_deviances_evaluate_multi(differences, 0, 0, 1, 1, 12,
-              filtered, ma, detail::PinnedComputerShape::Fixed, tstats ? &diagnostics : nullptr);
+            filtered, ma, detail::PinnedComputerShape::Fixed, collect_diagnostics ? &diagnostics : nullptr);
     if (!likelihood || !(likelihood->ssq_err > 0.0))
-        throw std::runtime_error("TRAMO calendar F-test candidate has no usable residual variance");
-    if (tstats) {
-        std::vector<double> diagonal(filtered.size());
-        for (std::size_t j = 0; j < diagonal.size(); ++j)
-            diagonal[j] = diagnostics.unscaled_covariance.at(j * diagonal.size() + j);
-        *tstats = tramo_test_tstats({likelihood->b, diagonal, likelihood->ssq_err,
-                                     static_cast<int>(differences.size()), 2}, true);
+        throw std::runtime_error("TRAMO calendar candidate has no usable residual variance");
+    std::vector<double> diagonal;
+    if (collect_diagnostics) {
+        const std::size_t columns_count = filtered.size();
+        for (std::size_t j = 0; j < columns_count; ++j)
+            diagonal.push_back(diagnostics.unscaled_covariance.at(j * columns_count + j));
     }
-    return likelihood->ssq_err;
+    return {std::move(ma), std::move(*likelihood), std::move(diagnostics), std::move(diagonal),
+            static_cast<int>(differences.size())};
+}
+
+TramoCalendarAirlineFit controller_fit(CalendarLikelihood fit, int observations, bool mean, bool working_days) {
+    const auto t = fit.tstats();
+    TramoModelStatisticsRequest stats;
+    stats.residuals = std::move(fit.regression.qr_residuals);
+    stats.coefficients = std::move(fit.point.b);
+    stats.cov_diagonal = std::move(fit.covariance_diagonal);
+    stats.ssq = fit.point.ssq_err;
+    stats.dim = fit.dimension;
+    stats.degrees_of_freedom = stats.dim - static_cast<int>(stats.coefficients.size());
+    stats.sigma2 = stats.ssq / stats.dim;
+    stats.free_parameters = 2;
+    stats.estimation_domain = observations;
+    const auto panel = tramo_model_comparison_panel(stats);
+    if (!panel) throw std::runtime_error("TRAMO calendar candidate has no comparison panel");
+    return {mean, working_days, std::move(fit.ma), std::move(stats.coefficients), std::move(stats.residuals),
+            stats.ssq, mean ? std::optional<double>(t.front()) : std::nullopt, *panel};
 }
 
 TramoCalendarFCandidate compare(double base, double residual_ssq, int df, int contrasts) {
@@ -102,7 +132,10 @@ TramoCalendarFTestResult compare_calendar_models(const std::vector<double>& seri
     const auto easter = full ? easter_column(6, easter_correction::simple, 0, domain) : std::vector<double>{};
     auto estimate = [&](Columns columns, std::vector<double>* stats = nullptr) {
         if (full) columns.push_back(easter);
-        return candidate_ssq(series, differences, filter, std::move(columns), mean, precision, stats);
+        const auto fit = fit_calendar_likelihood(series, differences, filter, std::move(columns),
+                                                mean, precision, stats != nullptr);
+        if (stats) *stats = fit.tstats();
+        return fit.point.ssq_err;
     };
     const int df = static_cast<int>(differences.size()) - mean - full;
     const double base = estimate({}, selected_tstats);
@@ -174,5 +207,32 @@ std::optional<TramoResidualTradingDays> tramo_residual_trading_days(
     const double statistic = (total_ssq - error_ssq) / (error_ssq / error_df);
     const double p = detail::f_upper_p(statistic, 1.0, error_df);
     return TramoResidualTradingDays{statistic, p, p < significance};
+}
+
+TramoTradingDaysControllerResult tramo_airline_trading_days_controller(const std::vector<double>& series,
+    int start_year, int start_month, bool mean, double significance, double precision) {
+    if (!(significance >= 0 && significance <= 1) || !(precision > 0) || !std::isfinite(precision))
+        throw std::invalid_argument("TRAMO trading-day controller requires a probability and positive precision");
+    if (series.size() < 20 || series.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+        throw std::invalid_argument("TRAMO airline controller requires at least 20 monthly observations");
+    const calendar_domain domain{start_year, start_month, 12, static_cast<int>(series.size())};
+    const auto td = trading_days_contrast(day_clustering::td2, domain);
+    const auto filter = detail::pinned_differencing_polynomial(12, 1, 1);
+    const auto differences = detail::pinned_backfilter_apply(filter, series);
+    auto estimate = [&](bool fit_mean, const Columns& columns) {
+        auto fit = fit_calendar_likelihood(series, differences, filter, columns, fit_mean, precision, true);
+        return controller_fit(std::move(fit), domain.length, fit_mean, !columns.empty());
+    };
+    TramoTradingDaysControllerResult result{};
+    result.original = estimate(mean, {});
+    result.residual_test = tramo_residual_trading_days(result.original.residuals, start_year,
+        start_month, domain.length, significance);
+    if (!result.residual_test || !result.residual_test->needs_processing) return result;
+    result.candidates.push_back(estimate(mean, td));
+    const auto t = result.candidates.front().mean_t;
+    if (t && !(std::abs(*t) >= 1.96))
+        result.candidates.push_back(estimate(false, td));
+    result.changed = tramo_candidate_preferred(result.original.statistics, result.candidates.back().statistics);
+    return result;
 }
 } // namespace kalos

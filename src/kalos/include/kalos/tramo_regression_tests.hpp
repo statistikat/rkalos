@@ -149,10 +149,8 @@ struct TramoModelStatisticsRequest {
     int ami_outliers = 0;
 };
 
-// The rows the tramo decision layer consumes, plus the record-only block it
-// never reads (the skewness/stableMean/stableVariance surfaces stay at the
-// builder defaults here; the JVM kernels are not landed and the tramo gate
-// never reads them - decision-inert, documented, not transcribed).
+// The rows consumed by the pass2 gate. For a model-comparison panel including
+// skewness and sample stability use tramo_model_comparison_panel.
 // `built == false` is the JVM throw surface (the main Ljung-Box build feeds
 // Chi2(df = m - k <= 0), which throws out of of() with no catch): no row is
 // invented, every double is NaN and the caller must not consume the row.

@@ -10,6 +10,8 @@
 // p-value stops or continues each gate below.
 #include <string>
 #include "kalos/tramo_differencing_battery.hpp"
+#include "kalos/tramo_regression_tests.hpp"
+#include "kalos/arma_diagnostics.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -161,6 +163,29 @@ bool peak_none(const PeakRecord& r) {
 }
 
 } // namespace
+
+std::optional<BatteryPanel> tramo_model_comparison_panel(const TramoModelStatisticsRequest& request) {
+    const auto stats = tramo_model_statistics(request);
+    if (!stats.built || request.residuals.size() < 4) return std::nullopt;
+    const auto tests = tramo_comparator_residual_tests(request.residuals);
+    BatteryPanel panel;
+    panel.ljung_box = stats.ljung_box;
+    panel.ljung_box_p = stats.ljung_box_pvalue;
+    panel.season_box = stats.seasonal_ljung_box;
+    panel.season_box_p = stats.seasonal_ljung_box_pvalue;
+    panel.bic = stats.bic;
+    panel.nobs = stats.observations_count;
+    panel.nout = stats.outliers_count;
+    panel.skew_abs = tests.absolute_skewness;
+    panel.skew_p = tests.skewness_p;
+    panel.stable_mean_p = tests.stable_mean_p;
+    panel.stable_var_p = tests.stable_variance_p;
+    return panel;
+}
+
+bool tramo_candidate_preferred(const BatteryPanel& incumbent, const BatteryPanel& candidate) {
+    return compare_panels(incumbent, candidate, pref::kBic) >= 1;
+}
 
 bool battery_has_seasonal_peaks(const std::vector<PeakRecord>& peaks) {
     switch (peaks.size()) {

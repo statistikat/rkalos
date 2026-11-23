@@ -65,6 +65,18 @@ struct ResidualNormalityTest {
 // NiidTests.normalityTest() has no result for seven or fewer observations.
 std::optional<ResidualNormalityTest> rsa0_residual_normality(const std::vector<double>& residuals);
 
+// ModelStatistics.of skewness and sample stability tests for monthly TRAMO fits.
+struct TramoComparatorResidualTests {
+    double absolute_skewness;
+    double skewness_p;
+    double mean_statistic;
+    double stable_mean_p;
+    double variance_ratio;
+    double stable_variance_p;
+};
+
+TramoComparatorResidualTests tramo_comparator_residual_tests(const std::vector<double>& residuals);
+
 // ModelController.calcResStat side effect: mean / sqrt(var / n) with
 // mean = sum / n and var = ssq / n - mean * mean (var / n under the root).
 double calc_res_stat_rtval(const std::vector<double>& seq);
