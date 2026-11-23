@@ -77,7 +77,9 @@ struct TramoComparatorResidualTests {
 
 TramoComparatorResidualTests tramo_comparator_residual_tests(const std::vector<double>& residuals);
 
-// Public preprocessing residual diagnostics for monthly RSA0 and RSA1.
+// Public preprocessing residual diagnostics. Monthly TRAMO tests use the
+// fitted regular and seasonal ARMA parameter count for the 24-lag statistic.
+LjungBoxTest monthly_tramo_residual_ljung_box(const std::vector<double>& residuals, int arma_parameters);
 double tramo_residual_standard_error(double residual_ssq, int effective, int estimated_parameters);
 LjungBoxTest monthly_airline_residual_ljung_box(const std::vector<double>& residuals);
 std::optional<ResidualNormalityTest> tramo_residual_normality(const std::vector<double>& residuals);

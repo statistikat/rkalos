@@ -4,6 +4,15 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Selected-model TR3 residual diagnostics checkpoint (2026-11-24)
+
+The package and CI now pin Kalos
+`a4dc93fce2d300a84544f6122e8f231954f30aec`. Its public monthly
+residual diagnostics account for the selected regular and seasonal AR
+and MA orders. Two JVM captures cover all 13 previously qualified raw
+RSA3 models. Offline verification passed for **199 core files, 112
+fixtures and 375 evidence files**.
+
 ## M5 expanded monthly TR3 and RSA3 identification (2026-11-24)
 
 Version `0.1.0.9017` handles the seasonal controller restart, stationary

@@ -190,17 +190,24 @@ LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp) {
     return ljung_box_at_zero(data, k, nhp);
 }
 
-LjungBoxTest monthly_airline_residual_ljung_box(const std::vector<double>& residuals) {
+LjungBoxTest monthly_tramo_residual_ljung_box(const std::vector<double>& residuals, int arma_parameters) {
+    if (arma_parameters < 0 || arma_parameters >= 24) {
+        throw std::invalid_argument("monthly TRAMO residual test requires 0 to 23 fitted ARMA parameters");
+    }
     if (residuals.empty() || residuals.size() > static_cast<std::size_t>(std::numeric_limits<int>::max() - 2)) {
-        throw std::invalid_argument("RSA0 residual count is outside the supported range");
+        throw std::invalid_argument("monthly TRAMO residual count is outside the supported range");
     }
     if (residuals.size() <= 24) {
         for (double value : residuals) {
-            if (!std::isfinite(value)) throw std::invalid_argument("RSA0 residuals must be finite");
+            if (!std::isfinite(value)) throw std::invalid_argument("monthly TRAMO residuals must be finite");
         }
-        return {true, std::nan(""), std::nan(""), 22.0};
+        return {true, std::nan(""), std::nan(""), 24.0 - arma_parameters};
     }
-    return ljung_box_at_zero(residuals, 24, 2);
+    return ljung_box_at_zero(residuals, 24, arma_parameters);
+}
+
+LjungBoxTest monthly_airline_residual_ljung_box(const std::vector<double>& residuals) {
+    return monthly_tramo_residual_ljung_box(residuals, 2);
 }
 
 std::optional<ResidualNormalityTest> tramo_residual_normality(const std::vector<double>& residuals) {
