@@ -1,8 +1,8 @@
 #include "rcpp_tramo_fit.hpp"
 #include <kalos/arma_diagnostics.hpp>
 
-Rcpp::List wrap_monthly_airline_residuals(const std::vector<double>& values, double standard_error) {
-    const auto lb = kalos::monthly_airline_residual_ljung_box(values);
+Rcpp::List wrap_monthly_tramo_residuals(const std::vector<double>& values, double standard_error, int arma_parameters) {
+    const auto lb = kalos::monthly_tramo_residual_ljung_box(values, arma_parameters);
     const auto normality = kalos::tramo_residual_normality(values);
     Rcpp::RObject dh = R_NilValue;
     if (normality) {
@@ -16,12 +16,11 @@ Rcpp::List wrap_monthly_airline_residuals(const std::vector<double>& values, dou
 }
 
 
-Rcpp::List wrap_tramo_preprocessing(const kalos::TramoFitResult& fit, bool airline_diagnostics) {
-    auto residuals = airline_diagnostics
-        ? wrap_monthly_airline_residuals(fit.full_residuals,
-            kalos::tramo_residual_standard_error(fit.ls_ssq, fit.ls_eff, fit.ls_npar))
-        : Rcpp::List::create(Rcpp::_["tsres"] = fit.full_residuals);
+Rcpp::List wrap_tramo_preprocessing(const kalos::TramoFitResult& fit) {
     const auto& o = fit.orders;
+    auto residuals = wrap_monthly_tramo_residuals(fit.full_residuals,
+        kalos::tramo_residual_standard_error(fit.ls_ssq, fit.ls_eff, fit.ls_npar),
+        o.p + o.q + o.bp + o.bq);
     const auto n = fit.variables.size();
     Rcpp::CharacterVector names(n), types(n);
     Rcpp::IntegerVector positions(n);
@@ -52,10 +51,10 @@ Rcpp::List wrap_tramo_preprocessing(const kalos::TramoFitResult& fit, bool airli
 
 // [[Rcpp::export(name = ".native_tramo_tr1", rng = false)]]
 Rcpp::List native_tramo_tr1(const std::vector<double>& series, int year, int month) {
-    return wrap_tramo_preprocessing(kalos::estimate_tramo_tr1(series, year, month), true);
+    return wrap_tramo_preprocessing(kalos::estimate_tramo_tr1(series, year, month));
 }
 
 // [[Rcpp::export(name = ".native_tramo_tr3", rng = false)]]
 Rcpp::List native_tramo_tr3(const std::vector<double>& series, int year, int month) {
-    return wrap_tramo_preprocessing(kalos::estimate_tramo_tr3(series, year, month), false);
+    return wrap_tramo_preprocessing(kalos::estimate_tramo_tr3(series, year, month));
 }

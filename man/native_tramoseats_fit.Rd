@@ -21,9 +21,9 @@ dated monthly time series per row. On success \code{finalSA}, \code{finalTrend},
 \code{finalIrregular} and \code{finalSeasonal} retain the input calendar.
 All three templates expose the dated preprocessing residuals in \code{residuals$tsres}.
 
-RSA0 and RSA1 also expose \code{residuals$ser}, the residual standard error, the
+All three also expose \code{residuals$ser}, the residual standard error, the
 24-lag Ljung--Box test in \code{residuals$lb}, and the Doornik--Hansen
-normality test in \code{residuals$doornikhansen}. Both tests report \code{value},
+normality test in \code{residuals$doornikhansen}. The Ljung--Box degrees of freedom are 24 minus the number of fitted AR and MA coefficients. Both tests report \code{value},
 \code{pvalue} and \code{df}. The Ljung--Box result is undefined for at most
 24 residuals, and normality is absent for at most seven residuals. The dated
 \code{series_forecast_stdev} gives the fitted preprocessing forecast errors for RSA0 or RSA1 when
@@ -31,5 +31,5 @@ normality test in \code{residuals$doornikhansen}. Both tests report \code{value}
 
 RSA1 returns the model, likelihood and residuals of \code{native_tramo_preprocess},
 plus \code{model_changed} indicating a SEATS model adjustment. Its fitted
-mode is multiplicative for log and additive for level transformations. RSA3 exposes dated residuals and keeps unqualified residual tests and original-series forecast errors unavailable. Zero forecast months report \code{"no_requested_predictions"}.}
+mode is multiplicative for log and additive for level transformations. RSA3 original-series forecast errors remain unavailable. Zero forecast months report \code{"no_requested_predictions"}.}
 \seealso{\code{\link{native_tramo_preprocess}}, \code{\link{seats_from_tramo}}}

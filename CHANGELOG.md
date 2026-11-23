@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9018 returns the monthly TR3 residual standard error,
+model-adjusted Ljung–Box test and Doornik–Hansen test in both TR3 and RSA3 fits.
+
 Version 0.1.0.9017 expands monthly TR3 and RSA3 fits to the seasonal
 controller restart and a fourth estimation pass after the mean is removed.
 

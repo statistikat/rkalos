@@ -2,6 +2,9 @@ source("helpers/fixtures.R", local = TRUE)
 dir <- system.file("tinytest/fixtures/native/tramo-seats-bridge", package = "rkalos")
 files <- c("rsa3-x86_64.txt", "rsa3-additional-x86_64.txt", "rsa3-mean-retry-x86_64.txt")
 cases <- do.call(c, lapply(files, function(file) fixture_named_rsa0_cases(file.path(dir, file))))
+diagnostics <- c(fixture_named_rsa0_cases(file.path(dir, "rsa3-residual-diagnostics-x86_64.txt")),
+                 fixture_named_rsa0_cases(file.path(dir, "rsa3-mean-retry-diagnostics-x86_64.txt")))
+expect_identical(sort(names(cases)), sort(names(diagnostics)))
 tokens <- function(line) strsplit(line, " ", fixed = TRUE)[[1L]]
 exact <- function(x, expected, id) {
   expect_identical(writeBin(as.numeric(x), raw()), writeBin(fixture_hex_doubles(expected), raw()), info = id)
@@ -19,7 +22,17 @@ for (id in names(cases)) {
   expect_identical(fit$model, pre$model, info = id)
   expect_identical(fit$likelihood, pre$likelihood, info = id)
   expect_identical(fit$residuals, pre$residuals, info = id)
-  expect_identical(names(fit$residuals), "tsres", info = id)
+  expect_identical(names(fit$residuals), c("tsres", "ser", "lb", "doornikhansen"), info = id)
+  oracle <- diagnostics[[id]]
+  test <- function(key) tokens(oracle[startsWith(oracle, paste0("residuals.", key, " "))])
+  exact(fit$residuals$ser, test("ser")[2L], id)
+  for (key in c("lb", "doornikhansen")) {
+    result <- fit$residuals[[key]]
+    exact(c(result$value, result$pvalue), test(key)[2:3], paste(id, key))
+  }
+  expect_identical(fit$residuals$lb$df, 24 - length(fit$model$parameters), info = id)
+  expect_identical(fit$residuals$lb$lags, 24L, info = id)
+  expect_identical(fit$residuals$doornikhansen$df, 2, info = id)
   expect_identical(fit$series_forecast_stdev_status, "not_qualified", info = id)
   expect_identical(fit$model_changed, field("product")[4L] == "true", info = id)
   model <- field("model")
@@ -69,7 +82,7 @@ for (id in names(cases)) {
 }
 expect_identical(c(length(cases), residual_count, rows, points), c(13L, 1196L, 130L, 8340L))
 scope <- rkalos::capabilities()$tramo_seats_fit$by_template$RSA3
-expect_identical(scope$residuals, "tsres")
+expect_identical(scope$residuals, c("tsres", "ser", "lb", "doornikhansen"))
 expect_false(scope$series_forecast_stdev)
 expect_true(scope$seasonal_restart)
 expect_true(scope$fast_mean_refit)
@@ -81,3 +94,8 @@ i <- seq_len(36L)
 retry <- stats::ts(round(2000 + i^2 / 100 + 70 * sin(2 * pi * i / 12) + 10 * cos(i)), frequency = 12)
 expect_error(rkalos::native_tramo_preprocess(retry, "TR3"), "requires another identification round")
 expect_error(rkalos::native_tramoseats_fit(retry, "RSA3"), "requires another identification round")
+short <- rkalos::native_tramoseats_fit(stats::ts(as.numeric(AirPassengers)[1:37], frequency = 12), "RSA3")
+expect_identical(length(short$residuals$tsres), 24L)
+expect_true(is.nan(short$residuals$lb$value))
+expect_true(is.nan(short$residuals$lb$pvalue))
+expect_true(is.finite(short$residuals$doornikhansen$pvalue))

@@ -118,7 +118,7 @@ Rcpp::List native_tramoseats_rsa0(const std::vector<double>& series, int year, i
     const auto& decomposition = result.decomposition;
     // Both projections receive the month counts normalized at the R boundary.
     const auto errors = kalos::tramo_tr0_forecast_errors(fitted, forecast);
-    auto residuals = wrap_monthly_airline_residuals(fitted.residuals.values, fitted.residuals.standard_error);
+    auto residuals = wrap_monthly_tramo_residuals(fitted.residuals.values, fitted.residuals.standard_error, 2);
     residuals["start"] = Rcpp::NumericVector::create(
         static_cast<double>(fitted.residuals.start_year), fitted.residuals.start_month);
     return Rcpp::List::create(
@@ -146,9 +146,9 @@ Rcpp::List native_tramoseats_rsa0(const std::vector<double>& series, int year, i
 }
 
 namespace {
-Rcpp::List wrap_automatic_seats(const kalos::tramo_seats_automatic_result& fit, bool airline_diagnostics) {
+Rcpp::List wrap_automatic_seats(const kalos::tramo_seats_automatic_result& fit) {
     const auto& decomposition = fit.decomposition;
-    auto result = wrap_tramo_preprocessing(fit.preprocessing, airline_diagnostics);
+    auto result = wrap_tramo_preprocessing(fit.preprocessing);
     result["status"] = decomposition.extraction.fact("status");
     result["model_changed"] = decomposition.extraction.model_changed;
     result["initial"] = component_table(decomposition.extraction.initial_components());
@@ -163,7 +163,7 @@ Rcpp::List native_tramoseats_rsa1(const std::vector<double>& series, int year, i
         int backcast, int forecast) {
     const auto fit = kalos::run_tramo_seats_rsa1(series, year, month, backcast, forecast);
     const auto errors = kalos::tramo_tr1_forecast_errors(fit.preprocessing, forecast);
-    auto result = wrap_automatic_seats(fit, true);
+    auto result = wrap_automatic_seats(fit);
     result["series_forecast_stdev_status"] = errors.status;
     result["series_forecast_stdev"] = errors.standard_errors;
     return result;
@@ -172,5 +172,5 @@ Rcpp::List native_tramoseats_rsa1(const std::vector<double>& series, int year, i
 // [[Rcpp::export(name = ".native_tramoseats_rsa3", rng = false)]]
 Rcpp::List native_tramoseats_rsa3(const std::vector<double>& series, int year, int month,
         int backcast, int forecast) {
-    return wrap_automatic_seats(kalos::run_tramo_seats_rsa3(series, year, month, backcast, forecast), false);
+    return wrap_automatic_seats(kalos::run_tramo_seats_rsa3(series, year, month, backcast, forecast));
 }

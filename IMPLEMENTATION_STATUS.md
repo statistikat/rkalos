@@ -4,6 +4,22 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 public selected-model residual diagnostics in R (2026-11-24)
+
+Version `0.1.0.9018` returns the residual standard error, Ljung–Box
+independence and Doornik–Hansen normality results for TR3 preprocessing
+and RSA3 fits. The Ljung–Box degrees of freedom subtract the selected
+regular and seasonal AR and MA counts from 24. All **65 public JVM
+diagnostic values** matched bit-for-bit across 13 raw models with 21,
+22 or 23 degrees of freedom. At 24 residuals, independence is undefined
+and the normality probability remains available.
+
+Both serial and two-worker OpenMP passed **1,067/1,067** RSA3,
+**990/990** RSA1, **130/130** TR1 and **498/498** RSA0 checks and the
+isolated three-template Java-free smoke test. The full serial source
+suite for `0.1.0.9016` passed **303,509/303,509** across 63 files.
+[Selected-model diagnostic replay](inst/tinytest/test-native-tramoseats-rsa3.R)
+
 ## Selected-model TR3 residual diagnostics checkpoint (2026-11-24)
 
 The package and CI now pin Kalos

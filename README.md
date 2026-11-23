@@ -58,7 +58,8 @@ dated standard errors in `series_forecast_stdev` describe the original series.
 preprocessing model. Its result contains the selected transformation,
 fitted airline parameters, dated residuals and estimated outlier effects.
 The residual standard error and the Ljung–Box and Doornik–Hansen statistics
-and probabilities are available on both monthly templates.
+and probabilities are available on all three monthly templates. RSA3 uses the
+number of selected AR and MA parameters for its Ljung–Box degrees of freedom.
 
 Use `native_tramo_preprocess(series, "TR3")` or
 `native_tramoseats_fit(series, "RSA3")` for monthly automatic SARIMA

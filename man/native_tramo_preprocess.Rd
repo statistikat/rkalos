@@ -11,7 +11,7 @@ native_tramo_preprocess(series, template = "TR1")
 \description{Selects log or level and estimates coefficients from the original observations. TR1 fits the airline orders. TR3 identifies the orders automatically through the first reference comparison and subsequent controller sweep. The seasonal controller can restart identification and the fast mean test can request a fourth estimation pass. An additional round after the first reference comparison raises an explicit error.}
 \value{An object of class \code{native_tramo_preprocess} containing \code{status},
 \code{template}, \code{model}, \code{likelihood} and a dated monthly
-residual series in \code{residuals$tsres}. For TR1 the residuals list also contains
+residual series in \code{residuals$tsres}. For both templates the residuals list also contains
 the standard error (\code{ser}), the 24-lag Ljung--Box test (\code{lb})
 and the Doornik--Hansen test (\code{doornikhansen}). The model contains its six orders,
 fitted AR and MA parameters in regular AR, seasonal AR, regular MA and
