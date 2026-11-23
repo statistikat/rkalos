@@ -4,6 +4,24 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 monthly RSA1 product fit in R (2026-11-24)
+
+Version `0.1.0.9011` accepts RSA1 and TR1 in `native_tramoseats_fit()`.
+The original observations determine log/level selection, airline estimates,
+automatic outliers and the dated SEATS product. Six public JVM fits
+matched all **60 final component rows and 3,960 values bit-for-bit**.
+The custom 3/6 backcast/forecast run matched the separately supplied
+mixed AO/LS fitted-model route in the initial, final and merged tables.
+The per-template capability inventory identifies the RSA1 dated residual
+series and records that preprocessing forecast errors remain unqualified.
+
+Both installed builds passed **419/419** RSA1 product checks,
+**130/130** TR1 preprocessing checks and **675/675** RSA0 fit and
+diagnostic checks. The fitted bridge and WK suites passed **1,160/1,160**
+and **7,676/7,676** respectively. Both isolated Java-free smoke tests
+executed the two raw adjustment templates and TR1 preprocessing.
+[RSA1 product replay](inst/tinytest/test-native-tramoseats-rsa1.R)
+
 ## M5 integration checkpoint for raw monthly RSA1 decomposition (2026-11-23)
 
 Kalos `0e0f2723fef730d5ebbe073309d553e1ab43a765` supplies the public

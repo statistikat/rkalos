@@ -2,6 +2,10 @@
 
 ## Development version
 
+Version 0.1.0.9011 extends the raw monthly TRAMO–SEATS product fit to
+RSA1, including its selected transformation, detected AO/LS effects
+and dated final components and forecasts.
+
 Version 0.1.0.9010 adds TR1 preprocessing from the original monthly
 series, including automatic transformation and outliers, model and
 likelihood estimates, and dated residuals.

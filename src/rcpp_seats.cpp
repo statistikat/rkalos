@@ -1,4 +1,4 @@
-#include <Rcpp.h>
+#include "rcpp_tramo_fit.hpp"
 #include <kalos/arma_diagnostics.hpp>
 #include <kalos/tramo_seats_pipeline.hpp>
 
@@ -151,4 +151,18 @@ Rcpp::List native_tramoseats_rsa0(const std::vector<double>& series, int year, i
         Rcpp::_["initial"] = component_table(decomposition.extraction.initial_components()),
         Rcpp::_["final"] = component_table(decomposition.extraction.final_components()),
         Rcpp::_["merged"] = component_table(decomposition.finals));
+}
+
+// [[Rcpp::export(name = ".native_tramoseats_rsa1", rng = false)]]
+Rcpp::List native_tramoseats_rsa1(const std::vector<double>& series, int year, int month,
+        int backcast, int forecast) {
+    const auto fit = kalos::run_tramo_seats_rsa1(series, year, month, backcast, forecast);
+    const auto& decomposition = fit.decomposition;
+    auto result = wrap_tramo_preprocessing(fit.preprocessing);
+    result["status"] = decomposition.extraction.fact("status");
+    result["model_changed"] = decomposition.extraction.model_changed;
+    result["initial"] = component_table(decomposition.extraction.initial_components());
+    result["final"] = component_table(decomposition.extraction.final_components());
+    result["merged"] = component_table(decomposition.finals);
+    return result;
 }

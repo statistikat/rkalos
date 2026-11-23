@@ -48,6 +48,11 @@ coefficients supplied by a caller. The monthly legacy SEATS retries cover
 airline seasonal MA replacement and the mean-free (2,1,0)(1,1,0) seasonal
 AR-to-MA refit, including the merged product series for fitted AO/LS effects.
 
+Use `native_tramoseats_fit(series, "RSA1")` for monthly TR1 estimation
+and SEATS extraction from the original observations. It restores detected
+outlier effects in the final components. Its per-template capability
+descriptor lists available residual diagnostics and forecast errors.
+
 `native_tramo_preprocess(series, "TR1")` fits the stock monthly TR1
 preprocessing model. Its result contains the selected transformation,
 fitted airline parameters, dated residuals and estimated outlier effects.

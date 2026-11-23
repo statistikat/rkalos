@@ -125,6 +125,10 @@
     .Call(`_rkalos_native_tramoseats_rsa0`, series, year, month, backcast, forecast)
 }
 
+.native_tramoseats_rsa1 <- function(series, year, month, backcast, forecast) {
+    .Call(`_rkalos_native_tramoseats_rsa1`, series, year, month, backcast, forecast)
+}
+
 .native_stationary_likelihood <- function(values, transition, observation, noise_loading, observation_variance = NULL, mean = NULL, variance = NULL) {
     .Call(`_rkalos_native_stationary_likelihood`, values, transition, observation, noise_loading, observation_variance, mean, variance)
 }

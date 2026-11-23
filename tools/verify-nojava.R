@@ -25,9 +25,12 @@ if ("--native" %in% args) {
   tr1 <- native_tramo_preprocess(datasets::AirPassengers)
   stopifnot(identical(tr1$status, "available"), identical(tr1$template, "TR1"),
             isTRUE(tr1$model$log), length(tr1$residuals$tsres) == 131L)
+  rsa1 <- native_tramoseats_fit(datasets::AirPassengers, "RSA1")
+  stopifnot(identical(rsa1$status, "ok"), identical(rsa1$mode, "multiplicative"),
+            identical(stats::tsp(rsa1$finalTrend), stats::tsp(datasets::AirPassengers)))
   rsa0 <- native_tramoseats_fit(datasets::AirPassengers)
   trend_forecast <- with(rsa0$merged, values[[which(component == "Trend" & information == "Forecast")]])
-  stopifnot(identical(cap$tramo_seats_fit$templates, "RSA0"), identical(rsa0$status, "ok"),
+  stopifnot(identical(cap$tramo_seats_fit$templates, c("RSA0", "RSA1")), identical(rsa0$status, "ok"),
             identical(stats::tsp(rsa0$finalSA), stats::tsp(datasets::AirPassengers)),
             length(trend_forecast) == 24L)
   convolve <- getFromNamespace(".native_convolve", "rkalos")

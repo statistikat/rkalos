@@ -9,6 +9,12 @@ native_tramo_preprocess <- function(series, template = "TR1") {
     stop("The TR1 start year exceeds the supported native range.", call. = FALSE)
   result <- .native_tramo_tr1(as.numeric(series), domain$start[1L], domain$start[2L])
   result$template <- "TR1"
+  result <- format_tramo_preprocessing(result, series, domain)
+  class(result) <- c("native_tramo_preprocess", "list")
+  result
+}
+
+format_tramo_preprocessing <- function(result, series, domain) {
   orders <- result$model$orders[c("p", "bp", "q", "bq")]
   blocks <- rep(c("phi", "bphi", "theta", "btheta"), orders)
   for (name in c("phi", "bphi", "theta", "btheta"))
@@ -16,6 +22,5 @@ native_tramo_preprocess <- function(series, template = "TR1") {
   first <- domain$start_ordinal + length(series) - result$likelihood$effective
   result$residuals <- list(tsres = stats::ts(result$residuals, frequency = 12,
     start = c(first %/% 12, first %% 12 + 1)))
-  class(result) <- c("native_tramo_preprocess", "list")
   result
 }

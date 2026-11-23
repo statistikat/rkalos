@@ -1,26 +1,35 @@
 native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, backcast = 0L) {
+  templates <- c(RSA0 = "RSA0", TR0 = "RSA0", RSA1 = "RSA1", TR1 = "RSA1")
   if (!is.character(template) || !is.null(dim(template)) || length(template) != 1L ||
-      is.na(template) || !toupper(template) %in% c("RSA0", "TR0"))
-    stop("The native TRAMO/SEATS fit supports the RSA0 (TR0) template.", call. = FALSE)
+      is.na(template) || !toupper(template) %in% names(templates))
+    stop("The native TRAMO/SEATS fit supports RSA0 (TR0) and RSA1 (TR1).", call. = FALSE)
+  template <- unname(templates[[toupper(template)]])
   domain <- native_regular_domain(series)
   if (domain$frequency != 12L || any(!is.finite(series)))
-    stop("Native RSA0 requires complete finite monthly observations.", call. = FALSE)
+    stop("Native ", template, " requires complete finite monthly observations.", call. = FALSE)
   if (abs(domain$start[1L]) > .Machine$integer.max)
-    stop("The RSA0 start year exceeds the supported native range.", call. = FALSE)
+    stop("The start year exceeds the supported native range.", call. = FALSE)
   months <- seats_validate_horizons(backcast, forecast, domain$frequency, length(series))
-  result <- .native_tramoseats_rsa0(as.numeric(series), domain$start[1L], domain$start[2L], months[1L], months[2L])
+  if (template == "RSA1") {
+    result <- .native_tramoseats_rsa1(as.numeric(series), domain$start[1L], domain$start[2L], months[1L], months[2L])
+    result <- format_tramo_preprocessing(result, series, domain)
+    result$series_forecast_stdev <- numeric()
+    result$series_forecast_stdev_status <- if (months[2L]) "not_qualified" else "no_requested_predictions"
+  } else {
+    result <- .native_tramoseats_rsa0(as.numeric(series), domain$start[1L], domain$start[2L], months[1L], months[2L])
+    result$residuals$tsres <- stats::ts(result$residuals$tsres, start = result$residuals$start,
+                                       frequency = domain$frequency)
+    result$residuals$start <- NULL
+  }
   result <- seats_date_components(result, domain$frequency, c("initial", "final", "merged"))
-  result$residuals$tsres <- stats::ts(result$residuals$tsres, start = result$residuals$start,
-                                     frequency = domain$frequency)
-  result$residuals$start <- NULL
   if (length(result$series_forecast_stdev)) {
     first <- domain$start_ordinal + length(series)
     result$series_forecast_stdev <- stats::ts(result$series_forecast_stdev,
       start = c(first %/% domain$frequency, first %% domain$frequency + 1), frequency = domain$frequency)
   }
-  result$template <- "RSA0"
+  result$template <- template
   result$method <- "tramoseats"
-  result$mode <- "additive"
+  result$mode <- if (isTRUE(result$model$log)) "multiplicative" else "additive"
   result$series <- series
   if (identical(result$status, "ok")) {
     components <- c(finalSA = "SeasonallyAdjusted", finalTrend = "Trend",

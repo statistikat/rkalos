@@ -1,9 +1,6 @@
-#include <Rcpp.h>
-#include <kalos/tramo_fit.hpp>
+#include "rcpp_tramo_fit.hpp"
 
-// [[Rcpp::export(name = ".native_tramo_tr1", rng = false)]]
-Rcpp::List native_tramo_tr1(const std::vector<double>& series, int year, int month) {
-    const auto fit = kalos::estimate_tramo_tr1(series, year, month);
+Rcpp::List wrap_tramo_preprocessing(const kalos::TramoFitResult& fit) {
     const auto& o = fit.orders;
     const auto n = fit.variables.size();
     Rcpp::CharacterVector names(n), types(n);
@@ -31,4 +28,9 @@ Rcpp::List native_tramo_tr1(const std::vector<double>& series, int year, int mon
             Rcpp::_["transformation_adjustment"] = fit.ls_tadj, Rcpp::_["adjusted_log_likelihood"] = fit.ls_all,
             Rcpp::_["ssq"] = fit.ls_ssq, Rcpp::_["effective"] = fit.ls_eff, Rcpp::_["estimated"] = fit.ls_npar),
         Rcpp::_["residuals"] = fit.full_residuals);
+}
+
+// [[Rcpp::export(name = ".native_tramo_tr1", rng = false)]]
+Rcpp::List native_tramo_tr1(const std::vector<double>& series, int year, int month) {
+    return wrap_tramo_preprocessing(kalos::estimate_tramo_tr1(series, year, month));
 }
