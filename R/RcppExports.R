@@ -69,6 +69,10 @@
     .Call(`_rkalos_native_filter`, values, weights, offsets)
 }
 
+.capture_trig <- function(values, sine) {
+    .Call(`_rkalos_capture_trig`, values, sine)
+}
+
 .native_cholesky_solve <- function(matrix, rhs) {
     .Call(`_rkalos_native_cholesky_solve`, matrix, rhs)
 }

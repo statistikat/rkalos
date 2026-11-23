@@ -337,6 +337,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// capture_trig
+Rcpp::NumericVector capture_trig(Rcpp::NumericVector values, bool sine);
+RcppExport SEXP _rkalos_capture_trig(SEXP valuesSEXP, SEXP sineSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< bool >::type sine(sineSEXP);
+    rcpp_result_gen = Rcpp::wrap(capture_trig(values, sine));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_cholesky_solve
 Rcpp::List native_cholesky_solve(SEXP matrix, SEXP rhs);
 RcppExport SEXP _rkalos_native_cholesky_solve(SEXP matrixSEXP, SEXP rhsSEXP) {
@@ -1068,6 +1079,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_difference_polynomial", (DL_FUNC) &_rkalos_native_difference_polynomial, 3},
     {"_rkalos_native_convolve", (DL_FUNC) &_rkalos_native_convolve, 2},
     {"_rkalos_native_filter", (DL_FUNC) &_rkalos_native_filter, 3},
+    {"_rkalos_capture_trig", (DL_FUNC) &_rkalos_capture_trig, 2},
     {"_rkalos_native_cholesky_solve", (DL_FUNC) &_rkalos_native_cholesky_solve, 2},
     {"_rkalos_native_qr_solve", (DL_FUNC) &_rkalos_native_qr_solve, 3},
     {"_rkalos_native_parallel_info", (DL_FUNC) &_rkalos_native_parallel_info, 0},

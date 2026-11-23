@@ -13,6 +13,25 @@ source_fixture <- function(file, local = FALSE, ...) {
   invisible(result)
 }
 
+# Recreate these two historical generators with their capture environment's
+# trigonometry and binary64 literals. The staged kernel checks still read the
+# independent JVM CSVs, and the generated inputs must match them bit for bit.
+source_x11_capture_generator <- function(file, destination = parent.frame()) {
+  env <- new.env(parent = destination)
+  trig <- getFromNamespace(".capture_trig", "rkalos")
+  env$sin <- function(x) trig(x, TRUE)
+  env$cos <- function(x) trig(x, FALSE)
+  code <- readLines(file)
+  for (literal in c("1e300", "1e298")) {
+    hex <- sprintf("%a", fixture_doubles(literal))
+    code <- gsub(literal, hex, code, fixed = TRUE)
+  }
+  eval(parse(text = code), envir = env)
+  names <- ls(env, pattern = "^x11_(sigma|replacement)_(input|cases)$")
+  for (name in names) assign(name, env[[name]], envir = destination)
+  invisible(NULL)
+}
+
 # The frozen decimal strings encode binary64 values. On platforms where long
 # double == double, R's decimal conversion can round these one ULP away.
 fixture_doubles <- function(values) {

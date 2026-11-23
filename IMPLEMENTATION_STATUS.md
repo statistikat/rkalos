@@ -70,6 +70,15 @@ standard suite continues to report the host-R differences. The fixture
 bytes, native calculations and tolerances were preserved.
 [Exact fixture reader](inst/tinytest/helpers/fixtures.R) · [Sigma replay](inst/tinytest/test-native-x11-sigma.R) · [Replacement replay](inst/tinytest/test-native-x11-replacement.R)
 
+**Generator portability update.** The installed test harness now supplies the
+capture host's trigonometry using the pinned Kalos glibc kernels. It parses
+the two large decimal literals in the sigma input generator at their
+round-trip binary64 values. All 147 local input regenerations now match the
+JVM capture exactly. All **18,717/18,717** assertions in the seven affected
+files passed on macOS ARM64, including the 59 previously failing assertions.
+The capture scripts and CSV files remained byte-identical to the core lock.
+
+
 ## Completed split steps
 
 1. Preserved 102 relevant historical commits and original-to-filtered maps.
