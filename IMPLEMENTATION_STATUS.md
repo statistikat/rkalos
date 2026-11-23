@@ -4,6 +4,25 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 RSA0 preprocessing residual diagnostics (2026-11-23)
+
+Version `0.1.0.9006` publishes `fit$residuals$tsres` as a dated monthly
+series and `fit$residuals$ser` as its scalar standard error. The six
+public JVM series begin 13 months after the input start and end with
+the input. All **570 residuals and six standard errors** matched
+bit-for-bit. The serial and two-worker OpenMP packages each passed
+**42/42** residual assertions, **62/62** forecast-error assertions and
+**498/498** raw RSA0 fit assertions. A shifted calendar and changing
+forecast/backcast spans also preserved the residual domain.
+[Residual replay](inst/tinytest/test-native-tramoseats-residuals.R)
+
+The preceding `e92f076` package passed all **301,074/301,074** serial
+assertions across 57 files. OpenMP passed **301,078/301,078** across the
+same files, including one isolated rerun after the forked test worker
+could not open OpenMP shared memory. Clean source checking reported
+the existing two compiler warnings and zero errors. Both isolated
+Java-free smoke runs passed.
+
 ## M6 integration checkpoint for RSA0 preprocessing residuals (2026-11-23)
 
 Both locks and the CI tools pin Kalos `5c95dc158324e76243d1d7e161d993651edff57b`.

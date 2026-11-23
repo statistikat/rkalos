@@ -28,6 +28,8 @@ The `final` table includes component standard deviations and forecast
 uncertainty. The `merged` table contains the final product forecasts.
 For the preprocessing original-series forecast error (`y_ef`), use
 `series_forecast_stdev` and its `series_forecast_stdev_status` field.
+The fitted residuals and their standard error are available as
+`fit$residuals$tsres` and `fit$residuals$ser`.
 
 ```r
 fit <- rkalos::native_tramoseats_fit(AirPassengers, template = "RSA0")

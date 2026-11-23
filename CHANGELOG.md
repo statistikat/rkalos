@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9006 exposes the dated RSA0 preprocessing residual series
+and its scalar standard error.
+
 Version 0.1.0.9005 adds dated preprocessing standard errors for RSA0
 original-series forecasts, with a separate projection status.
 

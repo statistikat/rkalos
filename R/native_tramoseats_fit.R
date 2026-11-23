@@ -10,6 +10,9 @@ native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, bac
   months <- seats_validate_horizons(backcast, forecast, domain$frequency, length(series))
   result <- .native_tramoseats_rsa0(as.numeric(series), domain$start[1L], domain$start[2L], months[1L], months[2L])
   result <- seats_date_components(result, domain$frequency, c("initial", "final", "merged"))
+  result$residuals$tsres <- stats::ts(result$residuals$tsres, start = result$residuals$start,
+                                     frequency = domain$frequency)
+  result$residuals$start <- NULL
   if (length(result$series_forecast_stdev)) {
     first <- domain$start_ordinal + length(series)
     result$series_forecast_stdev <- stats::ts(result$series_forecast_stdev,

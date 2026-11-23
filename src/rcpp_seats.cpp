@@ -117,6 +117,10 @@ Rcpp::List native_tramoseats_rsa0(const std::vector<double>& series, int year, i
     const auto errors = kalos::tramo_tr0_forecast_errors(fitted, forecast);
     return Rcpp::List::create(
         Rcpp::_["status"] = decomposition.extraction.fact("status"),
+        Rcpp::_["residuals"] = Rcpp::List::create(
+            Rcpp::_["start"] = Rcpp::NumericVector::create(
+                static_cast<double>(fitted.residuals.start_year), fitted.residuals.start_month),
+            Rcpp::_["tsres"] = fitted.residuals.values, Rcpp::_["ser"] = fitted.residuals.standard_error),
         Rcpp::_["series_forecast_stdev_status"] = errors.status,
         Rcpp::_["series_forecast_stdev"] = errors.standard_errors,
         Rcpp::_["model"] = Rcpp::List::create(

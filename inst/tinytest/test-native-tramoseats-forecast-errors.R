@@ -1,12 +1,7 @@
 source("helpers/fixtures.R", local = TRUE)
 dir <- system.file("tinytest/fixtures/native/tramo-seats-bridge", package = "rkalos")
-blocks <- function(file) {
-  lines <- readLines(file.path(dir, file))
-  cases <- split(lines, cumsum(startsWith(lines, "case ")))
-  stats::setNames(cases, vapply(cases, function(x) sub("^case ", "", x[1L]), character(1)))
-}
-inputs <- blocks("rsa0-x86_64.txt")
-errors <- blocks("rsa0-forecast-errors-x86_64.txt")
+inputs <- fixture_named_rsa0_cases(file.path(dir, "rsa0-x86_64.txt"))
+errors <- fixture_named_rsa0_cases(file.path(dir, "rsa0-forecast-errors-x86_64.txt"))
 n <- 0L
 for (id in names(errors)) {
   fields <- function(line) strsplit(line, " ", fixed = TRUE)[[1L]]

@@ -58,3 +58,10 @@ fixture_hex_doubles <- function(tokens) {
   stream <- if (length(tokens) == 1L) b else t(b)
   readBin(as.raw(stream), double(), n = length(tokens), endian = "big")
 }
+
+fixture_named_rsa0_cases <- function(path) {
+  lines <- readLines(path)
+  blocks <- split(lines, cumsum(startsWith(lines, "case ")))
+  ids <- vapply(blocks, function(x) sub("^case ", "", x[1L]), character(1))
+  stats::setNames(blocks, ids)
+}
