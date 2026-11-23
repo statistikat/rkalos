@@ -4,6 +4,20 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 RSA0 residual normality in R (2026-11-23)
+
+Version `0.1.0.9009` returns the public Doornik–Hansen residual normality
+statistic, upper-tail probability and two degrees of freedom in
+`fit$residuals$doornikhansen`. On AirPassengers the statistic is
+7.770552141622452 and the probability is 0.020542156888630703. All nine
+statistic/probability pairs matched the two-process JVM capture bit-for-bit.
+
+Both the installed serial and two-worker OpenMP packages passed
+**32/32** normality assertions, **643/643** existing RSA0 fit, residual
+and forecast-error assertions, **7,676/7,676** WK and **1,160/1,160**
+fitted bridge assertions. Both passed the isolated Java-free smoke test.
+[Public normality replay](inst/tinytest/test-native-tramoseats-normality.R)
+
 ## M6 integration checkpoint for residual normality (2026-11-23)
 
 Kalos `9f6f74e417ec6f3f88ff4e994152a40438303169` adds the public RSA0

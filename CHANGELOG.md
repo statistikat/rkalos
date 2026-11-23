@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9009 adds the public RSA0 Doornik–Hansen residual
+normality statistic and its chi-squared upper-tail probability.
+
 Version 0.1.0.9008 supports two monthly legacy SEATS retries, including
 the fitted mixed AO/LS decomposition at default and custom horizons.
 

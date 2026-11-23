@@ -30,7 +30,10 @@ For the preprocessing original-series forecast error (`y_ef`), use
 `series_forecast_stdev` and its `series_forecast_stdev_status` field.
 The fitted residuals and their standard error are available as
 `fit$residuals$tsres` and `fit$residuals$ser`. The 24-lag Ljung–Box
-test of residual independence is available as `fit$residuals$lb`.
+test of residual independence is available as `fit$residuals$lb`. The
+Doornik–Hansen test of residual normality is available as
+`fit$residuals$doornikhansen`. Each test reports its statistic,
+upper-tail probability and degrees of freedom.
 
 ```r
 fit <- rkalos::native_tramoseats_fit(AirPassengers, template = "RSA0")
