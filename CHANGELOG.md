@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9017 expands monthly TR3 and RSA3 fits to the seasonal
+controller restart and a fourth estimation pass after the mean is removed.
+
 Version 0.1.0.9016 adds dated original-series forecast standard errors
 from the fitted RSA1 preprocessing model on the level and log scales.
 

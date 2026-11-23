@@ -4,6 +4,21 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 expanded monthly TR3 and RSA3 identification (2026-11-24)
+
+Version `0.1.0.9017` handles the seasonal controller restart, stationary
+scans with the newly qualified orders and a fourth estimation pass after
+the fast regression test removes the fitted mean. The R regression
+matrix now covers 13 distinct public monthly models. The native orders,
+fitted coefficients, likelihoods, **1,196 dated residuals and 8,340
+values in 130 component rows** agree with the pinned JVM bit-for-bit.
+A rejected first reference comparison still returns its engine error.
+
+Serial and two-worker OpenMP each passed **984/984** RSA3, **990/990**
+RSA1, **130/130** standalone TR1 and **498/498** RSA0 checks. Both
+installed packages also completed a Java-free smoke fit for each of the
+three raw templates. [RSA3 model and component replay](inst/tinytest/test-native-tramoseats-rsa3.R)
+
 ## Monthly TR3 seasonal restarts and fourth-pass refits (2026-11-24)
 
 The new core and CI pin `66444bf9262a4a566b53f36fd97c77762e9243d5`

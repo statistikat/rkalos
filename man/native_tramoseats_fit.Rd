@@ -11,7 +11,7 @@ native_tramoseats_fit(series, template = "RSA0", forecast = -2L, backcast = 0L)
 }
 \description{Estimates the SARIMA model from the observed series, extracts
 the Wiener--Kolmogorov components and restores deterministic effects. RSA0
-uses the level series. RSA1 selects the transformation and outliers using TR1. RSA3 also identifies the orders using TR3 and reports an explicit error if a further identification round, fast mean-test retry or automatic restart is required.}
+uses the level series. RSA1 selects the transformation and outliers using TR1. RSA3 also identifies the orders using TR3 with seasonal-controller restarts and fourth-pass mean refits. A rejected first reference comparison reports an explicit error.}
 \value{An object of class \code{native_tramoseats_fit} with native \code{status},
 \code{template}, \code{method}, \code{series}, fitted \code{model},
 \code{likelihood} and \code{mode}. The \code{initial} and \code{final}

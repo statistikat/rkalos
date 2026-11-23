@@ -1,6 +1,7 @@
 source("helpers/fixtures.R", local = TRUE)
 dir <- system.file("tinytest/fixtures/native/tramo-seats-bridge", package = "rkalos")
-cases <- fixture_named_rsa0_cases(file.path(dir, "rsa3-x86_64.txt"))
+files <- c("rsa3-x86_64.txt", "rsa3-additional-x86_64.txt", "rsa3-mean-retry-x86_64.txt")
+cases <- do.call(c, lapply(files, function(file) fixture_named_rsa0_cases(file.path(dir, file))))
 tokens <- function(line) strsplit(line, " ", fixed = TRUE)[[1L]]
 exact <- function(x, expected, id) {
   expect_identical(writeBin(as.numeric(x), raw()), writeBin(fixture_hex_doubles(expected), raw()), info = id)
@@ -66,10 +67,12 @@ for (id in names(cases)) {
   }
   rows <- rows + length(expected)
 }
-expect_identical(c(length(cases), residual_count, rows, points), c(6L, 573L, 60L, 3960L))
+expect_identical(c(length(cases), residual_count, rows, points), c(13L, 1196L, 130L, 8340L))
 scope <- rkalos::capabilities()$tramo_seats_fit$by_template$RSA3
 expect_identical(scope$residuals, "tsres")
 expect_false(scope$series_forecast_stdev)
+expect_true(scope$seasonal_restart)
+expect_true(scope$fast_mean_refit)
 expect_identical(scope$identification, "first_reference_comparison")
 custom <- rkalos::native_tramoseats_fit(AirPassengers, "RSA3", forecast = 6L, backcast = 3L)
 expect_identical(length(custom$merged$values[[which(custom$merged$component == "Trend" & custom$merged$information == "Forecast")]]), 6L)
