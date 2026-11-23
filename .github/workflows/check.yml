@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: statistikat/kalos
-          ref: aea3d152c63ca365b8dc53887aa16048c38323dd
+          ref: c5bcf978cc7e92d0d5d9992b3c2caa6ad9d0eb65
           path: .kalos-provider
       - name: Build the pinned LP64 provider
         if: runner.os != 'Windows'

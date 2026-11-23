@@ -4,6 +4,14 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 integration checkpoint for monthly SEATS approximation (2026-11-23)
+
+Kalos `c5bcf978cc7e92d0d5d9992b3c2caa6ad9d0eb65` extends legacy
+monthly approximation for two model families. Both locks and the CI
+toolchain pin agree. Offline verification passed for **192 core, 112
+fixture and 350 evidence files**, including the monthly airline threshold
+and seasonal AR-to-MA refit captures.
+
 ## M6 RSA0 residual independence diagnostic (2026-11-23)
 
 Version `0.1.0.9007` returns `fit$residuals$lb` with the public

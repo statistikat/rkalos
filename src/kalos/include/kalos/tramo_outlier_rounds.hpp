@@ -114,6 +114,10 @@ struct TramoOutlierRoundsResult {
     std::vector<TramoOutlierRoundEvent> trace;
 };
 
+// Stationary regular AR(1)/AR(2) models with mean, a complete response
+// and the AO/LS/TC factory family qualified against the JVM round trace.
+bool tramo_stationary_scan_supported(const TramoOutlierScanRequest& request);
+
 // Runs the full multi-round machine on the 23-B request shape (the caps are
 // read as FIELD values, see the header note; the scan unit ignores them).
 // Static request violations throw std::invalid_argument exactly like

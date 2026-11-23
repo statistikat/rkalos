@@ -333,39 +333,36 @@ struct Ladder {
             v -= mu;
         }
 
-        SarModel raw;
-        bool err = false;
+        // A raw HannanRissanen.process exception exits the entire module.
+        // In particular, a short wide design fails at the pinned rawR solve.
+        std::array<std::vector<double>, 4> blk;
         try {
-            const auto blk = detail::hannan_rissanen_pipeline(
-                w, HannanRissanenOrders{spec.p, spec.bp, spec.q, spec.bq,
-                    spec.period});
-            raw.phi = blk[0];
-            raw.bphi = blk[1];
-            raw.th = blk[2];
-            raw.bth = blk[3];
-            raw.phi.resize(static_cast<std::size_t>(spec.p), 0.0);
-            raw.bphi.resize(static_cast<std::size_t>(spec.bp), 0.0);
-            raw.th.resize(static_cast<std::size_t>(spec.q), 0.0);
-            raw.bth.resize(static_cast<std::size_t>(spec.bq), 0.0);
-        } catch (const std::exception&) {
-            err = true; // HannanRissanen.process false, useDefaultIfFailed
+            blk = detail::hannan_rissanen_pipeline(
+                w, HannanRissanenOrders{spec.p, spec.bp, spec.q, spec.bq, spec.period});
+        } catch (const std::runtime_error& err) {
+            throw TramoLadderError{err.what()};
         }
-
-        if (!err) {
-            last = raw;
-            has_last = true;
-            if (b && !model_stable(last)) {
-                if (spec.p > 1) {
-                    err = true;
-                } else if (spec.p == 1 && std::fabs(last.phi1()) > 1.02) {
-                    err = true;
-                } else if (spec.bp != 1) {
-                    stabilize_model(last);
-                } else if (std::fabs(last.bphi1()) > 1.02) {
-                    err = true;
-                } else {
-                    stabilize_model(last);
-                }
+        last.phi = blk[0];
+        last.bphi = blk[1];
+        last.th = blk[2];
+        last.bth = blk[3];
+        last.phi.resize(static_cast<std::size_t>(spec.p), 0.0);
+        last.bphi.resize(static_cast<std::size_t>(spec.bp), 0.0);
+        last.th.resize(static_cast<std::size_t>(spec.q), 0.0);
+        last.bth.resize(static_cast<std::size_t>(spec.bq), 0.0);
+        has_last = true;
+        bool err = false;
+        if (b && !model_stable(last)) {
+            if (spec.p > 1) {
+                err = true;
+            } else if (spec.p == 1 && std::fabs(last.phi1()) > 1.02) {
+                err = true;
+            } else if (spec.bp != 1) {
+                stabilize_model(last);
+            } else if (std::fabs(last.bphi1()) > 1.02) {
+                err = true;
+            } else {
+                stabilize_model(last);
             }
         }
         if (err) {
@@ -685,26 +682,17 @@ TramoDifferencingDecision decide_tramo_differencing(
     auto& events = decision.events;
     events.push_back("push differencing selection");
 
-    const int nobs = request.nobs > 0 ? request.nobs
-                                      : static_cast<int>(request.series.size());
-    if (!comespd(request.period, nobs, request.seasonal)) {
-        events.push_back("remark default model selected (not enough obs.)");
-        decision.default_model = true;
-        // airline(): spec.isAirline(seasonal) guard, then setAirline and
-        // setMean(false) on the description.
-        // Dated 2026-11-23 (javap SarimaOrders.isAirline/setAirline +
-        // fit_shortfail seam-17 witness): the airline form is
-        // ARIMA(0,1,1)(0,1,1) - the seasonal block carries bp = 0
-        // (SarimaOrders.airline(freq) under seasonality, m011(freq)
-        // otherwise); the first landing transcribed the AR guards and the
-        // seasonal write as 1, and no battery row reached the seasonal
-        // guard in a discriminating entry shape.
-        const bool reg_air =
-            request.p0 == 0 && request.q0 == 1 && request.d0 == 1;
-        const bool seas_air =
-            request.bp0 == 0 && request.bq0 == 1 && request.bd0 == 1;
-        if (reg_air && (!request.seasonal || seas_air)) {
+    auto apply_airline = [&] {
+        const bool regular = request.p0 == 0 && request.q0 == 1 && request.d0 == 1;
+        const bool seasonal = request.bp0 == 0 && request.bq0 == 1 && request.bd0 == 1;
+        if (regular && (!request.seasonal || seasonal)) {
             decision.result = TramoDifferencingDecision::Result::Unprocessed;
+            decision.spec_p = request.p0;
+            decision.spec_d = request.d0;
+            decision.spec_q = request.q0;
+            decision.spec_bp = request.bp0;
+            decision.spec_bd = request.bd0;
+            decision.spec_bq = request.bq0;
         } else {
             decision.airline_applied = true;
             decision.result = TramoDifferencingDecision::Result::Changed;
@@ -717,6 +705,13 @@ TramoDifferencingDecision decide_tramo_differencing(
             decision.mean = false;
         }
         events.push_back("pop");
+    };
+    const int nobs = request.nobs > 0 ? request.nobs
+                                      : static_cast<int>(request.series.size());
+    if (!comespd(request.period, nobs, request.seasonal)) {
+        events.push_back("remark default model selected (not enough obs.)");
+        decision.default_model = true;
+        apply_airline();
         return decision;
     }
 
@@ -738,31 +733,7 @@ TramoDifferencingDecision decide_tramo_differencing(
     if (failed) {
         events.push_back("remark differencing selection failed");
         decision.selection_failed = true;
-        // Dated 2026-11-23 (javap SarimaOrders.isAirline/setAirline +
-        // fit_shortfail seam-17 witness): the airline form is
-        // ARIMA(0,1,1)(0,1,1) - the seasonal block carries bp = 0
-        // (SarimaOrders.airline(freq) under seasonality, m011(freq)
-        // otherwise); the first landing transcribed the AR guards and the
-        // seasonal write as 1, and no battery row reached the seasonal
-        // guard in a discriminating entry shape.
-        const bool reg_air =
-            request.p0 == 0 && request.q0 == 1 && request.d0 == 1;
-        const bool seas_air =
-            request.bp0 == 0 && request.bq0 == 1 && request.bd0 == 1;
-        if (reg_air && (!request.seasonal || seas_air)) {
-            decision.result = TramoDifferencingDecision::Result::Unprocessed;
-        } else {
-            decision.airline_applied = true;
-            decision.result = TramoDifferencingDecision::Result::Changed;
-            decision.spec_p = 0;
-            decision.spec_d = 1;
-            decision.spec_q = 1;
-            decision.spec_bp = 0;
-            decision.spec_bd = request.seasonal ? 1 : 0;
-            decision.spec_bq = request.seasonal ? 1 : 0;
-            decision.mean = false;
-        }
-        events.push_back("pop");
+        apply_airline();
         return decision;
     }
 

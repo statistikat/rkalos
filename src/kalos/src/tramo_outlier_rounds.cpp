@@ -1,10 +1,20 @@
 #include "kalos/tramo_outlier_rounds.hpp"
 
+#include <algorithm>
+#include <cmath>
+
 #include "tramo_scan_machine.hpp"
 
 #include <stdexcept>
 
 namespace kalos {
+
+bool tramo_stationary_scan_supported(const TramoOutlierScanRequest& request) {
+    return request.frequency == 12 && request.d == 0 && request.bd == 0 &&
+           (request.p == 1 || request.p == 2) && request.q == 0 && request.bp == 0 && request.bq == 0 &&
+           request.mean && !request.maximum_likelihood && !request.so && request.prespec.empty() &&
+           std::all_of(request.y.begin(), request.y.end(), [](double y) { return std::isfinite(y); });
+}
 
 TramoOutlierRoundsResult tramo_outlier_rounds(
     const TramoOutlierScanRequest& request) {
@@ -19,9 +29,9 @@ TramoOutlierRoundsResult tramo_outlier_rounds(
         throw std::invalid_argument(
             "tramo_outlier_rounds: negative orders are rejected");
     }
-    if (d + bd == 0) {
+    if (d == 0 && bd == 0 && !tramo_stationary_scan_supported(request)) {
         throw std::invalid_argument(
-            "tramo_outlier_rounds: a positive differencing order is required");
+            "tramo_outlier_rounds: unsupported stationary scan design");
     }
     if (request.y.empty()) {
         throw std::invalid_argument(

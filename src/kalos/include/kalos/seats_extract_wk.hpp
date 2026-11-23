@@ -20,10 +20,10 @@
 // Envelope (fail-closed, pinned docs/contracts/seats-wk-extraction-contract
 // .md): monthly series (D11), the Burman/WK estimator only - KalmanSmoother
 // is D1, a non-zero innovation variance (var 0 takes the JVM
-// ConcentratedLikelihood variance path), not Noisy (24-B parity) and no
-// approximation_required decision (D6: the DefaultModelApproximator retry
-// loop is NOT ported; the validator already classifies those requests -
-// the classical frozen airline and the fixMa degenerate case live there).
+// ConcentratedLikelihood variance path). Legacy approximation covers the
+// monthly (0,1,q)(0,1,BQ) case with q <= 1 and the seasonal AR-to-MA
+// refit for a mean-free (2,1,0)(1,1,0) model. Other required approximations and
+// Noisy mode are outside this surface.
 // A decomposition that came back null under mode None is a DATA outcome,
 // not a refusal: the JVM SeatsException status row is mirrored. Mid-run
 // JVM aborts (EcoException / DemetraException from the prediction-error

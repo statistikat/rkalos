@@ -20,7 +20,7 @@ struct tramo_seats_pipeline_result {
 // Runs the bridge, the WK kernel, and the deterministic-effects merge for
 // an available monthly TRAMO fit. Counts follow the SEATS convention (a
 // negative count is in years). A WK error has its existing status and no
-// finals. Unsupported fits and D6 approximation-required models refuse.
+// finals. Unsupported fits and unqualified approximations raise an error.
 tramo_seats_pipeline_result run_tramo_seats_pipeline(
     const TramoFitResult& fit, int backcast_count = 0, int forecast_count = -2);
 

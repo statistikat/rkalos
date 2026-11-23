@@ -245,9 +245,7 @@ inline std::vector<double> factory_raw(
     if (kind == 0) { // AO
         col[static_cast<std::size_t>(pos)] = 1.0;
     } else if (kind == 1) { // LS
-        for (std::size_t t = static_cast<std::size_t>(pos); t < n; ++t) {
-            col[t] = 1.0;
-        }
+        std::fill(col.begin(), col.begin() + pos, -1.0);
     } else if (kind == 2) { // TC (TransitoryChangeFactory.fill): the ramp is
         // written while the NEXT value stays |v| >= ZERO (1e-15); the dcmpg
         // ifge keeps going on a NaN rate, the strict < cuts the tail to exact
@@ -408,12 +406,20 @@ inline void build_scan_tables(const std::vector<ScanFactory>& factories,
             num = detail::pinned_polynomial_times(std::vector<double>{1.0}, {1.0});
             den = detail::pinned_polynomial_times(ma_raw, *quotient);
         }
-        const std::vector<double> w = detail::pinned_rational_weights(num, den, m);
-        // The rep.correction branch is gated on ur.getDegree() == 0 and the
-        // request gate keeps the differencing positive, so the constant
-        // offset stays at zero here (dormant by pin, not by omission).
-        const double c0 = 0.0;
-        double ssq = 0.0; // c0 != 0 would open at c0 * c0 * n_el
+        auto w = detail::pinned_rational_weights(num, den, m);
+        // FastOutlierDetector.processOutlier applies the level-shift
+        // correction at frequency zero only when the model is stationary.
+        double c0 = 0.0;
+        if (kernel.size() == 1 && factories[o].correction != 0.0) {
+            const auto at_one = [](const std::vector<double>& poly) {
+                double x = 0.0;
+                for (auto it = poly.rbegin(); it != poly.rend(); ++it) x += *it;
+                return x;
+            };
+            c0 = factories[o].correction * at_one(ar_raw) / at_one(ma_raw);
+            for (auto& wi : w) wi += c0;
+        }
+        double ssq = c0 * c0 * static_cast<double>(n_el);
         for (std::size_t i = 0; i < m; ++i) {
             ssq += w[i] * w[i];
             if (c0 != 0.0) {
