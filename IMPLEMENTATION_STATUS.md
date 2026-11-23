@@ -4,6 +4,15 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Monthly TR3 seasonal restarts and fourth-pass refits (2026-11-24)
+
+The new core and CI pin `66444bf9262a4a566b53f36fd97c77762e9243d5`
+includes the seasonal controller restart, the measured stationary
+outlier-scan designs and fourth-pass refitting after the mean is
+removed. The two new public captures expand the RSA3 reference
+matrix by seven models. Offline verification passed for **199 core
+files, 112 fixtures and 372 evidence files**.
+
 ## M5 public original-series forecast errors on RSA1 (2026-11-24)
 
 Version `0.1.0.9016` exposes the dated TR1 preprocessing standard errors

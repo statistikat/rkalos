@@ -268,6 +268,10 @@ if(KALOS_BUILD_TESTS)
     else()
       target_compile_options(${test_name} PRIVATE -UNDEBUG)
     endif()
+    if(test_name STREQUAL "test_tramo_outlier_scan")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_CALENDAR_OUTLIERS_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/calendar-outliers.txt")
+    endif()
     if(test_name STREQUAL "test_tramo_differencing_battery")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_SEASONAL_PEAKS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-differencing-battery/monthly-spectral-peaks.txt"
@@ -296,6 +300,7 @@ if(KALOS_BUILD_TESTS)
         KALOS_CALENDAR_F_TEST_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/panel.txt"
         KALOS_FULL_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/full.txt"
         KALOS_RESIDUAL_TD_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/residual-td.txt"
+        KALOS_TD_CONTROLLER_OUTLIERS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/td-controller-outliers.txt"
         KALOS_TD_CONTROLLER_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/td-controller.txt")
     endif()
     if(test_name STREQUAL "test_tramo_seats_bridge")

@@ -114,7 +114,8 @@ struct TramoOutlierRoundsResult {
     std::vector<TramoOutlierRoundEvent> trace;
 };
 
-// Stationary regular AR(1)/AR(2) models with mean, a complete response
+// Stationary regular AR(1)/AR(2) and seasonal ARMA(1,1) paired with
+// regular AR(2) or ARMA(1,1), with a mean, a complete response
 // and the AO/LS/TC factory family qualified against the JVM round trace.
 bool tramo_stationary_scan_supported(const TramoOutlierScanRequest& request);
 

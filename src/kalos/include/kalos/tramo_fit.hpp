@@ -329,8 +329,8 @@ TramoFitResult tramo_fit(const TramoFitRequest& request);
 TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_year, int start_month);
 
 // Monthly TR3 identification through the first reference comparison and
-// controller sweep. Additional identification rounds and the seasonality
-// restart currently report an explicit failure.
+// controller sweep, including a late seasonality restart and estimation
+// after removal of the mean. A rejected first comparison requires a further pass.
 TramoFitResult estimate_tramo_tr3(const std::vector<double>& series, int start_year, int start_month);
 
 }  // namespace kalos

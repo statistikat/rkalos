@@ -680,7 +680,8 @@ struct Driver {
 } // namespace
 
 TramoMonthlyControllerResult tramo_monthly_controllers(const BatteryState& entry, bool seasonal,
-                                                       int seasonality_score, const TramoControllerEstimator& estimate) {
+                                                       int seasonality_score, const TramoControllerEstimator& estimate,
+                                                       bool has_seasonality_reference) {
     using Result = BatteryDecision::Result;
     BatteryCase c;
     c.after_entry = entry;
@@ -709,7 +710,9 @@ TramoMonthlyControllerResult tramo_monthly_controllers(const BatteryState& entry
         trial.reset();
         return result;
     };
-    const auto initial = accept(driver.pass1());
+    // The controller stores the mutable RegSarimaModelling by reference.
+    // On a restart both comparison operands refer to that same model.
+    const auto initial = has_seasonality_reference ? driver.pass2() : accept(driver.pass1());
     TramoMonthlyControllerResult result{initial, Result::Unprocessed, Result::Unprocessed, Result::Unprocessed,
         Result::Unprocessed, driver.ctx.seasonal, driver.ctx.ost, selected, initial == Result::Changed};
     if (result.restart) return result;

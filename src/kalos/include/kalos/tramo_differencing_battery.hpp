@@ -193,7 +193,8 @@ struct TramoMonthlyControllerResult {
 // becomes the input to the next controller. An estimator returning null
 // represents the JVM estimator's failed attempt.
 TramoMonthlyControllerResult tramo_monthly_controllers(const BatteryState& entry, bool seasonal,
-                                                       int seasonality_score, const TramoControllerEstimator& estimate);
+                                                       int seasonality_score, const TramoControllerEstimator& estimate,
+                                                       bool has_seasonality_reference = false);
 
 // Replays the SeasonalityController pass, the four battery steps and the
 // second pass over the pinned inputs. The pass-1 re-estimation and every

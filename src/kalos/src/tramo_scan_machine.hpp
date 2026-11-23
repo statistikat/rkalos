@@ -58,6 +58,28 @@ namespace kalos::detail {
 
 constexpr int kScanPeriod = 12;
 
+inline void set_scan_warm_design(SarimaEstimationRequest& warm, const std::vector<double>& values,
+        const std::vector<int>& missing, bool mean, const std::vector<std::vector<double>>& columns) {
+    warm.series.values = values;
+    warm.series.missing.assign(values.size(), 0);
+    for (int position : missing) warm.series.missing[position] = 1;
+    warm.design.columns = columns.size() + (mean ? 1 : 0);
+    warm.design.values.reserve(warm.design.columns * values.size());
+    if (mean) warm.design.values.assign(values.size(), 1.0);
+    for (const auto& column : columns)
+        warm.design.values.insert(warm.design.values.end(), column.begin(), column.end());
+    warm.design.coefficients.resize(warm.design.columns);
+    warm.design.fixed.resize(warm.design.columns);
+}
+
+inline void validate_scan_regressors(const TramoOutlierScanRequest& request) {
+    for (const auto& column : request.calendar_regressors) {
+        if (column.size() != request.y.size() ||
+            !std::all_of(column.begin(), column.end(), [](double value) { return std::isfinite(value); }))
+            throw std::invalid_argument("TRAMO scan calendar regressors must be finite and span the observations");
+    }
+}
+
 inline double scan_qnan() { return std::numeric_limits<double>::quiet_NaN(); }
 
 // AverageInterpolator.cleanMissings: backward scan; a finite value closing a
@@ -745,30 +767,7 @@ inline bool estimate_model(ScanMachine& sm) {
         // level response with its missing mask and the free constant and
         // user columns.
         SarimaEstimationRequest warm;
-        warm.series.values = sm.z;
-        warm.series.missing.assign(sm.z.size(), 0);
-        for (const int mpos : sm.missing_at) {
-            warm.series.missing[static_cast<std::size_t>(mpos)] = 1;
-        }
-        std::vector<std::vector<double>> reg_cols;
-        if (sm.mean) {
-            reg_cols.push_back(std::vector<double>(sm.z.size(), 1.0));
-        }
-        for (const auto& col : sm.user_raw) {
-            reg_cols.push_back(col);
-        }
-        if (!reg_cols.empty()) {
-            warm.design.columns = reg_cols.size();
-            warm.design.values.assign(
-                sm.z.size() * reg_cols.size(), 0.0);
-            for (std::size_t c = 0; c < reg_cols.size(); ++c) {
-                for (std::size_t r = 0; r < sm.z.size(); ++r) {
-                    warm.design.values[r + sm.z.size() * c] = reg_cols[c][r];
-                }
-            }
-            warm.design.coefficients.assign(reg_cols.size(), 0.0);
-            warm.design.fixed.assign(reg_cols.size(), 0);
-        }
+        set_scan_warm_design(warm, sm.z, sm.missing_at, sm.mean, sm.user_raw);
         warm.blocks[0].initial.assign(p, 0.0);
         warm.blocks[0].fixed.assign(p, 0);
         warm.blocks[1].initial.assign(q, 0.0);

@@ -777,14 +777,6 @@ TramoFitResult estimate_tramo_tr3(const std::vector<double>& series, int start_y
     const auto gate = compare_first_candidate(spec, y.size(), transform.seasonal, *reference, *candidate);
     require(gate.accepted, "TR3 reference comparison requires another identification round");
     auto fit = gate.reverted ? std::move(*reference) : std::move(candidate->effects);
-    TramoRegressionTestRequest test;
-    test.test_mean = true;
-    test.mean = fit.mean;
-    test.mean_threshold = spec.tsig;
-    test.statistics = fitted_test_statistics(fit);
-    const auto regression = run_tramo_regression_tests(test);
-    require(!regression.estimation_cleared, "TR3 fast mean test requires an additional estimation round");
-    const auto entry = controller_state(fit, y, start_year, start_month);
     std::vector<std::optional<FittedOutlierEffects>> trials;
     const auto estimate = [&](const TramoOrders& orders, bool mean) -> std::optional<BatteryState> {
         trials.emplace_back();
@@ -800,9 +792,35 @@ TramoFitResult estimate_tramo_tr3(const std::vector<double>& series, int start_y
         trials.back() = std::move(fitted);
         return state;
     };
-    const auto controllers = tramo_monthly_controllers(entry, transform.seasonal, transform.seasonality.to_int, estimate);
-    require(!controllers.restart, "TR3 seasonality controller requires an automatic-model restart");
-    if (controllers.selected_candidate >= 0) fit = std::move(trials.at(controllers.selected_candidate).value());
+    bool seasonal = transform.seasonal;
+    int score = transform.seasonality.to_int;
+    for (bool restart : {false, true}) {
+        if (restart) {
+            auto reconsidered = fit_first_candidate(spec, built, transform.log_transform, seasonal, fit);
+            require(reconsidered.has_value(), "TR3 seasonality restart estimation failed");
+            fit = std::move(reconsidered->effects);
+        }
+        TramoRegressionTestRequest test;
+        test.test_mean = true;
+        test.mean = fit.mean;
+        test.mean_threshold = spec.tsig;
+        test.statistics = fitted_test_statistics(fit);
+        const auto regression = run_tramo_regression_tests(test);
+        if (regression.estimation_cleared) {
+            EstimationEntry next{fit.orders, regression.mean, {}};
+            for (const auto& var : fit.variables)
+                next.variables.push_back({static_cast<OutlierType>(var.type), var.position, var.name});
+            fit = fit_estimation(spec, y, next, 4);
+            require(fit.fit.returned && fit.fit.cl_state != 0, "TR3 fourth-pass estimation failed");
+        }
+        const auto entry = controller_state(fit, y, start_year, start_month);
+        trials.clear();
+        const auto controllers = tramo_monthly_controllers(entry, seasonal, score, estimate, restart);
+        if (controllers.selected_candidate >= 0) fit = std::move(trials.at(controllers.selected_candidate).value());
+        if (!controllers.restart) break;
+        seasonal = controllers.seasonal;
+        score = controllers.seasonality_score;
+    }
     const auto record = project_fitted_record(fit, series, transform.log_transform, 12);
     assemble_fitted_result(result, record, spec.delta_tc);
     result.initial_regression_checked = true;

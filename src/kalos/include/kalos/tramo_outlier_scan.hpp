@@ -13,7 +13,7 @@ namespace kalos {
 // the OutliersDetectionModule.make size gate (TramoUtility.autlar / comatip),
 // the ModelDescription pre-stage (AverageInterpolator.cleanMissings, the log
 // transformation, the differenced RegArmaModel design with the interpolated
-// point columns, the constant column and the pre-registered outlier
+// point columns, the constant column, calendar regressors and pre-registered outlier
 // columns), the FastOutliersDetector round-0 estimateModel (OlsComputer
 // residuals, HannanRissanen start with stabilization and installation, the
 // maximum-likelihood warm seam when requested), the FastOutlierDetector
@@ -101,6 +101,10 @@ struct TramoOutlierScanRequest {
     // ModelDescription and the module exclusion is a guarded no-op, so it
     // neither enters the design nor excludes anything.
     std::vector<std::pair<int, TramoOutlierKind>> prespec;
+
+    // Undifferenced calendar design in the description's fitted column order.
+    // Each column spans the observations. These precede outlier indicators.
+    std::vector<std::vector<double>> calendar_regressors;
 };
 
 struct TramoOutlierScanDecision {

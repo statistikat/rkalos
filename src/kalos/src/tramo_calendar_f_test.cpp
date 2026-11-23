@@ -6,6 +6,8 @@
 #include "kalos/detail/ssq_deviances.hpp"
 #include "kalos/estimation_control.hpp"
 #include "kalos/hannan_rissanen.hpp"
+#include "kalos/outlier_scoring.hpp"
+#include "kalos/tramo_outlier_rounds.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -86,7 +88,8 @@ CalendarLikelihood fit_calendar_likelihood(const std::vector<double>& series,
             static_cast<int>(differences.size())};
 }
 
-TramoCalendarAirlineFit controller_fit(CalendarLikelihood fit, int observations, bool mean, bool working_days) {
+TramoCalendarAirlineFit controller_fit(CalendarLikelihood fit, int observations, bool mean, bool working_days,
+    std::vector<std::array<int, 2>> outliers) {
     const auto t = fit.tstats();
     TramoModelStatisticsRequest stats;
     stats.residuals = std::move(fit.regression.qr_residuals);
@@ -98,10 +101,11 @@ TramoCalendarAirlineFit controller_fit(CalendarLikelihood fit, int observations,
     stats.sigma2 = stats.ssq / stats.dim;
     stats.free_parameters = 2;
     stats.estimation_domain = observations;
+    stats.ami_outliers = static_cast<int>(outliers.size());
     const auto panel = tramo_model_comparison_panel(stats);
     if (!panel) throw std::runtime_error("TRAMO calendar candidate has no comparison panel");
     return {mean, working_days, std::move(fit.ma), std::move(stats.coefficients), std::move(stats.residuals),
-            stats.ssq, mean ? std::optional<double>(t.front()) : std::nullopt, *panel};
+            stats.ssq, mean ? std::optional<double>(t.front()) : std::nullopt, *panel, std::move(outliers)};
 }
 
 TramoCalendarFCandidate compare(double base, double residual_ssq, int df, int contrasts) {
@@ -210,18 +214,47 @@ std::optional<TramoResidualTradingDays> tramo_residual_trading_days(
 }
 
 TramoTradingDaysControllerResult tramo_airline_trading_days_controller(const std::vector<double>& series,
-    int start_year, int start_month, bool mean, double significance, double precision) {
+    int start_year, int start_month, bool mean, double significance, double precision,
+    std::optional<double> outlier_critical_value) {
     if (!(significance >= 0 && significance <= 1) || !(precision > 0) || !std::isfinite(precision))
         throw std::invalid_argument("TRAMO trading-day controller requires a probability and positive precision");
     if (series.size() < 20 || series.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
         throw std::invalid_argument("TRAMO airline controller requires at least 20 monthly observations");
+    if (outlier_critical_value && (!std::isfinite(*outlier_critical_value) || *outlier_critical_value <= 0.0))
+        throw std::invalid_argument("TRAMO outlier detection requires a positive finite critical value");
     const calendar_domain domain{start_year, start_month, 12, static_cast<int>(series.size())};
     const auto td = trading_days_contrast(day_clustering::td2, domain);
     const auto filter = detail::pinned_differencing_polynomial(12, 1, 1);
     const auto differences = detail::pinned_backfilter_apply(filter, series);
-    auto estimate = [&](bool fit_mean, const Columns& columns) {
+    auto estimate = [&](bool fit_mean, Columns columns) {
+        const bool working_days = !columns.empty();
+        std::vector<std::array<int, 2>> outliers;
+        if (outlier_critical_value) {
+            TramoOutlierScanRequest scan{};
+            scan.y = series; // already on the estimation scale
+            scan.frequency = 12;
+            scan.mean = fit_mean;
+            scan.d = scan.bd = scan.q = scan.bq = 1;
+            scan.ao = scan.ls = scan.tc = true;
+            scan.tc_rate = 0.7;
+            scan.precision = precision;
+            scan.cv = *outlier_critical_value;
+            scan.max_round = 30;
+            scan.max_outliers = 50;
+            scan.upper_bound = domain.length;
+            scan.calendar_regressors = columns;
+            const auto detected = tramo_outlier_rounds(scan);
+            // ModelEstimator runs calc() even when the detector reports Failed.
+            if (detected.status == TramoOutlierRoundsResult::Status::Ok) outliers = detected.outliers;
+            std::stable_sort(outliers.begin(), outliers.end(),
+                [](const auto& a, const auto& b) { return a[0] < b[0]; });
+            for (const auto& found : outliers) {
+                columns.emplace_back(series.size(), 0.0);
+                fill_outlier_column(static_cast<OutlierType>(found[1]), found[0], 12, scan.tc_rate, columns.back());
+            }
+        }
         auto fit = fit_calendar_likelihood(series, differences, filter, columns, fit_mean, precision, true);
-        return controller_fit(std::move(fit), domain.length, fit_mean, !columns.empty());
+        return controller_fit(std::move(fit), domain.length, fit_mean, working_days, std::move(outliers));
     };
     TramoTradingDaysControllerResult result{};
     result.original = estimate(mean, {});
@@ -234,5 +267,10 @@ TramoTradingDaysControllerResult tramo_airline_trading_days_controller(const std
         result.candidates.push_back(estimate(false, td));
     result.changed = tramo_candidate_preferred(result.original.statistics, result.candidates.back().statistics);
     return result;
+}
+TramoTradingDaysControllerResult tramo_airline_trading_days_controller(const std::vector<double>& series,
+    int start_year, int start_month, bool mean, double significance, double precision) {
+    return tramo_airline_trading_days_controller(series, start_year, start_month, mean,
+        significance, precision, std::nullopt);
 }
 } // namespace kalos

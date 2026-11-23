@@ -3,6 +3,7 @@
 
 #include "kalos/tramo_differencing_battery.hpp"
 
+#include <array>
 #include <optional>
 #include <vector>
 
@@ -62,8 +63,8 @@ std::optional<TramoResidualTradingDays> tramo_residual_trading_days(
     int estimation_length, double significance);
 
 // Late TradingDaysController for a monthly airline model on its estimation
-// scale. The initial model has only an optional mean, and outlier detection
-// is disabled. A rejected candidate still appears in the fit history.
+// scale. The initial model has an optional mean. Every candidate refit is
+// recorded, including candidates rejected by the comparison.
 struct TramoCalendarAirlineFit {
     bool mean;
     bool working_days;
@@ -73,6 +74,8 @@ struct TramoCalendarAirlineFit {
     double residual_ssq;
     std::optional<double> mean_t;
     BatteryPanel statistics;
+    // Automatically detected (position, AO/LS/TC factory index), in regression order.
+    std::vector<std::array<int, 2>> outliers;
 };
 
 struct TramoTradingDaysControllerResult {
@@ -85,6 +88,11 @@ struct TramoTradingDaysControllerResult {
 
 TramoTradingDaysControllerResult tramo_airline_trading_days_controller(const std::vector<double>& series,
     int start_year, int start_month, bool mean, double significance, double precision);
+
+// Detect AO, LS and TC variables on each fitted description when a critical value is supplied.
+TramoTradingDaysControllerResult tramo_airline_trading_days_controller(const std::vector<double>& series,
+    int start_year, int start_month, bool mean, double significance, double precision,
+    std::optional<double> outlier_critical_value);
 
 } // namespace kalos
 #endif
