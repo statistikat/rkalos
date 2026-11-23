@@ -2,6 +2,7 @@
 
 #include "kalos/seats_extract_wk.hpp"
 #include "kalos/tramo_fit.hpp"
+#include "kalos/tramo_tr0.hpp"
 
 namespace kalos {
 
@@ -22,5 +23,15 @@ struct tramo_seats_pipeline_result {
 // finals. Unsupported fits and D6 approximation-required models refuse.
 tramo_seats_pipeline_result run_tramo_seats_pipeline(
     const TramoFitResult& fit, int backcast_count = 0, int forecast_count = -2);
+
+struct tramo_seats_rsa0_result {
+    tramo_tr0_result preprocessing;
+    tramo_seats_pipeline_result decomposition;
+};
+
+// Public monthly RSA0 template, from original observations to product finals.
+// Defaults to the directly observed JVM horizon of two years of forecasts.
+tramo_seats_rsa0_result run_tramo_seats_rsa0(const std::vector<double>& series,
+    int start_year, int start_month, int backcast_count = 0, int forecast_count = -2);
 
 }  // namespace kalos

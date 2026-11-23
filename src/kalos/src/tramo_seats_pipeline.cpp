@@ -41,7 +41,8 @@ Grid component_grid(const std::vector<Row>& wk) {
 }
 
 // Both series and deterministic effects are monthly throughout the bridge envelope.
-std::vector<Row> merge(const TramoFitResult& fit, const tramo_seats_model_request& model,
+std::vector<Row> merge(const std::vector<double>& original, const std::vector<TramoFitVariable>& variables,
+                       const tramo_seats_model_request& model,
                        const std::vector<Row>& wk) {
     const auto rows = component_grid(wk);
     const auto& series = rows.front();
@@ -58,7 +59,7 @@ std::vector<Row> merge(const TramoFitResult& fit, const tramo_seats_model_reques
     const std::array<std::size_t, 3> lengths{n, nf, nb};
     const std::array<std::size_t, 3> offsets{nb, nb + n, 0};
     std::vector<double> trend(n + nf + nb), irregular(trend.size());
-    for (const auto& var : fit.variables) {
+    for (const auto& var : variables) {
         const bool ls = var.type == TramoOutlierKind::Ls;
         auto& target = ls ? trend : irregular;
         std::vector<double> column(target.size());
@@ -86,7 +87,7 @@ std::vector<Row> merge(const TramoFitResult& fit, const tramo_seats_model_reques
             output.push_back(*row);
             auto& values = output.back().values;
             if (components[t] == Component::series && kinds[s] == Info::value) {
-                values = fit.builder.interpolated;
+                values = original;
                 continue;
             }
             for (std::size_t j = 0; j < values.size(); ++j) {
@@ -105,11 +106,20 @@ std::vector<Row> merge(const TramoFitResult& fit, const tramo_seats_model_reques
     return output;
 }
 
+tramo_seats_pipeline_result extract_and_merge(const std::vector<double>& original,
+        const std::vector<TramoFitVariable>& variables, const tramo_seats_model_request& model) {
+    tramo_seats_pipeline_result result;
+    result.extraction = seats_extract_wk(model);
+    if (result.extraction.fact("status") == "ok")
+        result.finals = merge(original, variables, model, result.extraction.final_components());
+    return result;
+}
+
 }  // namespace
 
 std::vector<seats_component_series> merge_tramo_seats_components(
         const TramoFitResult& fit, const std::vector<seats_component_series>& wk_final) {
-    return merge(fit, make_tramo_seats_model(fit), wk_final);
+    return merge(fit.builder.interpolated, fit.variables, make_tramo_seats_model(fit), wk_final);
 }
 
 tramo_seats_pipeline_result run_tramo_seats_pipeline(const TramoFitResult& fit,
@@ -117,10 +127,17 @@ tramo_seats_pipeline_result run_tramo_seats_pipeline(const TramoFitResult& fit,
     auto model = make_tramo_seats_model(fit);
     model.backcast_count = backcast_count;
     model.forecast_count = forecast_count;
-    tramo_seats_pipeline_result result;
-    result.extraction = seats_extract_wk(model);
-    if (result.extraction.fact("status") == "ok")
-        result.finals = merge(fit, model, result.extraction.final_components());
+    return extract_and_merge(fit.builder.interpolated, fit.variables, model);
+}
+
+tramo_seats_rsa0_result run_tramo_seats_rsa0(const std::vector<double>& series, int start_year,
+        int start_month, int backcast_count, int forecast_count) {
+    tramo_seats_rsa0_result result;
+    result.preprocessing = estimate_tramo_tr0(series, start_year, start_month);
+    auto& model = result.preprocessing.model;
+    model.backcast_count = backcast_count;
+    model.forecast_count = forecast_count;
+    result.decomposition = extract_and_merge(series, {}, model);
     return result;
 }
 

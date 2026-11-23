@@ -4,6 +4,14 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 integration checkpoint for ordinary monthly RSA0 (2026-11-23)
+
+The checked snapshot advances to Kalos `fa7edeae3c68862e163633c7debce3d102248223`.
+It includes the raw-series TR0 estimator, its composed RSA0 product entry
+and the frozen six-case x86 JVM oracle. Both locks and the CI toolchain
+pin agree. Offline verification passed for **192 core, 112 fixture and
+343 evidence files**.
+
 ## M5 SEATS from an existing fitted TRAMO model (2026-11-23)
 
 `seats_from_tramo()` accepts a complete monthly series, fitted SARIMA
