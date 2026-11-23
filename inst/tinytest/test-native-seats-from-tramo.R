@@ -1,0 +1,83 @@
+dir <- system.file("tinytest/fixtures/native/tramo-seats-bridge", package = "rkalos")
+cases <- function(file) {
+  lines <- readLines(file.path(dir, file))
+  split(lines, cumsum(startsWith(lines, "case ")))
+}
+hex_values <- function(tokens) {
+  b <- vapply(seq(1L, 15L, 2L), function(i) strtoi(substr(tokens, i, i + 1L), 16L),
+              integer(length(tokens)))
+  stream <- if (length(tokens) == 1L) b else t(b)
+  readBin(as.raw(stream), double(), n = length(tokens), endian = "big")
+}
+fitted <- list()
+for (lines in cases("bridge.txt")) {
+  fields <- function(key) strsplit(lines[startsWith(lines, paste0(key, " "))], " ", fixed = TRUE)[[1L]]
+  domain <- fields("interpolated")
+  start <- as.integer(domain[2:3])
+  model <- fields("model")
+  likelihood <- fields("likelihood")
+  request <- list(series = stats::ts(hex_values(domain[-seq_len(4)]), start = start, frequency = 12),
+    ssq = hex_values(likelihood[3L]), effective = as.integer(likelihood[5L]),
+    estimated = as.integer(likelihood[7L]), d = as.integer(model[9L]), bd = as.integer(model[11L]),
+    mean_correction = model[5L] == "true", log = model[3L] == "true")
+  for (name in c("phi", "bphi", "theta", "btheta")) {
+    params <- fields(name)[-c(1L, 2L)]
+    request[[name]] <- if (length(params)) hex_values(sub("/Fixed$", "", params)) else numeric()
+  }
+  for (line in lines[startsWith(lines, "variable AO ") | startsWith(lines, "variable LS ")]) {
+    tokens <- strsplit(line, " ", fixed = TRUE)[[1L]]
+    date <- as.integer(strsplit(gsub("[()]", "", tokens[3L]), "-", fixed = TRUE)[[1L]])
+    row <- data.frame(type = tokens[2L], position = 1L + (date[1L] - start[1L]) * 12L + date[2L] - start[2L],
+                      coefficient = hex_values(tail(tokens, 1L)))
+    request$outliers <- rbind(request$outliers, row)
+  }
+  fitted[[fields("case")[2L]]] <- request
+}
+accepted <- refused <- points <- 0L
+for (lines in cases("merge-x86_64.txt")) {
+  header <- strsplit(lines[1L], " ", fixed = TRUE)[[1L]]
+  id <- header[2L]
+  request <- fitted[[id]]
+  request$forecast <- as.integer(header[7L])
+  request$backcast <- as.integer(header[5L])
+  if (header[11L] == "true") {
+    expect_error(do.call(rkalos::seats_from_tramo, request), "approximation_required", info = id)
+    refused <- refused + 1L
+    next
+  }
+  result <- do.call(rkalos::seats_from_tramo, request)
+  expect_identical(result$status, "ok", info = id)
+  for (phase in c("wk", "merged")) {
+    table <- if (phase == "wk") result$final else result$merged
+    oracle <- lines[startsWith(lines, paste0(phase, " "))]
+    expect_identical(nrow(table), length(oracle), info = id)
+    for (i in seq_along(oracle)) {
+      row <- strsplit(oracle[i], " ", fixed = TRUE)[[1L]]
+      expect_identical(c(table$component[i], table$information[i]), row[2:3], info = id)
+      expect_identical(as.integer(c(table$start_year[i], table$start_month[i])), as.integer(row[4:5]), info = id)
+      values <- table$values[[i]]
+      expect_identical(length(values), as.integer(row[6L]), info = id)
+      if (length(values)) {
+        expect_identical(as.integer(stats::start(values)), as.integer(row[4:5]), info = id)
+        expect_identical(stats::frequency(values), 12, info = id)
+        expected <- hex_values(row[-seq_len(6)])
+        expect_identical(writeBin(as.numeric(values), raw()), writeBin(expected, raw()), info = id)
+        points <- points + length(values)
+      }
+    }
+  }
+  accepted <- accepted + 1L
+}
+expect_identical(c(accepted, refused), c(4L, 2L))
+expect_identical(points, 8160L)
+x <- fitted[[1L]]
+expect_error(do.call(rkalos::seats_from_tramo, within(x, effective <- estimated)), "likelihood")
+expect_error(do.call(rkalos::seats_from_tramo, within(x, ssq <- 0)), "likelihood")
+bad <- data.frame(type = "AO", position = 0L, coefficient = 1)
+x$outliers <- bad
+expect_error(do.call(rkalos::seats_from_tramo, x), "position")
+x$outliers$position <- 1L
+expect_error(do.call(rkalos::seats_from_tramo, x), "level-model outlier")
+x$outliers$type <- "TC"
+expect_error(do.call(rkalos::seats_from_tramo, x), "AO or LS")
+expect_true("seats_from_tramo" %in% rkalos::capabilities()$primitives)

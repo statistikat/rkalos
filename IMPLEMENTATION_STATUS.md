@@ -4,6 +4,21 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 SEATS from an existing fitted TRAMO model (2026-11-23)
+
+`seats_from_tramo()` accepts a complete monthly series, fitted SARIMA
+coefficients, fitted likelihood counts and optional AO/LS coefficients.
+It returns dated initial and final WK tables with their uncertainty, plus
+the product components after deterministic-effect restoration.
+
+The installed serial package passed **718/718** wrapper assertions.
+Four admitted fits reproduced all **8,160 binary64 values** across 116
+WK and merged rows in the pinned x86 JVM profile. Both mixed-model
+horizons raised the expected approximation refusal. The shared dating
+and domain-validation regressions also passed **7,369/7,369**.
+Ordinary-data parameter estimation has its own subsequent gate.
+[API](man/seats_from_tramo.Rd) · [JVM replay](inst/tinytest/test-native-seats-from-tramo.R)
+
 ## M5 integration checkpoint for the fitted SEATS pipeline (2026-11-23)
 
 Kalos `c0594b9018d30b747d8834fab96391ceeb87f901` adds the deterministic

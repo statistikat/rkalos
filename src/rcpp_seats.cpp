@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include <kalos/seats_extract_wk.hpp>
+#include <kalos/tramo_seats_pipeline.hpp>
 
 namespace {
 Rcpp::DataFrame component_table(const std::vector<kalos::seats_component_series>& rows) {
@@ -59,4 +59,49 @@ Rcpp::List native_seats_extract_wk(const Rcpp::List& spec, const Rcpp::List& cal
     return Rcpp::List::create(Rcpp::_["status"] = result.fact("status"),
         Rcpp::_["initial"] = component_table(result.initial_components()),
         Rcpp::_["final"] = component_table(result.final_components()));
+}
+
+// [[Rcpp::export(name = ".native_seats_from_tramo", rng = false)]]
+Rcpp::List native_seats_from_tramo(const Rcpp::List& spec, const Rcpp::List& calendar,
+        std::vector<double> series, Rcpp::DataFrame outliers) {
+    kalos::TramoFitResult fit;
+    fit.status = "available";
+    auto& builder = fit.builder;
+    const Rcpp::NumericVector start = calendar["start"];
+    builder.annual_frequency = Rcpp::as<int>(calendar["frequency"]);
+    builder.domain_year = builder.estimation_year = static_cast<int>(start[0]);
+    builder.domain_position = builder.estimation_position = static_cast<int>(start[1]) - 1;
+    builder.domain_length = builder.estimation_length = static_cast<int>(series.size());
+    builder.interpolated.swap(series);
+    fit.orders.d = spec["d"];
+    fit.orders.bd = spec["bd"];
+    auto append = [&](const char* name, int& order) {
+        const auto values = Rcpp::as<std::vector<double>>(spec[name]);
+        order = static_cast<int>(values.size());
+        fit.parameters.insert(fit.parameters.end(), values.begin(), values.end());
+    };
+    append("phi", fit.orders.p);
+    append("bphi", fit.orders.bp);
+    append("theta", fit.orders.q);
+    append("btheta", fit.orders.bq);
+    fit.log = spec["log"];
+    fit.mean = spec["mean_correction"];
+    fit.ls_ssq = spec["ssq"];
+    fit.ls_eff = spec["effective"];
+    fit.ls_npar = spec["estimated"];
+    const Rcpp::CharacterVector types = outliers["type"];
+    const Rcpp::IntegerVector positions = outliers["position"];
+    const Rcpp::NumericVector coefficients = outliers["coefficient"];
+    for (R_xlen_t i = 0; i < types.size(); ++i) {
+        kalos::TramoFitVariable variable;
+        variable.type = types[i] == "AO" ? kalos::TramoOutlierKind::Ao : kalos::TramoOutlierKind::Ls;
+        variable.position = positions[i] - 1;
+        variable.coefficient = coefficients[i];
+        fit.variables.push_back(variable);
+    }
+    const auto result = kalos::run_tramo_seats_pipeline(fit, spec["backcast"], spec["forecast"]);
+    return Rcpp::List::create(Rcpp::_["status"] = result.extraction.fact("status"),
+        Rcpp::_["initial"] = component_table(result.extraction.initial_components()),
+        Rcpp::_["final"] = component_table(result.extraction.final_components()),
+        Rcpp::_["merged"] = component_table(result.finals));
 }

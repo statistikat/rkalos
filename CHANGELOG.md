@@ -2,6 +2,9 @@
 
 ## Development version
 
+Added deterministic-effects restoration and merged product components for
+supplied full-span fitted monthly TRAMO model coefficients.
+
 Added the pinned TRAMO first-round differencing decision for monthly and
 quarterly series with standard module thresholds.
 

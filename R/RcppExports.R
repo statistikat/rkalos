@@ -117,6 +117,10 @@
     .Call(`_rkalos_native_seats_extract_wk`, spec, calendar, series)
 }
 
+.native_seats_from_tramo <- function(spec, calendar, series, outliers) {
+    .Call(`_rkalos_native_seats_from_tramo`, spec, calendar, series, outliers)
+}
+
 .native_stationary_likelihood <- function(values, transition, observation, noise_loading, observation_variance = NULL, mean = NULL, variance = NULL) {
     .Call(`_rkalos_native_stationary_likelihood`, values, transition, observation, noise_loading, observation_variance, mean, variance)
 }

@@ -506,6 +506,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_seats_from_tramo
+Rcpp::List native_seats_from_tramo(const Rcpp::List& spec, const Rcpp::List& calendar, std::vector<double> series, Rcpp::DataFrame outliers);
+RcppExport SEXP _rkalos_native_seats_from_tramo(SEXP specSEXP, SEXP calendarSEXP, SEXP seriesSEXP, SEXP outliersSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type spec(specSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type calendar(calendarSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type series(seriesSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type outliers(outliersSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_seats_from_tramo(spec, calendar, series, outliers));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_stationary_likelihood
 Rcpp::List native_stationary_likelihood(SEXP values, SEXP transition, SEXP observation, SEXP noise_loading, SEXP observation_variance, SEXP mean, SEXP variance);
 RcppExport SEXP _rkalos_native_stationary_likelihood(SEXP valuesSEXP, SEXP transitionSEXP, SEXP observationSEXP, SEXP noise_loadingSEXP, SEXP observation_varianceSEXP, SEXP meanSEXP, SEXP varianceSEXP) {
@@ -1133,6 +1146,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_core_version", (DL_FUNC) &_rkalos_native_core_version, 0},
     {"_rkalos_native_regression_likelihood", (DL_FUNC) &_rkalos_native_regression_likelihood, 13},
     {"_rkalos_native_seats_extract_wk", (DL_FUNC) &_rkalos_native_seats_extract_wk, 3},
+    {"_rkalos_native_seats_from_tramo", (DL_FUNC) &_rkalos_native_seats_from_tramo, 4},
     {"_rkalos_native_stationary_likelihood", (DL_FUNC) &_rkalos_native_stationary_likelihood, 7},
     {"_rkalos_native_arma_likelihood", (DL_FUNC) &_rkalos_native_arma_likelihood, 8},
     {"_rkalos_native_tramo_differencing", (DL_FUNC) &_rkalos_native_tramo_differencing, 7},
