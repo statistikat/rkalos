@@ -541,6 +541,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_tramo_prepare_model
+Rcpp::List native_tramo_prepare_model(std::vector<double> values, std::string name, int year, int month, int frequency);
+RcppExport SEXP _rkalos_native_tramo_prepare_model(SEXP valuesSEXP, SEXP nameSEXP, SEXP yearSEXP, SEXP monthSEXP, SEXP frequencySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< std::vector<double> >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< std::string >::type name(nameSEXP);
+    Rcpp::traits::input_parameter< int >::type year(yearSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< int >::type frequency(frequencySEXP);
+    rcpp_result_gen = Rcpp::wrap(native_tramo_prepare_model(values, name, year, month, frequency));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_tramo_critical_value
 double native_tramo_critical_value(int observations);
 RcppExport SEXP _rkalos_native_tramo_critical_value(SEXP observationsSEXP) {
@@ -1105,6 +1119,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_seats_extract_wk", (DL_FUNC) &_rkalos_native_seats_extract_wk, 3},
     {"_rkalos_native_stationary_likelihood", (DL_FUNC) &_rkalos_native_stationary_likelihood, 7},
     {"_rkalos_native_arma_likelihood", (DL_FUNC) &_rkalos_native_arma_likelihood, 8},
+    {"_rkalos_native_tramo_prepare_model", (DL_FUNC) &_rkalos_native_tramo_prepare_model, 5},
     {"_rkalos_native_tramo_critical_value", (DL_FUNC) &_rkalos_native_tramo_critical_value, 1},
     {"_rkalos_native_tramo_seasonality", (DL_FUNC) &_rkalos_native_tramo_seasonality, 1},
     {"_rkalos_native_tramo_transform_decision", (DL_FUNC) &_rkalos_native_tramo_transform_decision, 6},

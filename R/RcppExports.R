@@ -125,6 +125,10 @@
     .Call(`_rkalos_native_arma_likelihood`, values, ar, ma, seasonal_ar, seasonal_ma, period, mean, variance)
 }
 
+.native_tramo_prepare_model <- function(values, name, year, month, frequency) {
+    .Call(`_rkalos_native_tramo_prepare_model`, values, name, year, month, frequency)
+}
+
 .native_tramo_critical_value <- function(observations) {
     .Call(`_rkalos_native_tramo_critical_value`, observations)
 }

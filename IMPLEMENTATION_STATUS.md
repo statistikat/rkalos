@@ -4,6 +4,19 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 standard TRAMO model preparation (2026-11-23)
+
+`tramo_prepare_model(series, template)` invokes the pinned 23-A builder and
+returns the initial log/mean flags, SARIMA orders, registered variable
+names, one-based missing positions and interpolated monthly series. It
+accepts the seven standard templates without custom overrides. Template
+expansion here grants no automatic fit or calendar-selection capability.
+
+The installed serial package passed **139/139** assertions. The frozen JVM
+replay covered all seven templates, leading/interior/trailing missing
+runs, a non-January start, bit-exact interpolation and the refusal cases.
+[Preparation API](man/tramo_prepare_model.Rd) · [Builder regressions](inst/tinytest/test-native-tramo-prepare.R)
+
 ## M5 fixed-model SEATS component extraction (2026-11-23)
 
 Version `0.1.0.9003` exposes `seats_extract_wk()`. The R gate compares all 36 frozen 24-C WK cases with the structured 24-D
@@ -101,6 +114,8 @@ round-trip binary64 values. All 147 local input regenerations now match the
 JVM capture exactly. All **18,717/18,717** assertions in the seven affected
 files passed on macOS ARM64, including the 59 previously failing assertions.
 The capture scripts and CSV files remained byte-identical to the core lock.
+The complete serial suite at `0e064dd` with the horizon and generator
+updates passed **292,146/292,146** assertions in 51 files.
 
 
 ## Completed split steps

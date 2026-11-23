@@ -81,7 +81,7 @@ capabilities <- function() {
                                "arma_information", "arma_residual_information", "arma_legacy_covariance",
                                "regression_information", "joint_regression_information", "arma_residuals", "arma_legacy_residuals",
                                "interpolation_information", "interpolation_arma_information", "forecast_information", "forecast_arma_information", "prediction_moments", "x11_symmetric_filters", "x11_musgrave_endpoints", "x11_mean_endpoints", "x11_seasonal_endpoints", "x11_seasonal_processing", "x11_trend_selection", "x11_seasonal_stage_policy", "x11_msr_tables", "x11_msr_pilot", "x11_msr_selection", "x11_additive_normalization", "x11_additive_initial_tables", "x11_pass_level_selection", "x11_decomposition_modes", "x13_deterministic_allocation", "x13_restricted_fixed_fit", "x13_automatic_spec_fit",
-                               "tramo_critical_value", "tramo_seasonality", "tramo_transform_decision", "seats_extract_wk"),
+                               "tramo_critical_value", "tramo_seasonality", "tramo_transform_decision", "seats_extract_wk", "tramo_prepare_model"),
                 methods = character(), specification_blocks = character(),
                 packages_available = NA, runtime_checked = FALSE,
                 reason = "Native seasonal-adjustment fitting is not implemented; the restricted fixed-coefficient X-13 fit of restricted_fit and the automatic-spec X-13 fit of automatic_fit are qualified.")
