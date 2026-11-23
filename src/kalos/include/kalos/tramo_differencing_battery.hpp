@@ -39,6 +39,10 @@ namespace kalos {
 enum class PeakAr : unsigned char { A, a, none, undef };
 enum class PeakTukey : unsigned char { T, t, none, undef };
 
+// Six monthly seasonal frequencies. Fewer than 80 observations have no
+// Tukey test; the returned vector is empty in that case.
+std::vector<PeakTukey> tramo_monthly_tukey_peaks(const std::vector<double>& values);
+
 struct PeakRecord {
     PeakAr ar;
     PeakTukey tukey;

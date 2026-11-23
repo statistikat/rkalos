@@ -190,7 +190,7 @@ LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp) {
     return ljung_box_at_zero(data, k, nhp);
 }
 
-LjungBoxTest rsa0_residual_ljung_box(const std::vector<double>& residuals) {
+LjungBoxTest monthly_airline_residual_ljung_box(const std::vector<double>& residuals) {
     if (residuals.empty() || residuals.size() > static_cast<std::size_t>(std::numeric_limits<int>::max() - 2)) {
         throw std::invalid_argument("RSA0 residual count is outside the supported range");
     }
@@ -203,9 +203,9 @@ LjungBoxTest rsa0_residual_ljung_box(const std::vector<double>& residuals) {
     return ljung_box_at_zero(residuals, 24, 2);
 }
 
-std::optional<ResidualNormalityTest> rsa0_residual_normality(const std::vector<double>& residuals) {
+std::optional<ResidualNormalityTest> tramo_residual_normality(const std::vector<double>& residuals) {
     if (residuals.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
-        throw std::invalid_argument("rsa0_residual_normality requires a JVM-sized series");
+        throw std::invalid_argument("tramo_residual_normality requires a JVM-sized series");
     }
     if (residuals.size() <= 7) return std::nullopt;
     const double n = static_cast<double>(residuals.size());
@@ -252,6 +252,24 @@ TramoComparatorResidualTests tramo_comparator_residual_tests(const std::vector<d
     const double ratio = second.variance / first.variance;
     return {std::abs(skew), skew_p, t, student_two_sided(t, 2 * df),
             ratio, detail::f_upper_p(ratio, df, df)};
+}
+
+// Preserve the original public RSA0 entry points.
+LjungBoxTest rsa0_residual_ljung_box(const std::vector<double>& residuals) {
+    return monthly_airline_residual_ljung_box(residuals);
+}
+
+std::optional<ResidualNormalityTest> rsa0_residual_normality(const std::vector<double>& residuals) {
+    return tramo_residual_normality(residuals);
+}
+
+double tramo_residual_standard_error(double residual_ssq, int effective, int estimated_parameters) {
+    if (!std::isfinite(residual_ssq) || residual_ssq < 0 || estimated_parameters < 1 ||
+        effective < estimated_parameters)
+        throw std::invalid_argument("invalid fitted likelihood for TRAMO residual standard error");
+    // RegSarimaModel.niidTests() counts free coefficients. LikelihoodStatistics
+    // includes the variance itself as one additional estimated parameter.
+    return std::sqrt(residual_ssq / (effective - (estimated_parameters - 1)));
 }
 
 double calc_res_stat_rtval(const std::vector<double>& seq) {

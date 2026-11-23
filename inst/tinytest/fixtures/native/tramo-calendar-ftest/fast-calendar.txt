@@ -1,0 +1,166 @@
+fit false 0 1 1 2 2 167 40995c24d07579be
+coef 3fb01d3d492b8cbf 3faf4f089a0556c6 3fd1c3cb4c404cb9
+diag 3f48e9c40faeb990 3fd5715555963275 3f93c91219c7fbd5
+result 3fff5c28f5c28f5c Changed false false false false true
+result 0000000000000000 Unchanged false true true true false
+result 3fe7144f59d8511c Changed false true true false true
+result 3fe7144f59d8511d Changed false false false false true
+result 3fa116b4f198063e Unchanged false true true true false
+result 3fa116b4f198063f Unchanged false true true true false
+result 3fe43039b1c1da30 Unchanged false true true true false
+result 3fe43039b1c1da31 Changed false true true false true
+fit true 1 1 2 3 2 167 4098d5ac705bf003
+coef 3f60be0a740a9d95 402e1f75246b23a3 3fa5c791b860abef 3fd1af6c0a9822e8
+diag 3ea26ccef74f16b6 3f498165c54b988c 3fd5e1f19be2ee6e 3f943edfffbf9a96
+result 3fff5c28f5c28f5c Changed false true true false true
+result 0000000000000000 Changed false true true true true
+result 3fec16dcba00dabb Changed false true true false true
+result 3fec16dcba00dabc Changed false true true false true
+result 40657a2d473262c8 Changed false true true false true
+result 40657a2d473262c9 Changed false false false false true
+result 3f97b58288d9cf00 Changed false true true true true
+result 3f97b58288d9cf01 Changed false true true true true
+result 3fe403e2a288cd50 Changed false true true true true
+result 3fe403e2a288cd51 Changed false true true false true
+fit true 1 1 2 3 2 167 40c847bf1ce885dc
+coef 3f677974ce596280 bfbfa7843d3015ec c004a1481a6e4945 bfead9ee3f80b62e
+diag 3ea26d4b9c1d6ec7 3f498212a7506622 3fd5e285f5cf45ad 3f943f693a4ca8dd
+result 3fff5c28f5c28f5c Changed false false false false true
+result 0000000000000000 Changed false true true true true
+result 3fdc29d3eef172c0 Changed false true true true true
+result 3fdc29d3eef172c1 Changed false true true true true
+result 3fe0239fae1ac620 Changed false true true true true
+result 3fe0239fae1ac621 Changed false false false true true
+result 3fe00f338b95e7fd Changed false true true true true
+result 3fe00f338b95e7fe Changed false true true true true
+result 3fe5bb1f3366d86e Changed false false false true true
+result 3fe5bb1f3366d86f Changed false false false false true
+fit false 0 6 6 7 2 167 409868247eae3570
+coef bfceede1a557c480 3fccd7ae013542ed 3fde6e4e29912c5e bfc38d2f57621126 bfdaa905997e6546 3ff40d3fb7845099 bfa238c2160a2d15 3fc444d9b3174b9b
+diag 3fa641a5400c26a4 3fa5d66595a19b4b 3fa6aa97ead5de13 3fa6b0657fb162a0 3fa62414f2bf2321 3fa53944b9f2bc0c 3fd5e721726cd17a 3f94e21b63932fba
+result 3fff5c28f5c28f5c Changed false false false false true
+result 0000000000000000 Unchanged false true true true false
+result 3fd783eb1d6aa848 Changed false true true false true
+result 3fd783eb1d6aa849 Changed false true true false true
+result 3fd6235c582b0887 Unchanged false true true true false
+result 3fd6235c582b0888 Unchanged false true true true false
+result 3fe6ed1dd51edd2e Changed false true true false true
+result 3fe6ed1dd51edd2f Changed false true true false true
+result 3fcd71ea9ea3dd6d Unchanged false true true true false
+result 3fcd71ea9ea3dd6e Unchanged false true true true false
+result 3fe45289e5ba0306 Changed false true true false true
+result 3fe45289e5ba0307 Changed false true true false true
+result 3fff3934fe0dd2f2 Changed false true true false true
+result 3fff3934fe0dd2f3 Changed false false false false true
+result 3f93bff43b2d77e9 Unchanged false true true true false
+result 3f93bff43b2d77ea Unchanged false true true true false
+result 3fd67fa848bbba3d Unchanged false true true true false
+result 3fd67fa848bbba3e Changed false true true false true
+fit true 1 6 7 8 2 167 4097db1544917910
+coef 3f612c43121a7cef 402d7f4a89b3bdad 402e742eeab1143c 402ef465bf2ca001 402db1e1eeb4c3b9 402d2656e761f9e3 c0421ebad424b146 bfac4d39f856ad33 3fc3f808536767bb
+diag 3ea2705efd2faa42 3fa6dc4b78a9efed 3fa66c867c9c96bf 3fa746401c3e0acf 3fa74c2dbf7ab8c6 3fa6bd44f200d80f 3fa5cbe3a85601ee 3fd66951ae1f25f9 3f95720c73ed11f9
+result 3fff5c28f5c28f5c Changed false true true false true
+result 0000000000000000 Changed false true true true true
+result 3feced0365b47583 Changed false true true false true
+result 3feced0365b47584 Changed false true true false true
+result 40364f9be538fe36 Changed false true true false true
+result 40364f9be538fe37 Changed false true true false true
+result 403741f8103a9bf7 Changed false true true false true
+result 403741f8103a9bf8 Changed false true true false true
+result 40373448bf770e2e Changed false true true false true
+result 40373448bf770e2f Changed false true true false true
+result 40363fb016e27749 Changed false true true false true
+result 40363fb016e2774a Changed false true true false true
+result 40361b596f30c02f Changed false true true false true
+result 40361b596f30c030 Changed false true true false true
+result 404c127c9b92eaf1 Changed false true true false true
+result 404c127c9b92eaf2 Changed false false false false true
+result 3f9e9350a0121049 Changed false true true true true
+result 3f9e9350a012104a Changed false true true true true
+result 3fd60dbd631ab7cb Changed false true true true true
+result 3fd60dbd631ab7cc Changed false true true false true
+fit true 1 6 7 8 2 167 4097dbbfbfed187b
+coef 3f612c4305187c84 402d7f4a88d08925 c0022f4451c6fa2d c0002e690bad19b9 c005387839d7788f c00766a46b0cf099 bff3d75a7e136d92 bfac4d3e7bca9b8d 3fc3f80854e8b373
+diag 3ea26fdb642ca8fa 3fa6dba81c7fa25c 3fa66be63d59bdc8 3fa74599c9869352 3fa74b8743bb5e3b 3fa6bca274e0b84a 3fa5cb47eb83d1bd 3fd668b17f3fc427 3f95717331bcd534
+result 3fff5c28f5c28f5c Changed false true true false true
+result 0000000000000000 Changed false true true true true
+result 3feced032fd6876c Changed false true true false true
+result 3feced032fd6876d Changed false true true false true
+result 40364f9be59cb75c Changed false true true false true
+result 40364f9be59cb75d Changed false false false false true
+result 400bc67bae020658 Changed false true true false true
+result 400bc67bae020659 Changed false true true false true
+result 40084276ebbc7d5c Changed false true true false true
+result 40084276ebbc7d5d Changed false true true false true
+result 400fcc85fd3c8660 Changed false true true false true
+result 400fcc85fd3c8661 Changed false true true false true
+result 4011bf3b526dd299 Changed false true true false true
+result 4011bf3b526dd29a Changed false true true false true
+result 3ffebd1de3aa46a9 Changed false true true false true
+result 3ffebd1de3aa46aa Changed false true true false true
+result 3f9e9355877b5357 Changed false true true true true
+result 3f9e9355877b5358 Changed false true true true true
+result 3fd60dbd6728c113 Changed false true true true true
+result 3fd60dbd6728c114 Changed false true true false true
+fit false -1 1 0 1 2 167 409971037edd8c52
+coef 3f8bdeb3dd436209 3fd03406b3340bfd
+diag 3fd56a33144bdeb4 3f93ab167e6a5a6f
+result 3fff5c28f5c28f5c Changed false false true false true
+result 0000000000000000 Unchanged false false true true false
+result 3f7e7cf841d41847 Unchanged false false true true false
+result 3f7e7cf841d41848 Unchanged false false true true false
+result 3fe27ee62c427a75 Unchanged false false true true false
+result 3fe27ee62c427a76 Changed false false true false true
+fit true -1 1 1 2 2 167 4115d53c2cd7b20d
+coef 3f88872c120d7688 c01d2bfe98c193fb c01bfafcf71ad674
+diag 3ed188b1062a56e7 3fb7ae941e830c8c 3f79534127dc5a32
+result 3fff5c28f5c28f5c Changed false false true false true
+result 0000000000000000 Changed false false true true true
+result 3fbfe977e2554125 Changed false false true true true
+result 3fbfe977e2554126 Changed false false true true true
+result 3fe054320705443a Changed false false true true true
+result 3fe054320705443b Changed false false true true true
+result 3ffe4a69f4e3a007 Changed false false true true true
+result 3ffe4a69f4e3a008 Changed false false true false true
+fit true -1 1 1 2 2 167 40c85314d0ba612e
+coef 3f66d565b78fef86 c003e0eabcb45204 bfe95135bcdb3934
+diag 3ea26979a6e59167 3fd5d9cd723c37b8 3f941f7bfbd03fcc
+result 3fff5c28f5c28f5c Changed false false true false true
+result 0000000000000000 Changed false false true true true
+result 3fdb772fc4e55efc Changed false false true true true
+result 3fdb772fc4e55efd Changed false false true true true
+result 3fdf0a6dc4453ff0 Changed false false true true true
+result 3fdf0a6dc4453ff1 Changed false false true true true
+result 3fe499073c1e750c Changed false false true true true
+result 3fe499073c1e750d Changed false false true false true
+fit false 0 1 -1 1 2 167 40995c42b3e71e3c
+coef 3fb0165a441b5075 3fd1c327eeb9484e
+diag 3f48e16171075749 3f93c8ee181f8bfa
+result 3fff5c28f5c28f5c Changed false false false false true
+result 0000000000000000 Unchanged false true false true false
+result 3fe72076aef4c675 Changed false true false false true
+result 3fe72076aef4c676 Changed false false false false true
+result 3fe43f7337562658 Unchanged false true false true false
+result 3fe43f7337562659 Changed false true false false true
+fit true 1 1 -1 2 2 167 4098d4e3b0c0f794
+coef 3f60bfff27ffed72 402e1f6b804f7f96 3fd1aef3fb2f49f0
+diag 3ea26bfe590766f7 3f4979a58a72cc05 3f943f7db7d27e23
+result 3fff5c28f5c28f5c Changed false true false false true
+result 0000000000000000 Changed false true false true true
+result 3fec31850ce9bfb3 Changed false true false false true
+result 3fec31850ce9bfb4 Changed false true false false true
+result 40658ed0baa8efff Changed false true false false true
+result 40658ed0baa8f000 Changed false false false false true
+result 3fe41340a13eabea Changed false true false true true
+result 3fe41340a13eabeb Changed false true false false true
+fit true 1 1 -1 2 2 167 40c8529c51fb884e
+coef 3f6702e8337c8213 bfbe8343b85ccbe1 bfeacbb489563bb5
+diag 3ea26b05a3cc350c 3f49784cd6724e8e 3f943e6bbf274875
+result 3fff5c28f5c28f5c Changed false false false false true
+result 0000000000000000 Changed false true false true true
+result 3fdbad08a04c8c13 Changed false true false true true
+result 3fdbad08a04c8c14 Changed false true false true true
+result 3fdf34f0ab5608fd Changed false true false true true
+result 3fdf34f0ab5608fe Changed false false false true true
+result 3fe5bc7ea1483692 Changed false false false true true
+result 3fe5bc7ea1483693 Changed false false false false true

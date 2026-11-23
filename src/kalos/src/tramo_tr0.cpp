@@ -1,4 +1,5 @@
 #include "kalos/tramo_tr0.hpp"
+#include "kalos/arma_diagnostics.hpp"
 
 #include "kalos/detail/ssq_deviances.hpp"
 #include "kalos/estimation_control.hpp"
@@ -87,8 +88,8 @@ tramo_tr0_result estimate_tramo_tr0(const std::vector<double>& series, int start
     result.residuals.values = std::move(*residuals);
     // TsResiduals excludes the regression and free ARMA parameters from
     // its degrees of freedom. The fitted variance counts separately.
-    result.residuals.standard_error = std::sqrt(result.residual_ssq /
-        (result.effective_observations - (estimated - 1)));
+    result.residuals.standard_error = tramo_residual_standard_error(
+        result.residual_ssq, result.effective_observations, estimated);
     auto& model = result.model;
     model.series = std::move(description.interpolated);
     model.start_year = start_year;

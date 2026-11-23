@@ -57,6 +57,14 @@ struct TramoSeasonalityReport {
     std::vector<double> differenced;
 };
 
+// Qs and Friedman on the sequence supplied by a monthly controller. The
+// residual test uses the likelihood residuals directly; the model test
+// uses centered first differences of its linearized series.
+struct TramoSeasonalityStatistics {
+    TramoSeasonalityTest qs, friedman;
+};
+TramoSeasonalityStatistics tramo_seasonality_statistics(const std::vector<double>& values);
+
 // The detector machine over one complete finite monthly series.
 TramoSeasonalityReport tramo_seasonality(const std::vector<double>& values);
 

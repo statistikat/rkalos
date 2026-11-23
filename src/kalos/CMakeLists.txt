@@ -78,6 +78,7 @@ add_library(kalos STATIC
   src/tramo_outlier_scan.cpp
   src/tramo_outlier_rounds.cpp
   src/tramo_regression_tests.cpp
+  src/tramo_seasonal_spectrum.cpp
   src/tramo_seats_bridge.cpp
   src/tramo_seats_model_validator.cpp
   src/tramo_tr0.cpp
@@ -265,9 +266,13 @@ if(KALOS_BUILD_TESTS)
     else()
       target_compile_options(${test_name} PRIVATE -UNDEBUG)
     endif()
+    if(test_name STREQUAL "test_tramo_differencing_battery")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_SEASONAL_PEAKS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-differencing-battery/monthly-spectral-peaks.txt")
+    endif()
     if(test_name STREQUAL "test_arma_diagnostics")
       target_compile_definitions(${test_name} PRIVATE
-        KALOS_RSA0_DIAGNOSTIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge")
+        KALOS_TRAMO_DIAGNOSTIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge")
     endif()
     if(test_name STREQUAL "test_seats_extract_wk")
       target_compile_definitions(${test_name} PRIVATE
@@ -306,6 +311,8 @@ if(KALOS_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES TIMEOUT 3600)
     endif()
     if(test_name STREQUAL "test_tramo_regression_tests")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_FAST_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/fast-calendar.txt")
       # 23-E golden replay over the double-captured tramo-regression-tests
       # corpus (ModelStatistics rows, both tstats arms, the refStats gate and
       # the two regression-test machines); generous for the sanitizer lane.

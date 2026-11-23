@@ -4,6 +4,15 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Monthly TR1 residual diagnostics checkpoint (2026-11-24)
+
+The package and CI now pin Kalos
+`f65723338f5e7d014d7199d48c4be97385cecb09`. Its public residual
+standard error, Ljung–Box and Doornik–Hansen projections match 60
+binary64 outputs from twelve independent JVM fits, including the
+four monthly TC cases. Offline verification passed for **195 core
+files, 112 fixtures and 366 evidence files**.
+
 ## M5 monthly transitory changes in R (2026-11-24)
 
 Version `0.1.0.9013` restores stock monthly TC effects in raw RSA1
