@@ -18,6 +18,7 @@
 // Violations raise std::invalid_argument before any JVM-visible state.
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 namespace kalos {
@@ -53,6 +54,16 @@ LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp);
 // a known zero mean, 24 monthly lags and two fitted ARMA parameters.
 // Residual lengths <= 24 give the JVM's undefined statistic and p-value.
 LjungBoxTest rsa0_residual_ljung_box(const std::vector<double>& residuals);
+
+// Public residuals.doornikhansen for complete fitted RSA0 residuals.
+struct ResidualNormalityTest {
+    double value;
+    double p;
+    static constexpr double df = 2.0;
+};
+
+// NiidTests.normalityTest() has no result for seven or fewer observations.
+std::optional<ResidualNormalityTest> rsa0_residual_normality(const std::vector<double>& residuals);
 
 // ModelController.calcResStat side effect: mean / sqrt(var / n) with
 // mean = sum / n and var = ssq / n - mean * mean (var / n under the root).

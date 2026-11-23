@@ -28,6 +28,7 @@
 #include <kalos/tramo_differencing_decision.hpp>
 #include <kalos/tramo_final_estimation.hpp>
 #include <kalos/tramo_outlier_rounds.hpp>
+#include <kalos/tramo_regression_tests.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -186,7 +187,69 @@ struct FittedOutlierEffects {
     std::vector<double> parameters;
     std::vector<std::string> names;
     std::vector<double> corrected_response;
+    TramoFinalEstimatorRunResult fit;
 };
+
+TramoTestStatistics fitted_test_statistics(const FittedOutlierEffects& effects) {
+    const auto& fit = effects.fit;
+    TramoTestStatistics test;
+    test.coefficients = fit.cl_coefs;
+    const auto nx = test.coefficients.size();
+    require(fit.cl_unscaled_covariance.size() == nx * nx, "invalid fitted regression covariance");
+    for (std::size_t i = 0; i < nx; ++i)
+        test.cov_diagonal.push_back(fit.cl_unscaled_covariance[i * nx + i]);
+    test.ssq = fit.cl_ssq;
+    test.dim = fit.cl_dim;
+    test.free_parameters = static_cast<int>(effects.parameters.size());
+    return test;
+}
+
+void check_round_statistics(const FittedOutlierEffects& effects, const TramoKernelStatsRow& row,
+                            int frequency, int n, std::size_t seam) {
+    auto test = fitted_test_statistics(effects);
+    TramoModelStatisticsRequest request;
+    request.residuals = effects.fit.cl_residuals;
+    request.coefficients = std::move(test.coefficients);
+    request.cov_diagonal = std::move(test.cov_diagonal);
+    request.ssq = test.ssq;
+    request.dim = test.dim;
+    request.sigma2 = test.ssq / test.dim;
+    request.degrees_of_freedom = test.dim - static_cast<int>(request.coefficients.size());
+    request.annual_frequency = frequency;
+    request.estimation_domain = n;
+    request.ami_outliers = static_cast<int>(effects.names.size());
+    request.free_parameters = test.free_parameters;
+    const auto stats = tramo_model_statistics(request);
+    const std::string stage = " at kernel seam " + std::to_string(seam);
+    require(std::equal(row.residuals.begin(), row.residuals.end(), request.residuals.begin(),
+                       request.residuals.end(), bit_equal), "fitted likelihood residuals disagree" + stage);
+    require(stats.built && row.dim == request.dim && row.free_parameters == request.free_parameters &&
+            row.observations == stats.observations_count && row.outliers_count == stats.outliers_count &&
+            row.effective_observations == stats.effective_observations_count, "fitted statistics counts disagree" + stage);
+    require(bit_equal(row.ljung_box, stats.ljung_box) && bit_equal(row.ljung_box_pvalue, stats.ljung_box_pvalue),
+            "fitted Ljung-Box statistics disagree" + stage);
+    require(bit_equal(row.bic, stats.bic), "fitted BIC disagrees" + stage);
+    require(bit_equal(row.se, stats.se), "fitted standard error disagrees" + stage);
+}
+
+bool check_regression_test(const FittedOutlierEffects& effects, bool test_mean,
+                           const TramoKernelSeam& seam) {
+    TramoRegressionTestRequest request;
+    request.mean = effects.mean;
+    request.test_mean = test_mean;
+    request.mean_threshold = seam.tsig;
+    request.statistics = fitted_test_statistics(effects);
+    const auto decision = run_tramo_regression_tests(request);
+    const auto stage = decision.estimation_cleared ? TramoKernelStageResult::changed
+                                                   : TramoKernelStageResult::unchanged;
+    require(seam.result == stage && seam.mean == decision.mean, "fitted regression test decision disagrees");
+    // The probe asks for tstats after the test: clearing the model also clears its likelihood.
+    const auto t = decision.estimation_cleared ? std::vector<double>{}
+                                               : tramo_test_tstats(request.statistics, true);
+    require(std::equal(t.begin(), t.end(), seam.tstats.begin(), seam.tstats.end(), bit_equal),
+            "fitted regression t-statistics disagree");
+    return decision.estimation_cleared;
+}
 
 FittedOutlierEffects check_final_estimation(const TramoFitSpec& spec, const std::vector<double>& y,
                             EstimationEntry& entry, const TramoKernelSeam& expected) {
@@ -206,7 +269,7 @@ FittedOutlierEffects check_final_estimation(const TramoFitSpec& spec, const std:
         columns.emplace_back(y.size());
         fill_outlier_column(var.type, var.position, spec.annual_frequency, spec.delta_tc, columns.back());
     }
-    const auto estimate = tramo_final_estimator_run(options, y, columns);
+    auto estimate = tramo_final_estimator_run(options, y, columns);
     const auto& t = estimate.orders_after;
     require(estimate.returned == (expected.returned != 0) && estimate.nnsig == expected.nnsig,
             "live final estimation decision disagrees with the module witness");
@@ -217,7 +280,7 @@ FittedOutlierEffects check_final_estimation(const TramoFitSpec& spec, const std:
     require(std::equal(estimate.parameters_after.begin(), estimate.parameters_after.end(),
                        expected.parameters.begin(), expected.parameters.end(), bit_equal),
             "live final estimation parameters disagree with the module witness");
-    FittedOutlierEffects effects{entry.orders, entry.mean, estimate.parameters_after, std::move(names), {}};
+    FittedOutlierEffects effects{entry.orders, entry.mean, estimate.parameters_after, std::move(names), {}, {}};
     if (!columns.empty() && estimate.cl_coefs.size() == columns.size() + static_cast<std::size_t>(entry.mean)) {
         // RegArimaUtility.regressionEffect accumulates the effects before
         // the differencing module subtracts their sum from the model response.
@@ -228,6 +291,7 @@ FittedOutlierEffects check_final_estimation(const TramoFitSpec& spec, const std:
         effects.corrected_response = y;
         for (std::size_t i = 0; i < y.size(); ++i) effects.corrected_response[i] -= total[i];
     }
+    effects.fit = std::move(estimate);
     return effects;
 }
 
@@ -446,12 +510,26 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
     bool ctx_seasonal = prestage.seasonal;
     std::size_t next_input = 0;
     std::optional<EstimationEntry> final_entry;
-    std::optional<FittedOutlierEffects> effects;
+    std::optional<FittedOutlierEffects> effects, reference_effects;
     for (std::size_t s = 0; s < seams.size(); ++s) {
         const TramoKernelSeam& seam = seams[s];
-        if ((seam.kind == TramoKernelSeamKind::estimation && seam.estimation_taken) ||
-            (seam.kind == TramoKernelSeamKind::pass2_gate && seam.reverted))
+        if (effects && effects->fit.cl_state != 0 &&
+            (seam.kind == TramoKernelSeamKind::round0 || seam.kind == TramoKernelSeamKind::pass2_gate)) {
+            check_round_statistics(*effects, seam.stats, built.annual_frequency,
+                                   static_cast<int>(built.interpolated.size()), s);
+            ++result.statistics_checked;
+        }
+        if (seam.kind == TramoKernelSeamKind::round0)
+            reference_effects = effects;
+        if (seam.kind == TramoKernelSeamKind::pass2_gate && seam.reverted)
+            effects = reference_effects;
+        if (seam.kind == TramoKernelSeamKind::estimation && seam.estimation_taken)
             effects.reset();
+        if (effects && effects->fit.cl_state != 0 && seam.kind == TramoKernelSeamKind::regression_test) {
+            if (check_regression_test(*effects, result.kernel.ami_check_mu, seam))
+                effects.reset();
+            ++result.regression_tests_checked;
+        }
         if (effects && (seam.kind == TramoKernelSeamKind::seasonality_controller ||
                         seam.kind == TramoKernelSeamKind::model_controller) &&
             (seam.parameters != effects->parameters || seam.outliers != effects->names ||

@@ -303,6 +303,8 @@ struct TramoFitResult {
     TramoKernelRoundsRun kernel;
     std::vector<TramoFitSeamCheck> seam_checks;
     std::size_t seams_live = 0, seams_fact = 0;
+    std::size_t regression_tests_checked = 0; // mean decision and post-test t-statistics
+    std::size_t statistics_checked = 0; // model-statistics rows reproduced from live estimation
 };
 
 // The automatic TRAMO fit. Order of operations (contract "stage order"):

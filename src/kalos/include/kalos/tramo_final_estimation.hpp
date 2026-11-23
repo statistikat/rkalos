@@ -255,6 +255,10 @@ struct TramoFinalEstimatorRunResult {
     int cl_dim = 0;                 // concentratedLikelihood.dim()
     double cl_ssq = 0.0;            // concentratedLikelihood.ssq()
     std::vector<double> cl_coefs;   // allCoefficients
+    std::vector<double> cl_residuals; // cl.e(): QR tail, or raw Kalman innovations without regressors
+    std::vector<double> cl_unscaled_covariance; // row-major regression covariance, in design order
+    double cl_log_determinant = 0.0;
+    double cl_log_likelihood = 0.0;
     std::vector<double> covariance_diagonal; // state 1 only
     // Point tail witness: the scaled information matrix (row-major dim x dim)
     // the last point-tail round inverted; empty when no point tail ran.

@@ -422,12 +422,14 @@ TramoFinalEstimatorRunResult run_final_estimator(
     int nnsig = 0;
     int estimation_state = 0;
     int cl_dim = 0;
-    double cl_ssq = 0.0;
+    double cl_ssq = 0.0, cl_logdet = 0.0, cl_loglik = 0.0;
+    detail::PinnedRegressionDiagnostics reporting;
     std::vector<double> cl_coefs, covariance_diagonal;
     auto null_estimation = [&] {
         estimation_state = 0;
         cl_dim = 0;
-        cl_ssq = 0.0;
+        cl_ssq = cl_logdet = cl_loglik = 0.0;
+        reporting = {};
         cl_coefs.clear();
         covariance_diagonal.clear();
         result.landing_information.clear();
@@ -457,6 +459,10 @@ TramoFinalEstimatorRunResult run_final_estimator(
         result.cl_dim = cl_dim;
         result.cl_ssq = cl_ssq;
         result.cl_coefs = cl_coefs;
+        result.cl_residuals = std::move(reporting.qr_residuals);
+        result.cl_unscaled_covariance = std::move(reporting.unscaled_covariance);
+        result.cl_log_determinant = cl_logdet;
+        result.cl_log_likelihood = cl_loglik;
         result.covariance_diagonal = covariance_diagonal;
         return result;
     };
@@ -490,20 +496,26 @@ TramoFinalEstimatorRunResult run_final_estimator(
         for (const auto& column : regressors)
             design_cols.push_back(detail::pinned_backfilter_apply(differencing(), column));
 
-        if (dim == 0) {
-            // The zero-parameter shortcut: DEFAULT_COMPUTER.compute(m4).
-            auto cl = !design_cols.empty()
-                ? detail::pinned_deviances_evaluate_multi(dly, 0, 0, 0, 0, period,
-                    design_cols, {}, detail::PinnedComputerShape::Fixed)
-                : detail::pinned_deviances_evaluate(dly, 0, 0, 0, 0, period, {}, {});
-            if (!cl) {
-                result.rounds.push_back(rec);
-                return estimation_failed(); // "Gls failed" et al.
-            }
-            estimation_state = 2; // no landing point
+        const auto fit_likelihood = [&] {
+            detail::PinnedRegressionDiagnostics candidate;
+            const auto cl = detail::pinned_deviances_evaluate_multi(dly, orders.p, orders.bp,
+                orders.q, orders.bq, period, design_cols, pars, detail::PinnedComputerShape::Fixed, &candidate);
+            if (!cl) return false;
             cl_dim = static_cast<int>(cl->e.size());
             cl_ssq = cl->ssq_err;
             cl_coefs = cl->b;
+            cl_logdet = cl->ldet;
+            cl_loglik = cl->log_likelihood;
+            reporting = std::move(candidate);
+            return true;
+        };
+        if (dim == 0) {
+            // The zero-parameter shortcut: DEFAULT_COMPUTER.compute(m4).
+            if (!fit_likelihood()) {
+                result.rounds.push_back(rec);
+                return estimation_failed();
+            }
+            estimation_state = 2;
             rec.shortcircuit = true;
             rec.nnsig_after = nnsig;
             rec.outcome = "return_true";
@@ -587,23 +599,11 @@ TramoFinalEstimatorRunResult run_final_estimator(
         }
         rec.landing = pars;
 
-        auto cl = !design_cols.empty()
-            ? detail::pinned_deviances_evaluate_multi(dly,
-                static_cast<std::size_t>(orders.p), static_cast<std::size_t>(orders.bp),
-                static_cast<std::size_t>(orders.q), static_cast<std::size_t>(orders.bq),
-                period, design_cols, pars, detail::PinnedComputerShape::Full)
-            : detail::pinned_deviances_evaluate(dly,
-                static_cast<std::size_t>(orders.p), static_cast<std::size_t>(orders.bp),
-                static_cast<std::size_t>(orders.q), static_cast<std::size_t>(orders.bq),
-                period, {}, pars);
-        if (!cl) {
+        if (!fit_likelihood()) {
             result.rounds.push_back(rec);
             return estimation_failed();
         }
         estimation_state = 1;
-        cl_dim = static_cast<int>(cl->e.size());
-        cl_ssq = cl->ssq_err;
-        cl_coefs = cl->b;
 
         // The Point tail, the RegArmaProcessor.compute exact-derivatives
         // branch (computeExactFinalDerivatives, the FE's computer flag):
@@ -619,14 +619,27 @@ TramoFinalEstimatorRunResult run_final_estimator(
         // vd1 < 0), which the pinned SymmetricMatrix.inverse Cholesky-then-
         // Doolittle fallback absorbs; a singular inverse mirrors the
         // MatrixException into the round catch.
+        // RegArmaProcessor's point uses the pivoted optimizer likelihood.
+        // RegSarimaComputer.optimize then reports DEFAULT_COMPUTER over the
+        // fitted model, fixing every design column in its original order.
+        std::vector<double> tail_coefs = cl_coefs;
+        if (design_cols.size() > 1) {
+            auto objective = detail::pinned_deviances_evaluate_multi(dly, orders.p, orders.bp,
+                orders.q, orders.bq, period, design_cols, pars);
+            if (!objective) {
+                result.rounds.push_back(rec);
+                return estimation_failed();
+            }
+            tail_coefs = std::move(objective->b);
+        }
         std::vector<double> tail_y = dly;
-        if (cl->b.size() != design_cols.size()) {
+        if (tail_coefs.size() != design_cols.size()) {
             result.rounds.push_back(rec);
             return estimation_failed(); // calcResiduals would throw
         }
         for (std::size_t k = 0; k < design_cols.size(); ++k) {
             for (std::size_t i = 0; i < tail_y.size(); ++i) {
-                tail_y[i] -= design_cols[k][i] * cl->b[k];
+                tail_y[i] -= design_cols[k][i] * tail_coefs[k];
             }
         }
         final_information_request fi;

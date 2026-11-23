@@ -69,6 +69,13 @@ struct PinnedMachinePoint {
     std::vector<double> b;
 };
 
+// Optional QR reporting at a fitted point. Optimizer evaluations can skip
+// both the raw residual tail and the regression covariance calculation.
+struct PinnedRegressionDiagnostics {
+    std::vector<double> qr_residuals;
+    std::vector<double> unscaled_covariance; // row major in input column order
+};
+
 // The two ConcentratedLikelihoodComputer shapes (item 23-F F.2): Full is
 // DEFAULT_FULL_COMPUTER (xfixed = false: the whole whitened design enters
 // HouseholderWithPivoting with column pivoting and there is no rank
@@ -116,6 +123,13 @@ std::optional<PinnedMachinePoint> pinned_deviances_evaluate_multi(
     const std::vector<double>& y, std::size_t p, std::size_t bp, std::size_t q, std::size_t bq,
     int period, const std::vector<std::vector<double>>& design, const std::vector<double>& jvm,
     PinnedComputerShape shape = PinnedComputerShape::Full);
+
+// At a fitted point the extra output includes the compact cl.e() and the
+// full regression covariance. An empty design uses the scalar Kalman path.
+std::optional<PinnedMachinePoint> pinned_deviances_evaluate_multi(
+    const std::vector<double>& y, std::size_t p, std::size_t bp, std::size_t q, std::size_t bq,
+    int period, const std::vector<std::vector<double>>& design, const std::vector<double>& jvm,
+    PinnedComputerShape shape, PinnedRegressionDiagnostics* diagnostics);
 
 // Pinned Polynomial.times (the full convolution behind the rational filter
 // compositions of the item 23-B scan machine: composing the pi weights with

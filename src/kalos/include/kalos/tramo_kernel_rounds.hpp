@@ -147,7 +147,8 @@ enum class TramoKernelIterateEnd {
 // reproducible bit-for-bit from the e-array through the landed 23-E
 // primitives (the replay witnesses that); se and bic need the likelihood
 // sigma2/ssq/degreesOfFreedom fields the capture does NOT record, so
-// those two ride as facts - documented, never invented.
+// the standalone round replay carries both. The integrated fit regenerates
+// all row fields from its live final estimator.
 struct TramoKernelStatsRow {
     int free_parameters = 0;   // desc.getArimaSpec().freeParametersCount()
     int dim = 0;               // cl.dim()

@@ -4,6 +4,13 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 integration checkpoint for residual normality (2026-11-23)
+
+Kalos `9f6f74e417ec6f3f88ff4e994152a40438303169` adds the public RSA0
+Doornik–Hansen result and paired JVM evidence. Both locks and the CI
+toolchain pin agree. Offline verification passed for **194 core, 112
+fixture and 355 evidence files**.
+
 ## M5 monthly SEATS legacy retries in R (2026-11-23)
 
 Version `0.1.0.9008` extends `seats_extract_wk()` and `seats_from_tramo()`

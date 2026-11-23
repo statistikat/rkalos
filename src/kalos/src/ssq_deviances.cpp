@@ -965,7 +965,7 @@ struct ls_solution_n {
 };
 
 ls_solution_n least_squares_n(const hwp_n& decomp, const std::vector<double>& y,
-    double rcond) {
+    double rcond, std::vector<double>* qr_residuals = nullptr) {
     ls_solution_n out;
     out.rank = decomp.rank(rcond);
     std::vector<double> x = y;
@@ -986,6 +986,8 @@ ls_solution_n least_squares_n(const hwp_n& decomp, const std::vector<double>& y,
     }
     // DataBlock.ssq over the residual slice: ascending, skipping the
     // non-finite coordinates.
+    if (qr_residuals)
+        qr_residuals->assign(x.begin() + static_cast<std::ptrdiff_t>(out.rank), x.end());
     double acc = 0.0;
     for (std::size_t i = out.rank; i < x.size(); ++i) {
         if (std::isfinite(x[i])) {
@@ -994,6 +996,47 @@ ls_solution_n least_squares_n(const hwp_n& decomp, const std::vector<double>& y,
     }
     out.ssq_err = acc;
     return out;
+}
+
+bool regression_covariance_from_qr(const hwp_n& decomp, std::size_t r,
+                                   std::vector<double>& diagonal, std::vector<double>* full = nullptr) {
+    for (std::size_t k = 0; k < r; ++k) { // inverse()'s m_err_sing precheck
+        if (std::isgreater(decomp.qr[k * (decomp.m + 1)], 0.0)
+            || std::isless(decomp.qr[k * (decomp.m + 1)], 0.0)) {
+            continue; // dcmpg != 0: a nonzero diagonal passes
+        }
+        if (!std::isnan(decomp.qr[k * (decomp.m + 1)])) {
+            return false; // exactly zero (signed zero included)
+        }
+    }
+    // U = inverse(R block): identity columns, ascending, through solve_ux
+    // (the rank-bounded loop reads only x[0..rank), so an r-long column is
+    // the extracted block's column).
+    diagonal.assign(decomp.n, 0.0);
+    if (full) full->assign(decomp.n * decomp.n, 0.0);
+    std::vector<std::vector<double>> ucols;
+    ucols.reserve(r);
+    for (std::size_t j = 0; j < r; ++j) {
+        std::vector<double> x(r, 0.0);
+        x[j] = 1.0;
+        if (!decomp.solve_ux(r, x)) {
+            return false; // MatrixException
+        }
+        ucols.push_back(std::move(x));
+    }
+    for (std::size_t i = 0; i < r; ++i) {
+        const auto ii = decomp.pivot.empty() ? i : static_cast<std::size_t>(decomp.pivot[i]);
+        for (std::size_t k = full ? 0 : i; k <= i; ++k) {
+            double dot = 0.0;
+            for (std::size_t j = 0; j < r; ++j) dot += ucols[j][i] * ucols[j][k];
+            if (i == k) diagonal[ii] = dot;
+            if (full) {
+                const auto kk = decomp.pivot.empty() ? k : static_cast<std::size_t>(decomp.pivot[k]);
+                (*full)[ii * decomp.n + kk] = (*full)[kk * decomp.n + ii] = dot;
+            }
+        }
+    }
+    return true;
 }
 
 // SarimaModel.getRegularAR/getRegularMA: [1, c...] through ofInternal.
@@ -1077,9 +1120,10 @@ double pinned_ols_1col(const std::vector<double>& col, const std::vector<double>
     return least_squares(hwp, y, 1e-9).bb;
 }
 
-std::optional<PinnedMachinePoint> pinned_deviances_evaluate(
+static std::optional<PinnedMachinePoint> scalar_deviances(
     const std::vector<double>& y, std::size_t p, std::size_t bp, std::size_t q, std::size_t bq,
-    int period, const std::vector<double>& design, const std::vector<double>& jvm) {
+    int period, const std::vector<double>& design, const std::vector<double>& jvm,
+    std::vector<double>* innovations) {
     if (jvm.size() != p + bp + q + bq || period < 2 || y.empty()) {
         return std::nullopt;
     }
@@ -1216,6 +1260,7 @@ std::optional<PinnedMachinePoint> pinned_deviances_evaluate(
         pt.e.push_back(pt.factor == 1.0 ? v : v * root); // dcmpl ifne shortcut
     }
 
+    if (innovations) *innovations = std::move(w);
     if (multi_use && sol.rank == 1) {
         // ConcentratedLikelihood.tstat(0, 0, false): the ser order is
         // sqrt((uc * ssq) / dim) with the uc == 0 and coefficient == 0
@@ -1232,10 +1277,27 @@ std::optional<PinnedMachinePoint> pinned_deviances_evaluate(
     return pt;
 }
 
+std::optional<PinnedMachinePoint> pinned_deviances_evaluate(
+    const std::vector<double>& y, std::size_t p, std::size_t bp, std::size_t q, std::size_t bq,
+    int period, const std::vector<double>& design, const std::vector<double>& jvm) {
+    return scalar_deviances(y, p, bp, q, bq, period, design, jvm, nullptr);
+}
+
 std::optional<PinnedMachinePoint> pinned_deviances_evaluate_multi(
     const std::vector<double>& y, std::size_t p, std::size_t bp, std::size_t q, std::size_t bq,
     int period, const std::vector<std::vector<double>>& design, const std::vector<double>& jvm,
     PinnedComputerShape shape) {
+    return pinned_deviances_evaluate_multi(y, p, bp, q, bq, period, design, jvm, shape, nullptr);
+}
+
+std::optional<PinnedMachinePoint> pinned_deviances_evaluate_multi(
+    const std::vector<double>& y, std::size_t p, std::size_t bp, std::size_t q, std::size_t bq,
+    int period, const std::vector<std::vector<double>>& design, const std::vector<double>& jvm,
+    PinnedComputerShape shape, PinnedRegressionDiagnostics* diagnostics) {
+    if (diagnostics && design.empty()) {
+        diagnostics->unscaled_covariance.clear();
+        return scalar_deviances(y, p, bp, q, bq, period, {}, jvm, &diagnostics->qr_residuals);
+    }
     if (jvm.size() != p + bp + q + bq || period < 2 || y.empty() || design.empty()) {
         return std::nullopt;
     }
@@ -1303,7 +1365,7 @@ std::optional<PinnedMachinePoint> pinned_deviances_evaluate_multi(
     // every whitened column and takes the rank requirement: rank below the
     // column count is the pinned "Gls failed" throw.
     decomp.decompose(xx, shape == PinnedComputerShape::Fixed ? xx.size() : 0);
-    const ls_solution_n sol = least_squares_n(decomp, w, kRcond);
+    const ls_solution_n sol = least_squares_n(decomp, w, kRcond, diagnostics ? &diagnostics->qr_residuals : nullptr);
     if (sol.singular) {
         return std::nullopt;
     }
@@ -1311,6 +1373,11 @@ std::optional<PinnedMachinePoint> pinned_deviances_evaluate_multi(
     pt.b = sol.b;
     if (shape == PinnedComputerShape::Fixed && sol.rank < xx.size()) {
         return std::nullopt; // "Gls failed" (EcoException at the caller)
+    }
+    if (diagnostics) {
+        std::vector<double> diagonal;
+        if (!regression_covariance_from_qr(decomp, sol.rank, diagonal, &diagnostics->unscaled_covariance))
+            return std::nullopt;
     }
     if (sol.rank == 0) {
         // ConcentratedLikelihoodComputer: the rank-0 branch profiles no
@@ -1569,42 +1636,8 @@ std::optional<PinnedGlsPoint> pinned_gls_point(const std::vector<double>& y,
     PinnedGlsPoint pt;
     pt.b = sol.b;
     pt.ssq_err = sol.ssq_err;
-    const std::size_t r = sol.rank; // == whitened.size() here, square
-    for (std::size_t k = 0; k < r; ++k) { // inverse()'s m_err_sing precheck
-        if (std::isgreater(decomp.qr[k * (decomp.m + 1)], 0.0)
-            || std::isless(decomp.qr[k * (decomp.m + 1)], 0.0)) {
-            continue; // dcmpg != 0: a nonzero diagonal passes
-        }
-        if (!std::isnan(decomp.qr[k * (decomp.m + 1)])) {
-            return std::nullopt; // exactly zero (signed zero included)
-        }
-    }
-    // U = inverse(R block): identity columns, ascending, through solve_ux
-    // (the rank-bounded loop reads only x[0..rank), so an r-long column is
-    // the extracted block's column).
-    std::vector<double> uc_full(decomp.n, 0.0);
-    std::vector<std::vector<double>> ucols;
-    ucols.reserve(r);
-    for (std::size_t j = 0; j < r; ++j) {
-        std::vector<double> x(r, 0.0);
-        x[j] = 1.0;
-        if (!decomp.solve_ux(r, x)) {
-            return std::nullopt; // MatrixException
-        }
-        ucols.push_back(std::move(x));
-    }
-    for (std::size_t k = 0; k < r; ++k) {
-        double acc = 0.0;
-        for (std::size_t j = 0; j < r; ++j) { // UUt row dot, ascending j
-            const double v = ucols[j][k];
-            acc += v * v;
-        }
-        if (decomp.pivot.empty()) {
-            uc_full[k] = acc;
-        } else {
-            uc_full[static_cast<std::size_t>(decomp.pivot[k])] = acc;
-        }
-    }
+    std::vector<double> uc_full;
+    if (!regression_covariance_from_qr(decomp, sol.rank, uc_full)) return std::nullopt;
     const std::size_t nx = decomp.n - nmissing; // nx() = b.length - nmissing
     pt.uc_diag.assign(uc_full.begin() + static_cast<std::ptrdiff_t>(nmissing),
         uc_full.begin() + static_cast<std::ptrdiff_t>(nmissing + nx));

@@ -8,6 +8,7 @@
 // header envelope.
 #include "kalos/arma_diagnostics.hpp"
 
+#include "kalos/detail/fdlibm.hpp"
 #include "kalos/detail/special_functions.hpp"
 #include "mlj_engine.hpp"
 
@@ -147,6 +148,50 @@ LjungBoxTest rsa0_residual_ljung_box(const std::vector<double>& residuals) {
         return {true, std::nan(""), std::nan(""), 22.0};
     }
     return ljung_box_at_zero(residuals, 24, 2);
+}
+
+std::optional<ResidualNormalityTest> rsa0_residual_normality(const std::vector<double>& residuals) {
+    if (residuals.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+        throw std::invalid_argument("rsa0_residual_normality requires a JVM-sized series");
+    }
+    if (residuals.size() <= 7) return std::nullopt;
+    const double n = static_cast<double>(residuals.size());
+    const double mean = sum_of(residuals) / n;
+    double sum2 = 0.0, sum3 = 0.0, sum4 = 0.0;
+    for (const double value : residuals) {
+        if (!std::isfinite(value)) {
+            throw std::invalid_argument("rsa0_residual_normality requires finite residuals");
+        }
+        const double deviation = value - mean;
+        const double square = deviation * deviation;
+        const double cube = square * deviation;
+        sum2 += square;
+        sum3 += cube;
+        sum4 += cube * deviation;
+    }
+    const double variance = sum2 / n;
+    const double skewness = sum3 / (variance * std::sqrt(variance) * n);
+    const double kurtosis = sum4 / (variance * variance * n);
+
+    // DoornikHansen.build() transforms sample skewness to a normal score.
+    const double beta = 3 * (n * n + 27 * n - 70) * (n + 1) * (n + 3)
+                      / ((n - 2) * (n + 5) * (n + 7) * (n + 9));
+    const double w2 = -1 + std::sqrt(2 * (beta - 1));
+    const double delta = 1 / std::sqrt(0.5 * detail::fdlibm_log(w2));
+    const double y = skewness * std::sqrt((w2 - 1) * (n + 1) * (n + 3) / (12 * (n - 2)));
+    const double z1 = delta * detail::fdlibm_log(y + std::sqrt(y * y + 1));
+
+    // The kurtosis transform is conditional on observed squared skewness.
+    const double den = (n - 3) * (n + 1) * (n * n + 15 * n - 4);
+    const double a = (n - 2) * (n + 5) * (n + 7) * (n * n + 27 * n - 70) / (den * 6);
+    const double c = (n - 7) * (n + 5) * (n + 7) * (n * n + 2 * n - 5) / (den * 6);
+    const double k = (n + 5) * (n + 7) * (n * n * n + n * n * 37 + 11 * n - 313) / (den * 12);
+    const double alpha = a + c * skewness * skewness;
+    const double chi = 2 * k * (kurtosis - 1 - skewness * skewness);
+    const double z2 = std::sqrt(alpha * 9)
+        * (std::pow(chi / (2 * alpha), 1.0 / 3.0) - 1 + 1 / (9 * alpha));
+    const double value = z1 * z1 + z2 * z2;
+    return ResidualNormalityTest{value, detail::chi2_upper_p(ResidualNormalityTest::df, value)};
 }
 
 double calc_res_stat_rtval(const std::vector<double>& seq) {
