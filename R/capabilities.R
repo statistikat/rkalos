@@ -58,7 +58,7 @@ capabilities <- function() {
                     msr_requests_pinned = TRUE,      # one "msr" per calendar period: the decoder G4 surface, not an option
                     automatic_henderson = TRUE,      # trend_length 0 (the restricted fit refuses it)
                     sigma_policy_default = "legacy", # same maintainer 2026-11-17 decision as restricted_fit; $sigma_provenance reports "legacy (default)" vs "(explicit)"
-                    horizon_envelope = "backcast/forecast month counts, a negative count meaning |h| annual frequencies (the core normalizes); the 21-H.4 initialStep route extends the downstream composition only — decisions, landing and the preadjustment stay horizon-invariant",
+                    horizon_envelope = "backcast/forecast month counts, a negative count meaning |h| annual frequencies (the core normalizes); the 21-H.4 initialStep route extends the downstream composition only \u2014 decisions, landing and the preadjustment stay horizon-invariant",
                                          # replaces zero_horizon_only (schema 3L): R-qualified by the 4-case JVM horizon capture in test-native-x13-horizon.R; the RESTRICTED fit stays zero-horizon-only
                     modes = c("additive", "multiplicative", "log_additive", "pseudo_additive")
                   ),

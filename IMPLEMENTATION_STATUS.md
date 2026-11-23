@@ -19,6 +19,12 @@ requests that require the separate AO/LS stage. Captured numerical facts
 were compared exactly, including the differenced series, both log/level
 criteria and the degenerate Friedman test. Calendar and malformed-input
 checks also passed. The test ran without loading Java or JDemetra packages.
+An independent OpenMP archive installation on the same host passed all
+196 checks with two workers. The source-archive check ran documentation,
+compiled-code and example checks (`--no-tests --no-manual`). Escaping the Unicode dash in the X-13
+capability string preserved the entire returned list byte-for-byte and
+cleared the R source-encoding warning. Two warnings remain from the R
+headers' Clang diagnostic and the core-required `-ffp-contract=off` flag.
 
 The source archive built and installed. Offline verification matched all
 186 core files, 112 fixtures and 331 evidence files at the existing pin.
