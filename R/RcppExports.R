@@ -113,6 +113,10 @@
     .Call(`_rkalos_native_regression_likelihood`, values, design, coefficients, ar, ma, seasonal_ar, seasonal_ma, period, d, seasonal_d, mean, variance, rank_tolerance)
 }
 
+.native_seats_extract_wk <- function(spec, calendar, series) {
+    .Call(`_rkalos_native_seats_extract_wk`, spec, calendar, series)
+}
+
 .native_stationary_likelihood <- function(values, transition, observation, noise_loading, observation_variance = NULL, mean = NULL, variance = NULL) {
     .Call(`_rkalos_native_stationary_likelihood`, values, transition, observation, noise_loading, observation_variance, mean, variance)
 }

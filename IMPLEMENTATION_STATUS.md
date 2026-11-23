@@ -4,6 +4,22 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 fixed-model SEATS component extraction (2026-11-23)
+
+Version `0.1.0.9003` exposes `seats_extract_wk()`. The R gate compares all 36 frozen 24-C WK cases with the structured 24-D
+extraction API at Kalos `ef98f14`. It covers component and information
+order, absent versus present-empty rows, monthly dates, raw binary64
+values and the core's error and refusal decisions.
+
+The independent serial and OpenMP installations each passed **7,369/7,369**
+assertions. The 1,055 structured component rows accounted for 55,812 exact
+binary64 values, including conditional standard deviations and forecast and
+backcast rows. Each positive-length row carried its monthly `ts` domain.
+The run included all six refusal cases and the captured decomposition-error
+statuses. The primitive needs a supplied fitted model and positive innovation
+variance. End-to-end TRAMO/SEATS fitting has its own gate.
+[Installed API](man/seats_extract_wk.Rd) · [WK fixture replay](inst/tinytest/test-native-seats-extract-wk.R)
+
 ## M5 integration checkpoint — fitted SEATS bridge (2026-11-23)
 
 The separate generated snapshot advances to Kalos `ef98f14`, with
@@ -22,10 +38,9 @@ or `a1b` (backcast). The corresponding `finals$tables` entries use the roots
 its monthly calendar. Zero-length windows omit the optional keys.
 `capabilities()$automatic_fit$x11$horizon_tables` lists the ten table names. Observed outputs preserve the source `ts` time
 attributes. The four frozen horizon cases passed all 668 window, value,
-refusal and calendar assertions in the initial projection replay. The
-13-case automatic suite also passed 1,210 assertions, including zero-horizon
-omission. An additional source-calendar precision regression runs in the
-automatic suite. [Horizon fixture replay](inst/tinytest/test-native-x13-horizon.R)
+refusal and calendar assertions. The 13-case automatic suite passed all
+1,213 assertions, including zero-horizon omission and source-calendar
+precision. [Horizon fixture replay](inst/tinytest/test-native-x13-horizon.R)
 
 ## M5 R checkpoint — TRAMO preprocessing (2026-11-23)
 
