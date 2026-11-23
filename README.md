@@ -48,6 +48,10 @@ coefficients supplied by a caller. The monthly legacy SEATS retries cover
 airline seasonal MA replacement and the mean-free (2,1,0)(1,1,0) seasonal
 AR-to-MA refit, including the merged product series for fitted AO/LS effects.
 
+`native_tramo_preprocess(series, "TR1")` fits the stock monthly TR1
+preprocessing model. Its result contains the selected transformation,
+fitted airline parameters, dated residuals and estimated outlier effects.
+
 Install OpenBLAS with CBLAS and LAPACKE (qualification version 0.3.34). Set `KALOS_OPENBLAS_ROOT` to its prefix before building and installing the source archive. For custom or static providers, set `KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler and linker flags including dependencies.
 C++17 and Rcpp are required. Configure probes optional OpenMP with R's actual
 compiler; failed probes select serial execution. `KALOS_NUM_THREADS` takes

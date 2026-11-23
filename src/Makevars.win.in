@@ -15,6 +15,13 @@ OBJECTS = RcppExports.o \
   rcpp_state_space.o \
   rcpp_seats.o \
   kalos/src/tramo_seats_bridge.o \
+  rcpp_tramo_fit.o \
+  kalos/src/tramo_arma_selection.o \
+  kalos/src/tramo_final_estimation.o \
+  kalos/src/tramo_fit.o \
+  kalos/src/tramo_kernel_rounds.o \
+  kalos/src/tramo_outlier_rounds.o \
+  kalos/src/tramo_regression_tests.o \
   kalos/src/tramo_tr0.o \
   kalos/src/tramo_seats_pipeline.o \
   kalos/src/seats_extract_wk.o \

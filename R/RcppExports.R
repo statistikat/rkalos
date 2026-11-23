@@ -137,6 +137,10 @@
     .Call(`_rkalos_native_tramo_differencing`, values, period, orders, mean, log, seasonal, initial)
 }
 
+.native_tramo_tr1 <- function(series, year, month) {
+    .Call(`_rkalos_native_tramo_tr1`, series, year, month)
+}
+
 .native_tramo_prepare_model <- function(values, name, year, month, frequency) {
     .Call(`_rkalos_native_tramo_prepare_model`, values, name, year, month, frequency)
 }

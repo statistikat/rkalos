@@ -4,6 +4,24 @@ Updated **2026-11-23**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 monthly TR1 preprocessing from observations (2026-11-23)
+
+Version `0.1.0.9010` adds `native_tramo_preprocess(series, "TR1")`,
+also accepting the template name RSA1. It returns the observed-data
+log/level decision, airline coefficients, mean and detected outliers,
+likelihood and dated preprocessing residuals. The six JVM fits cover
+both transforms, five AO/LS effects and 570 monthly residuals. All
+coefficients, likelihood fields and residual values matched bit-for-bit.
+
+Both installed builds passed **130/130** preprocessing assertions,
+**675/675** RSA0 fit and diagnostic assertions, **1,160/1,160**
+fitted bridge assertions and **7,676/7,676** WK extraction assertions.
+Both isolated Java-free smoke runs executed TR1 preprocessing and RSA0
+product extraction. The public seasonal-adjustment template remains RSA0.
+The preceding `0.1.0.9009` passed **301,938/301,938** serial assertions
+across 60 files.
+[TR1 reference replay](inst/tinytest/test-native-tramo-preprocess.R)
+
 ## Incremental installs after a Kalos pin change (2026-11-23)
 
 The new fitted TRAMO record changed the C++ structure layout. An incremental

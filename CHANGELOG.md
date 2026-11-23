@@ -2,6 +2,10 @@
 
 ## Development version
 
+Version 0.1.0.9010 adds TR1 preprocessing from the original monthly
+series, including automatic transformation and outliers, model and
+likelihood estimates, and dated residuals.
+
 Version 0.1.0.9009 adds the public RSA0 Doornik–Hansen residual
 normality statistic and its chi-squared upper-tail probability.
 

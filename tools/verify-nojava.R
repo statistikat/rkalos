@@ -22,6 +22,9 @@ stopifnot(!any(forbidden %in% loadedNamespaces()))
 cap <- capabilities()
 stopifnot(identical(cap$fit, FALSE), identical(cap$status, "unimplemented"))
 if ("--native" %in% args) {
+  tr1 <- native_tramo_preprocess(datasets::AirPassengers)
+  stopifnot(identical(tr1$status, "available"), identical(tr1$template, "TR1"),
+            isTRUE(tr1$model$log), length(tr1$residuals$tsres) == 131L)
   rsa0 <- native_tramoseats_fit(datasets::AirPassengers)
   trend_forecast <- with(rsa0$merged, values[[which(component == "Trend" & information == "Forecast")]])
   stopifnot(identical(cap$tramo_seats_fit$templates, "RSA0"), identical(rsa0$status, "ok"),
