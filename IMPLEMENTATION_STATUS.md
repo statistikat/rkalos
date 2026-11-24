@@ -4,6 +4,44 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Core re-pin: completed WK factorizer chain (2026-11-24)
+
+The core pin moved `7299cdefff357309b84f4409cbc76e7f556bb761` to
+`b4f2e1d1f5eeac4b819a0a2a7a615aa3732f9a19` (lock schema 2; verified 206
+core, 112 fixture and 409 evidence files; the kalos manifest carries 207
+core entries, of which the two license texts are excluded for the R kind
+and the generated `include/kalos/revision.hpp` is added). The vendored
+churn is one core header — `include/kalos/detail/seats_ucarima_model.hpp`
+(+938 lines: the fast and robust symmetric-filter factorizer tiers) —
+`revision.hpp`, the two lock files and five new evidence files under
+`fixtures/native/seats-wk-factorizer-tiers/`.
+
+Behaviour change: the WK factorizer chain is complete, so the monthly
+`x13-refusal-jvm-profiles/seas.csv` profile whose SEATS WK extraction the
+native mirror previously refused now produces full RSA3 and RSAfull
+products. The replay oracle was frozen from the pinned JVM in
+`e59063fd366e6a9e0ba70da263db94f03a61add2` and the implementation landed
+in `b4f2e1d`. No rkalos test pinned the old refusal, and no expectation,
+fixture or tolerance changed with this re-pin.
+
+The full Java-free suite (66 `test-native-*` files plus
+`test-package-boundary.R`, 67 files, no rjd3/rJava) passed
+**309,932/309,932** assertions in the serial lane and
+**309,936/309,936** in the two-worker OpenMP lane. Per-file counts are
+identical to the same-lane `7299cde` baselines (verified file by file,
+zero diffs); the serial-vs-OpenMP delta is the pre-existing
+OpenMP-conditional blocks in `test-native-parallel.R` (37/35) and
+`test-native-tramo-information.R` (1,574/1,580). The three suites pinned
+by the M6 checkpoint stayed at adjusted-seasonality 168,
+combined-seasonality 198 and stock X-13 761 per lane. Both lanes passed
+the isolated `--native` Java-free smoke test; since Rcpp 1.1.2 its
+`.onLoad` registers a vignette engine through `tools::`, so the isolated
+check now preloads the base `tools` namespace before the library swap
+(no Java-related package is or was loaded). Both fresh builds report the
+pinned provider `OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING
+SkylakeX SINGLE_THREADED` and core revision `b4f2e1d…`, and the CI
+provider fetch now pins `ref: b4f2e1d1f5eeac4b819a0a2a7a615aa3732f9a19`.
+
 ## M6 adjusted-series seasonality replay (2026-11-24)
 
 Version `0.1.0.9026` exports `monthly_adjusted_seasonality()`, which

@@ -1,0 +1,134 @@
+fac 1 n=2 poly 3f125ec70fea2c00 3f025ec70fea2c00
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.calcestimator(WienerKolmogorovEstimators.java:142)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.finalEstimator(WienerKolmogorovEstimators.java:211)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.revisionModel(WienerKolmogorovEstimators.java:287)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.revisionVariance(WienerKolmogorovEstimators.java:333)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.totalErrorVariance(WienerKolmogorovEstimators.java:429) -> scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 1 ev2 scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 1 ev1 scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 1 fast scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 1 robust scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+fac 2 n=14 poly 3feb2dda34c7e9d6 3fdf895020449557 3fc04655447b5ca6 3fbd35e308048984 3fb9e5e6a8c585b6 3fb69bf42e978cec 3fb3574a5cd87dea 3fb01727f6e636f6 3fa9b597803d2df8 3fa342e8f7bef8ca 3f99a983b61b17e8 bfc4f42899fbde5f bfd57b964d7553f4 bfc68e908635078b
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.arima.ArimaModel.simplifyAr(ArimaModel.java:542)
+    at jdplus.toolkit.base.core.arima.ArimaModel.pm(ArimaModel.java:286)
+    at jdplus.toolkit.base.core.arima.ArimaModel.plus(ArimaModel.java:477)
+    at jdplus.toolkit.base.core.ucarima.UcarimaModel.getComplement(UcarimaModel.java:184)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.finalErrorModel(WienerKolmogorovEstimators.java:186) -> scaling=3fd1ade0c014ef63 factor n=14 3ff0000000000000 3fefbda6fc053829 3fc604c3d8138072 3fcb3709303236fb 3fc9845f2e3fedc4 3fc736b419e737b4 3fca85a5a34b289d 3fc48470141ddd6b 3fcb6ee5f5b506a5 3fc1f3172092cf69 3fcdc39c5c58c495 3fb84318bedef68b bfe2a2b0eff5f5ae bfe46a15668e6786
+  tier 2 ev2 scaling=3fd1ade0c014ef63 factor n=14 3ff0000000000000 3fefbda6fc053829 3fc604c3d8138072 3fcb3709303236fb 3fc9845f2e3fedc4 3fc736b419e737b4 3fca85a5a34b289d 3fc48470141ddd6b 3fcb6ee5f5b506a5 3fc1f3172092cf69 3fcdc39c5c58c495 3fb84318bedef68b bfe2a2b0eff5f5ae bfe46a15668e6786
+  tier 2 ev1 scaling=3fd1ade0ca54873c factor n=14 3ff0000000000000 3fefbda6e9abd0a1 3fc604c3d6ef4ae5 3fcb370926d6adf7 3fc9845f25ac43b5 3fc736b41603e5b1 3fca85a597ac8d46 3fc4847012759e30 3fcb6ee5e9b52ab6 3fc1f3171e72e510 3fcdc39c5299f9e2 3fb84318b2ed686a bfe2a2b0f09043da bfe46a155aeb2a98
+  tier 2 fast scaling=3fd1ade42696a444 factor n=14 3ff0000000000000 3fefbda0ebbbefa5 3fc604c2f39a8312 3fcb370699a87c04 3fc9845bc787097d 3fc736b351e3152d 3fca85a14532dde0 3fc4846ff961bfe5 3fcb6ee18ad47079 3fc1f316ca5c1172 3fcdc398c321110a 3fb8431569ed977d bfe2a2b1393387a8 bfe46a1179033ab8
+  tier 2 robust scaling=3fd1ade0bfc49bc5 factor n=14 3ff0000000000000 3fefbda6fcb6d0c1 3fc604c3d55c4df4 3fcb3709333ff06f 3fc9845f2b89c851 3fc736b41cbeee30 3fca85a5a0e82011 3fc48470168d5785 3fcb6ee5f3bd48d2 3fc1f317229c27df 3fcdc39c5ab0c6be 3fb84318c29d9d21 bfe2a2b0f0674261 bfe46a15668e67b8
+fac 3 n=14 poly 3f2505a26a0e4c33 3f1d5eff095fc936 3f0fcb0aa32a6286 3f0c971a6608041f 3f0964f55aa716c5 3f06348c0903aa32 3f0305a6f9e60e53 3effb01d6c2d2612 3ef957178cbb1078 3ef2ffcd67067ba9 3ee953f017a78e86 bef0f4fe7d4b9fda bf067f44712823da bef749af0c63f37d
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.arima.AbstractArimaModel.getAutoCovarianceFunction(AbstractArimaModel.java:67)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.totalErrorVariance(WienerKolmogorovEstimators.java:430)
+    at jdplus.tramoseats.base.core.seats.BurmanEstimates.stdevEstimates(BurmanEstimates.java:515)
+    at jdplus.tramoseats.base.core.seats.WienerKolmogorovEstimator.decompose(WienerKolmogorovEstimator.java:82)
+    at jdplus.tramoseats.base.core.seats.SeatsKernel.estimateComponents(SeatsKernel.java:133) -> scaling=3f01dca02266dac2 factor n=14 3ff0000000000000 3ff39d26d63c73e0 3fdb2840c94f1ff0 3fdad4b18b0ccb71 3fda53eae70d6626 3fd9ebbcb104a4d2 3fd989138b455bda 3fd908d92daf0cda 3fd8c469b0e06efb 3fd82ff4a9ec3fac 3fd801ca41714eda 3fd764423a44227d bfdd6ca914f1a356 bfe4df1a2325846b
+  tier 3 ev2 null
+  tier 3 ev1 null
+  tier 3 fast null
+  tier 3 robust scaling=3f01dca02266dac2 factor n=14 3ff0000000000000 3ff39d26d63c73e0 3fdb2840c94f1ff0 3fdad4b18b0ccb71 3fda53eae70d6626 3fd9ebbcb104a4d2 3fd989138b455bda 3fd908d92daf0cda 3fd8c469b0e06efb 3fd82ff4a9ec3fac 3fd801ca41714eda 3fd764423a44227d bfdd6ca914f1a356 bfe4df1a2325846b
+fac 4 n=14 poly 3f2505a26a0e4c33 3f1d5eff095fc936 3f0fcb0aa32a6286 3f0c971a6608041f 3f0964f55aa716c5 3f06348c0903aa32 3f0305a6f9e60e53 3effb01d6c2d2612 3ef957178cbb1078 3ef2ffcd67067ba9 3ee953f017a78e86 bef0f4fe7d4b9fda bf067f44712823da bef749af0c63f37d
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.arima.AbstractArimaModel.getAutoCovarianceFunction(AbstractArimaModel.java:67)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.totalErrorVariance(WienerKolmogorovEstimators.java:430)
+    at jdplus.tramoseats.base.core.seats.BurmanEstimates.stdevForecasts(BurmanEstimates.java:541)
+    at jdplus.tramoseats.base.core.seats.WienerKolmogorovEstimator.decompose(WienerKolmogorovEstimator.java:84)
+    at jdplus.tramoseats.base.core.seats.SeatsKernel.estimateComponents(SeatsKernel.java:133) -> scaling=3f01dca02266dac2 factor n=14 3ff0000000000000 3ff39d26d63c73e0 3fdb2840c94f1ff0 3fdad4b18b0ccb71 3fda53eae70d6626 3fd9ebbcb104a4d2 3fd989138b455bda 3fd908d92daf0cda 3fd8c469b0e06efb 3fd82ff4a9ec3fac 3fd801ca41714eda 3fd764423a44227d bfdd6ca914f1a356 bfe4df1a2325846b
+  tier 4 ev2 null
+  tier 4 ev1 null
+  tier 4 fast null
+  tier 4 robust scaling=3f01dca02266dac2 factor n=14 3ff0000000000000 3ff39d26d63c73e0 3fdb2840c94f1ff0 3fdad4b18b0ccb71 3fda53eae70d6626 3fd9ebbcb104a4d2 3fd989138b455bda 3fd908d92daf0cda 3fd8c469b0e06efb 3fd82ff4a9ec3fac 3fd801ca41714eda 3fd764423a44227d bfdd6ca914f1a356 bfe4df1a2325846b
+fac 5 n=14 poly 3feb2dda34c7e9d6 3fdf895020449557 3fc04655447b5ca6 3fbd35e308048984 3fb9e5e6a8c585b6 3fb69bf42e978cec 3fb3574a5cd87dea 3fb01727f6e636f6 3fa9b597803d2df8 3fa342e8f7bef8ca 3f99a983b61b17e8 bfc4f42899fbde5f bfd57b964d7553f4 bfc68e908635078b
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.calcestimator(WienerKolmogorovEstimators.java:142)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.finalEstimator(WienerKolmogorovEstimators.java:211)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.revisionModel(WienerKolmogorovEstimators.java:287)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.revisionVariance(WienerKolmogorovEstimators.java:333)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.totalErrorVariance(WienerKolmogorovEstimators.java:429) -> scaling=3fd1ade0c014ef63 factor n=14 3ff0000000000000 3fefbda6fc053829 3fc604c3d8138072 3fcb3709303236fb 3fc9845f2e3fedc4 3fc736b419e737b4 3fca85a5a34b289d 3fc48470141ddd6b 3fcb6ee5f5b506a5 3fc1f3172092cf69 3fcdc39c5c58c495 3fb84318bedef68b bfe2a2b0eff5f5ae bfe46a15668e6786
+  tier 5 ev2 scaling=3fd1ade0c014ef63 factor n=14 3ff0000000000000 3fefbda6fc053829 3fc604c3d8138072 3fcb3709303236fb 3fc9845f2e3fedc4 3fc736b419e737b4 3fca85a5a34b289d 3fc48470141ddd6b 3fcb6ee5f5b506a5 3fc1f3172092cf69 3fcdc39c5c58c495 3fb84318bedef68b bfe2a2b0eff5f5ae bfe46a15668e6786
+  tier 5 ev1 scaling=3fd1ade0ca54873c factor n=14 3ff0000000000000 3fefbda6e9abd0a1 3fc604c3d6ef4ae5 3fcb370926d6adf7 3fc9845f25ac43b5 3fc736b41603e5b1 3fca85a597ac8d46 3fc4847012759e30 3fcb6ee5e9b52ab6 3fc1f3171e72e510 3fcdc39c5299f9e2 3fb84318b2ed686a bfe2a2b0f09043da bfe46a155aeb2a98
+  tier 5 fast scaling=3fd1ade42696a444 factor n=14 3ff0000000000000 3fefbda0ebbbefa5 3fc604c2f39a8312 3fcb370699a87c04 3fc9845bc787097d 3fc736b351e3152d 3fca85a14532dde0 3fc4846ff961bfe5 3fcb6ee18ad47079 3fc1f316ca5c1172 3fcdc398c321110a 3fb8431569ed977d bfe2a2b1393387a8 bfe46a1179033ab8
+  tier 5 robust scaling=3fd1ade0bfc49bc5 factor n=14 3ff0000000000000 3fefbda6fcb6d0c1 3fc604c3d55c4df4 3fcb3709333ff06f 3fc9845f2b89c851 3fc736b41cbeee30 3fca85a5a0e82011 3fc48470168d5785 3fcb6ee5f3bd48d2 3fc1f317229c27df 3fcdc39c5ab0c6be 3fb84318c29d9d21 bfe2a2b0f0674261 bfe46a15668e67b8
+fac 6 n=2 poly 3f125ec70fea2c00 3f025ec70fea2c00
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.arima.ArimaModel.simplifyAr(ArimaModel.java:542)
+    at jdplus.toolkit.base.core.arima.ArimaModel.pm(ArimaModel.java:286)
+    at jdplus.toolkit.base.core.arima.ArimaModel.plus(ArimaModel.java:477)
+    at jdplus.toolkit.base.core.ucarima.UcarimaModel.getComplement(UcarimaModel.java:184)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.finalErrorModel(WienerKolmogorovEstimators.java:186) -> scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 6 ev2 scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 6 ev1 scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 6 fast scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 6 robust scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+fac 7 n=15 poly 3fd0f9613f827b0a 3f6c06f6ad4efac0 bfc0c5d2d24b1c1e bef7a29a30fec800 bef50c229d6be000 bef27233965c4800 beefaa78147c6000 beea6b55cf0f6000 bee527de39427c00 bedfc1de5ffe2000 3fb0c4ac6dbb85c0 bf79aa3983adfa80 bfbf8c7df635a4c7 bf79a7937292bc00 3fb0c50128f006ab
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.arima.AbstractArimaModel.getAutoCovarianceFunction(AbstractArimaModel.java:67)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.totalErrorVariance(WienerKolmogorovEstimators.java:430)
+    at jdplus.tramoseats.base.core.seats.BurmanEstimates.stdevEstimates(BurmanEstimates.java:515)
+    at jdplus.tramoseats.base.core.seats.WienerKolmogorovEstimator.decompose(WienerKolmogorovEstimator.java:82)
+    at jdplus.tramoseats.base.core.seats.SeatsKernel.estimateComponents(SeatsKernel.java:133) -> scaling=3fbacd526ab17779 factor n=15 3ff0000000000000 3f86cbca603b8f12 bfe9a034452658d0 3fa67aa9f2ab3596 bf82cb01f476b3ed bf8d00ce4a16a171 3f9e09c5a3d989b5 bfa5fa933e384c95 3fad3ddbc37cdd13 bfb1e983a45d67a5 3fb851c4890512bb bfc10f8977c7f500 bfe59c25f785ff56 bfb1190fa6272365 3fe40595eb9e9e46
+  tier 7 ev2 scaling=3fbacd526ab17779 factor n=15 3ff0000000000000 3f86cbca603b8f12 bfe9a034452658d0 3fa67aa9f2ab3596 bf82cb01f476b3ed bf8d00ce4a16a171 3f9e09c5a3d989b5 bfa5fa933e384c95 3fad3ddbc37cdd13 bfb1e983a45d67a5 3fb851c4890512bb bfc10f8977c7f500 bfe59c25f785ff56 bfb1190fa6272365 3fe40595eb9e9e46
+  tier 7 ev1 scaling=3fbacd52597ce408 factor n=15 3ff0000000000000 3f86cbcf4fdc7842 bfe9a03458df6c19 3fa67aaa2afdb317 bf82cb02568faec8 bf8d00ce40620c72 3f9e09c5bcd218a8 bfa5fa935447630c 3fad3ddbddcf569c bfb1e983b0c2afef 3fb851c491e5af70 bfc10f89782278fe bfe59c25f949fecb bfb1191008802843 3fe40595f77c16b2
+  tier 7 fast scaling=3fbacd52538ef98f factor n=15 3ff0000000000000 3f86cbd120bb921d bfe9a0345edb2aab 3fa67aaa116e6dfb bf82cb01b93ec69e bf8d00cf005d81b6 3f9e09c623715471 bfa5fa9388f0cb28 3fad3ddc100861c1 bfb1e983c82756a8 3fb851c4a5edfa4b bfc10f89802b10ef bfe59c25f81a241f bfb119103c195ee4 3fe40595fce7405e
+  tier 7 robust scaling=3fbacd5253a59bbe factor n=15 3ff0000000000000 3f86cbd1274a6b9a bfe9a0345ec0e690 3fa67aaa11af2fd6 bf82cb01b8593d12 bf8d00ceff363390 3f9e09c623e153a2 bfa5fa938897ea4f 3fad3ddc105219cd bfb1e983c7f0f03e 3fb851c4a61a941d bfc10f89800c3f7c bfe59c25f81602a1 bfb119103c8dd186 3fe40595fcd5f611
+fac 8 n=15 poly 3fd0f9613f827b0a 3f6c06f6ad4efac0 bfc0c5d2d24b1c1e bef7a29a30fec800 bef50c229d6be000 bef27233965c4800 beefaa78147c6000 beea6b55cf0f6000 bee527de39427c00 bedfc1de5ffe2000 3fb0c4ac6dbb85c0 bf79aa3983adfa80 bfbf8c7df635a4c7 bf79a7937292bc00 3fb0c50128f006ab
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.arima.AbstractArimaModel.getAutoCovarianceFunction(AbstractArimaModel.java:67)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.totalErrorVariance(WienerKolmogorovEstimators.java:430)
+    at jdplus.tramoseats.base.core.seats.BurmanEstimates.stdevForecasts(BurmanEstimates.java:541)
+    at jdplus.tramoseats.base.core.seats.WienerKolmogorovEstimator.decompose(WienerKolmogorovEstimator.java:84)
+    at jdplus.tramoseats.base.core.seats.SeatsKernel.estimateComponents(SeatsKernel.java:133) -> scaling=3fbacd526ab17779 factor n=15 3ff0000000000000 3f86cbca603b8f12 bfe9a034452658d0 3fa67aa9f2ab3596 bf82cb01f476b3ed bf8d00ce4a16a171 3f9e09c5a3d989b5 bfa5fa933e384c95 3fad3ddbc37cdd13 bfb1e983a45d67a5 3fb851c4890512bb bfc10f8977c7f500 bfe59c25f785ff56 bfb1190fa6272365 3fe40595eb9e9e46
+  tier 8 ev2 scaling=3fbacd526ab17779 factor n=15 3ff0000000000000 3f86cbca603b8f12 bfe9a034452658d0 3fa67aa9f2ab3596 bf82cb01f476b3ed bf8d00ce4a16a171 3f9e09c5a3d989b5 bfa5fa933e384c95 3fad3ddbc37cdd13 bfb1e983a45d67a5 3fb851c4890512bb bfc10f8977c7f500 bfe59c25f785ff56 bfb1190fa6272365 3fe40595eb9e9e46
+  tier 8 ev1 scaling=3fbacd52597ce408 factor n=15 3ff0000000000000 3f86cbcf4fdc7842 bfe9a03458df6c19 3fa67aaa2afdb317 bf82cb02568faec8 bf8d00ce40620c72 3f9e09c5bcd218a8 bfa5fa935447630c 3fad3ddbddcf569c bfb1e983b0c2afef 3fb851c491e5af70 bfc10f89782278fe bfe59c25f949fecb bfb1191008802843 3fe40595f77c16b2
+  tier 8 fast scaling=3fbacd52538ef98f factor n=15 3ff0000000000000 3f86cbd120bb921d bfe9a0345edb2aab 3fa67aaa116e6dfb bf82cb01b93ec69e bf8d00cf005d81b6 3f9e09c623715471 bfa5fa9388f0cb28 3fad3ddc100861c1 bfb1e983c82756a8 3fb851c4a5edfa4b bfc10f89802b10ef bfe59c25f81a241f bfb119103c195ee4 3fe40595fce7405e
+  tier 8 robust scaling=3fbacd5253a59bbe factor n=15 3ff0000000000000 3f86cbd1274a6b9a bfe9a0345ec0e690 3fa67aaa11af2fd6 bf82cb01b8593d12 bf8d00ceff363390 3f9e09c623e153a2 bfa5fa938897ea4f 3fad3ddc105219cd bfb1e983c7f0f03e 3fb851c4a61a941d bfc10f89800c3f7c bfe59c25f81602a1 bfb119103c8dd186 3fe40595fcd5f611
+fac 9 n=2 poly 3f125ec70fea2c00 3f025ec70fea2c00
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.arima.ArimaModel.simplifyAr(ArimaModel.java:542)
+    at jdplus.toolkit.base.core.arima.ArimaModel.pm(ArimaModel.java:286)
+    at jdplus.toolkit.base.core.arima.ArimaModel.plus(ArimaModel.java:477)
+    at jdplus.toolkit.base.core.ucarima.UcarimaModel.getComplement(UcarimaModel.java:184)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.finalErrorModel(WienerKolmogorovEstimators.java:186) -> scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 9 ev2 scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 9 ev1 scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 9 fast scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+  tier 9 robust scaling=3f025ec70fea2c00 factor n=2 3ff0000000000000 3ff0000000000000
+fac 10 n=15 poly 3fe6d3da7fc3661c 3f82b5364e262981 bfd68f1bde8c729c 3cd6e21000000000 bcaa9c0000000000 bcc8120000000000 3cc582c000000000 bcbfd0c000000000 3cb8590000000000 bcaefa8000000000 3fc68f1bde8c727c bf912e4c43b89fe7 bfd5362466572aab bf912e4c43b8a032 3fc68f1bde8c7282
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.arima.ArimaModel.simplifyAr(ArimaModel.java:542)
+    at jdplus.toolkit.base.core.arima.ArimaModel.pm(ArimaModel.java:286)
+    at jdplus.toolkit.base.core.arima.ArimaModel.plus(ArimaModel.java:477)
+    at jdplus.toolkit.base.core.ucarima.UcarimaModel.getComplement(UcarimaModel.java:184)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.finalErrorModel(WienerKolmogorovEstimators.java:186) -> scaling=3fd231c7e1440148 factor n=15 3ff0000000000000 3f91f91fcca83919 bfe952242e4fdc50 3fa769f4060f0d24 bf7ca3cbe07f0875 bf8855f9a958efbf 3f9fd5f027d144cb bfa4bd869439a81e 3fae05ec8442da30 bfb149664bf8d11f 3fb8ae5c091cebb5 bfc0bf994ec514b9 bfe591cf1bc5e17b bfb1e4ebdd1b50ea 3fe3d690d47b551a
+  tier 10 ev2 scaling=3fd231c7e1440148 factor n=15 3ff0000000000000 3f91f91fcca83919 bfe952242e4fdc50 3fa769f4060f0d24 bf7ca3cbe07f0875 bf8855f9a958efbf 3f9fd5f027d144cb bfa4bd869439a81e 3fae05ec8442da30 bfb149664bf8d11f 3fb8ae5c091cebb5 bfc0bf994ec514b9 bfe591cf1bc5e17b bfb1e4ebdd1b50ea 3fe3d690d47b551a
+  tier 10 ev1 scaling=3fd231c7e143f235 factor n=15 3ff0000000000000 3f91f91fccab05ae bfe952242e4ff501 3fa769f4060f4e41 bf7ca3cbe07fc420 bf8855f9a9590bb7 3f9fd5f027d171cd bfa4bd869439d452 3fae05ec8442ff5a bfb149664bf8e1f1 3fb8ae5c091cfc29 bfc0bf994ec518f5 bfe591cf1bc5e3ea bfb1e4ebdd1bc683 3fe3d690d47b64c3
+  tier 10 fast scaling=3fd231c7e074f20a factor n=15 3ff0000000000000 3f91f91ff320bc47 bfe952242fa2439f 3fa769f40763fc31 bf7ca3cbdc9006ab bf8855f9b2ae6bde 3f9fd5f02d8aa106 bfa4bd869809b915 3fae05ec879b3ab3 bfb149664ddc12db 3fb8ae5c0a4de7c1 bfc0bf994f4640dd bfe591cf1bd168f5 bfb1e4ebe3ddeb5b 3fe3d690d55dc08a
+  tier 10 robust scaling=3fd231c7e143f721 factor n=15 3ff0000000000000 3f91f91fccaa5208 bfe952242e4fed3d 3fa769f4060f210f bf7ca3cbe07eb5a2 bf8855f9a959632a 3f9fd5f027d1937f bfa4bd869439da7d 3fae05ec844302e2 bfb149664bf8e613 3fb8ae5c091cf8f3 bfc0bf994ec517d3 bfe591cf1bc5e1dc bfb1e4ebdd1ba9f9 3fe3d690d47b601e
+fac 11 n=15 poly 3fd0f8ed0035e04d 3f6bd197a5196a2e bfc0c5d05b765726 3cc1037d7ee2796c bc93c8bf0233a9d0 bcb1e57804ec4a77 3caffc9385aee311 bca7a7a68562a818 3ca21a41f08a246f bc97085ad6b9b416 3fb0c5d05b76570e bf798c4cd662d36f bfbf8aa8ef08ed24 bf798c4cd662d3de 3fb0c5d05b765713
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.arima.AbstractArimaModel.getAutoCovarianceFunction(AbstractArimaModel.java:67)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.totalErrorVariance(WienerKolmogorovEstimators.java:430)
+    at jdplus.tramoseats.base.core.seats.BurmanEstimates.stdevEstimates(BurmanEstimates.java:515)
+    at jdplus.tramoseats.base.core.seats.WienerKolmogorovEstimator.decompose(WienerKolmogorovEstimator.java:82)
+    at jdplus.tramoseats.base.core.seats.SeatsKernel.estimateComponents(SeatsKernel.java:133) -> scaling=3fbb0e272c0f6216 factor n=15 3ff0000000000000 3f91f91fccb62088 bfe952242e5049ad 3fa769f4060f9479 bf7ca3cbe07d79a5 bf8855f9a95bd08b 3f9fd5f027d3407d bfa4bd86943adc92 3fae05ec84440d02 bfb149664bf96414 3fb8ae5c091d5fd6 bfc0bf994ec536f3 bfe591cf1bc5e445 bfb1e4ebdd1db870 3fe3d690d47b9e30
+  tier 11 ev2 scaling=3fbb0e272c0f6216 factor n=15 3ff0000000000000 3f91f91fccb62088 bfe952242e5049ad 3fa769f4060f9479 bf7ca3cbe07d79a5 bf8855f9a95bd08b 3f9fd5f027d3407d bfa4bd86943adc92 3fae05ec84440d02 bfb149664bf96414 3fb8ae5c091d5fd6 bfc0bf994ec536f3 bfe591cf1bc5e445 bfb1e4ebdd1db870 3fe3d690d47b9e30
+  tier 11 ev1 scaling=3fbb0e272c0fb495 factor n=15 3ff0000000000000 3f91f91fccaa830f bfe952242e4fef23 3fa769f4060f392c bf7ca3cbe07f51f8 bf8855f9a95925dc 3f9fd5f027d17913 bfa4bd869439cf8f 3fae05ec8442f6db bfb149664bf8e1f0 3fb8ae5c091cfbad bfc0bf994ec519a4 bfe591cf1bc5e294 bfb1e4ebdd1bb09c 3fe3d690d47b6160
+  tier 11 fast scaling=3fbb0e272c0e2f30 factor n=15 3ff0000000000000 3f91f91fcdfc911c bfe952242e516001 3fa769f4062378d9 bf7ca3cbdfdf542d bf8855f9a942ba50 3f9fd5f0280c9e48 bfa4bd86943a7f9f 3fae05ec8460d077 bfb149664bf8774a 3fb8ae5c09299fa0 bfc0bf994ec20325 bfe591cf1bc567e5 bfb1e4ebdd51288a 3fe3d690d47c8d6b
+  tier 11 robust scaling=3fbb0e272c0fb1a7 factor n=15 3ff0000000000000 3f91f91fccaa5d2a bfe952242e4ff189 3fa769f4060f2344 bf7ca3cbe07f106c bf8855f9a959a428 3f9fd5f027d1a329 bfa4bd869439e332 3fae05ec8442f920 bfb149664bf8ebbd 3fb8ae5c091cf8ab bfc0bf994ec51ea2 bfe591cf1bc5e2c9 bfb1e4ebdd1bb0de 3fe3d690d47b64b6
+fac 12 n=15 poly 3fd0f8ed0035e04d 3f6bd197a5196a2e bfc0c5d05b765726 3cc1037d7ee2796c bc93c8bf0233a9d0 bcb1e57804ec4a77 3caffc9385aee311 bca7a7a68562a818 3ca21a41f08a246f bc97085ad6b9b416 3fb0c5d05b76570e bf798c4cd662d36f bfbf8aa8ef08ed24 bf798c4cd662d3de 3fb0c5d05b765713
+    at jdplus.toolkit.base.core.arima.ArimaModel.getMa(ArimaModel.java:341)
+    at jdplus.toolkit.base.core.arima.AbstractArimaModel.getAutoCovarianceFunction(AbstractArimaModel.java:67)
+    at jdplus.toolkit.base.core.ucarima.WienerKolmogorovEstimators.totalErrorVariance(WienerKolmogorovEstimators.java:430)
+    at jdplus.tramoseats.base.core.seats.BurmanEstimates.stdevForecasts(BurmanEstimates.java:541)
+    at jdplus.tramoseats.base.core.seats.WienerKolmogorovEstimator.decompose(WienerKolmogorovEstimator.java:84)
+    at jdplus.tramoseats.base.core.seats.SeatsKernel.estimateComponents(SeatsKernel.java:133) -> scaling=3fbb0e272c0f6216 factor n=15 3ff0000000000000 3f91f91fccb62088 bfe952242e5049ad 3fa769f4060f9479 bf7ca3cbe07d79a5 bf8855f9a95bd08b 3f9fd5f027d3407d bfa4bd86943adc92 3fae05ec84440d02 bfb149664bf96414 3fb8ae5c091d5fd6 bfc0bf994ec536f3 bfe591cf1bc5e445 bfb1e4ebdd1db870 3fe3d690d47b9e30
+  tier 12 ev2 scaling=3fbb0e272c0f6216 factor n=15 3ff0000000000000 3f91f91fccb62088 bfe952242e5049ad 3fa769f4060f9479 bf7ca3cbe07d79a5 bf8855f9a95bd08b 3f9fd5f027d3407d bfa4bd86943adc92 3fae05ec84440d02 bfb149664bf96414 3fb8ae5c091d5fd6 bfc0bf994ec536f3 bfe591cf1bc5e445 bfb1e4ebdd1db870 3fe3d690d47b9e30
+  tier 12 ev1 scaling=3fbb0e272c0fb495 factor n=15 3ff0000000000000 3f91f91fccaa830f bfe952242e4fef23 3fa769f4060f392c bf7ca3cbe07f51f8 bf8855f9a95925dc 3f9fd5f027d17913 bfa4bd869439cf8f 3fae05ec8442f6db bfb149664bf8e1f0 3fb8ae5c091cfbad bfc0bf994ec519a4 bfe591cf1bc5e294 bfb1e4ebdd1bb09c 3fe3d690d47b6160
+  tier 12 fast scaling=3fbb0e272c0e2f30 factor n=15 3ff0000000000000 3f91f91fcdfc911c bfe952242e516001 3fa769f4062378d9 bf7ca3cbdfdf542d bf8855f9a942ba50 3f9fd5f0280c9e48 bfa4bd86943a7f9f 3fae05ec8460d077 bfb149664bf8774a 3fb8ae5c09299fa0 bfc0bf994ec20325 bfe591cf1bc567e5 bfb1e4ebdd51288a 3fe3d690d47c8d6b
+  tier 12 robust scaling=3fbb0e272c0fb1a7 factor n=15 3ff0000000000000 3f91f91fccaa5d2a bfe952242e4ff189 3fa769f4060f2344 bf7ca3cbe07f106c bf8855f9a959a428 3f9fd5f027d1a329 bfa4bd869439e332 3fae05ec8442f920 bfb149664bf8ebbd 3fb8ae5c091cf8ab bfc0bf994ec51ea2 bfe591cf1bc5e2c9 bfb1e4ebdd1bb0de 3fe3d690d47b64b6
+fac total 12 product true
+fac final uc changed false

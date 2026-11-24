@@ -1,0 +1,20 @@
+{
+  "java_version": "21.0.11",
+  "inputs": {
+    "seas.csv": "326efc58d35b73b470c04beb11fb8c33fef441e998145fa114729434707bd088"
+  },
+  "tevar_filter": "3f2505a26a0e4c33,3f1d5eff095fc936,3f0fcb0aa32a6286,3f0c971a6608041f,3f0964f55aa716c5,3f06348c0903aa32,3f0305a6f9e60e53,3effb01d6c2d2612,3ef957178cbb1078,3ef2ffcd67067ba9,3ee953f017a78e86,bef0f4fe7d4b9fda,bf067f44712823da,bef749af0c63f37d",
+  "jars": {
+    "jdplus-sa-base-api-3.9.0.jar": "3242fc40ed6e6684b9d0b8840aed234f2693457668b9d61c698c177339a6f5d6",
+    "jdplus-sa-base-core-3.9.0.jar": "265722774bd56e43888264e345a69482070e458ecc6f1e41d9ac3f6d11b2e8d4",
+    "jdplus-toolkit-base-api-3.9.0.jar": "fed5fe554c1e64e371d40a1a55d449323cc2630a0d5ea33a3a34e47f7926c2c8",
+    "jdplus-toolkit-base-core-3.9.0.jar": "1880e23dc1665be2822c30c4da11ea0f2482a8da5c3e9c80b372ff6b8375dd71",
+    "jdplus-tramoseats-base-api-3.9.0.jar": "9efd66f0581da262309ec5beb74afc6ace7e54402706cb13db62a23ffc7fb5b8",
+    "jdplus-tramoseats-base-core-3.9.0.jar": "f919fda9f88dcae01bc122f049889ba1ac37747cc409a1f9fdf793ac4bb09db9"
+  },
+  "captures": {
+    "wk": "de4410d4edd8275311ef2d7ec1ac875fa6a3a9fb92e005955a64adfd7b4e45b3",
+    "factorize-calls": "69e7dba8918fd4f00b9dc0dcfc59b84712ae7ce54d3c6c0e43803a65c9de450a",
+    "robust-stages": "3647826a5b00410b27f21e86dd987d5e75a985e793d77b96dea03fc82aff55bf"
+  }
+}

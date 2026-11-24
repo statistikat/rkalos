@@ -551,19 +551,22 @@ inline int ur_divisors(int n, vi& out) {
   return static_cast<int>(out.size());
 }
 
-// UnitRootsSolver(0) state after factorize: the roots plus the solver's
+// UnitRootsSolver state after factorize: the roots plus the solver's
 // remainder() (the quotient chain result q). 24-C.1 cluster 3 addition:
 // ArimaModel.simplifyUr reads solver.remainder(), so the loop is exposed
 // whole; ur_solver_factorize keeps its original roots-only contract.
+// The start_degree argument is UnitRootsSolver(int freq)'s startDegree:
+// 0 runs process()'s default descent from 2 * degree + 1, any other value
+// starts there (fast decomposer passes 12; robust passes its default 0).
 struct UrSolverResult {
   UnitRoots roots;
   Poly remainder;
 };
 
-inline UrSolverResult ur_solver_run(const Poly& p) {
+inline UrSolverResult ur_solver_run(const Poly& p, int start_degree) {
   UnitRoots ur;
   Poly q = p;
-  int n = 2 * p.degree() + 1;
+  int n = start_degree != 0 ? start_degree : 2 * p.degree() + 1;
   vi divs;
   UnitRoots tmp;
   auto pnorm = [&q](int nn) {
@@ -603,6 +606,8 @@ inline UrSolverResult ur_solver_run(const Poly& p) {
   }
   return {std::move(ur), std::move(q)};
 }
+
+inline UrSolverResult ur_solver_run(const Poly& p) { return ur_solver_run(p, 0); }
 
 inline UnitRoots ur_solver_factorize(const Poly& p) {
   return ur_solver_run(p).roots;
@@ -1511,6 +1516,911 @@ struct Ev1 {
   }
 };
 
+// ---------------------------------------------------------------------------
+// jdplus Complex.div(Complex) (Complex.txt @1145-1280, the scaled division;
+// the engine only needed inv() and div(double)). Branch is dcmpl: NaN on
+// either |part| takes the |re| >= |im| path, matching the iflt jump test.
+// ---------------------------------------------------------------------------
+inline cplx c_div(cplx x, cplx d) {
+  double re = d.re, im = d.im;
+  if (!lt_g(std::fabs(re), std::fabs(im))) {
+    double r = im / re;
+    double k = 1.0 / (re + im * r);
+    return {k * (x.re + x.im * r), k * (x.im - x.re * r)};
+  }
+  double r = re / im;
+  double k = 1.0 / (re * r + im);
+  return {k * (x.re * r + x.im), k * (x.im * r - x.re)};
+}
+
+// BackFilter.normalize() (BackFilter.txt @251-279): v == 0 or v == 1 return
+// this, otherwise new BackFilter(polynomial.times(1.0 / v)) (both dcmpl).
+inline BFilter bf_normalize(const BFilter& f) {
+  double v = f.p.c[0];
+  if (v == 0.0 || v == 1.0) return f;
+  return BFilter{p_times_d(f.p, 1.0 / v)};
+}
+
+// Polynomial.of(double[], int, int) (Polynomial.txt @120-32):
+// Arrays.copyOfRange(src, from, to) - END index, not a length - zero-padded
+// past the source end, AIOOBE (mirrored) for from < 0 || to < from ||
+// from > size; then Coefficients.ofInternal (1e-9 trim).
+inline Poly p_of_range(const vd& src, int from, int to) {
+  if (from < 0 || to < from || from > static_cast<int>(src.size())) throw Aioobe{};
+  vd t(static_cast<std::size_t>(to - from), 0.0);
+  for (int i = from; i < to; ++i)
+    if (i < static_cast<int>(src.size())) t[idx(i - from)] = src[idx(i)];
+  return p_raw(trim_copy(t));
+}
+
+// (p_derivate lives in the engine: Polynomial.txt @499-541, raw constructor,
+// NO trim, length-1 -> ZERO singleton.)
+
+// internal Polynomials.divide([D[D) @3-211 with the full div-by-zero branch
+// (the engine's pl_divide collapses the m < 0 case to NaN, "unused here";
+// SFR.divide can reach it, so the +Inf/-Inf/NaN results are pinned here).
+inline vd pl_divide_full(const vd& a, const vd& b) {
+  int n = static_cast<int>(a.size()) - 1;
+  while (n >= 0 && !(gt_g(std::fabs(a[idx(n)]), 1.0E-9))) --n;  // dcmpl ifle
+  if (n < 0) return {0.0};                                      // Coefficients.zero()
+  int m = static_cast<int>(b.size()) - 1;
+  while (m >= 0 && !(gt_g(std::fabs(b[idx(m)]), 1.0E-9))) --m;  // dcmpl ifle
+  if (m < 0) {
+    if (gt_l(a[idx(n)], 0.0)) return {std::numeric_limits<double>::infinity()};
+    if (a[idx(n)] < 0.0) return {-std::numeric_limits<double>::infinity()};
+    return {kNan};  // dcmpg at @86: NaN falls through a[n] < 0 to Coefficients.nan()
+  }
+  if (m > n) return {0.0};
+  vd ac = a;
+  vd q(static_cast<std::size_t>(n + 1), 0.0);
+  for (int i = n - m; i >= 0; --i) {
+    q[idx(i)] = ac[idx(m + i)] / b[idx(m)];
+    for (int j = m + i - 1; j >= i; --j) ac[idx(j)] = ac[idx(j)] - q[idx(i)] * b[idx(j - i)];
+  }
+  q.resize(static_cast<std::size_t>(n - m + 1));  // Arrays.copyOf
+  return q;
+}
+
+// ---------------------------------------------------------------------------
+// SymmetricFrequencyResponse helpers (m524/SymmetricFrequencyResponse.txt):
+// createFromFilter(f) = SFR(SymmetricFilter.convolutionOf(f, 1.0)); the SFR
+// built from a BackFilter reads convolutionOf over the ONE-SIDED coefficients
+// (the pattern pinned at sym_convolution). divide() is exactly
+// new SFR(m_p.divide(other.m_p)) = Polynomial.ofInternal(Polynomials.divide).
+// ---------------------------------------------------------------------------
+using detail::SFR;
+using detail::sfr_of;
+using detail::sfr_integral;
+
+inline SFR sfr_from_bf(const BFilter& bf) {
+  return sfr_of(sym_convolution(bf.p.c, 1.0));
+}
+inline SFR sfr_divide(const SFR& x, const SFR& y) {
+  return SFR{p_of(pl_divide_full(x.p.c, y.p.c))};
+}
+
+// ---------------------------------------------------------------------------
+// internal.toolkit.base.core.math.linearfilters
+// .SymmetricFrequencyResponseDecomposer - the FAST tier, third in the
+// SymmetricFilter.factorize() chain (SymmetricFilterAlgorithms.factorizer():
+// ev2 -> ev1 -> fast -> robust, no guard between the tiers). Pinned:
+// m524/SymmetricFrequencyResponseDecomposer.txt (decompose @43-463).
+// Defaults m_freq = 12, m_epsilon = 1.0E-4 (m_repsilon = 0.1 is dead in the
+// pinned bytecode). Unlike EV2/EV1 there is NO try/catch inside the JVM
+// method: AIOOBE (odd-length roots array), the p_roots envelope aborts and
+// any other exception propagate exactly like the JVM propagates them out of
+// SymmetricFilter.factorize(). The JVM distinguishes a NULL roots array
+// (solver decline -> factorize still succeeds with the UR-only filter) from
+// an empty one; the engine's p_roots never returns null (it raises the
+// pinned envelope errors instead), so the mirror treats "empty" as the JVM
+// "empty" case and the null branch is unreachable by construction.
+// ---------------------------------------------------------------------------
+struct SfrDecomp {
+  std::optional<BFilter> bf;
+  double fac = 0.0;
+  int freq = 12;
+  double epsilon = 1.0E-4;
+
+  bool decompose(const SymF& sf) {
+    bf = std::nullopt;
+    double w0 = sf_weight(sf, 0);
+    if (w0 <= 0.0) return false;  // dcmpg ifgt; NaN w0 continues
+    SFR sfr = sfr_of(sf);
+    double integral = sfr_integral(sfr);
+    if (integral <= 0.0) return false;  // dcmpg ifgt; NaN continues
+    Poly p = p_of(sf_weights_array(sf));          // Polynomial.ofInternal
+    UrSolverResult urs = ur_solver_run(p, freq);  // new UnitRootsSolver(12)
+    if (urs.roots.roots_count() != 0) {  // factorize(): getRootsCount() != 0
+      std::optional<UnitRoots> h = urs.roots.sqrt_();
+      if (h.has_value()) {
+        bf = BFilter{h->as_polynomial()};
+        sfr = sfr_divide(sfr, sfr_from_bf(*bf));
+      }
+    }
+    if (!bf) bf = BFilter::one();
+    std::vector<cplx> roots = detail::p_roots(sfr.p, "fast decomposer");
+    if (!roots.empty()) {
+      int n = static_cast<int>(roots.size());
+      std::vector<char> used(static_cast<std::size_t>(n), 0);
+      int cnt = 0;
+      for (int i = 0; i < n; ++i) {
+        if (used[idx(i)]) continue;
+        if (roots[idx(i)].im == 0.0) {  // dcmpl ifne (NaN -> complex path)
+          double r = roots[idx(i)].re;
+          double d = r * r - 1.0;
+          if (lt_g(std::fabs(d), 1.0E-9)) d = 0.0;  // dcmpg ifge (NaN keeps d)
+          if (d >= 0.0) {  // dcmpl iflt: NaN takes the pairing branch
+            if (!(r <= 0.0))
+              roots[idx(i)] = c_cart(r + std::sqrt(d));  // dcmpl ifle
+            else
+              roots[idx(i)] = c_cart(r - std::sqrt(d));
+            used[idx(i)] = 1;
+            ++cnt;
+          } else {
+            int j = -1;
+            double dist = -1.0;
+            for (int k = i + 1; k < n; ++k) {
+              if (used[idx(k)] || roots[idx(k)].im != 0.0) continue;
+              double dd = std::fabs(roots[idx(k)].re - r);
+              if (lt_g(dist, 0.0) || lt_g(dd, dist)) {
+                dist = dd;
+                j = k;
+              }
+            }
+            if (j > 0 && lt_g(dist, 0.1)) {
+              used[idx(i)] = 1;
+              used[idx(j)] = 1;
+              double prod = r * roots[idx(j)].re;
+              if (prod < 0.0) {  // dcmpg ifge: NaN prod takes the sqrt path
+                prod = 0.0;
+                r = 0.0;
+              } else
+                r = r > 0.0 ? std::sqrt(prod) : -std::sqrt(prod);  // dcmpl ifle
+              double im = prod - 1.0;
+              im = im < 0.0 ? std::sqrt(-im) : 0.0;  // dcmpg ifge
+              roots[idx(i)] = c_cart(r, im);
+              roots[idx(j)] = c_cart(r, -im);
+              cnt += 2;
+            } else {
+              bf = std::nullopt;
+              return false;
+            }
+          }
+        } else {
+          // sqrt(z^2 - 1); the root z +/+ s is paired with the CONJUGATE of
+          // another root within m_epsilon, and both are replaced by (the
+          // larger-modulus of) z + s and its conjugate.
+          cplx sq = c_sqrt(c_minus(c_times(roots[idx(i)], roots[idx(i)]), cplx{1.0, 0.0}));
+          cplx zp = c_add(roots[idx(i)], sq);
+          cplx zm = c_minus(roots[idx(i)], sq);
+          if (lt_g(c_absq(zm), c_absq(zp))) zm = zp;  // dcmpg ifge
+          for (int k = i + 1; k < n; ++k) {
+            if (used[idx(k)]) continue;
+            if (c_absq(c_minus(c_conj(roots[idx(i)]), roots[idx(k)])) < epsilon) {  // dcmpg ifge
+              used[idx(i)] = 1;
+              used[idx(k)] = 1;
+              roots[idx(i)] = zm;
+              roots[idx(k)] = c_conj(zm);
+              cnt += 2;
+              break;
+            }
+          }
+          if (!used[idx(i)]) {
+            bf = std::nullopt;
+            return false;
+          }
+        }
+      }
+      if (cnt != n) {
+        bf = std::nullopt;
+        return false;
+      }
+      Poly q = p_from_roots(roots);
+      q = detail::p_divide_d(q, q.c[0]);  // divide(get(0)) = times(1 / get(0))
+      bf = bf_times(*bf, BFilter{q});     // m_bf = m_bf.times(f2) (robust is
+                                          // the opposite order)
+    }
+    double ssq = 0.0;
+    for (int i = 0; i <= bf->p.degree(); ++i) ssq += bf->p.c[idx(i)] * bf->p.c[idx(i)];
+    fac = integral / ssq;
+    return true;  // m_var = integral / ssq, no sign gate (the robust tier has one)
+  }
+};
+
+// ---------------------------------------------------------------------------
+// jdplus ...polynomials.PolynomialComputer + NewtonOptimizer (pinned
+// m6-seas/PolynomialComputer.txt, m6-seas/NewtonOptimizer.txt). The ctor
+// normalizes the polynomial by its top coefficient (divide(double) =
+// times(1/d)) and takes the toArray() copy; computeAll(Complex) folds f and
+// f' in one Horner pass, and drops to the real path when |im| < EPS.
+// ---------------------------------------------------------------------------
+struct PolyComp {
+  vd p;
+  std::optional<cplx> fv, dfv;
+
+  int pdegree() const { return static_cast<int>(p.size()) - 1; }
+
+  Poly D(int k) const {  // ofInternal(p), then derivate() k times
+    Poly q = p_of(p);  // ofInternal TRIMS (1e-9), raw p_raw does not
+    for (int i = 0; i < k; ++i) q = p_derivate(q);
+    return q;
+  }
+
+  void compute_all(double x) {  // computeAll(double)
+    int n = pdegree();
+    double v = p[idx(n)], d = 0.0;
+    for (int k = n - 1; k >= 0; --k) {
+      d = x * d + v;
+      v = x * v + p[idx(k)];
+    }
+    dfv = c_cart(d);
+    fv = c_cart(v);
+  }
+
+  void compute_all(cplx x) {  // computeAll(Complex)
+    if (std::fabs(x.im) < kFeEps) {  // dcmpg ifge (NaN im -> complex path)
+      compute_all(x.re);
+      return;
+    }
+    int n = pdegree();
+    double fr = p[idx(n)], fi = 0.0, gr = 0.0, gi = 0.0;
+    for (int k = n - 1; k >= 0; --k) {
+      double t1 = x.re * gr - x.im * gi + fr;
+      double t2 = x.re * gi + x.im * gr + fi;
+      gr = t1;
+      gi = t2;
+      double t3 = x.re * fr - x.im * fi + p[idx(k)];
+      double t4 = x.re * fi + x.im * fr;
+      fr = t3;
+      fi = t4;
+    }
+    dfv = c_cart(gr, gi);
+    fv = c_cart(fr, fi);
+  }
+};
+
+// NewtonOptimizer. NBOUND = 100 * sqrt(2.220446049250313E-16) (static{});
+// the other statics are ConstantValues with no bytecode reference (the loop
+// bound 30 and the epsilon literal are inline constants in root()).
+inline constexpr double kNoBound = 100.0 * 1.4901161193847656E-8;  // 100*sqrt(eps)
+
+struct NewtonOpt {
+  PolyComp fn;
+  bool mroots;
+  double err = 0.0;
+  int multiplicity = 0;
+
+  NewtonOpt(const Poly& p, bool mr) : mroots(mr) {
+    fn.p = detail::p_divide_d(p, p.c[idx(p.degree())]).c;  // divide(get(degree))
+  }
+
+  cplx check_real_root(cplx z) const {  // |im| < NBOUND -> cart(re, 0.0)
+    if (std::fabs(z.im) < kNoBound) return c_cart(z.re, 0.0);
+    return z;
+  }
+
+  std::optional<cplx> root(cplx z0) {
+    double fbest = 1.0E36;
+    constexpr double noise = 2.220446049250313E-16;  // DBL_EPSILON literal
+    int icount = 0;
+    int n = fn.pdegree();
+    cplx x = z0, xbest = z0, incr{1.0, 0.0};
+    err = 1.0;
+    for (int it = 0; it < 30; ++it) {
+      fn.compute_all(x);
+      cplx f = *fn.fv, df = *fn.dfv;
+      if (lt_g(c_abs(f), fbest)) {  // @82 dcmpg ifge (NaN skips)
+        xbest = x;
+        fbest = c_abs(f);
+        icount = 0;
+      }
+      double xabs = c_abs(x);
+      if (mroots && !(xabs == 0.0) && lt_g(fbest, 1.0E-6)
+          && lt_g(c_abs(df) / xabs, 0.001) && n > 1) {  // all dcmpg guards
+        NewtonOpt no(fn.D(1), true);
+        std::optional<cplx> r = no.root(x);
+        if (r.has_value()) {
+          multiplicity = 1 + no.multiplicity;
+          err = no.err;
+          return r;
+        }
+      }
+      if (c_abs(df) > noise) {  // dcmpl ifle (NaN skips)
+        cplx t = c_div(f, df);
+        if (lt_g(c_abs(t), err * 5.0)) {
+          incr = t;
+          err = c_abs(incr);
+        }
+      }
+      if (!(xabs == 0.0) && (err / xabs < noise || icount == 5)) {
+        xbest = check_real_root(xbest);
+        err = err / xabs;
+        multiplicity = 1;
+        return xbest;
+      }
+      x = c_minus(x, incr);
+      ++icount;
+    }
+    if (fbest > kNoBound) return std::nullopt;  // dcmpl ifle (NaN CONTINUES)
+    xbest = check_real_root(xbest);
+    double a = c_abs(xbest);
+    if (!(a == 0.0)) err = err / a;  // dcmpl ifeq
+    multiplicity = 1;
+    return xbest;
+  }
+};
+
+// ---------------------------------------------------------------------------
+// COMPLEX_FOR_ITER (SymmetricMullerNewtonSolver static{}, initComplexForIter
+// (150) -> size 151): cart(Math.cos(i), Math.sin(i)). The pinned-JVM Math.
+// cos/sin dispatch is the live C2 dcos/dsin stubs == the engine's
+// hotspot_spectrum_cos/glibc_sin seams (CI-FDLIBM ledger in
+// ucarima_engine.hpp), so the table entries carry host-libm bits.
+// getComplexForIterationCounter (@2349) is a RAW COMPLEX_FOR_ITER[i] load:
+// i outside [0, 150] is an ArrayIndexOutOfBounds (mirrored as Aioobe).
+// ---------------------------------------------------------------------------
+inline cplx iter_complex(int i) {
+  return c_cart(kalos::detail::hotspot_spectrum_cos(static_cast<double>(i)),
+                kalos::detail::glibc_sin(static_cast<double>(i)));
+}
+
+// ---------------------------------------------------------------------------
+// internal.toolkit.base.core.math.linearfilters.SymmetricMullerNewtonSolver
+// (m6-seas/muller.txt, complete transcribe). The mirror keeps the JVM Ref
+// out-parameters as C++ references. lqdiv defaults false and the robust
+// decomposer never sets it; both update paths are transcribed anyway.
+// Instance-final constants from the ctor: MBOUND4 = sqrt(MAX_DOUBLE)/1e4,
+// MBOUND6 = log10(MBOUND4) - 4, MNOISESTART = 2.220446049250313E-14,
+// NBOUND = sqrt(DBL_EPSILON) (never read in reachable bytecode). The MITERMAX
+// / NFACTOR / ... statics are ConstantValues with no bytecode reference.
+// ---------------------------------------------------------------------------
+struct MullerSolver {
+  // Instance-final ctor fields: MBOUND4 = Math.sqrt(MAX_DOUBLE)/10000,
+  // MBOUND6 = Math.log10(MBOUND4) - 4, MNOISESTART, NBOUND = sqrt(eps).
+  // Math.log10 is StrictMath (fdlibm) while std::log10 is host libm; the
+  // only gate reading MBOUND6 asks |n * log10(|x2|)| > ~146.13 (suppress_
+  // overflow), so a last-ulp difference there cannot flip on these filters.
+  static double mbound4() { return std::sqrt(1.7976931348623157E308) / 10000.0; }
+  static double mbound6() { return std::log10(mbound4()) - 4.0; }
+  static double mnoise_start() { return 2.220446049250313E-14; }
+  static double isqrt2() { return 1.0 / std::sqrt(2.0); }
+
+  vd m_p, m_pred;
+  std::vector<cplx> m_roots;
+  std::vector<char> m_root_set;  // JVM null slots -> lejaOrder() NPEs
+  Poly m_remainder;
+  bool have_remainder = false;
+  int m_idx = 0, m_degree = 0;
+  double m_maxerr = 0.0;
+  cplx x0{0.0, 0.0}, x1{0.0, 0.0}, x2{0.0, 0.0}, h1{0.0, 0.0}, h2{0.0, 0.0},
+      q2{0.0, 0.0};
+  cplx f0{0.0, 0.0}, f1{0.0, 0.0}, f2{0.0, 0.0};  // Ref.val inlined
+  int iter = 0;
+  bool lqdiv = false;
+
+  // fdvalue(a, start, out, x): Horner over a[len-1 .. start] (muller.txt @83).
+  static cplx fdvalue(const vd& a, int start, cplx x) {
+    int n = static_cast<int>(a.size()) - 1;
+    double vr = a[idx(n)], vi = 0.0;
+    for (int k = n - 1; k >= start; --k) {
+      double t1 = x.re * vr - x.im * vi + a[idx(k)];
+      double t2 = x.re * vi + x.im * vr;
+      vr = t1;
+      vi = t2;
+    }
+    return c_cart(vr, vi);
+  }
+
+  // fdvalue(a, start, fOut, dfOut, x) (@142): the derivative fold runs
+  // first (d = d*x + f_old), then f = f*x + a[k].
+  static void fdvalue(const vd& a, int start, cplx x, cplx& fv, cplx& dfv) {
+    int n = static_cast<int>(a.size()) - 1;
+    double vr = a[idx(n)], vi = 0.0, gr = 0.0, gi = 0.0;
+    for (int k = n - 1; k >= start; --k) {
+      double t1 = x.re * gr - x.im * gi + vr;
+      double t2 = x.re * gi + x.im * gr + vi;
+      gr = t1;
+      gi = t2;
+      double t3 = x.re * vr - x.im * vi + a[idx(k)];
+      double t4 = x.re * vi + x.im * vr;
+      vr = t3;
+      vi = t4;
+    }
+    dfv = c_cart(gr, gi);
+    fv = c_cart(vr, vi);
+  }
+
+  // isSymmetric: |get(i) - get(deg - i)| > 1e-9 (dcmpl ifle: NaN CONTINUES).
+  bool is_symmetric(const Poly& p) const {
+    int d = p.degree();
+    for (int i = 0; i <= d / 2; ++i)
+      if (std::fabs(p.c[idx(i)] - p.c[idx(d - i)]) > 1.0E-9) return false;
+    return true;
+  }
+
+  // initialize(Ref xbest, DoubleRef fbest) (@562).
+  void initialize(cplx& xbest, double& fbest) {
+    x0 = c_cart(0.0);
+    x1 = c_cart(-isqrt2(), -isqrt2());
+    x2 = c_cart(isqrt2(), isqrt2());
+    h1 = c_minus(x1, x0);
+    h2 = c_minus(x2, x1);
+    q2 = c_div(h2, h1);
+    xbest = x2;
+    fbest = 2.220446049250313E-11;
+    iter = 0;
+  }
+
+  // iteration_equation(DoubleRef h2abs) (@612).
+  void iteration_equation(double& fval) {
+    h2 = c_times(h2, q2);
+    double ha = c_abs(h2);
+    if (ha > fval * 1000.0) {  // dcmpl ifle (NaN skips)
+      double s = 1000.0 / ha;
+      h2 = c_scale(h2, s);
+      q2 = c_scale(q2, s);
+    }
+    fval = ha;  // the value BEFORE the rescale
+    x2 = c_add(x2, h2);
+  }
+
+  // convergence_check(IntRef keep, d1, fval, d3) (@434): keep when the NEW
+  // |f| jumped past 100 * the OLD one (fval > 100 * d1, dcmpl ifle: NaN
+  // skips), |q2| > d3 (the initialize threshold, dcmpl ifle) and iter < 150;
+  // the halved h2 is the one SUBTRACTED from x2 (@62-74 uses the new h2).
+  void convergence_check(int& keep, double d1, double fval, double d3) {
+    if (gt_l(fval, 100.0 * d1) && gt_l(c_abs(q2), d3) && iter < 150) {
+      q2 = c_scale(q2, 0.5);
+      h2 = c_scale(h2, 0.5);
+      x2 = c_minus(x2, h2);
+      keep = 1;
+    }
+  }
+
+  // too_big_functionvalues(DoubleRef fv) (@1799). s = |re| + |im| compared
+  // to MBOUND4 with dcmpl ifle: s > MBOUND4 STRICTLY (NaN takes absSquare).
+  void too_big_functionvalues(double& fv) const {
+    double s = std::fabs(f2.re) + std::fabs(f2.im);
+    fv = gt_l(s, mbound4()) ? s : c_absq(f2);
+  }
+
+  // suppress_overflow() (@1732). The JVM loop is "repeat while the last
+  // pass made progress" (done is re-zeroed at the loop head), and the
+  // 1000-strike counter resets instead of shrinking past it. Both guards
+  // are dcmpl ifle: strict >, NaN skips.
+  void suppress_overflow() {
+    int n = static_cast<int>(m_pred.size()) - 1 - m_idx;
+    int count = 0, done = 0;
+    while (true) {
+      done = 0;
+      double a = c_abs(x2);
+      if (a > 1.0 && gt_l(std::fabs(static_cast<double>(n) * std::log10(a)), mbound6())) {
+        if (++count < 1000) {
+          h2 = c_scale(h2, 0.5);
+          q2 = c_scale(q2, 0.5);
+          x2 = c_minus(x2, h2);
+          done = 1;
+        } else {
+          count = 0;
+        }
+      }
+      if (done == 0) break;
+    }
+  }
+
+  // check_x_value (@299). d1 = previous |f|, d2 = current, d3 = the noise
+  // threshold; keep is SHARED with muller()'s stagnation counter.
+  void check_x_value(cplx& xbest, double& fbest, bool& conv, double d1, double d2,
+                     double d3, int& keep) {
+    if (!gt_g(d2, 1.01 * d1) && !lt_g(d2, 0.99 * d1)) {
+      if (lt_g(c_abs(h2), 0.01)) {  // dcmpg ifge (NaN -> rotate)
+        q2 = c_scale(q2, 2.0);
+        h2 = c_scale(h2, 2.0);
+      } else {
+        if (iter > 150) throw Aioobe{};  // COMPLEX_FOR_ITER[151]
+        q2 = iter_complex(iter);
+        h2 = c_times(h2, q2);
+      }
+    } else {
+      if (lt_g(d2, fbest)) {
+        fbest = d2;
+        xbest = x2;
+        keep = 0;
+        if (lt_g(std::sqrt(d2), d3)
+            && lt_g(c_abs(c_div(c_minus(x2, x1), x2)), d3))
+          conv = true;
+      }
+    }
+  }
+
+  // root_of_parabola (@1219) + the static parabola helpers (@1316-1646).
+  void root_of_parabola() {
+    cplx a = compute_a2(q2, f2, f0, f1);
+    cplx b = compute_b2(f2, f1, q2, f0);
+    cplx c = compute_c2(q2, f2);
+    cplx d = c_sqrt(compute_discr(b, a, c));
+    cplx vm = c_minus(b, d);
+    cplx vp = c_add(b, d);
+    double am = c_abs(vm), ap = c_abs(vp);
+    // @135-210: am > ap AND am > eps -> vm; FALLING THROUGH (am <= eps, or
+    // NaN anywhere via dcmpl) tests ap > eps -> vp; else the iter table.
+    if (gt_l(am, ap) && gt_l(am, 2.220446049250313E-16)) {
+      q2 = c_div(c_scale(c, -2.0), vm);
+    } else if (gt_l(ap, 2.220446049250313E-16)) {
+      q2 = c_div(c_scale(c, -2.0), vp);
+    } else {
+      if (iter > 150) throw Aioobe{};
+      q2 = iter_complex(iter);
+    }
+  }
+
+  // computeA2(q, f2, f0, f1) = q * ((f2 + q*f0) - (1 + q)*f1), component
+  // order transcribed from @1316-1423.
+  static cplx compute_a2(cplx q, cplx f2v, cplx f0v, cplx f1v) {
+    double t1r = f2v.re + (q.re * f0v.re - q.im * f0v.im);
+    double t1i = f2v.im + (q.re * f0v.im + q.im * f0v.re);
+    double t2r = (1.0 + q.re) * f1v.re - q.im * f1v.im;
+    double t2i = (1.0 + q.re) * f1v.im + q.im * f1v.re;
+    double dr = t1r - t2r, di = t1i - t2i;
+    return {q.re * dr - q.im * di, q.re * di + q.im * dr};
+  }
+
+  // computeB2(f2, f1, q, f0) = d21 + q * (q * d01 + 2 * d21),
+  // d21 = f2 - f1, d01 = f0 - f1 (@1423-1538).
+  static cplx compute_b2(cplx f2v, cplx f1v, cplx q, cplx f0v) {
+    double d21r = f2v.re - f1v.re, d21i = f2v.im - f1v.im;
+    double qr = q.re, qi = q.im;
+    double wr = qr * (f0v.re - f1v.re) - qi * (f0v.im - f1v.im);
+    double wi = qr * (f0v.im - f1v.im) + qi * (f0v.re - f1v.re);
+    double ur = wr + 2.0 * d21r, ui = wi + 2.0 * d21i;
+    double zr = qr * ur - qi * ui, zi = qr * ui + qi * ur;
+    return {d21r + zr, d21i + zi};
+  }
+
+  static cplx compute_c2(cplx q, cplx f2v) {  // (1 + q) * f2 (@1538-1575)
+    double qr = 1.0 + q.re, qi = q.im;
+    return {qr * f2v.re - qi * f2v.im, qr * f2v.im + qi * f2v.re};
+  }
+
+  static cplx compute_discr(cplx b, cplx a, cplx c) {  // b^2 - 4ac (@1575-1646)
+    double br2 = b.re * b.re - b.im * b.im;
+    double bi2 = b.re * b.im + b.im * b.re;
+    double ar = a.re * c.re - a.im * c.im;
+    double ai = a.re * c.im + a.im * c.re;
+    return {br2 - 4.0 * ar, bi2 - 4.0 * ai};
+  }
+
+  // muller() (@697): the JVM keeps nine Ref locals (slot numbers below):
+  // 3 = previous |f| (DoubleRef 1e36), 4 = fbest (1e36), 5 = |h2| scratch,
+  // 6 = the noise threshold (0 -> 2.220446049250313E-11 via initialize),
+  // 7 = kcounter, 8 = stagnation, 9 = converged, 10 = xbest (Ref ZERO).
+  // Loop head @150; re-entered ONCE via @372 when root_check reset the
+  // triple (kcounter hits 2).
+  cplx muller() {
+    double prev = 1.0E36, fbest = 1.0E36, noise = 0.0;
+    cplx xbest{0.0, 0.0};
+    int kcounter = 0, stagn = 0;
+    bool conv = false;
+    initialize(xbest, noise);
+    f0 = fdvalue(m_pred, m_idx, x0);
+    f1 = fdvalue(m_pred, m_idx, x1);
+    f2 = fdvalue(m_pred, m_idx, x2);
+    for (;;) {
+      muller_pass(xbest, prev, fbest, noise, stagn, conv);
+      ++kcounter;
+      root_check(fbest, kcounter, conv, stagn, xbest);
+      if (kcounter != 2) return xbest;
+    }
+  }
+
+  // compute_function(d1, DoubleRef fv, d3) (@392): re-evaluate f(x2) until
+  // convergence_check stops asking for a retry.
+  void compute_function(double d1, double& fv, double d3) {
+    int keep;
+    do {
+      keep = 0;
+      suppress_overflow();
+      f2 = fdvalue(m_pred, m_idx, x2);
+      too_big_functionvalues(fv);
+      ++iter;
+      convergence_check(keep, d1, fv, d3);
+    } while (keep != 0);
+  }
+
+  // one pass of the @150 loop body, including the stagnation bump and the
+  // three exit tests (@302-330: iter > 150, conv, or stagnation > 5.0).
+  void muller_pass(cplx& xbest, double& prev, double& fbest, double& noise,
+                   int& stagn, bool& conv) {
+    for (;;) {
+      root_of_parabola();
+      x0 = x1;
+      x1 = x2;
+      double h2abs = c_abs(h2);  // the DoubleRef @170-179 write
+      iteration_equation(h2abs);
+      f0 = f1;
+      f1 = f2;
+      double d1 = prev;
+      compute_function(d1, prev, noise);
+      check_x_value(xbest, fbest, conv, d1, prev, noise, stagn);
+      double xa = c_abs(xbest);
+      if (lt_g(std::fabs(xa - c_abs(x2)) / xa, mnoise_start())) ++stagn;
+      if (iter > 150) break;
+      if (conv) break;
+      if (!(static_cast<double>(stagn) <= 5.0)) break;
+    }
+  }
+
+  // root_check (@1126): after one full pass, if the best point does not
+  // look like a root the solver restarts from (ONE, NEG_ONE, ZERO). The
+  // |f| / (|f'| * |xbest|) > 1e-5 test is dcmpl ifle: NaN skips.
+  void root_check(double fbest, int& kcounter, bool& conv, int& stagn, cplx xbest) {
+    if (kcounter == 1 && fbest > 0.0) {  // dcmpl ifle (NaN skips)
+      cplx df;
+      fdvalue(m_pred, m_idx, xbest, f2, df);
+      if (gt_l(c_abs(f2) / (c_abs(df) * c_abs(xbest)), 1.0E-5)) {
+        x0 = c_cart(1.0);
+        x1 = c_cart(-1.0);
+        x2 = c_cart(0.0);
+        f0 = fdvalue(m_pred, m_idx, x0);
+        f1 = fdvalue(m_pred, m_idx, x1);
+        f2 = fdvalue(m_pred, m_idx, x2);
+        iter = 0;
+        ++kcounter;
+        conv = false;
+        stagn = 0;
+      }
+    }
+  }
+
+  void reinforce_symmetry() {
+    int n = m_degree - m_idx;
+    for (int i = 0; i < n / 2; ++i) {
+      double m = (m_pred[idx(m_idx + i)] + m_pred[idx(m_degree - i)]) / 2.0;
+      m_pred[idx(m_idx + i)] = m;
+      m_pred[idx(m_degree - i)] = m;
+    }
+  }
+
+  void set_root(int slot, cplx z) {
+    if (slot < 0 || static_cast<std::size_t>(slot) >= m_roots.size()) throw Aioobe{};
+    m_roots[idx(slot)] = z;
+    m_root_set[idx(slot)] = 1;
+  }
+
+  void roots_at_zero() {  // @1699 (m_idx increments ONE slot per zero root)
+    m_idx = 0;
+    while (m_idx < static_cast<int>(m_p.size())) {
+      if (m_p[idx(m_idx)] != 0.0) break;  // dcmpl ifne
+      set_root(m_idx, c_cart(0.0));
+      ++m_idx;
+    }
+  }
+
+  bool quadratic() {  // @1010
+    if (m_idx != m_degree - 2) return false;
+    double a = m_pred[idx(m_idx + 2)];
+    double b = m_pred[idx(m_idx + 1)];
+    double c = m_pred[idx(m_idx)];
+    double d8 = 2.0 * a;
+    double disc = b * b - 4.0 * a * c;
+    if (!(disc >= 0.0)) {  // dcmpl iflt: NaN disc takes the ELSE path
+      if (disc < -1.0E-6) return false;  // dcmpg ifge (NaN continues)
+      set_root(m_idx / 2, c_cart(-b / d8));
+      return true;
+    }
+    double sq = std::sqrt(disc);
+    set_root(m_idx / 2, c_cart(b < 0.0 ? (-b + sq) / d8 : (-b - sq) / d8));
+    return true;
+  }
+
+  void rescale() {  // @660
+    int n = static_cast<int>(m_p.size()) - 1;
+    double s = std::fabs(1.0 / m_p[idx(n)]);
+    if (s != 1.0)  // dcmpl ifeq (NaN multiplies)
+      for (int i = 0; i <= n; ++i) m_p[idx(i)] = m_p[idx(i)] * s;
+  }
+
+  // roots(n) (@1655): each stored root expands to (z, 1/z).
+  std::vector<cplx> expanded_roots(int k) const {
+    std::vector<cplx> out(static_cast<std::size_t>(2 * k), cplx{0.0, 0.0});
+    for (int i = 0; i < k; ++i) {
+      if (!m_root_set[idx(i)]) throw JvmNpe{};  // null.inv()
+      out[idx(2 * i)] = m_roots[idx(i)];
+      out[idx(2 * i + 1)] = c_inv(m_roots[idx(i)]);
+    }
+    return out;
+  }
+
+  bool update(cplx x) {  // @1856
+    double aq = c_absq(x);
+    cplx w = !(aq >= 1.0) ? c_inv(x) : x;  // dcmpl iflt: NaN -> inv
+    if (!lqdiv) {
+      set_root(m_idx / 2, w);
+      set_root(m_idx / 2 + 1, c_conj(w));
+      m_idx += 2;
+      double s = -2.0 * w.re;
+      double t = c_absq(w);
+      m_pred[idx(m_degree - 1)] =
+          m_pred[idx(m_degree - 1)] - m_pred[idx(m_degree)] * s;
+      for (int i = m_degree; i > m_idx; --i)
+        m_pred[idx(i - 2)] = m_pred[idx(i - 2)]
+                             - (s * m_pred[idx(i - 1)] + t * m_pred[idx(i)]);
+      m_idx += 2;
+      cplx wi = c_inv(w);
+      s = -2.0 * wi.re;
+      t = c_absq(wi);
+      m_pred[idx(m_degree - 1)] =
+          m_pred[idx(m_degree - 1)] - m_pred[idx(m_degree)] * s;
+      for (int i = m_degree; i > m_idx; --i)
+        m_pred[idx(i - 2)] = m_pred[idx(i - 2)]
+                             - (s * m_pred[idx(i - 1)] + t * m_pred[idx(i)]);
+    } else {
+      double s = -2.0 * w.re;
+      double t = c_absq(w);
+      Poly q = p_of_range(m_pred, m_idx, m_degree + 1);
+      Poly d1 = p_of(vd{t, s, 1.0});
+      Poly d2 = p_of(vd{1.0 / t, s / t, 1.0});
+      LsDiv dv = ls_divide(q, p_times(d1, d2));
+      set_root(m_idx / 2, w);
+      set_root(m_idx / 2 + 1, c_conj(w));
+      m_idx += 4;
+      if (!dv.have_quotient) throw JvmNpe{};  // getQuotient() null
+      poly_copy_to(dv.quotient, m_pred, m_idx);
+    }
+    reinforce_symmetry();
+    return true;
+  }
+
+  bool update(double x) {  // @2128
+    double w = !(std::fabs(x) >= 1.0) ? 1.0 / x : x;  // dcmpl iflt
+    if (std::fabs(w - 1.0) < 1.0E-8)                  // dcmpg ifge
+      w = 1.0;
+    else if (std::fabs(w + 1.0) < 1.0E-8)  // dcmpg ifge
+      w = -1.0;
+    double s = -(w + 1.0 / w);
+    if (!lqdiv) {
+      set_root(m_idx / 2, c_cart(w));
+      m_idx += 2;
+      m_pred[idx(m_degree - 1)] =
+          m_pred[idx(m_degree - 1)] - m_pred[idx(m_degree)] * s;
+      for (int i = m_degree; i > m_idx; --i)
+        m_pred[idx(i - 2)] =
+            m_pred[idx(i - 2)] - (s * m_pred[idx(i - 1)] + m_pred[idx(i)]);
+    } else {
+      Poly q = p_of_range(m_pred, m_idx, m_degree + 1);
+      Poly d1 = p_of(vd{1.0, s, 1.0});
+      LsDiv dv = ls_divide(q, d1);
+      set_root(m_idx / 2, c_cart(w));
+      m_idx += 2;
+      if (!dv.have_quotient) throw JvmNpe{};
+      poly_copy_to(dv.quotient, m_pred, m_idx);
+    }
+    reinforce_symmetry();
+    return true;
+  }
+
+  // Polynomial.copyTo(dst, off) = System.arraycopy (bounds mirrored).
+  static void poly_copy_to(const Poly& q, vd& dst, int off) {
+    if (off < 0 || static_cast<std::size_t>(off) + q.c.size() > dst.size())
+      throw Aioobe{};
+    for (std::size_t i = 0; i < q.c.size(); ++i) dst[idx(off) + i] = q.c[i];
+  }
+
+  bool newtonnull() {  // @881
+    m_maxerr = 0.0;
+    roots_at_zero();
+    if (m_idx == static_cast<int>(m_p.size()) - 1) return true;
+    if (quadratic()) {
+      m_maxerr = 2.220446049250313E-16;
+      return true;
+    }
+    // rescale() sits BEFORE the loop head: the JVM's @214 retry jumps to
+    // @45 (the NewtonOptimizer construction), so m_p is rescaled once.
+    rescale();
+    do {
+      NewtonOpt no(p_of_range(m_pred, m_idx, static_cast<int>(m_p.size())), true);
+      cplx z = muller();
+      std::optional<cplx> r = no.root(z);
+      double err = no.err;
+      if (err > m_maxerr) m_maxerr = err;  // dcmpl ifle (NaN skips)
+      if (!r.has_value()) throw JvmNpe{};  // getIm() on null
+      if (r->im != 0.0) {                  // dcmpl ifne (NaN -> complex)
+        if (!update(*r)) return false;
+      } else {
+        if (!update(r->re)) return false;
+      }
+      Poly q6 = p_of(m_p);
+      std::vector<cplx> roots = expanded_roots(m_idx / 2);
+      leja_order(roots);
+      Poly q8 = p_from_roots(roots);
+      LsDiv dv = ls_divide(q6, q8);  // divide()'s return value discarded
+      if (!dv.have_quotient) throw JvmNpe{};
+      poly_copy_to(dv.quotient, m_pred, m_idx);
+    } while (static_cast<int>(m_p.size()) - m_idx > 3);
+    return m_idx == m_degree || quadratic();
+  }
+
+  bool factorize(const Poly& p) {  // @508
+    if (!is_symmetric(p)) return false;
+    m_degree = p.degree();
+    m_roots.assign(static_cast<std::size_t>(m_degree / 2), cplx{0.0, 0.0});
+    m_root_set.assign(static_cast<std::size_t>(m_degree / 2), 0);
+    m_p = p.c;  // copyTo(m_p, 0) on an exact degree+1 buffer
+    m_pred = m_p;
+    if (!newtonnull()) return false;
+    m_remainder = p_value_of(p.c[idx(m_degree)], vd{});  // valueOf(get(deg), {})
+    have_remainder = true;
+    return true;
+  }
+
+  // getStableRoots() (@1693) is the raw m_roots array; the robust
+  // decomposer's ComplexUtility.lejaOrder() reads EVERY entry, so any
+  // unwritten slot (JVM null) surfaces here as the NPE.
+  std::vector<cplx> stable_roots() const {
+    for (char c : m_root_set)
+      if (!c) throw JvmNpe{};
+    return m_roots;
+  }
+};
+
+// ---------------------------------------------------------------------------
+// internal.toolkit.base.core.math.linearfilters
+// .RobustSymmetricFrequencyResponseDecomposer - the ROBUST tier, last in the
+// factorize() chain (m524/RobustSymmetricFrequencyResponseDecomposer.txt,
+// decompose @27-382). Default m_freq = 0 (UnitRootsSolver(0)), m_epsilon
+// unused; no JVM try/catch inside (exceptions propagate through the chain).
+// The factor and bf come from the Muller solver's STABLE roots only; the
+// oracle (tmp_opencode/m6-seas/oracle-robust-stages-1.txt) pins the exact
+// stage order this mirror replays.
+// ---------------------------------------------------------------------------
+struct RobustSfrDecomp {
+  std::optional<BFilter> bf;
+  double fac = 0.0;
+  int freq = 0;
+
+  bool decompose(const SymF& sf) {
+    double w0 = sf_weight(sf, 0);
+    if (w0 <= 0.0) return false;  // dcmpg ifgt; NaN continues
+    bf = std::nullopt;
+    vd arr = sf_weights_array(sf);  // TWO-SIDED weightsToArray()
+    for (double& x : arr) x /= w0;  // @39-59: in-place divide
+    Poly p = p_of(std::move(arr));  // Polynomial.of (trims)
+    UrSolverResult urs = ur_solver_run(p, freq);
+    if (urs.roots.roots_count() != 0) {
+      std::optional<UnitRoots> h = urs.roots.sqrt_();
+      if (h.has_value()) {
+        Poly hp = h->as_polynomial();
+        Poly hh = p_times(hp, hp);
+        bf = BFilter{hp};
+        LsDiv dv = ls_divide(p, hh);  // return value discarded
+        if (!dv.have_quotient) throw JvmNpe{};
+        vd a = dv.quotient.c;
+        int d = dv.quotient.degree();
+        int m = d / 2;
+        for (int i = 0; i < m; ++i) {  // symmetrize the quotient
+          double v = (a[idx(i)] + a[idx(d - i)]) / 2.0;
+          a[idx(i)] = v;
+          a[idx(d - i)] = v;
+        }
+        p = p_of(std::move(a));
+      }
+    }
+    if (!bf) bf = BFilter::one();
+    MullerSolver solver;
+    if (!solver.factorize(p)) return false;
+    std::vector<cplx> roots = solver.stable_roots();
+    leja_order(roots);  // ComplexUtility.lejaOrder
+    BFilter f2{p_from_roots(roots)};
+    (void)f2.p.c[0];  // @311-317 reads get(0) and discards it
+    bf = bf_times(f2, *bf);  // f2.times(m_bf) - the OPPOSITE of the fast tier
+    bf = bf_normalize(*bf);
+    double ssq = 0.0;  // Polynomial.coefficients().ssq() = reduce(acc + x*x)
+    for (double x : bf->p.c) ssq += x * x;
+    fac = w0 / ssq;
+    return fac >= 0.0;  // dcmpl iflt: NaN fac returns FALSE here
+  }
+};
+
 // SymmetricFilter$Factorization.
 struct Factorization {
   BFilter bf;
@@ -1518,18 +2428,28 @@ struct Factorization {
 };
 
 // SymmetricFilter.factorize(): the degree-0 shortcut first (negative and
-// zero constants are legal), then the factorizer chain. Corpus-verified
-// over every distinct symmetric filter (150 of them): 124 fall to EV2, 5
-// to EV1, 1 to the fast decomposer, 20 to none. The single fast-decomposer
-// filter lives in a case the validator refuses before any factorizer runs
-// (v_airline r c1), so the mirror chains EV2 -> EV1 and stops; robust is
-// never reached.
+// zero constants are legal), then the factorizer chain
+// (SymmetricFilterAlgorithms.factorizer() lambda @44-86: ev2 -> ev1 -> fast
+// -> robust, no guard between tiers; the fast and robust tiers themselves
+// declare no try/catch, so their exceptions propagate out of factorize()).
+// Corpus scope (docs/contracts/decompose-ucarima-contract.md): 150 distinct
+// symmetric filters, 124 EV2 / 5 EV1 / 1 fast / 20 none - the single fast
+// case lives in a validator-refused model (v_airline r c1). The
+// total-error-variance filter of an RSA3 fit (seas-wk-factorizer-tiers
+// ledger fac 3/fac 4, Polynomial.ofInternal-built, public SymmetricFilter.of
+// refuses it) is the first pinned chain member that resolves on ROBUST;
+// validation/evidence/native/seats-wk-factorizer-tiers/ pins its factor,
+// scaling and the full stage walk (m6-seas oracle).
 inline std::optional<Factorization> factorize_sf(const SymF& sf) {
   if (sf.a.size() == 1) return Factorization{BFilter::one(), sf.a[0]};
   Ev2 ev;
   if (ev.decompose(sf)) return Factorization{*ev.bf, ev.fac};
   Ev1 ev1;
   if (ev1.decompose(sf)) return Factorization{*ev1.bf, ev1.fac};
+  SfrDecomp fast;  // exceptions (p_roots envelope, AIOOBE) propagate
+  if (fast.decompose(sf)) return Factorization{*fast.bf, fast.fac};
+  RobustSfrDecomp rob;
+  if (rob.decompose(sf)) return Factorization{*rob.bf, rob.fac};
   return std::nullopt;
 }
 
