@@ -39,6 +39,10 @@ std::vector<std::vector<double>> tramo_stock_calendar_columns(const TramoStockCa
 
 std::vector<double> tramo_stock_calendar_effect(const TramoFittedCalendar& fit, const calendar_domain& domain);
 
+// Original-series scale of the public cal and cal_f getters.
+std::vector<double> tramo_stock_calendar_effect_original_scale(const TramoFittedCalendar& fit,
+    const calendar_domain& domain, bool log);
+
 struct TramoCalendarFTestResult {
     double base_ssq;
     TramoCalendarFCandidate working_days;

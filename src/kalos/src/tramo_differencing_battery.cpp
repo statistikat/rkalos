@@ -547,11 +547,9 @@ struct Driver {
             return R::Unchanged;
         }
         if (s.bp == 1) {
-            if (s.nvar != 0) {
-                bail("calendar-variable scan on a non-empty variable list is out of the ported domain");
-            }
-            // nvar = 0: findAny over the (empty) calendar filter is empty,
-            // the guard passes exactly as observed.
+            if (s.nvar != 0 && !s.has_calendar.has_value())
+                bail("calendar-variable identity unavailable for seasonal under-differencing test");
+            if (!s.has_calendar.value_or(false)) return R::Unchanged;
         }
         Spec tripe = spec_of(s);
         tripe.bp = 0;

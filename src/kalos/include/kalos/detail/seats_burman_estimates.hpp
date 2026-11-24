@@ -329,7 +329,7 @@ class BurmanEstimates {
     double iv = outer.get_iv();       // getInnovationVariance()
     if (iv != 1.0)                    // dcmpl ifeq: NaN scales
       mapoly = p_times_d(mapoly, std::sqrt(iv));
-    Poly arpoly = BackFilter(p_times_(outer)).p;  // getAr() = ar.times(delta)
+    Poly arpoly = seats_model::p_times(outer.delta, outer.ar);  // SarimaModel.getAr()
 
     for (int c = 0; c < ncomp; ++c) {
       const AModel& a = wk_.component(c);
@@ -364,10 +364,6 @@ class BurmanEstimates {
     ma_ = mapoly.c;  // the SQRT-SCALED ma
     ar_ = arpoly.c;
     init_solver();
-  }
-
-  static BackFilter p_times_(const AModel& a) {
-    return BackFilter(seats_model::p_times(a.ar, a.delta));
   }
 
   // ---- initSolver ---------------------------------------------------------
@@ -417,6 +413,7 @@ class BurmanEstimates {
     xm.nonstat = outer.delta;
     xm.ma = am_ma_bf(outer).p;
     xm.var = outer.get_iv();
+    xm.sarima = true;
     ExactFc fx;
     fx.prepare(xm, bmean_);  // return value popped by the JVM
     xfcasts_ = fx.forecasts(data_, nfc);

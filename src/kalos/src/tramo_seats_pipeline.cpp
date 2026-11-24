@@ -63,7 +63,7 @@ std::vector<Row> merge(const std::vector<double>& original, const std::vector<Tr
     const int first_month = static_cast<int>((first_ext % 12 + 12) % 12) + 1;
     const calendar_domain extended{static_cast<int>((first_ext - (first_month - 1)) / 12), first_month,
                                    12, static_cast<int>(n + nf + nb)};
-    auto seasonal = tramo_stock_calendar_effect(calendar, extended);
+    auto seasonal = tramo_stock_calendar_effect_original_scale(calendar, extended, model.log);
     std::vector<double> trend(n + nf + nb), irregular(trend.size());
     for (const auto& var : variables) {
         const bool ls = var.type == TramoOutlierKind::Ls;
@@ -74,7 +74,6 @@ std::vector<Row> merge(const std::vector<double>& original, const std::vector<Tr
         for (std::size_t i = 0; i < column.size(); ++i) target[i] += column[i] * var.coefficient;
     }
     if (model.log) {
-        for (double& x : seasonal) x = detail::fdlibm_exp(x);
         for (double& x : trend) x = detail::fdlibm_exp(x);
         for (double& x : irregular) x = detail::fdlibm_exp(x);
     }
@@ -170,6 +169,13 @@ tramo_seats_automatic_result run_tramo_seats_rsa1(const std::vector<double>& ser
 tramo_seats_automatic_result run_tramo_seats_rsa3(const std::vector<double>& series,
     int start_year, int start_month, int backcast_count, int forecast_count) {
     auto fit = estimate_tramo_tr3(series, start_year, start_month);
+    auto decomposition = run_tramo_seats_pipeline(fit, backcast_count, forecast_count);
+    return {std::move(fit), std::move(decomposition)};
+}
+
+tramo_seats_automatic_result run_tramo_seats_rsafull(const std::vector<double>& series,
+    int start_year, int start_month, int backcast_count, int forecast_count) {
+    auto fit = estimate_tramo_trfull(series, start_year, start_month);
     auto decomposition = run_tramo_seats_pipeline(fit, backcast_count, forecast_count);
     return {std::move(fit), std::move(decomposition)};
 }

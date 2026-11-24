@@ -361,6 +361,10 @@ struct ArimaDyn {
 struct XfModel {
   Poly stat, nonstat, ma;  // getStationaryAr/getNonStationaryAr/getMa
   double var = 0.0;        // getInnovationVariance
+  // SarimaModel.getAr multiplies the differencing filter first.
+  // A mean-augmented model is rebuilt as ArimaModel and uses the inverse order.
+  bool sarima = false;
+  Poly full_ar() const { return sarima ? p_times(nonstat, stat) : p_times(stat, nonstat); }
 };
 
 class ExactFc {
@@ -369,10 +373,11 @@ class ExactFc {
   bool prepare(const XfModel& model, bool bmean) {
     bmean_ = bmean;
     XfModel m = model;
-    bar_ = p_times(m.stat, m.nonstat);  // stat.times(nonstat)
+    bar_ = bmean ? p_times(m.stat, m.nonstat) : m.full_ar();
     if (bmean) {
       Poly d1(vd{1.0, -1.0});  // BackFilter.D1.asPolynomial()
       // Bytecode: nonstat.times(D1), ma.times(D1) (D1 is the RIGHT operand).
+      m.sarima = false;
       m.nonstat = p_times(m.nonstat, d1);
       m.ma = p_times(m.ma, d1);
     }
@@ -393,7 +398,7 @@ class ExactFc {
   }
 
   int state_dim() const {
-    Poly full = p_times(m_.stat, m_.nonstat);
+    Poly full = m_.full_ar();
     int d = std::max(full.degree(), m_.ma.degree() + 1);
     return d < 1 ? 1 : d;
   }
@@ -405,7 +410,7 @@ class ExactFc {
   double mean_ = 0.0;
 
   vd fcasts(const vd& data, int n) {
-    Poly full = p_times(m_.stat, m_.nonstat);
+    Poly full = m_.full_ar();
     ArimaDyn dyn;
     dyn.phi = full.c;
     dyn.dim = std::max(full.degree(), m_.ma.degree() + 1);

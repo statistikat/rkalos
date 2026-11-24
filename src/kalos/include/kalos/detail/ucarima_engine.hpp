@@ -10,6 +10,8 @@
 #include "kalos/detail/hostlineage.hpp"
 #include "kalos/tramo_seats_model_validator.hpp"
 
+#include "kalos/detail/fdlibm.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -161,18 +163,23 @@ inline Poly p_factor(double x, int n) {
   a[0] = 1.0;
   a[static_cast<std::size_t>(n)] = -x;
   Poly p = p_of(std::move(a));
-  if (x > 0.0) {
-    // Polynomial.factor stores these roots on the factor. Resolving them
-    // again through a companion matrix changes the seasonal AR partition.
-    const double radius = glibc_pow(1.0 / x, 1.0 / n);
-    if (n == 4) {
-      p.cached_roots = {{radius, 0.0}, {0.0, radius}, {-radius, 0.0}, {0.0, -radius}};
-    } else {
-      const double step = 2.0 * kPi / n;
-      p.cached_roots.reserve(static_cast<std::size_t>(n));
-      for (int j = 0; j < n; ++j)
-        p.cached_roots.push_back({radius * hotspot_spectrum_cos(step * j), radius * glibc_sin(step * j)});
-    }
+  // Polynomial.factor attaches the analytical roots in unit-circle order.
+  const double exponent = 1.0 / n;
+  cplx scale;
+  if (x > 0 || n % 2 == 1) {
+    const double r = glibc_pow(std::abs(1.0 / x), exponent);
+    scale = {x > 0 ? r : -r, 0.0};
+  } else {
+    const double r = fdlibm_exp(exponent * fdlibm_log(-1.0 / x));
+    const double angle = exponent * kPi;
+    scale = {r * hotspot_spectrum_cos(angle), r * glibc_sin(angle)};
+  }
+  const double step = 2.0 * kPi / n;
+  const cplx quarters[] = {{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}};
+  p.cached_roots.reserve(static_cast<std::size_t>(n));
+  for (int j = 0; j < n; ++j) {
+    const cplx root = n == 4 ? quarters[j] : cplx{hotspot_spectrum_cos(step * j), glibc_sin(step * j)};
+    p.cached_roots.push_back(scale.im == 0.0 ? cplx{root.re * scale.re, root.im * scale.re} : c_times(root, scale));
   }
   return p;
 }
@@ -189,11 +196,19 @@ inline vd pl_times(const vd& a, const vd& b) {  // Polynomials.times
   return r;
 }
 
-inline Poly p_times(const Poly& a, const Poly& b) {  // times(P) / times(P, boolean)
+inline std::vector<cplx> p_roots(const Poly& p, const char* what);
+
+inline Poly p_times(const Poly& a, const Poly& b, bool compute_roots = false) {
   if (b.is_zero() || a.is_zero()) return Poly(vd{0.0});
   if (b.is_identity()) return a;
   if (a.is_identity()) return b;
-  return p_raw(pl_times(a.c, b.c));
+  Poly result = p_raw(pl_times(a.c, b.c));
+  if (compute_roots || (!a.cached_roots.empty() && !b.cached_roots.empty())) {
+    result.cached_roots = p_roots(a, "left product factor");
+    auto right = p_roots(b, "right product factor");
+    result.cached_roots.insert(result.cached_roots.end(), right.begin(), right.end());
+  }
+  return result;
 }
 
 inline Poly p_times_d(const Poly& a, double d) {  // Polynomial.times(double)
@@ -1685,7 +1700,7 @@ struct Sarima {
       a[static_cast<std::size_t>(i)] = btheta[static_cast<std::size_t>(j)];
     return p_of(std::move(a));
   }
-  Poly stationary_ar() const { return p_times(regular_ar(), seasonal_ar()); }
+  Poly stationary_ar() const { return p_times(regular_ar(), seasonal_ar(), true); }
   Poly non_stationary_ar() const { return differencing_filter(period, d, bd); }
   Poly ma() const { return p_times(regular_ma(), seasonal_ma()); }
 

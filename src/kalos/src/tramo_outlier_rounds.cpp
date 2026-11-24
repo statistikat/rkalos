@@ -18,10 +18,12 @@ bool tramo_stationary_scan_supported(const TramoOutlierScanRequest& request) {
     const bool seasonal_ar = request.p == 0 && request.q == 0 && request.bp == 1 && request.bq == 0;
     const bool last_chance = request.p == 3 && request.q == 1 && request.bp == request.bq &&
                              (request.bp == 0 || request.bp == 1);
+    const bool seasonal_mixed = request.bp == 1 && request.bq == 1 &&
+        ((request.p == 1 && request.q == 0) || (!request.calendar_regressors.empty() && request.p == 0 && request.q == 1));
     return request.frequency == 12 && request.d == 0 && request.bd == 0 &&
-           (regular_ar || seasonal_arma || short_ma || seasonal_ar || last_chance) &&
+           ((request.calendar_regressors.empty() && (regular_ar || seasonal_arma || short_ma || seasonal_ar || last_chance)) ||
+            seasonal_mixed) &&
            request.mean && !request.maximum_likelihood && !request.so && request.prespec.empty() &&
-           request.calendar_regressors.empty() &&
            std::all_of(request.y.begin(), request.y.end(), [](double y) { return std::isfinite(y); });
 }
 

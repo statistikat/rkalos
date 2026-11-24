@@ -122,6 +122,7 @@ struct BatteryState {
     BatteryTests resl;   // SeasonalityTests.residualSeasonalityTest(e, freq)
     int resl_score = 0;  // the captured ladder score
     int over_code = 0;   // SeasonalOverDifferencingTest.test(m) code
+    std::optional<bool> has_calendar; // present for an observed model description
 };
 
 // One ObservingEstimator candidate snapshot (specification, mean flag,

@@ -48,4 +48,8 @@ tramo_seats_automatic_result run_tramo_seats_rsa1(const std::vector<double>& ser
 tramo_seats_automatic_result run_tramo_seats_rsa3(const std::vector<double>& series,
     int start_year, int start_month, int backcast_count = 0, int forecast_count = -2);
 
+// Monthly stock RSAfull with automatic TRAMO calendar selection.
+tramo_seats_automatic_result run_tramo_seats_rsafull(const std::vector<double>& series,
+    int start_year, int start_month, int backcast_count = 0, int forecast_count = -2);
+
 }  // namespace kalos

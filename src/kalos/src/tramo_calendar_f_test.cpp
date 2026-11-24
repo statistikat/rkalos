@@ -190,6 +190,15 @@ std::vector<double> tramo_stock_calendar_effect(const TramoFittedCalendar& fit, 
     return effect;
 }
 
+std::vector<double> tramo_stock_calendar_effect_original_scale(const TramoFittedCalendar& fit,
+    const calendar_domain& domain, bool log) {
+    auto effect = tramo_stock_calendar_effect(fit, domain);
+    if (log) {
+        for (double& value : effect) value = detail::fdlibm_exp(value);
+    }
+    return effect;
+}
+
 TramoCalendarFTestResult tramo_calendar_f_test(const std::vector<double>& series,
     int start_year, int start_month, bool mean, double significance, double precision) {
     return compare_calendar_models(series, start_year, start_month, mean, significance, precision, nullptr);

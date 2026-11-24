@@ -331,6 +331,9 @@ TramoFitResult tramo_fit(const TramoFitRequest& request);
 // automatic order identification and the later model controllers.
 TramoFitResult estimate_tramo_trfull_reference(const std::vector<double>& series, int start_year, int start_month);
 
+// Stock monthly TRfull including automatic calendar, SARIMA and outlier selection.
+TramoFitResult estimate_tramo_trfull(const std::vector<double>& series, int start_year, int start_month);
+
 // Estimate every coefficient of an already selected monthly model. Outlier
 // positions are zero-based on the original series. The supplied orders,
 // calendar effects and outlier identities constitute the model specification.

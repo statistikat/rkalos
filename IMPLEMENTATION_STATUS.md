@@ -4,6 +4,16 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Automatic monthly TRfull and RSAfull core checkpoint (2026-11-24)
+
+Kalos `45e78cff6a2daa573f59cc9301451341cbf5265f` fits the stock
+TRfull model from original observations, including three late trading-day
+controller cases, and provides the corresponding merged RSAfull product.
+The checkpoint includes independent reference evidence for the observed
+and forecast calendar effects, original-series forecast errors, conditional
+SEATS errors and residual diagnostics on all 29 models. The generated
+R source and fixture snapshot passes offline verification.
+
 ## M5 monthly TR3 reference retries and RSA3 products (2026-11-24)
 
 Version `0.1.0.9020` supports the additional identification and outlier
