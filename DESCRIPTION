@@ -1,7 +1,7 @@
 Package: rkalos
 Type: Package
 Title: R Interface to the Kalos Time Series Engine
-Version: 0.1.0.9001
+Version: 0.1.0.9025
 Authors@R: c(
   person("Angelika", "Meraner", email = "angelika.meraner@statistik.gv.at", role = c("aut","cre")),
   person("Alexander", "Kowarik", email = "alexander.kowarik@statistik.gv.at", role = c("ctb")),
@@ -13,7 +13,8 @@ Description: Experimental R bindings to the independent Kalos C++ engine for
     against the OpenBLAS C API (CBLAS/LAPACKE) provider, the numerical surface
     the qualified Kalos core is measured on; configure fails closed when it is
     unavailable (set KALOS_OPENBLAS_ROOT for non-standard installations).
-    Full seasonal adjustment is not yet supported.
+    Qualified monthly seasonal-adjustment routes include restricted and
+    automatic X-13 fits and additive RSA0 TRAMO/SEATS fits.
 License: GPL (>= 3)
 URL: https://github.com/statistikat/rkalos
 BugReports: https://github.com/statistikat/rkalos/issues

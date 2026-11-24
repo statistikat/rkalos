@@ -10,6 +10,8 @@
 #include "kalos/detail/hostlineage.hpp"
 #include "kalos/tramo_seats_model_validator.hpp"
 
+#include "kalos/detail/fdlibm.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -128,6 +130,7 @@ inline vd trim_copy(const vd& a) {
 // ---------------------------------------------------------------------------
 struct Poly {
   vd c;
+  std::vector<cplx> cached_roots;
   Poly() : c{0.0} {}
   explicit Poly(vd a) : c(std::move(a)) {}
   int degree() const { return static_cast<int>(c.size()) - 1; }
@@ -159,7 +162,26 @@ inline Poly p_factor(double x, int n) {
   vd a(static_cast<std::size_t>(n) + 1, 0.0);
   a[0] = 1.0;
   a[static_cast<std::size_t>(n)] = -x;
-  return p_of(std::move(a));
+  Poly p = p_of(std::move(a));
+  // Polynomial.factor attaches the analytical roots in unit-circle order.
+  const double exponent = 1.0 / n;
+  cplx scale;
+  if (x > 0 || n % 2 == 1) {
+    const double r = glibc_pow(std::abs(1.0 / x), exponent);
+    scale = {x > 0 ? r : -r, 0.0};
+  } else {
+    const double r = fdlibm_exp(exponent * fdlibm_log(-1.0 / x));
+    const double angle = exponent * kPi;
+    scale = {r * hotspot_spectrum_cos(angle), r * glibc_sin(angle)};
+  }
+  const double step = 2.0 * kPi / n;
+  const cplx quarters[] = {{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}};
+  p.cached_roots.reserve(static_cast<std::size_t>(n));
+  for (int j = 0; j < n; ++j) {
+    const cplx root = n == 4 ? quarters[j] : cplx{hotspot_spectrum_cos(step * j), glibc_sin(step * j)};
+    p.cached_roots.push_back(scale.im == 0.0 ? cplx{root.re * scale.re, root.im * scale.re} : c_times(root, scale));
+  }
+  return p;
 }
 
 inline vd pl_times(const vd& a, const vd& b) {  // Polynomials.times
@@ -174,11 +196,19 @@ inline vd pl_times(const vd& a, const vd& b) {  // Polynomials.times
   return r;
 }
 
-inline Poly p_times(const Poly& a, const Poly& b) {  // times(P) / times(P, boolean)
+inline std::vector<cplx> p_roots(const Poly& p, const char* what);
+
+inline Poly p_times(const Poly& a, const Poly& b, bool compute_roots = false) {
   if (b.is_zero() || a.is_zero()) return Poly(vd{0.0});
   if (b.is_identity()) return a;
   if (a.is_identity()) return b;
-  return p_raw(pl_times(a.c, b.c));
+  Poly result = p_raw(pl_times(a.c, b.c));
+  if (compute_roots || (!a.cached_roots.empty() && !b.cached_roots.empty())) {
+    result.cached_roots = p_roots(a, "left product factor");
+    auto right = p_roots(b, "right product factor");
+    result.cached_roots.insert(result.cached_roots.end(), right.begin(), right.end());
+  }
+  return result;
 }
 
 inline Poly p_times_d(const Poly& a, double d) {  // Polynomial.times(double)
@@ -791,6 +821,7 @@ struct fe_solver {
 // Polynomial.roots() (fastSolver dispatch). degree 0 -> empty; 1-2 use the
 // monic/quadratic closed forms; >= 3 the qr cascade above.
 inline std::vector<cplx> p_roots(const Poly& p, const char* what) {
+  if (!p.cached_roots.empty()) return p.cached_roots;
   int n = p.degree();
   if (n >= 3) {
     fe_solver s;
@@ -942,18 +973,16 @@ inline SymF sym_convolution(const vd& w_in, double scale) {
   return sym_of(std::move(r));
 }
 
-// Raw libm for the trig calls in rfr/fr_eval/dfr_eval below (CI-FDLIBM ledger
-// 2026-11-21): the JVM Spectrum$* counterparts dispatch through the live C2
-// dcos/dsin stubs (IBM-APML lineage == host libm), not the FdLibm bytecode;
-// routing fdlibm_cos/fdlibm_sin here would break the captured bit lineage.
-// See the note at c_arg above and the header provenance table.
+// The pinned JVM uses the x86-64 HotSpot cosine kernel for frequency
+// responses and their derivatives. The separately qualified sine path
+// retains its original host lineage.
 inline double rfr(const SymF& f, double x) {  // SymmetricFilter.realFrequencyResponse
   std::size_t stop = f.a.size();
   std::size_t k = 0;
   double u = f.a[k++];
   if (k >= stop) return u;
   double t0 = 1.0;
-  double cs = kalos::detail::glibc_cos(x);
+  double cs = kalos::detail::hotspot_spectrum_cos(x);
   double t1 = cs;
   for (;;) {
     u = u + 2.0 * t1 * f.a[k++];
@@ -972,7 +1001,7 @@ inline void fr_eval(const SymF& f, double x, double& fv, double& dfv, double& d2
   dfv = 0.0;
   d2fv = 0.0;
   if (n <= 1) return;
-  double cs = kalos::detail::glibc_cos(x), sn = kalos::detail::glibc_sin(x);
+  double cs = kalos::detail::hotspot_spectrum_cos(x), sn = kalos::detail::glibc_sin(x);
   double ck = cs, sk = sn;
   for (std::size_t k = 1; k < n; ++k) {
     double ak = f.a[k];
@@ -995,7 +1024,7 @@ inline double dfr_eval(const SymF& f, int d, double x) {
   for (std::size_t k = 1; k < n; ++k) {
     double t = static_cast<double>(k);
     for (int i = 1; i < d; ++i) t *= static_cast<double>(k);
-    double trig = (d % 2 == 0) ? kalos::detail::glibc_cos(x * static_cast<double>(k))
+    double trig = (d % 2 == 0) ? kalos::detail::hotspot_spectrum_cos(x * static_cast<double>(k))
                                : kalos::detail::glibc_sin(x * static_cast<double>(k));
     t = t * trig * f.a[k];
     s += t;
@@ -1671,7 +1700,7 @@ struct Sarima {
       a[static_cast<std::size_t>(i)] = btheta[static_cast<std::size_t>(j)];
     return p_of(std::move(a));
   }
-  Poly stationary_ar() const { return p_times(regular_ar(), seasonal_ar()); }
+  Poly stationary_ar() const { return p_times(regular_ar(), seasonal_ar(), true); }
   Poly non_stationary_ar() const { return differencing_filter(period, d, bd); }
   Poly ma() const { return p_times(regular_ma(), seasonal_ma()); }
 

@@ -9,6 +9,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -355,14 +356,18 @@ std::vector<double> hr_start_to_jvm(const std::array<std::vector<double>, 4>& c)
     return jvm;
 }
 
-} // namespace
-
-TramoFinalEstimatorRunResult tramo_final_estimator_run(
-    const TramoFinalEstimatorRunRequest& request) {
-    if (request.n <= 0) {
+TramoFinalEstimatorRunResult run_final_estimator(
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>* observations,
+    const std::vector<std::vector<double>>& regressors) {
+    if (observations && (observations->size() > static_cast<std::size_t>(std::numeric_limits<int>::max()) ||
+        (request.n != 0 && static_cast<std::size_t>(request.n) != observations->size()))) {
+        refuse("response length does not match the supplied observations");
+    }
+    const int n = observations ? static_cast<int>(observations->size()) : request.n;
+    if (n <= 0) {
         refuse("the response length must be positive");
     }
-    if (request.family == TramoEstFamily::TwoOutliers && request.n <= 60) {
+    if (!observations && request.family == TramoEstFamily::TwoOutliers && n <= 60) {
         refuse("the TwoOutliers family reaches past the response");
     }
     if (!std::isfinite(request.eps) || request.eps <= 0.0
@@ -381,10 +386,10 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
             }
         }
     }
-    if (orders.d + 12 * orders.bd >= request.n) {
+    if (orders.d + 12LL * orders.bd >= n) {
         refuse("the differencing consumes the response");
     }
-    if (request.mean && request.n - orders.d - 12 * orders.bd <= 1) {
+    if (request.mean && n - orders.d - 12 * orders.bd <= 1) {
         refuse("the differenced design needs a non-trivial response");
     }
 
@@ -392,7 +397,22 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
     // column, the specification (orders + arima parameters, empty while the
     // arima_ field is nulled behind a setSpecification) and the estimation
     // slot (0 null, 1 full with point, 2 zero-parameter).
-    const std::vector<double> y = est_family_series(request.family, request.n);
+    std::vector<double> family_series;
+    if (observations) {
+        for (double v : *observations)
+            if (!std::isfinite(v))
+                refuse("the model-scale observations must be finite");
+    } else {
+        family_series = est_family_series(request.family, n);
+    }
+    if (regressors.size() > 32U - static_cast<unsigned>(request.mean))
+        refuse("too many regression columns");
+    for (const auto& column : regressors) {
+        if (column.size() != static_cast<std::size_t>(n) ||
+            !std::all_of(column.begin(), column.end(), [](double v) { return std::isfinite(v); }))
+            refuse("regression columns must be finite and span the model series");
+    }
+    const auto& y = observations ? *observations : family_series;
     const int period = 12;
     const auto differencing = [&] {
         return detail::pinned_differencing_polynomial(period, orders.d, orders.bd);
@@ -402,12 +422,14 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
     int nnsig = 0;
     int estimation_state = 0;
     int cl_dim = 0;
-    double cl_ssq = 0.0;
+    double cl_ssq = 0.0, cl_logdet = 0.0, cl_loglik = 0.0;
+    detail::PinnedRegressionDiagnostics reporting;
     std::vector<double> cl_coefs, covariance_diagonal;
     auto null_estimation = [&] {
         estimation_state = 0;
         cl_dim = 0;
-        cl_ssq = 0.0;
+        cl_ssq = cl_logdet = cl_loglik = 0.0;
+        reporting = {};
         cl_coefs.clear();
         covariance_diagonal.clear();
         result.landing_information.clear();
@@ -437,6 +459,10 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
         result.cl_dim = cl_dim;
         result.cl_ssq = cl_ssq;
         result.cl_coefs = cl_coefs;
+        result.cl_residuals = std::move(reporting.qr_residuals);
+        result.cl_unscaled_covariance = std::move(reporting.unscaled_covariance);
+        result.cl_log_determinant = cl_logdet;
+        result.cl_log_likelihood = cl_loglik;
         result.covariance_diagonal = covariance_diagonal;
         return result;
     };
@@ -456,7 +482,7 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
         // m.estimate(computer): ModelDescription.estimate over
         // desc.regarima() with RegSarimaComputer
         // (minimizer LM, precision eps, computeExactFinalDerivatives true).
-        const int dly_size = request.n - orders.d - 12 * orders.bd;
+        const int dly_size = n - orders.d - 12 * orders.bd;
         const auto dly = detail::pinned_backfilter_apply(differencing(), y);
         std::vector<std::vector<double>> design_cols; // machine (differenced-domain) view
         if (request.mean) {
@@ -467,20 +493,29 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
                 std::vector<double>(static_cast<std::size_t>(dly_size), 1.0));
         }
 
-        if (dim == 0) {
-            // The zero-parameter shortcut: DEFAULT_COMPUTER.compute(m4).
-            auto cl = request.mean
-                ? detail::pinned_deviances_evaluate_multi(dly, 0, 0, 0, 0, period,
-                    design_cols, {}, detail::PinnedComputerShape::Fixed)
-                : detail::pinned_deviances_evaluate(dly, 0, 0, 0, 0, period, {}, {});
-            if (!cl) {
-                result.rounds.push_back(rec);
-                return estimation_failed(); // "Gls failed" et al.
-            }
-            estimation_state = 2; // no landing point
+        for (const auto& column : regressors)
+            design_cols.push_back(detail::pinned_backfilter_apply(differencing(), column));
+
+        const auto fit_likelihood = [&] {
+            detail::PinnedRegressionDiagnostics candidate;
+            const auto cl = detail::pinned_deviances_evaluate_multi(dly, orders.p, orders.bp,
+                orders.q, orders.bq, period, design_cols, pars, detail::PinnedComputerShape::Fixed, &candidate);
+            if (!cl) return false;
             cl_dim = static_cast<int>(cl->e.size());
             cl_ssq = cl->ssq_err;
-            cl_coefs = request.mean ? cl->b : std::vector<double>{};
+            cl_coefs = cl->b;
+            cl_logdet = cl->ldet;
+            cl_loglik = cl->log_likelihood;
+            reporting = std::move(candidate);
+            return true;
+        };
+        if (dim == 0) {
+            // The zero-parameter shortcut: DEFAULT_COMPUTER.compute(m4).
+            if (!fit_likelihood()) {
+                result.rounds.push_back(rec);
+                return estimation_failed();
+            }
+            estimation_state = 2;
             rec.shortcircuit = true;
             rec.nnsig_after = nnsig;
             rec.outcome = "return_true";
@@ -491,12 +526,11 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
         // HannanRissanenInitializer (stabilize, useDefaultIfFailed) over the
         // differenced model, then the RAPC chain warm-started from it.
         RegressionDesign hr_design;
-        hr_design.columns = design_cols.empty() ? 0 : design_cols.size();
-        if (!design_cols.empty()) {
-            hr_design.values = design_cols[0];
-            hr_design.coefficients.assign(design_cols.size(), 0.0);
-            hr_design.fixed.assign(design_cols.size(), 0);
-        }
+        hr_design.columns = design_cols.size();
+        for (const auto& column : design_cols)
+            hr_design.values.insert(hr_design.values.end(), column.begin(), column.end());
+        hr_design.coefficients.assign(hr_design.columns, 0.0);
+        hr_design.fixed.assign(hr_design.columns, 0);
         const HannanRissanenStart hr = hannan_rissanen_start(dly, hr_design,
             HannanRissanenOrders{orders.p, orders.bp, orders.q, orders.bq, period});
         rec.hr_source = hr.source == HannanRissanenStart::Source::Fitted
@@ -507,15 +541,14 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
 
         SarimaEstimationRequest est_request;
         est_request.series.values = y;
-        est_request.series.missing.assign(static_cast<std::size_t>(request.n), 0);
-        if (request.mean) {
-            est_request.design.columns = 1;
-            est_request.design.values.assign(static_cast<std::size_t>(request.n), 1.0);
-            est_request.design.coefficients.assign(1, 0.0);
-            est_request.design.fixed.assign(1, 0);
-        } else {
-            est_request.design.columns = 0;
-        }
+        est_request.series.missing.assign(static_cast<std::size_t>(n), 0);
+        est_request.design.columns = design_cols.size();
+        if (request.mean)
+            est_request.design.values.assign(static_cast<std::size_t>(n), 1.0);
+        for (const auto& column : regressors)
+            est_request.design.values.insert(est_request.design.values.end(), column.begin(), column.end());
+        est_request.design.coefficients.assign(design_cols.size(), 0.0);
+        est_request.design.fixed.assign(design_cols.size(), 0);
         const std::size_t block_sizes[4] = {static_cast<std::size_t>(orders.p),
             static_cast<std::size_t>(orders.q), static_cast<std::size_t>(orders.bp),
             static_cast<std::size_t>(orders.bq)};
@@ -566,23 +599,11 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
         }
         rec.landing = pars;
 
-        auto cl = request.mean
-            ? detail::pinned_deviances_evaluate_multi(dly,
-                static_cast<std::size_t>(orders.p), static_cast<std::size_t>(orders.bp),
-                static_cast<std::size_t>(orders.q), static_cast<std::size_t>(orders.bq),
-                period, design_cols, pars, detail::PinnedComputerShape::Full)
-            : detail::pinned_deviances_evaluate(dly,
-                static_cast<std::size_t>(orders.p), static_cast<std::size_t>(orders.bp),
-                static_cast<std::size_t>(orders.q), static_cast<std::size_t>(orders.bq),
-                period, {}, pars);
-        if (!cl) {
+        if (!fit_likelihood()) {
             result.rounds.push_back(rec);
             return estimation_failed();
         }
         estimation_state = 1;
-        cl_dim = static_cast<int>(cl->e.size());
-        cl_ssq = cl->ssq_err;
-        cl_coefs = request.mean ? cl->b : std::vector<double>{};
 
         // The Point tail, the RegArmaProcessor.compute exact-derivatives
         // branch (computeExactFinalDerivatives, the FE's computer flag):
@@ -598,14 +619,27 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
         // vd1 < 0), which the pinned SymmetricMatrix.inverse Cholesky-then-
         // Doolittle fallback absorbs; a singular inverse mirrors the
         // MatrixException into the round catch.
+        // RegArmaProcessor's point uses the pivoted optimizer likelihood.
+        // RegSarimaComputer.optimize then reports DEFAULT_COMPUTER over the
+        // fitted model, fixing every design column in its original order.
+        std::vector<double> tail_coefs = cl_coefs;
+        if (design_cols.size() > 1) {
+            auto objective = detail::pinned_deviances_evaluate_multi(dly, orders.p, orders.bp,
+                orders.q, orders.bq, period, design_cols, pars);
+            if (!objective) {
+                result.rounds.push_back(rec);
+                return estimation_failed();
+            }
+            tail_coefs = std::move(objective->b);
+        }
         std::vector<double> tail_y = dly;
-        if (cl->b.size() != design_cols.size()) {
+        if (tail_coefs.size() != design_cols.size()) {
             result.rounds.push_back(rec);
             return estimation_failed(); // calcResiduals would throw
         }
         for (std::size_t k = 0; k < design_cols.size(); ++k) {
             for (std::size_t i = 0; i < tail_y.size(); ++i) {
-                tail_y[i] -= design_cols[k][i] * cl->b[k];
+                tail_y[i] -= design_cols[k][i] * tail_coefs[k];
             }
         }
         final_information_request fi;
@@ -716,6 +750,24 @@ TramoFinalEstimatorRunResult tramo_final_estimator_run(
             return finish(false, 0);
         }
     }
+}
+
+} // namespace
+
+TramoFinalEstimatorRunResult tramo_final_estimator_run(
+    const TramoFinalEstimatorRunRequest& request) {
+    return run_final_estimator(request, nullptr, {});
+}
+
+TramoFinalEstimatorRunResult tramo_final_estimator_run(
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>& model_series) {
+    return run_final_estimator(request, &model_series, {});
+}
+
+TramoFinalEstimatorRunResult tramo_final_estimator_run(
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>& model_series,
+    const std::vector<std::vector<double>>& regressors) {
+    return run_final_estimator(request, &model_series, regressors);
 }
 
 } // namespace kalos

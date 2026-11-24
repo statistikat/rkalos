@@ -1,0 +1,54 @@
+case rsa0 air
+trend b7 13 3ffbe381739e6a5c
+trend c7 13 3ff2b893fff902a3
+trend d7 13 3ff25b83bf70d333
+trend final 13 3ff1da5bb2223842
+msr S3X3 1 false 3ff0f941a4487b8b
+case rsa0 ao
+trend b7 13 4011e3e040c13235
+trend c7 13 3ffda4bb79a03c89
+trend d7 13 3ffe60532f8543c2
+trend final 13 40000ffd0d2a3689
+msr S3X5 1 false 401369e24b866f21
+case rsa0 seas
+trend b7 13 400c63853ef9d778
+trend c7 13 4006fa654d052064
+trend d7 13 4006e478fae58513
+trend final 13 400b96ffc094ca0c
+msr S3X9 2 false 401b71a53187babc
+case rsa1 air
+trend b7 13 3ffdb4b517bd5cb2
+trend c7 13 3ff09e8a8ddfcaa5
+trend d7 9 3fef09cc262b1801
+trend final 9 3fee521caef891e4
+msr S3X3 1 false 4002c671a1fa160d
+case rsa1 ao
+trend b7 13 400d0eba921c08d9
+trend c7 13 4000b5af9d7e271e
+trend d7 13 3ffe468672324f68
+trend final 13 4001a8bcfa51bf4e
+msr S3X5 4 false 400f1c4d7266124d
+case rsa1 seas
+trend b7 13 400c63853ef9d778
+trend c7 13 4006fa654d052064
+trend d7 13 4006e478fae58513
+trend final 13 400b96ffc094ca0c
+msr S3X9 2 false 401b71a53187babc
+case rsa2c air
+trend b7 13 3ff6c9cbd6416203
+trend c7 9 3fee0fc9e0737280
+trend d7 9 3fed96dd09e23f0a
+trend final 9 3fed399985535898
+msr S3X3 1 false 4001ee7232e2d97c
+case rsa2c ao
+trend b7 13 400d0eba921c08d9
+trend c7 13 4000b5af9d7e271e
+trend d7 13 3ffe468672324f68
+trend final 13 4001a8bcfa51bf4e
+msr S3X5 4 false 400f1c4d7266124d
+case rsa2c seas
+trend b7 13 400c63853ef9d778
+trend c7 13 4006fa654d052064
+trend d7 13 4006e478fae58513
+trend final 13 400b96ffc094ca0c
+msr S3X9 2 false 401b71a53187babc

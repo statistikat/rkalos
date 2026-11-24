@@ -7,9 +7,13 @@
 // routine is convention-equivariant under the AR sign flip: applying it to
 // a block of 1 + b(B) coefficients or to the negated coefficients of
 // 1 - b(B) yields sign-mirrored results with identical magnitudes.
+#include "kalos/linear_algebra.hpp"
 #include <vector>
 
 namespace kalos::detail {
+
+std::vector<ComplexRoot> jvm_closed_roots(const std::vector<double>& ascending_coefficients);
+double jvm_complex_abs(double real, double imaginary);
 
 // Pinned SarimaMapping.stabilize(DataBlock): trim trailing zeros, leave a
 // stable block, invert roots inside the unit circle of 1 + b(B) by

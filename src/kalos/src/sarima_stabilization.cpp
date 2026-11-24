@@ -1,12 +1,61 @@
 #include "kalos/detail/sarima_stabilization.hpp"
+#include "kalos/detail/ucarima_engine.hpp"
 
 #include "kalos/linear_algebra.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <complex>
 #include <stdexcept>
 
 namespace kalos::detail {
+
+// FastEigenValuesSolver uses the closed quadratic formula through degree two.
+std::vector<ComplexRoot> jvm_closed_roots(const std::vector<double>& asc) {
+    if (asc.empty()) return {};
+    int deg = static_cast<int>(asc.size()) - 1;
+    while (deg > 0 && asc[deg] == 0.0) {
+        --deg;
+    }
+    std::vector<ComplexRoot> out;
+    if (deg == 0) {
+        return out;
+    }
+    if (deg == 1) {
+        out.push_back({-asc[0] / asc[1], 0.0});
+        return out;
+    }
+    if (deg > 2) {
+        throw std::invalid_argument("closed-form roots require degree at most two");
+    }
+    const double a = asc[2], b = asc[1], c0 = asc[0];
+    const double denom = 2.0 * a;
+    const double disc = b * b - 4.0 * a * c0;
+    if (disc < 0.0) {
+        const double s = std::sqrt(-disc);
+        const ComplexRoot z{-b / denom, s / denom};
+        out.push_back(z);
+        out.push_back({z.real, -z.imag});
+        return out;
+    }
+    const double s = std::sqrt(disc);
+    out.push_back({(-b + s) / denom, 0.0});
+    out.push_back({(-b - s) / denom, 0.0});
+    return out;
+}
+
+double jvm_complex_abs(double re, double im) {
+    if (re == 0.0 && im == 0.0) {
+        return 0.0;
+    }
+    const double a = std::fabs(re), b = std::fabs(im);
+    const double m = std::max(a, b), n = std::min(a, b);
+    if (n == 0.0) {
+        return m;
+    }
+    const double t = n / m;
+    return m * std::sqrt(1.0 + t * t);
+}
 
 bool stabilize_coefficient_block(std::vector<double>& block) {
     std::size_t length = block.size();
@@ -22,19 +71,36 @@ bool stabilize_coefficient_block(std::vector<double>& block) {
     std::vector<double> polynomial(length + 1, 0.0);
     polynomial[0] = 1.0;
     for (std::size_t i = 0; i < length; ++i) polynomial[i + 1] = block[i];
-    const auto found = polynomial_roots(polynomial);
+    std::vector<ComplexRoot> found;
+    if (length <= 2) {
+        found = jvm_closed_roots(polynomial);
+    } else {
+        try {
+            for (const auto& root : p_roots(p_of(std::move(polynomial)), "SARIMA stabilization"))
+                found.push_back({root.re, root.im});
+        } catch (const jvm_decompose_abort&) {
+            throw std::runtime_error("SARIMA stabilization root calculation failed");
+        }
+    }
     if (found.empty()) return false;
     std::vector<std::complex<double>> roots;
     roots.reserve(found.size());
     for (const auto& root : found) roots.emplace_back(root.real, root.imag);
     bool changed = false;
     for (auto& root : roots) {
-        const double modulus = std::abs(root);
+        const double re = root.real(), im = root.imag();
+        const double modulus = jvm_complex_abs(re, im);
         if (1.0 / modulus > 1.0) {
             if (modulus == 0.0) {
                 throw std::runtime_error("stabilization: zero root cannot be inverted");
             }
-            root = std::conj(root) / (modulus * modulus);
+            if (std::abs(re) >= std::abs(im)) {
+                const double inv = 1.0 / (re + im * (im / re));
+                root = {inv, inv * (-im / re)};
+            } else {
+                const double inv = 1.0 / (re * (re / im) + im);
+                root = {inv * (re / im), -inv};
+            }
             changed = true;
         }
     }
@@ -55,7 +121,7 @@ bool stabilize_coefficient_block(std::vector<double>& block) {
         if (!std::isfinite(z[i + 1].real())) {
             throw std::runtime_error("stabilization: unstable reconstruction");
         }
-        block[i] = z[i + 1].real() / z[0].real();
+        block[i] = z[i + 1].real() * (1.0 / z[0].real());
     }
     return true;
 }

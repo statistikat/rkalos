@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: statistikat/kalos
-          ref: 0e064dd18eb45568fc35e1bed337161598ace36f
+          ref: 3a1f413a1d309687ffc2f157139cf358a295d55e
           path: .kalos-provider
       - name: Build the pinned LP64 provider
         if: runner.os != 'Windows'
@@ -81,6 +81,8 @@ jobs:
         shell: Rscript {0}
         run: |
           library(rkalos, lib.loc=file.path("check", "rkalos.Rcheck"))
+          fit <- native_tramoseats_fit(datasets::AirPassengers)
+          stopifnot(identical(fit$status, "ok"), identical(tsp(fit$finalSA), tsp(datasets::AirPassengers)))
           stopifnot(!any(c("rJava", "rjd3toolkit", "rjd3x13", "rjd3tramoseats") %in% loadedNamespaces()))
           provider <- core_version()
           stopifnot(provider$provider == "OpenBLAS", provider$blas_integer_bits == 32L,

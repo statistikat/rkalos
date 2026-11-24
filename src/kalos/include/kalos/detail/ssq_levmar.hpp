@@ -45,12 +45,14 @@ PinnedLsSolution pinned_least_squares(std::vector<double> qr, const std::vector<
 // Pinned ParamValidation outcomes of SarimaMapping2.validate.
 enum class SsqParamValidation { Invalid, Valid, Changed };
 
-// Pinned SarimaMapping2 stationary domain over JVM-ordered coordinates.
+// Stationary domain over JVM-ordered coordinates. The default SarimaMapping2
+// bounds AR roots away from one. GlsSarimaComputer uses SarimaMapping and
+// inverts roots strictly inside the unit circle.
 // The limits are the pinned of() defaults: arLimit 0.99999, maLimit 1.0,
 // checkAll true, epsilon sqrt(2.220446E-16) directed toward zero.
 class SarimaSsqDomain {
 public:
-    SarimaSsqDomain(int p, int bp, int q, int bq);
+    SarimaSsqDomain(int p, int bp, int q, int bq, bool gls_mapping = false);
 
     std::size_t dim() const { return offsets_.back(); }
     const std::vector<std::size_t>& offsets() const { return offsets_; }
@@ -69,6 +71,7 @@ public:
 private:
     std::vector<std::size_t> sizes_;   // [p, bp, q, bq]
     std::vector<std::size_t> offsets_; // exclusive prefix, size 5
+    bool gls_mapping_;
     std::vector<double> limits_;       // per block
 };
 

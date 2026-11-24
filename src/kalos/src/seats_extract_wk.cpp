@@ -19,14 +19,18 @@
 // preserved; the build uses -ffp-contract=off so no FMA is introduced.
 // Math.log/Math.exp map to the fdlibm port (the HotSpot implementations).
 
+#include <exception>
 #include "kalos/seats_extract_wk.hpp"
 
 #include <cmath>
-#include <cstdio>
+#include <cstdint>
+#include <limits>
 #include <optional>
 #include <string>
 #include <vector>
 
+#include "kalos/estimation_control.hpp"
+#include "kalos/detail/ssq_deviances.hpp"
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/detail/seats_burman_estimates.hpp"
 #include "kalos/detail/seats_exact_forecasts.hpp"
@@ -53,9 +57,9 @@ using vd = std::vector<double>;
 // intersection; on the corpus path operands always share their domain.
 // ---------------------------------------------------------------------------
 struct Ts {
-  long m0 = 0;  // absolute month index (year * 12 + period - 1)
+  std::int64_t m0 = 0;  // absolute month index (year * 12 + period - 1)
   vd v;
-  long end() const { return m0 + static_cast<long>(v.size()); }
+  std::int64_t end() const { return m0 + static_cast<std::int64_t>(v.size()); }
 };
 using Opt = std::optional<Ts>;
 using OptV = std::optional<vd>;
@@ -75,12 +79,12 @@ template <class F>
 Ts ts_fn2(const Ts& a, const Ts& b, F op) {
   // TsData.fn/fastFn: intersection domain (lambda$fastFn$1 offset mapping);
   // a domain miss (hi < lo) is the JVM null return.
-  const long lo = a.m0 > b.m0 ? a.m0 : b.m0;
-  const long hi = a.end() < b.end() ? a.end() : b.end();
+  const std::int64_t lo = a.m0 > b.m0 ? a.m0 : b.m0;
+  const std::int64_t hi = a.end() < b.end() ? a.end() : b.end();
   if (hi < lo) throw sm::JvmNpe{};  // caller-side NPE parity (unreachable:
                                     // the extraction path aligns)
   Ts r{lo, vd(hi - lo, 0.0)};
-  for (long k = 0; k < hi - lo; ++k) r.v[k] = op(a.v[k + (lo - a.m0)], b.v[k + (lo - b.m0)]);
+  for (std::int64_t k = 0; k < hi - lo; ++k) r.v[k] = op(a.v[k + (lo - a.m0)], b.v[k + (lo - b.m0)]);
   return r;
 }
 
@@ -154,11 +158,11 @@ double seq_average(const vd& v) {
 // intersection: correctStdevForLog(stdev, level) (lambda$correctStdev-
 // ForLog$0 passes (d2=level, d1=stdev)).
 Ts correct_stdev_for_log(const Ts& stdev, const Ts& level) {
-  const long lo = stdev.m0 > level.m0 ? stdev.m0 : level.m0;
-  const long hi = stdev.end() < level.end() ? stdev.end() : level.end();
+  const std::int64_t lo = stdev.m0 > level.m0 ? stdev.m0 : level.m0;
+  const std::int64_t hi = stdev.end() < level.end() ? stdev.end() : level.end();
   if (hi < lo) throw sm::JvmNpe{};
   Ts r{lo, vd(hi - lo, 0.0)};
-  for (long k = 0; k < hi - lo; ++k) {
+  for (std::int64_t k = 0; k < hi - lo; ++k) {
     const double m = level.v[k + (lo - level.m0)];
     const double s = stdev.v[k + (lo - stdev.m0)];
     const double s2 = s * s;
@@ -221,39 +225,56 @@ struct Dec {
   const Opt& get(int t, int i) const { return items[t][i]; }
 };
 
-void dump_decomposition(std::vector<std::string>& out, const char* key,
-                        const Dec& d) {
+struct MonthStart {
+  std::int64_t year;
+  int position;  // Java annualPosition(), January = 0
+};
+
+MonthStart month_start(std::int64_t index) {
+  // TsPeriod uses floor division for a backcast crossing year zero.
+  const int remainder = static_cast<int>(index % 12);
+  return {index / 12 - (remainder < 0), remainder < 0 ? remainder + 12 : remainder};
+}
+
+std::vector<seats_component_series> collect_decomposition(
+    std::vector<std::string>& out, const char* key, Dec& d) {
+  constexpr seats_component types[] = {
+      seats_component::series, seats_component::trend, seats_component::seasonal,
+      seats_component::seasonally_adjusted, seats_component::irregular,
+      seats_component::calendar_effect};
+  constexpr seats_information kinds[] = {
+      seats_information::value, seats_information::stdev, seats_information::forecast,
+      seats_information::stdev_forecast, seats_information::backcast,
+      seats_information::stdev_backcast};
+  std::vector<seats_component_series> rows;
   // probe dumpDecomposition: fixed enum enumeration, absent rows skipped,
   // year + 0-based annualPosition, %.17g doubles (seq).
   for (int t = 0; t < kNT; ++t)
     for (int i = 0; i < kNI; ++i) {
-      const Opt& x = d.items[t][i];
+      Opt& x = d.items[t][i];
       if (!x) continue;
+      const auto start = month_start(x->m0);
       std::string line = std::string(key) + " " + kTypeNames[t] + " " +
                          kInfNames[i] + " n " + std::to_string(x->v.size()) +
-                         " start " + std::to_string(x->m0 / 12) + " " +
-                         std::to_string(x->m0 % 12) + " vals ";
+                         " start " + std::to_string(start.year) + " " +
+                         std::to_string(start.position) + " vals ";
       // probe seq(): elements space-separated, NO trailing space; the
       // " vals " prefix carries one (empty rows end with a space).
       for (std::size_t k = 0; k < x->v.size(); ++k) {
         if (k != 0) line += " ";
         line += sm::fmt_g(x->v[k]);
       }
-      out.push_back(line);
+      out.push_back(std::move(line));
+      rows.push_back({types[t], kinds[i], start.year, start.position + 1, std::move(x->v)});
     }
+  return rows;
 }
 
 void dump_domain(std::vector<std::string>& out, const char* key,
                  const Opt& x) {
-  char buf[128];
-  if (!x) {  // TsDomain.DEFAULT_EMPTY ("n 0 start 1970 0")
-    std::snprintf(buf, sizeof(buf), "%s n 0 start 1970 0", key);
-    out.push_back(buf);
-    return;
-  }
-  std::snprintf(buf, sizeof(buf), "%s n %zu start %ld %ld", key,
-                x->v.size(), x->m0 / 12, x->m0 % 12);
-  out.push_back(buf);
+  const auto start = x ? month_start(x->m0) : MonthStart{1970, 0};
+  out.push_back(std::string(key) + " n " + std::to_string(x ? x->v.size() : 0) +
+                " start " + std::to_string(start.year) + " " + std::to_string(start.position));
 }
 
 // ---------------------------------------------------------------------------
@@ -296,20 +317,20 @@ Dec wke_decompose(sb::BurmanEstimates& be, const UcarimaModel& um3,
     if (c != 1) accSaBc = dm_add(accSaBc, *v);
   }
 
-  const long start = data.m0;
-  const long end = data.end();
-  const long bstart = start - nbc;
-  auto at = [](long m, const OptV& x) -> Opt {
+  const std::int64_t start = data.m0;
+  const std::int64_t end = data.end();
+  const std::int64_t bstart = start - nbc;
+  auto at = [](std::int64_t m, const OptV& x) -> Opt {
     if (!x) return std::nullopt;
     return Ts{m, *x};
   };
-  auto at_sqrt = [](long m, const OptV& x) -> Opt {
+  auto at_sqrt = [](std::int64_t m, const OptV& x) -> Opt {
     if (!x) return std::nullopt;
     Ts r{m, vd(x->size())};
     for (std::size_t k = 0; k < x->size(); ++k) r.v[k] = sqrt_plus((*x)[k]);
     return r;
   };
-  auto val = [](long m, const OptV& x) -> Ts {
+  auto val = [](std::int64_t m, const OptV& x) -> Ts {
     if (!x) jvm_npe();  // TsData.of(period, null)
     return Ts{m, *x};
   };
@@ -602,11 +623,60 @@ Dec correct_logs(const BiasContext& cx) {
 // ---------------------------------------------------------------------------
 // The extraction driver.
 // ---------------------------------------------------------------------------
-int extrap(int n, int period) { return n < 0 ? -period * n : n; }
+int extrap(int n, int period) {
+  const auto months = n < 0 ? -static_cast<std::int64_t>(n) * period : n;
+  if (months < 0 || months > std::numeric_limits<int>::max())
+    throw std::invalid_argument("seats_extract_wk: horizon exceeds the monthly index range");
+  return static_cast<int>(months);
+}
 
-void run_extraction(const tramo_seats_model_request& request,
-                    const tramo_seats_model_result& dec,
-                    std::vector<std::string>& out) {
+// DefaultModelApproximator.app_seas changes the seasonal orders, then
+// DefaultModelEstimator fits the transformed SEATS input, which already
+// excludes deterministic effects. Its variance uses the fit before cutoff.
+tramo_seats_model_request refit_seasonal_ma(const tramo_seats_model_request& request,
+                                           const tramo_seats_model_result& dec) {
+  SarimaEstimationRequest fit{};
+  fit.period = dec.period;
+  fit.d = dec.orders_d;
+  fit.seasonal_d = dec.orders_bd;
+  fit.series.values = request.series;
+  if (request.log)
+    for (auto& value : fit.series.values) value = detail::fdlibm_log(value);
+  fit.series.missing.resize(fit.series.values.size());
+  fit.blocks[0].initial.resize(dec.phi.size());
+  fit.blocks[0].fixed.resize(dec.phi.size());
+  fit.blocks[3].initial.resize(1);
+  fit.blocks[3].fixed.resize(1);
+  fit.control = EstimationControl{1e-7, 1e-4, true, false, true, true,
+      EstimationStartingPoint::HannanRissanen, EstimationSolver::PinnedLevenbergMarquardt};
+  const auto estimated = estimate_sarima_fixed(fit);
+  if (!std::isfinite(estimated.log_likelihood))
+    throw std::invalid_argument("seats_extract_wk: seasonal MA refit failed");
+
+  auto replacement = request;
+  replacement.d = fit.d;
+  replacement.bd = fit.seasonal_d;
+  replacement.theta.clear();
+  replacement.phi = estimated.coefficients[0];
+  for (auto& coefficient : replacement.phi) coefficient = -coefficient;
+  replacement.bphi.clear();
+  replacement.btheta = estimated.coefficients[3];
+  auto parameters = replacement.phi;
+  parameters.insert(parameters.end(), replacement.btheta.begin(), replacement.btheta.end());
+  const auto differenced = detail::pinned_backfilter_apply(
+      detail::pinned_differencing_polynomial(fit.period, fit.d, fit.seasonal_d), fit.series.values);
+  const auto likelihood = detail::pinned_deviances_evaluate(differenced, replacement.phi.size(),
+      0, 0, 1, fit.period, {}, parameters);
+  // LikelihoodStatistics counts the fitted SARIMA parameters and the innovation variance.
+  const int df = static_cast<int>(differenced.size()) - static_cast<int>(parameters.size()) - 1;
+  if (!likelihood || df <= 0)
+    throw std::invalid_argument("seats_extract_wk: unavailable seasonal MA refit variance");
+  replacement.innovation_variance = likelihood->ssq_err / df;
+  return replacement;
+}
+
+seats_extract_wk_result run_extraction(const tramo_seats_model_request& request,
+                                       const tramo_seats_model_result& dec) {
   // The 24-B decomposition seam, live (the same engine the seam unit and
   // the validator run; dec guarantees a non-null d inside the envelope).
   detail::Sarima m1;
@@ -617,6 +687,13 @@ void run_extraction(const tramo_seats_model_request& request,
   m1.bphi = dec.bphi;
   m1.theta = dec.theta;
   m1.btheta = dec.btheta;
+  if (dec.approximation_required) {
+    // DefaultModelApproximator.app_011011 retains the ordinary MA and replaces
+    // the seasonal MA. Each subsequent retry selects this same model.
+    const double negated_theta = m1.theta.empty() ? 0.0 : -m1.theta.front();
+    if (negated_theta == 0.0) m1.theta.clear();
+    m1.btheta = {negated_theta > 0.36 && negated_theta < 0.7 ? -0.2 : -0.1};
+  }
   detail::EngineFacts ef;
   try {
     ef = detail::decompose(m1, request.rmod, request.epsphi, request.smod,
@@ -652,10 +729,9 @@ void run_extraction(const tramo_seats_model_request& request,
       d = std::nullopt;
     }
   }
-  if (!d) {  // unreachable inside the envelope (both null branches refused)
-    out.push_back("status error:jdplus.tramoseats.base.api.seats."
-                  "SeatsException:Invalid decomposition");
-    return;
+  if (!d) {
+    return seats_extract_wk_result({"status error:jdplus.tramoseats.base.api.seats."
+                                    "SeatsException:Invalid decomposition"});
   }
   // WKE.decompose 13-15: UcarimaModel.compact(2, 2) is UNCONDITIONAL; the
   // JVM indexes comps[2] (plus the s-minus-1 merges) without a guard - a
@@ -676,8 +752,8 @@ void run_extraction(const tramo_seats_model_request& request,
   // innovationStdev = sqrt(model.getInnovationVariance()) below.
 
   // The SeatsModel frame: transformed series, extrapolation counts, ser.
-  const long m0 =
-      static_cast<long>(request.start_year) * 12 + (request.start_month - 1);
+  const std::int64_t m0 =
+      static_cast<std::int64_t>(request.start_year) * 12 + (request.start_month - 1);
   Ts data{m0, request.series};
   if (request.log) data = ts_fn(data, detail::fdlibm_log);  // TsData.log
   const int nfc = extrap(request.forecast_count, dec.period);
@@ -692,17 +768,18 @@ void run_extraction(const tramo_seats_model_request& request,
 
   BiasContext cx;
   cx.original = Ts{m0, request.series};
-  cx.init = init;
+  cx.init = std::move(init);
   cx.bias = request.bias != seats_bias_correction::none;
   cx.period = dec.period;
   Dec final = request.log ? correct_logs(cx) : fill_levels(cx);
 
-  out.push_back("status ok");
-  dump_domain(out, "dom actual", init.get(kAdjusted, kValue));
-  dump_domain(out, "dom backcast", init.get(kAdjusted, kBackcast));
-  dump_domain(out, "dom forecast", init.get(kAdjusted, kForecast));
-  dump_decomposition(out, "init", init);
-  dump_decomposition(out, "final", final);
+  std::vector<std::string> out{"status ok"};
+  dump_domain(out, "dom actual", cx.init.get(kAdjusted, kValue));
+  dump_domain(out, "dom backcast", cx.init.get(kAdjusted, kBackcast));
+  dump_domain(out, "dom forecast", cx.init.get(kAdjusted, kForecast));
+  auto initial_rows = collect_decomposition(out, "init", cx.init);
+  auto final_rows = collect_decomposition(out, "final", final);
+  return {std::move(out), std::move(initial_rows), std::move(final_rows)};
 }
 
 std::string abort_status(const std::exception_ptr& e) {
@@ -757,11 +834,21 @@ seats_extract_wk_result seats_extract_wk(
     throw std::invalid_argument(
         "seats_extract_wk: Noisy approximation mode is outside the D6 "
         "envelope");
-  if (dec.approximation_required)
+  const bool monthly_airline = dec.period == 12 && dec.orders_d == 1 && dec.orders_bd == 1 &&
+      dec.phi.empty() && dec.bphi.empty() && dec.theta.size() <= 1;
+  if (dec.approximation_required && dec.orders_d == 1 && dec.orders_bd == 1 &&
+      dec.orders_p == 2 && dec.orders_q == 0 && dec.orders_bp == 1 && dec.orders_bq == 0 &&
+      !request.mean_correction) {
+    // Validate the new fit with the original xl. The seasonal AR is removed,
+    // so the replacement cannot re-enter this branch.
+    auto result = seats_extract_wk(refit_seasonal_ma(request, dec));
+    result.model_changed = result.fact("status") == "ok";
+    return result;
+  }
+  if (dec.approximation_required && !monthly_airline)
     throw std::invalid_argument(
         "seats_extract_wk: approximation_required decision is outside the "
-        "D6 envelope (the DefaultModelApproximator retry loop is not "
-        "ported)");
+        "qualified monthly retry envelope");
 
   std::vector<std::string> facts;
   if (dec.seats_exception) {
@@ -773,11 +860,12 @@ seats_extract_wk_result seats_extract_wk(
     return seats_extract_wk_result(std::move(facts));
   }
   try {
-    run_extraction(request, dec, facts);
+    auto result = run_extraction(request, dec);
+    result.model_changed = result.fact("status") == "ok" && (dec.model_changed || dec.approximation_required);
+    return result;
   } catch (const std::invalid_argument&) {
     throw;  // envelope violation, never swallowed
   } catch (...) {
-    facts.clear();
     facts.push_back(abort_status(std::current_exception()));
   }
   return seats_extract_wk_result(std::move(facts));

@@ -1,5 +1,6 @@
 #include <Rcpp.h>
 #include "kalos/numerics.hpp"
+#include "kalos/detail/hostlineage.hpp"
 
 #include <cmath>
 #include <limits>
@@ -114,4 +115,15 @@ Rcpp::List native_filter(Rcpp::NumericVector values, Rcpp::NumericVector weights
     }
     return Rcpp::List::create(Rcpp::Named("values") = output,
                               Rcpp::Named("missing") = missing);
+}
+
+// Private fixture support for the archived glibc-based R capture generators.
+// [[Rcpp::export(name = ".capture_trig", rng = false)]]
+Rcpp::NumericVector capture_trig(Rcpp::NumericVector values, bool sine) {
+    Rcpp::NumericVector result(values.size());
+    for (R_xlen_t i = 0; i < values.size(); ++i) {
+        result[i] = sine ? kalos::detail::glibc_sin(values[i])
+                         : kalos::detail::glibc_cos(values[i]);
+    }
+    return result;
 }

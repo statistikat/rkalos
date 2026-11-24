@@ -21,7 +21,8 @@
 # stated policy always wins. Every refusal still echoes the full provenance
 # of the request.
 # Estimation, missing values, the length-of-period transform, benchmarking,
-# diagnostics and the ARIMA route stay outside; capabilities() reports the
+# and the ARIMA route stay outside. The completed fit reports combined SI
+# seasonality; capabilities() reports the
 # restricted_fit scope for callers to gate on.
 native_x13_fit <- function(series,variables=list(),log=FALSE,seasonal,trend_length,
     sigma=NULL,msr_policy="jdplus",frequency=NULL,start_period=NULL,lower_sigma=1.5,

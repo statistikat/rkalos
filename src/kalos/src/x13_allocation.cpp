@@ -148,7 +148,11 @@ X13Preadjustment x13_preadjust(const X13PreadjustInput& input) {
     for (std::size_t i=0;i<m;++i) v26[i]=v26[i]+v23[i];
     for (std::size_t i=0;i<m;++i) v26[i]+=v25[i];
     out.a1=input.input; // the interpolated series of a complete calendar
+    const bool leap = !input.leap_forward.empty() || !input.leap_reverse.empty();
+    require(!leap || (input.log && input.leap_forward.size() == m && input.leap_reverse.size() == m),
+            "leap factors must cover the extended log-model domain");
     out.a6=backTransform(v12, input.log);
+    if (leap) for (std::size_t i = 0; i < m; ++i) out.a6[i] *= input.leap_reverse[i];
     out.a7=backTransform(v11, input.log);
     out.a8=backTransform(v23, input.log);
     out.a8t=backTransform(p13, input.log);
@@ -159,7 +163,8 @@ X13Preadjustment x13_preadjust(const X13PreadjustInput& input) {
     out.a9cal=backTransform(v22, input.log);
     out.a9sa=backTransform(v19, input.log);
     out.a9ser=backTransform(v20, input.log);
-    const std::vector<double> v26bt=backTransform(v26, input.log);
+    auto v26bt=backTransform(v26, input.log);
+    if (leap) for (std::size_t i = 0; i < m; ++i) v26bt[i] *= input.leap_reverse[i];
     if (nb==0&&nf==0) { // the zero-horizon path, bit-for-bit as delivered
         out.out.resize(n);
         for (std::size_t i=0;i<n;++i) out.out[i]=input.log
@@ -180,7 +185,8 @@ X13Preadjustment x13_preadjust(const X13PreadjustInput& input) {
         // Raw libm, intentionally (CI-FDLIBM ledger): input-side log of the
         // allocation staging seam — same stub-lineage fixture corpus as the
         // export-stage exp above; see the recorded root cause there.
-        const double v30=input.log?kalos::detail::glibc_log(input.input[i]):input.input[i];
+        const double observed = leap ? input.input[i] * input.leap_forward[nb + i] : input.input[i];
+        const double v30=input.log?kalos::detail::glibc_log(observed):observed;
         r[i]=v30-v27[nb+i]; // TsData.subtract aligns v27 to the input domain
     }
     const ArimaForecastsResult route=arima_forecasts(*input.arima, r, nb, nf);
@@ -190,6 +196,10 @@ X13Preadjustment x13_preadjust(const X13PreadjustInput& input) {
     for (std::size_t i=0;i<nf;++i) fraw[i]=route.forecasts[i]+v27[nb+n+i];
     out.a1b=backTransform(braw, input.log);
     out.a1a=backTransform(fraw, input.log);
+    if (leap) {
+        for (std::size_t i = 0; i < nb; ++i) out.a1b[i] *= input.leap_reverse[i];
+        for (std::size_t i = 0; i < nf; ++i) out.a1a[i] *= input.leap_reverse[nb + n + i];
+    }
     out.out.resize(m);
     for (std::size_t i=0;i<m;++i) {
         const double a1ext=i<nb ? out.a1b[i]

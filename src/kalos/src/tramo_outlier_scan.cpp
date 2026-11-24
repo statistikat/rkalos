@@ -71,6 +71,7 @@ TramoOutlierScanDecision scan_tramo_outliers(const TramoOutlierScanRequest& requ
         throw std::invalid_argument(
             "scan_tramo_outliers: resolved span bounds must be ordered");
     }
+    detail::validate_scan_regressors(request);
     for (const auto& pre : request.prespec) {
         if (pre.second == TramoOutlierKind::So) {
             throw std::invalid_argument("scan_tramo_outliers: a pre-registered SO is "
@@ -185,14 +186,14 @@ TramoOutlierScanDecision scan_tramo_outliers(const TramoOutlierScanRequest& requ
     if (request.mean) {
         xcols.push_back(std::vector<double>(dly.size(), 1.0));
     }
+    auto user_columns = request.calendar_regressors;
     std::vector<std::pair<std::size_t, int>> prespec_cells; // (row, factory column)
     for (const auto& pre : request.prespec) {
         const int kind = static_cast<int>(pre.second);
         if (static_cast<std::size_t>(pre.first) >= n) {
             continue; // excluded by ModelDescription; the module exclude no-ops
         }
-        xcols.push_back(detail::pinned_backfilter_apply(
-            kernel, machine::factory_raw(kind, request.tc_rate, pre.first, n)));
+        user_columns.push_back(machine::factory_raw(kind, request.tc_rate, pre.first, n));
         const int row = pre.first;
         int col = -1;
         for (std::size_t o = 0; o < factories.size(); ++o) {
@@ -205,6 +206,9 @@ TramoOutlierScanDecision scan_tramo_outliers(const TramoOutlierScanRequest& requ
             prespec_cells.emplace_back(static_cast<std::size_t>(row), col);
         }
     }
+
+    for (const auto& column : user_columns)
+        xcols.push_back(detail::pinned_backfilter_apply(kernel, column));
 
     // estimateModel at round 0: the OlsComputer residuals (a null result is
     // "Ols failed"), then the HannanRissanen start with stabilization; a
@@ -245,25 +249,8 @@ TramoOutlierScanDecision scan_tramo_outliers(const TramoOutlierScanRequest& requ
         }
     }
     if (need_optimize) {
-        // RegArimaUtility.processor(true, eps).optimize: the qualified warm
-        // seam covers a design-free or constant-column design only (all
-        // corpus cases on this seam).
-        const bool qualified = xcols.empty()
-            || (xcols.size() == 1 && missing_at.empty() && request.mean
-                && request.prespec.empty());
-        if (!qualified) {
-            throw std::runtime_error("scan_tramo_outliers: warm re-estimation with "
-                                     "non-constant designs is outside the qualified seam");
-        }
-        SarimaEstimationRequest warm;
-        warm.series.values = z;
-        warm.series.missing.assign(z.size(), 0);
-        if (request.mean) {
-            warm.design.columns = 1;
-            warm.design.values.assign(z.size(), 1.0);
-            warm.design.coefficients = {0.0};
-            warm.design.fixed = {0};
-        }
+        SarimaEstimationRequest warm{};
+        machine::set_scan_warm_design(warm, z, missing_at, request.mean, user_columns);
         warm.blocks[0].initial.assign(static_cast<std::size_t>(p), 0.0);
         warm.blocks[0].fixed.assign(static_cast<std::size_t>(p), 0);
         warm.blocks[1].initial.assign(static_cast<std::size_t>(q), 0.0);

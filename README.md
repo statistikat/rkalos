@@ -21,7 +21,73 @@ runtime dependency; its application objects stay in Persephone.
 
 For TRAMO preprocessing, use `tramo_critical_value()` for the outlier threshold,
 `tramo_seasonality()` for the monthly detector, and `tramo_transform_decision()`
-for the non-robust log/level decision. The full TRAMO/SEATS fit is pending.
+for the non-robust log/level decision. For a complete monthly series,
+`native_tramoseats_fit()` estimates the RSA0 airline model and returns the
+seasonally adjusted series, trend, seasonal and irregular components.
+The `final` table includes component standard deviations and forecast
+uncertainty. The `merged` table contains the final product forecasts.
+For the preprocessing original-series forecast error (`y_ef`), use
+`series_forecast_stdev` and its `series_forecast_stdev_status` field.
+The fitted residuals and their standard error are available as
+`fit$residuals$tsres` and `fit$residuals$ser`. The 24-lag Ljung–Box
+test of residual independence is available as `fit$residuals$lb`. The
+Doornik–Hansen test of residual normality is available as
+`fit$residuals$doornikhansen`. Each test reports its statistic,
+upper-tail probability and degrees of freedom.
+
+```r
+fit <- rkalos::native_tramoseats_fit(AirPassengers, template = "RSA0")
+fit$finalSA
+fit$merged$values[[which(fit$merged$component == "Trend" &
+                         fit$merged$information == "Forecast")]]
+```
+
+`capabilities()$tramo_seats_fit$templates` lists the qualified raw-series
+templates. Use `seats_from_tramo()` to decompose supported fitted TRAMO
+coefficients supplied by a caller. The monthly legacy SEATS retries cover
+airline seasonal MA replacement and the mean-free (2,1,0)(1,1,0) seasonal
+AR-to-MA refit, including the merged product series for fitted AO/LS effects.
+
+Use `native_tramoseats_fit(series, "RSA1")` for monthly TR1 estimation
+and SEATS extraction from the original observations. It restores detected
+additive outliers, level shifts and transitory changes (monthly decay 0.7) in the final components. Its per-template capability
+descriptor lists available residual diagnostics and forecast errors. The
+dated standard errors in `series_forecast_stdev` describe the original series.
+
+`native_tramo_preprocess(series, "TR1")` fits the stock monthly TR1
+preprocessing model. Its result contains the selected transformation,
+fitted airline parameters, dated residuals and estimated outlier effects.
+The residual standard error and the Ljung–Box and Doornik–Hansen statistics
+and probabilities are available on all four monthly templates. RSA3 and RSAfull use the
+number of selected AR and MA parameters for its Ljung–Box degrees of freedom.
+
+Use `native_tramo_preprocess(series, "TR3")` or
+`native_tramoseats_fit(series, "RSA3")` for monthly automatic SARIMA
+order selection. The fitted model exposes its orders, coefficients and dated
+residuals. RSA3 also exposes SEATS components and original-series forecast
+errors. Identification supports seasonal restarts, fourth-pass mean refits
+and reference-comparison retries, including reduced outlier thresholds and
+last-chance estimation.
+
+Use `native_tramo_preprocess(series, "TRfull")` or
+`native_tramoseats_fit(series, "RSAfull")` for automatic monthly stock
+calendar selection. The fitted model reports the named calendar coefficients
+separately from outliers. The complete fit also returns dated observed and
+forecast calendar effects on the original series scale.
+
+Use `native_x13_estimated_fit(series, template)` with `"RSA0"`,
+`"RSA1"` or `"RSA2c"` for stock monthly X-13
+fits with estimated airline coefficients and automatic X-11 filter
+selection. RSA0 fits on the original scale. RSA1 selects the
+transformation and outliers. RSA2c also tests working-day, leap-year
+and Easter effects. All return their final components and
+the stock twelve-month forecasts with their original-series standard errors.
+The residual record includes the standard error, Ljung–Box and Doornik–Hansen tests.
+
+TRAMO-SEATS and fixed, automatic and stock estimated X-13 fits return the combined SI
+seasonality verdict in `fit$diagnostics$combined_seasonality$summary`.
+The same object reports the stable-seasonality, moving-seasonality and
+Kruskal–Wallis statistics and their upper-tail probabilities.
 
 Install OpenBLAS with CBLAS and LAPACKE (qualification version 0.3.34). Set `KALOS_OPENBLAS_ROOT` to its prefix before building and installing the source archive. For custom or static providers, set `KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler and linker flags including dependencies.
 C++17 and Rcpp are required. Configure probes optional OpenMP with R's actual

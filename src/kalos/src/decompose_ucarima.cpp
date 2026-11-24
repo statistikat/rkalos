@@ -37,6 +37,7 @@
 // lines); the single fast-decomposer filter belongs to a validator-refused
 // case (v_airline r c1), so EV2 -> EV1 -> null reproduces all 49 cases.
 
+#include <exception>
 #include "kalos/decompose_ucarima.hpp"
 
 #include <algorithm>

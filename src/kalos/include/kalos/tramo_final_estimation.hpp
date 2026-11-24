@@ -255,6 +255,10 @@ struct TramoFinalEstimatorRunResult {
     int cl_dim = 0;                 // concentratedLikelihood.dim()
     double cl_ssq = 0.0;            // concentratedLikelihood.ssq()
     std::vector<double> cl_coefs;   // allCoefficients
+    std::vector<double> cl_residuals; // cl.e(): QR tail, or raw Kalman innovations without regressors
+    std::vector<double> cl_unscaled_covariance; // row-major regression covariance, in design order
+    double cl_log_determinant = 0.0;
+    double cl_log_likelihood = 0.0;
     std::vector<double> covariance_diagonal; // state 1 only
     // Point tail witness: the scaled information matrix (row-major dim x dim)
     // the last point-tail round inverted; empty when no point tail ran.
@@ -274,6 +278,19 @@ struct TramoFinalEstimatorRunResult {
 // never takes this path).
 TramoFinalEstimatorRunResult tramo_final_estimator_run(
     const TramoFinalEstimatorRunRequest& request);
+
+// Run the same monthly estimator on complete observations in the model's
+// level/log channel, with an optional mean. n may be zero (inferred) or
+// equal the series length. The synthetic family setting is unused.
+TramoFinalEstimatorRunResult tramo_final_estimator_run(
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>& model_series);
+
+// Estimate free regression columns supplied in model-description order. Each
+// column spans the original monthly model domain; the optional mean remains
+// a separate option. The estimator differences the other columns internally.
+TramoFinalEstimatorRunResult tramo_final_estimator_run(
+    const TramoFinalEstimatorRunRequest& request, const std::vector<double>& model_series,
+    const std::vector<std::vector<double>>& regressors);
 
 } // namespace kalos
 

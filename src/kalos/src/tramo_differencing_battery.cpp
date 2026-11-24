@@ -8,7 +8,10 @@
 // comparison is transcribed with its exact opcode family: dcmpg yields +1
 // and dcmpl -1 for a NaN operand, which is what decides whether a NaN
 // p-value stops or continues each gate below.
+#include <string>
 #include "kalos/tramo_differencing_battery.hpp"
+#include "kalos/tramo_regression_tests.hpp"
+#include "kalos/arma_diagnostics.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -160,6 +163,29 @@ bool peak_none(const PeakRecord& r) {
 }
 
 } // namespace
+
+std::optional<BatteryPanel> tramo_model_comparison_panel(const TramoModelStatisticsRequest& request) {
+    const auto stats = tramo_model_statistics(request);
+    if (!stats.built || request.residuals.size() < 4) return std::nullopt;
+    const auto tests = tramo_comparator_residual_tests(request.residuals);
+    BatteryPanel panel;
+    panel.ljung_box = stats.ljung_box;
+    panel.ljung_box_p = stats.ljung_box_pvalue;
+    panel.season_box = stats.seasonal_ljung_box;
+    panel.season_box_p = stats.seasonal_ljung_box_pvalue;
+    panel.bic = stats.bic;
+    panel.nobs = stats.observations_count;
+    panel.nout = stats.outliers_count;
+    panel.skew_abs = tests.absolute_skewness;
+    panel.skew_p = tests.skewness_p;
+    panel.stable_mean_p = tests.stable_mean_p;
+    panel.stable_var_p = tests.stable_variance_p;
+    return panel;
+}
+
+bool tramo_candidate_preferred(const BatteryPanel& incumbent, const BatteryPanel& candidate) {
+    return compare_panels(incumbent, candidate, pref::kBic) >= 1;
+}
 
 bool battery_has_seasonal_peaks(const std::vector<PeakRecord>& peaks) {
     switch (peaks.size()) {
@@ -329,15 +355,17 @@ struct Driver {
     std::size_t next_cand = 1;  // candidates[0] is the initial estimation
     BatteryDecision out;
 
+    std::function<BatteryCandidate(const Spec&, bool)> live_estimator;
+    BatteryCandidate live_candidate;
+
     explicit Driver(const BatteryCase& kase)
         : c(kase), ctx{kase.seasonal, kase.ost}, spec{spec_of(kase.after_entry)},
           mean(kase.after_entry.mean) {}
 
     const BatteryCandidate& consume(const Spec& want, bool want_mean, const char* who) {
-        if (next_cand >= c.candidates.size()) {
-            bail(who);
-        }
-        const BatteryCandidate& cand = c.candidates[next_cand];
+        if (live_estimator) live_candidate = live_estimator(want, want_mean);
+        else if (next_cand >= c.candidates.size()) bail(who);
+        const BatteryCandidate& cand = live_estimator ? live_candidate : c.candidates[next_cand];
         const Spec got{cand.p, cand.d, cand.q, cand.bp, cand.bd, cand.bq};
         if (!same_spec(got, want) || cand.mean != want_mean) {
             bail("candidate construction diverges from the captured snapshot");
@@ -366,7 +394,8 @@ struct Driver {
             ctx.seasonal = true;
             return R::Changed;  // seasonal flip without a specification change
         }
-        if (!swap && !ctx.seasonal) {
+        // The residual tests can turn on seasonality even when the default model is already selected.
+        if (!ctx.seasonal) {
             if (dcmpg(e.mstat.season_box_p, 0.05) < 0 || dcmpg(e.mstat.ljung_box_p, 0.05) < 0) {
                 ctx.seasonal = true;
                 swap = true;
@@ -518,11 +547,9 @@ struct Driver {
             return R::Unchanged;
         }
         if (s.bp == 1) {
-            if (s.nvar != 0) {
-                bail("calendar-variable scan on a non-empty variable list is out of the ported domain");
-            }
-            // nvar = 0: findAny over the (empty) calendar filter is empty,
-            // the guard passes exactly as observed.
+            if (s.nvar != 0 && !s.has_calendar.has_value())
+                bail("calendar-variable identity unavailable for seasonal under-differencing test");
+            if (!s.has_calendar.value_or(false)) return R::Unchanged;
         }
         Spec tripe = spec_of(s);
         tripe.bp = 0;
@@ -650,6 +677,51 @@ struct Driver {
 };
 
 } // namespace
+
+TramoMonthlyControllerResult tramo_monthly_controllers(const BatteryState& entry, bool seasonal,
+                                                       int seasonality_score, const TramoControllerEstimator& estimate,
+                                                       bool has_seasonality_reference) {
+    using Result = BatteryDecision::Result;
+    BatteryCase c;
+    c.after_entry = entry;
+    c.seasonal = seasonal;
+    c.ost = seasonality_score;
+    Driver driver(c);
+    std::optional<BatteryState> trial;
+    BatteryState state = entry;
+    int calls = 0, selected = -1;
+    driver.live_estimator = [&](const Spec& want, bool mean) {
+        ++calls;
+        trial = estimate({want.p, want.d, want.q, want.bp, want.bd, want.bq}, mean);
+        BatteryCandidate candidate{want.p, want.d, want.q, want.bp, want.bd, want.bq, mean, trial.has_value(), {}};
+        if (trial) {
+            if (!same_spec(spec_of(*trial), want) || trial->mean != mean)
+                bail("controller estimator returned a different model specification");
+            candidate.mstat = trial->mstat;
+        }
+        return candidate;
+    };
+    auto accept = [&](Result result) {
+        if (result == Result::Changed && trial) {
+            state = std::move(*trial);
+            selected = calls - 1;
+        }
+        trial.reset();
+        return result;
+    };
+    // The controller stores the mutable RegSarimaModelling by reference.
+    // On a restart both comparison operands refer to that same model.
+    const auto initial = has_seasonality_reference ? driver.pass2() : accept(driver.pass1());
+    TramoMonthlyControllerResult result{initial, Result::Unprocessed, Result::Unprocessed, Result::Unprocessed,
+        Result::Unprocessed, driver.ctx.seasonal, driver.ctx.ost, selected, initial == Result::Changed};
+    if (result.restart) return result;
+    result.regular1 = accept(driver.ru1(state));
+    result.seasonal1 = accept(driver.su1(state));
+    result.regular2 = accept(driver.ru2(state));
+    result.seasonal2 = accept(driver.su2(state));
+    result.selected_candidate = selected;
+    return result;
+}
 
 BatteryDecision decide_tramo_differencing_battery(const BatteryCase& c) {
     if (c.candidates.empty()) {

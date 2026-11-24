@@ -41,8 +41,18 @@ Enabling a deferred automatic detection module returns an unsupported status.}
 \value{A named result list carrying the core status, request provenance and,
 when available, the preadjustment, selection, results, finals and in-sample
 seasonally adjusted series, trend and irregular. Automatic fits additionally
-return their estimated model and decision chain. Inspect \code{status} before
-using fitted quantities. Invalid input shapes raise errors.}
+return their estimated model and decision chain. For positive effective
+horizons, \code{preadjustment$tables} includes the original-scale raw
+forecasts (\code{a1a}) or backcasts (\code{a1b}). The corresponding
+\code{finals$tables} entries are \code{d11a}, \code{d12a}, \code{d16a},
+\code{d18a} for forecasts, and the same roots with suffix \code{b} for
+backcasts. Each is a monthly \code{ts} on its own domain. Zero-length windows
+omit these optional names. Inspect \code{status} before
+using fitted quantities. Invalid input shapes raise errors.
+Successful restricted and automatic fits report the combined SI seasonality verdict and its stable, moving
+and Kruskal--Wallis tests in \code{diagnostics$combined_seasonality}.
+Its \code{summary} is \code{"Present"}, \code{"ProbablyNone"} or \code{"None"}.
+The diagnostic is \code{NULL} when fewer than three years are available.}
 \seealso{\code{\link{capabilities}}}
 \examples{
 x <- native_x13_fit(AirPassengers, seasonal = rep("s3x3", 12), trend_length = 13L)

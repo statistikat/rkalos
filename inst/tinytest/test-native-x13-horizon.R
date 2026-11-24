@@ -9,8 +9,7 @@
 # d18 bit-exact claims, every other boundary-exposed table carries the
 # measured band of the kCases matrix (tests/jvm_x13_automatic_horizon.h) —
 # copied, NEVER widened (the widest per case, so every case's own band gates
-# its rows). The a1a/a1b and d11a..d18b slices and d8 stay inside the core
-# claim: they do not cross this surface. Landing coefficients and statistics
+# its rows). The split horizon tables cross the R boundary; d8 remains internal. Landing coefficients and statistics
 # reuse the existing zero-horizon contract bands (2e-3 / 1e-2 / 2e-3): the
 # landing model is horizon-invariant upstream. The extended composition
 # calendar (out, d10..c17 start bc months early, length n+bc+fc) and the
@@ -83,6 +82,11 @@ local({
     so_h6=c(out=2.0e-05,d10=5.0e-06,d11=1.0e-05,d12=5.0e-06,d13=5.0e-06,
       c17=1.0e-02,d11final=5.0e-06,d12final=5.0e-06,d13final=5.0e-06,d16=5.0e-06,
       e1=1.0e-06,e2=5.0e-06,e3=5.0e-06,e11=5.0e-06))
+  SLICE_BANDS <- list(
+    quick_h6 = c(a1a=2.0e-06, a1b=0.0e+00, d11a=2.0e-06, d12a=2.0e-06, d16a=1.0e-05, d18a=0.0e+00, d11b=0.0e+00, d12b=0.0e+00, d16b=0.0e+00, d18b=0.0e+00),
+    ao_b3 = c(a1a=0.0e+00, a1b=5.0e-06, d11a=0.0e+00, d12a=0.0e+00, d16a=0.0e+00, d18a=0.0e+00, d11b=5.0e-06, d12b=2.0e-06, d16b=5.0e-07, d18b=0.0e+00),
+    multi_b3h6 = c(a1a=5.0e-06, a1b=2.0e-06, d11a=2.0e-06, d12a=2.0e-06, d16a=5.0e-07, d18a=0.0e+00, d11b=5.0e-07, d12b=2.0e-07, d16b=2.0e-06, d18b=0.0e+00),
+    so_h6 = c(a1a=2.0e-05, a1b=0.0e+00, d11a=1.0e-05, d12a=5.0e-06, d16a=5.0e-06, d18a=0.0e+00, d11b=0.0e+00, d12b=0.0e+00, d16b=0.0e+00, d18b=0.0e+00))
   # Landing bands inherited from the zero-horizon contract (never widened).
   LANDING<-c('landing-coefficients'=2e-3,'arma-landing'=1e-2,'landing-stats'=2e-3)
 
@@ -231,6 +235,28 @@ local({
     expect_identical(length(reals(fact(id,'out'))),ext,info=paste(id,'capture out length'))
     for(nm in c('d10','d11','d12','d13','c17'))
       expect_identical(length(reals(fact(id,nm))),ext,info=paste(id,'capture',nm,'length'))
+    slice_bands <- SLICE_BANDS[[id]]
+    expect_identical(rkalos::capabilities()$automatic_fit$x11$horizon_tables, names(slice_bands))
+    for (nm in names(slice_bands)) {
+      back <- endsWith(nm, "b")
+      count <- if (back) res$effective_backcast else res$effective_forecast
+      slice <- if (startsWith(nm, "a1")) pa[[nm]] else fi[[nm]]
+      if (!count) {
+        expect_null(slice, info=paste(id,nm,"absent window"))
+        next
+      }
+      expected_start <- stats::tsp(res$series)[1] + (if (back) -count else n) / 12
+      expect_true(stats::is.ts(slice), info=paste(id,nm,"ts"))
+      expect_identical(length(slice), count, info=paste(id,nm,"length"))
+      expect_equal(stats::tsp(slice), c(expected_start, expected_start + (count-1) / 12, 12),
+                   info=paste(id,nm,"calendar"))
+      expected <- reals(fact(id,nm))
+      if (slice_bands[[nm]] == 0) {
+        expect_true(bits(slice,expected),info=paste(id,nm,"bit tier"))
+      } else {
+        expect_true(dev(slice,expected,nm,slice_bands[[nm]]),info=paste(id,nm,"numerical tier"))
+      }
+    }
     for(nm in BIT_TABLES)
       expect_true(bits(tabs[[nm]],reals(fact(id,nm))),info=paste(id,nm,'bit tier'))
     for(nm in names(HZ[[id]]))
@@ -243,7 +269,7 @@ local({
       info=paste(id,'out start shifted by the backcast'))
     for(nm in c('d10','d11','d12','d13','c17'))
       expect_identical(stats::tsp(res$results[[nm]])[1L],ext_start,info=paste(id,nm,'start'))
-    for(nm in names(fi))
+    for(nm in setdiff(names(fi), names(slice_bands)))
       expect_identical(stats::tsp(fi[[nm]])[1L],want_start,info=paste(id,nm,'finals calendar'))
     rb<-res$preadjustment$row_basis
     for(nm in names(pa))
@@ -261,7 +287,7 @@ local({
   for(key in ls(worst)) {
     spl<-strsplit(key,':',fixed=TRUE)[[1]]
     id<-spl[1];fam<-spl[2]
-    band<-if(fam %in% names(LANDING))LANDING[[fam]] else HZ[[id]][[fam]]
+    band<-if(fam %in% names(LANDING))LANDING[[fam]] else if (fam %in% names(SLICE_BANDS[[id]])) SLICE_BANDS[[id]][[fam]] else HZ[[id]][[fam]]
     expect_true(get(key,worst)<=band,info=paste('worst',key,get(key,worst)))
     cat(sprintf('hz %-27s worst %.3g (band %.0g)\n',key,get(key,worst),band))
   }

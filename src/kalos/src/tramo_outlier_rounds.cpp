@@ -1,10 +1,31 @@
 #include "kalos/tramo_outlier_rounds.hpp"
 
+#include <algorithm>
+#include <cmath>
+
 #include "tramo_scan_machine.hpp"
 
 #include <stdexcept>
 
 namespace kalos {
+
+bool tramo_stationary_scan_supported(const TramoOutlierScanRequest& request) {
+    const bool regular_ar = (request.p == 1 || request.p == 2) && request.q == 0 &&
+                            request.bp == 0 && request.bq == 0;
+    const bool seasonal_arma = ((request.p == 2 && request.q == 0) || (request.p == 1 && request.q == 1)) &&
+                               request.bp == 1 && request.bq == 1;
+    const bool short_ma = request.p == 0 && request.bp == 0 && request.bq == 0 && (request.q == 0 || request.q == 1);
+    const bool seasonal_ar = request.p == 0 && request.q == 0 && request.bp == 1 && request.bq == 0;
+    const bool last_chance = request.p == 3 && request.q == 1 && request.bp == request.bq &&
+                             (request.bp == 0 || request.bp == 1);
+    const bool seasonal_mixed = request.bp == 1 && request.bq == 1 &&
+        ((request.p == 1 && request.q == 0) || (!request.calendar_regressors.empty() && request.p == 0 && request.q == 1));
+    return request.frequency == 12 && request.d == 0 && request.bd == 0 &&
+           ((request.calendar_regressors.empty() && (regular_ar || seasonal_arma || short_ma || seasonal_ar || last_chance)) ||
+            seasonal_mixed) &&
+           request.mean && !request.maximum_likelihood && !request.so && request.prespec.empty() &&
+           std::all_of(request.y.begin(), request.y.end(), [](double y) { return std::isfinite(y); });
+}
 
 TramoOutlierRoundsResult tramo_outlier_rounds(
     const TramoOutlierScanRequest& request) {
@@ -19,9 +40,9 @@ TramoOutlierRoundsResult tramo_outlier_rounds(
         throw std::invalid_argument(
             "tramo_outlier_rounds: negative orders are rejected");
     }
-    if (d + bd == 0) {
+    if (d == 0 && bd == 0 && !tramo_stationary_scan_supported(request)) {
         throw std::invalid_argument(
-            "tramo_outlier_rounds: a positive differencing order is required");
+            "tramo_outlier_rounds: unsupported stationary scan design");
     }
     if (request.y.empty()) {
         throw std::invalid_argument(
@@ -36,6 +57,7 @@ TramoOutlierRoundsResult tramo_outlier_rounds(
         throw std::invalid_argument(
             "tramo_outlier_rounds: resolved span bounds must be ordered");
     }
+    detail::validate_scan_regressors(request);
     for (const auto& pre : request.prespec) {
         if (pre.second == TramoOutlierKind::So) {
             throw std::invalid_argument("tramo_outlier_rounds: a pre-registered "
@@ -92,6 +114,7 @@ TramoOutlierRoundsResult tramo_outlier_rounds(
     sm.upper_bound = request.upper_bound;
     sm.factories = detail::register_factories(
         request.ao, request.ls, request.tc, request.tc_rate, request.so);
+    sm.user_raw = request.calendar_regressors;
     detail::prestage(sm, request.y, request.prespec,
         "tramo_outlier_rounds: the log requires strictly positive observations");
     if (sm.failed) {

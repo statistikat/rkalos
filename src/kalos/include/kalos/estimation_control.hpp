@@ -94,6 +94,8 @@ struct SarimaEstimationRequest {
     // the pinned gradientAtMinimum()/curvatureAtMinimum() used by the
     // FinalEstimator round driver. Ignored by every other entry point.
     bool request_landing_point = false;
+    // GlsSarimaComputer selects the unit-circle SarimaMapping for its refit.
+    bool gls_sarima_mapping = false;
 };
 
 // One decision record of the control layer: the starting-point provenance,

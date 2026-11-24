@@ -1,4 +1,5 @@
 #include "rcpp_x13_shared.hpp"
+#include "rcpp_combined_seasonality.hpp"
 #include "rcpp_x11_selection_records.hpp"
 #include "rcpp_x11_table_support.hpp"
 #include "kalos/x13_fit.hpp"
@@ -66,8 +67,8 @@ Rcpp::List native_x13_fit(SEXP values,SEXP variables_list,SEXP log,SEXP frequenc
         Rcpp::_["msr_policy"]=msr_name,
         Rcpp::_["mode_requested"]=kalos_x11_rcpp::mode_name(result.mode_requested),
         Rcpp::_["mode_effective"]=kalos_x11_rcpp::mode_name(result.mode_effective),
-        Rcpp::_["mode_forcing"]="pinned X13Kernel.updateSpec: non-log -> additive; "
-            "log -> multiplicative unless log_additive or pseudo_additive was requested",
+        Rcpp::_["mode_forcing"]="pinned X13Kernel.updateSpec: preserve an explicit pseudo_additive mode; "
+            "otherwise non-log -> additive and log -> multiplicative unless log_additive was requested",
         Rcpp::_["backcast"]=result.backcast,Rcpp::_["forecast"]=result.forecast,
         Rcpp::_["scope"]="restricted_fixed_model_x13_fit_only",Rcpp::_["backend"]="native");
     if(!result.preadjustment.status.empty()) // past the fail-closed guards
@@ -81,6 +82,7 @@ Rcpp::List native_x13_fit(SEXP values,SEXP variables_list,SEXP log,SEXP frequenc
             Rcpp::CharacterVector(seasonal));
     }
     if(result.status=="available") { // tables only on a completed run
+        out["diagnostics"] = wrap_si_diagnostics(kalos::x13_si_seasonality(result));
         out["results"]=Rcpp::List::create(
             Rcpp::_["d10"]=kalos_x13_rcpp::reals_out(result.d10),
             Rcpp::_["d11"]=kalos_x13_rcpp::reals_out(result.d11),

@@ -35,7 +35,9 @@
 // mean-free base (the JVM Griffies mean is inexpressible there, recorded per
 // entry with the "mean on: excluded from the ODM base (delta)" note).
 
+#include "kalos/detail/x13_effective_mode.hpp"
 #include "kalos/x13_automatic.hpp"
+#include "tramo_airline_forecast.hpp"
 
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/detail/hostlineage.hpp"
@@ -49,7 +51,6 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -161,39 +162,6 @@ int arma_dim_of(const std::array<std::vector<double>, 4>& blocks) {
                           blocks[2].size() + blocks[3].size());
 }
 
-// ---------------------------------------------------------------------------
-// Period labels / outlier names. IOutlier.defaultName(code, period) probed
-// through jshell: "AO (1951-05-01)" for TsPeriod.monthly(1951, 5); the
-// monthly day is always 01.
-// ---------------------------------------------------------------------------
-
-std::string outlier_name(OutlierType type, std::size_t position,
-                         int first_year, int first_period) {
-  const char* code = "AO";
-  switch (type) {
-    case OutlierType::Additive: code = "AO"; break;
-    case OutlierType::LevelShift: code = "LS"; break;
-    case OutlierType::TransitoryChange: code = "TC"; break;
-    case OutlierType::SeasonalOutlier: code = "SO"; break;
-  }
-  const int index = first_period - 1 + static_cast<int>(position);
-  const int year = first_year + index / 12;
-  const int month = index % 12 + 1;
-  std::ostringstream stream;
-  if (year < 0) {
-    stream << '-';
-  }
-  const unsigned magnitude = year < 0 ? static_cast<unsigned>(-year)
-                                      : static_cast<unsigned>(year);
-  if (magnitude < 10) stream << "000";
-  else if (magnitude < 100) stream << "00";
-  else if (magnitude < 1000) stream << '0';
-  stream << magnitude << '-';
-  if (month < 10) stream << '0';
-  stream << month << "-01";
-  return std::string(code) + " (" + stream.str() + ")";
-}
-
 // SaVariable.defaultComponentTypeOf(IOutlier), re-derived from the bytecode
 // (G3 probe, 21-H.1: AO/TransitoryChange/SwitchOutlier -> Irregular,
 // LevelShift -> Trend, PeriodicOutlier -> Seasonal; the contract's
@@ -221,14 +189,6 @@ const char* component_name(X13Component effect) {
   }
 }
 
-// The pinned X13Kernel.updateSpec forcing (verbatim copy of the x13_fit.cpp
-// file-local stage; the fixed path keeps its own byte-identical copy).
-X11DecompositionMode forceMode(bool log, X11DecompositionMode mode) {
-    if(!log) return X11DecompositionMode::additive;
-    if(mode==X11DecompositionMode::log_additive
-        ||mode==X11DecompositionMode::pseudo_additive) return mode;
-    return X11DecompositionMode::multiplicative;
-}
 
 // The pinned X11Kernel results-builder stage (verbatim x13_fit.cpp copy).
 void logAdditiveResults(const std::vector<double>& step10,
@@ -310,14 +270,14 @@ struct Modelling {
 class AutomaticPipeline {
  public:
   AutomaticPipeline(const X13AutomaticRequest& request,
-                    X13AutomaticFitResult& result)
-      : request_(request), result_(result) {}
+                    X13AutomaticFitResult& result, int backcast, int forecast)
+      : request_(request), result_(result), backcast_(backcast), forecast_(forecast) {}
 
   // The failed: stage/round of the last calc position (entry-point use).
   const std::string& stage() const { return stage_; }
   int round() const { return round_; }
 
-  void run() {
+  void run(bool fixed_structure, bool calendar) {
     transitory_rate_ = transitory_change_rate(kAnnualFrequency,
                                              request_.tcrate);
     y_ = request_.input;  // the level domain; log below if chosen
@@ -325,12 +285,22 @@ class AutomaticPipeline {
     // (init) the X13ModelBuilder airline start + the critical-value rule
     // (process(): va0 = options.va > 0 ? va : X13Utility.calcCv(n)).
     model_.desc = Description{};  // log=false, mean=false, (0,1,1)(0,1,1)
+    // Stock RSA0 goes straight from the fixed airline description to the
+    // final estimator. Its outlier factory list and regression design are empty.
+    if (fixed_structure && !request_.outliers_used) {
+      stage_ = "final estimation";
+      estimate_final_parameters();
+      stage_ = "final";
+      build_result(true);
+      return;
+    }
+
     pcr_ = request_.ljung_box_limit;  // clear(): pcr = options.ljungBoxLimit
     va0_ = request_.va > 0. ? request_.va
                             : default_critical_value(y_.size());
     curva_ = va0_;
     need_outliers_ = request_.outliers_used;
-    need_auto_modelling_ = true;  // autoModel != null for this kind
+    need_auto_modelling_ = !fixed_structure;
     {
       AutoDecisionRecord entry;
       entry.stage = "init";
@@ -356,10 +326,31 @@ class AutomaticPipeline {
     }
 
     stage_ = "transformation";
-    transformation_prepass();
+    if (calendar) {
+      const auto scale = x13_rsa2c_scale(y_, request_.first_year, request_.first_period);
+      auto compared = x13_rsa2c_calendar_test(y_, request_.first_year, request_.first_period, scale.log);
+      model_.desc.log = scale.log;
+      calendar_ = compared.selected;
+      y_ = std::move(compared.transformed);
+      fill_calendar_design();
+      auto best = std::min_element(compared.easter.begin(), compared.easter.end(),
+          [](const auto& left, const auto& right) { return left.aicc < right.aicc; });
+      Estimation retained{};
+      retained.coefficients[1] = {best->ma[0]};
+      retained.coefficients[3] = {best->ma[1]};
+      retained.log_likelihood = best->log_likelihood;
+      retained.status = "available";
+      model_.estimation = retained;
+      model_.last_coefficients = retained.coefficients;
+      model_.has_coefficients = true;
+      calendar_adjustment_ = best->transformation_adjustment;
+      unadjusted_jacobian_ = compared.trading_days[0].transformation_adjustment;
+    } else {
+      transformation_prepass();
+    }
 
     stage_ = "meantest";
-    // regAIC: calendarTest/easterTest fail-closed (21-I) -> Unchanged.
+    // The stock RSA2c prepass above includes the two regAIC tests.
     check_mu(kCheckMuCalc, "meantest0", 0, nullptr);
 
     if (need_outliers_) {
@@ -374,8 +365,13 @@ class AutomaticPipeline {
       }
     }
 
-    // isAutoModelling() is always true for this kind: the non-auto branch
-    // (finalEstimator.estimate + build) is unreachable here.
+    if (fixed_structure) {
+      stage_ = "final estimation";
+      estimate_final_parameters();
+      stage_ = "final";
+      build_result(true);
+      return;
+    }
     stage_ = "estimation";
     estimate_if_needed();
     reference_ = std::make_unique<Modelling>(model_);
@@ -411,6 +407,25 @@ class AutomaticPipeline {
 
   std::vector<double> y_;  // the transformed (level or log) working series
   double transitory_rate_ = 0.;
+
+  std::optional<X13Rsa2cCalendar> calendar_;
+  std::vector<std::vector<double>> calendar_columns_;
+  double calendar_adjustment_ = 0, unadjusted_jacobian_ = 0;
+
+  void fill_calendar_design() {
+    calendar_columns_ = x13_rsa2c_calendar_columns(*calendar_, model_.desc.log,
+        {request_.first_year, request_.first_period, 12, static_cast<int>(y_.size())});
+  }
+
+  std::vector<std::string> calendar_names() const {
+    std::vector<std::string> names;
+    if (calendar_->working_days) {
+      names.push_back("td");
+      if (!model_.desc.log) names.push_back("lp");
+    }
+    if (calendar_->easter_duration) names.push_back("easter");
+    return names;
+  }
 
   // Whether the retained estimation was fitted with the mean column in the
   // design. The transformation prepass retains the CHOSEN-branch estimation,
@@ -465,6 +480,7 @@ class AutomaticPipeline {
     if (model_.desc.mean) {
       columns.emplace_back(n, 1.);  // the Griffies mean column (raw ones)
     }
+    for (const auto& col : calendar_columns_) columns.push_back(diff_column(col));
     for (const OutlierVariable& variable : *set) {
       columns.push_back(diff_column(outlier_column(variable)));
     }
@@ -490,7 +506,7 @@ class AutomaticPipeline {
         variables != nullptr ? variables : &model_.desc.variables;
     const std::size_t n = y_.size();
     RegressionDesign design;
-    std::vector<std::vector<double>> columns;
+    auto columns = calendar_columns_;
     for (const OutlierVariable& variable : *set) {
       columns.push_back(outlier_column(variable));
     }
@@ -877,7 +893,7 @@ class AutomaticPipeline {
         variable.position = decision.position;
         variable.effect = outlier_effect(decision.type);
         variable.name =
-            outlier_name(decision.type, decision.position,
+            monthly_outlier_name(decision.type, decision.position,
                          request_.first_year, request_.first_period);
         model_.desc.variables.push_back(std::move(variable));
       }
@@ -1031,6 +1047,13 @@ class AutomaticPipeline {
     RegressionVariableTestRequest test;
     test.statistics = landing_statistics();
     int position = 0;
+    const auto names = calendar_ ? calendar_names() : std::vector<std::string>{};
+    for (const auto& name : names) {
+      const auto kind = name == "td" ? RegressionVariableKind::trading_days
+                      : name == "lp" ? RegressionVariableKind::length_of_period
+                                     : RegressionVariableKind::moving_holiday;
+      test.variables.push_back({kind, position++, 1});
+    }
     for (std::size_t i = 0; i < model_.desc.variables.size(); ++i) {
       // ami outliers are never tested by the live machine (kind other); the
       // layout keeps the description order for the audit fields.
@@ -1038,17 +1061,30 @@ class AutomaticPipeline {
           RegressionVariableLayout{RegressionVariableKind::other, position++, 1});
     }
     test.mean_test = mean_cutoff;
-    test.td_test = 0.;   // decoder: no tdTest inside the envelope
-    test.mh_test = 0.;   // moving holidays only with a live easter (21-I)
-    test.derived_test = false;
+    test.td_test = calendar_ ? 1.96 : 0.;
+    test.mh_test = calendar_ ? 1.96 : 0.;
+    test.derived_test = calendar_.has_value();
     test.td_joint = 0.;  // the dead joint branch, unit-rejects nonzero
     test.mean = model_.desc.mean;
-    test.adjusted = false;  // log && lp != None: lp is None in scope
-    test.preadjustment = 0;
+    test.adjusted = calendar_ && calendar_->working_days && model_.desc.log;
+    test.preadjustment = test.adjusted ? 1 : 0;
     RegressionVariableTestResult outcome = run_regression_variable_tests(test);
     const bool changed = outcome.changed;
     if (changed) {
       model_.desc.mean = outcome.mean;
+      if (calendar_) {
+        for (std::size_t j = 0; j < names.size(); ++j) {
+          if (!outcome.removed[j]) continue;
+          if (names[j] == "easter") calendar_->easter_duration = 0;
+          else calendar_->working_days = false;
+        }
+        if (test.adjusted && !calendar_->working_days) {
+          y_ = request_.input;
+          for (auto& y : y_) y = detail::fdlibm_log(y);
+          calendar_adjustment_ = unadjusted_jacobian_;
+        }
+        fill_calendar_design();
+      }
       clear_estimation();
     }
     AutoDecisionRecord entry;
@@ -1639,6 +1675,20 @@ class AutomaticPipeline {
     return blocks;
   }
 
+  void estimate_final_parameters() {
+    auto request = base_request(request_.precision,
+                                EstimationStartingPoint::Multiple, false);
+    SarimaEstimationResult fit_result = estimate_sarima_fixed(request);
+    Estimation estimation;
+    estimation.coefficients = fit_result.coefficients;
+    estimation.status = fit_result.status;
+    estimation.log_likelihood = fit_result.log_likelihood;
+    model_.last_coefficients = estimation.coefficients;
+    model_.has_coefficients = true;
+    model_.estimation = std::move(estimation);
+    estimation_has_mean_ = model_.desc.mean;
+  }
+
   bool run_cascade(std::vector<AutoCascadeRoundRecord>& records) {
     for (int cround = 0; cround < kMaxCascadeRounds; ++cround) {
       AutoCascadeRoundRecord record;
@@ -1659,18 +1709,8 @@ class AutomaticPipeline {
         // (base_request), fast_derivatives = false; the recorded solver
         // delta against the JVM's LM minimizer is retired by the ruling.
         stage_ = "final estimation";
-        auto request = base_request(request_.precision,
-                                    EstimationStartingPoint::Multiple, false);
-        SarimaEstimationResult fit_result = estimate_sarima_fixed(request);
-        Estimation estimation;
-        estimation.coefficients = fit_result.coefficients;
-        estimation.status = fit_result.status;
-        estimation.log_likelihood = fit_result.log_likelihood;
-        model_.last_coefficients = estimation.coefficients;
-        model_.has_coefficients = true;
-        model_.estimation = std::move(estimation);
-        estimation_has_mean_ = model_.desc.mean;
-        record.estimation_status = std::move(fit_result.status);
+        estimate_final_parameters();
+        record.estimation_status = model_.estimation->status;
         record.estimation_ok = true;
 
         // FinalEstimator.estimate's dim is desc.mapping().getDim() and
@@ -1811,7 +1851,59 @@ class AutomaticPipeline {
 
   // ---- the final description + downstream composition ------------------------------
 
-  void build_result() {
+  // The public model differences the regression-adjusted series, then runs
+  // FastKalmanFilter on the stationary ARMA. Its residuals have one value
+  // per stationary observation even when GLS estimates regression terms.
+  std::vector<double> stock_regression() {
+    ensure_domain();
+    const auto design = build_raw_design();
+    const auto& desc = model_.desc;
+    const auto point = raw_point();
+    std::vector<std::vector<double>> columns;
+    if (desc.mean) columns.emplace_back(yd_.size(), 1.);
+    for (std::size_t j = 0; j < design.columns; ++j) {
+      const auto begin = design.values.begin() + j * y_.size();
+      columns.push_back(diff_column(std::vector<double>(begin, begin + y_.size())));
+    }
+    detail::PinnedRegressionDiagnostics diagnostics;
+    const auto fit = detail::pinned_deviances_evaluate_multi(
+        yd_, desc.p, desc.bp, desc.q, desc.bq, kAnnualFrequency, columns, point,
+        detail::PinnedComputerShape::Full, &diagnostics);
+    if (!fit || fit->b.size() != columns.size())
+      throw std::runtime_error("stock X-13 final likelihood unavailable");
+
+    auto residuals = std::move(diagnostics.qr_residuals);
+    if (!columns.empty()) {
+      auto adjusted = y_;
+      for (std::size_t j = 0; j < design.columns; ++j) {
+        const double coefficient = fit->b[j + desc.mean];
+        for (std::size_t i = 0; i < adjusted.size(); ++i)
+          adjusted[i] += -coefficient * design.values[j * adjusted.size() + i];
+      }
+      auto stationary = diff_column(std::move(adjusted));
+      if (desc.mean)
+        for (auto& value : stationary) value -= fit->b.front();
+      auto innovations = detail::pinned_fast_kalman_residuals(
+          stationary, desc.p, desc.bp, desc.q, desc.bq, kAnnualFrequency, point);
+      if (!innovations)
+        throw std::runtime_error("stock X-13 final residuals unavailable");
+      residuals = std::move(*innovations);
+    }
+    if (residuals.size() != yd_.size())
+      throw std::runtime_error("invalid stock X-13 residual length");
+    const auto npar = 1 + columns.size() + point.size();
+    if (yd_.size() <= npar || diagnostics.unscaled_covariance.size() != columns.size() * columns.size())
+      throw std::runtime_error("invalid stock X-13 final covariance");
+    const double scale = fit->ssq_err / static_cast<double>(yd_.size() - npar + 1);
+    for (double& v : diagnostics.unscaled_covariance) v *= scale;
+    result_.stock_likelihood = X13StockLikelihood{
+        fit->ssq_err, npar, std::move(residuals), request_.first_year, request_.first_period,
+        std::move(diagnostics.unscaled_covariance)};
+    result_.log_likelihood = fit->log_likelihood;
+    return fit->b;
+  }
+
+  void build_result(bool stock = false) {
     X13AutomaticFitResult& out = result_;
     out.log = model_.desc.log;
     out.mean = model_.desc.mean;
@@ -1841,13 +1933,23 @@ class AutomaticPipeline {
 
     // The landing composition at the final point (the G2 recipe; never
     // bit-claimed): the outlier coefficients and the AICC echo.
-    RegressionLikelihood fit = landing_fit();
-    if (fit.status != "available") {
-      throw std::runtime_error("final likelihood unavailable: " + fit.status);
+    std::vector<double> regression;
+    if (stock) {
+      regression = stock_regression();
+    } else {
+      auto fit = landing_fit();
+      if (fit.status != "available")
+        throw std::runtime_error("final likelihood unavailable: " + fit.status);
+      regression = std::move(fit.coefficients);
     }
     std::size_t col = 0;
     if (model_.desc.mean) {
       ++col;
+    }
+    if (calendar_) {
+      X13StockCalendarFit record{*calendar_, calendar_names(), {}};
+      for (std::size_t j = 0; j < record.names.size(); ++j) record.coefficients.push_back(regression.at(col++));
+      out.stock_calendar = std::move(record);
     }
     for (const OutlierVariable& variable : model_.desc.variables) {
       AutoVariableRecord record;
@@ -1856,7 +1958,7 @@ class AutomaticPipeline {
       record.regeffect = component_name(variable.effect);
       record.position = variable.position;
       record.coefficient =
-          col < fit.coefficients.size() ? fit.coefficients[col] : 0.;
+          col < regression.size() ? regression[col] : 0.;
       record.column = outlier_column(variable);
       out.variables.push_back(std::move(record));
       ++col;
@@ -1865,7 +1967,7 @@ class AutomaticPipeline {
       const double neff = static_cast<double>(out.effective_observations);
       const double parameters =
           static_cast<double>(arma_dim_of(estimation.coefficients) +
-                              fit.coefficients.size() + 1);
+                              regression.size() + 1);
       // AICC rides the ADJUSTED log-likelihood (LikelihoodStatistics.calc
       // reads adjustedLogLikelihood; the Builder adds the transformation
       // Jacobian): in log mode the JVM subtracts sum(log y_t) over the
@@ -1873,7 +1975,9 @@ class AutomaticPipeline {
       // by the oracle stats facts: ao -333.0415626 with d=0, bd=1; rw
       // -450.5425654 with d=1, bd=0; level cases carry no adjustment).
       double adjusted_log_likelihood = out.log_likelihood;
-      if (out.log) {
+      if (calendar_) {
+        adjusted_log_likelihood += calendar_adjustment_;
+      } else if (out.log) {
         const std::size_t skip = static_cast<std::size_t>(
             model_.desc.d + model_.desc.bd * kAnnualFrequency);
         for (std::size_t i = skip; i < request_.input.size(); ++i) {
@@ -1902,15 +2006,11 @@ class AutomaticPipeline {
     fit_result.upper_sigma = request_.upper_sigma;
     fit_result.msr_policy = request_.msr_policy;
     fit_result.mode_requested = request_.mode;
-    fit_result.mode_effective = forceMode(out.log, request_.mode);
+    fit_result.mode_effective = detail::x13_effective_mode(out.log, request_.mode);
     // The pinned process semantics (item 21-H.4): the spec horizons are
     // month counts; a negative value means |h| annual frequencies.
-    const int nb = request_.backcast < 0
-                       ? -request_.backcast * kAnnualFrequency
-                       : request_.backcast;
-    const int nf = request_.forecast < 0
-                       ? -request_.forecast * kAnnualFrequency
-                       : request_.forecast;
+    const int nb = backcast_;
+    const int nf = forecast_;
     fit_result.backcast = nb;
     fit_result.forecast = nf;
 
@@ -1948,6 +2048,19 @@ class AutomaticPipeline {
       forecasts_model.theta = blocks[1];
       forecasts_model.btheta = blocks[3];
       preadjust.arima = forecasts_model;
+    }
+    if (out.stock_calendar) {
+      const auto& record = *out.stock_calendar;
+      const calendar_domain extended{request_.first_year, request_.first_period, 12, static_cast<int>(request_.input.size()) + nf};
+      const auto columns = x13_rsa2c_calendar_columns(record.selection, out.log, extended);
+      for (std::size_t i = 0; i < columns.size(); ++i) {
+        const auto cls = record.names[i] == "easter" ? X13VariableClass::moving_holiday : X13VariableClass::days_related;
+        preadjust.variables.push_back({cls, X13Component::calendar_effect, {record.coefficients[i]}, {columns[i]}});
+      }
+      if (out.log && record.selection.working_days) {
+        preadjust.leap_forward = x13_rsa2c_leap_factors(extended, false);
+        preadjust.leap_reverse = x13_rsa2c_leap_factors(extended, true);
+      }
     }
     for (const AutoVariableRecord& variable : out.variables) {
       X13AllocationVariable allocation;
@@ -2052,6 +2165,8 @@ class AutomaticPipeline {
 
   const X13AutomaticRequest& request_;
   X13AutomaticFitResult& result_;
+  const int backcast_;
+  const int forecast_;
   std::vector<OutlierVariable> empty_variables_;
 
   Modelling model_;
@@ -2077,7 +2192,8 @@ class AutomaticPipeline {
 // The public entry point.
 // ---------------------------------------------------------------------------
 
-X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
+namespace {
+X13AutomaticFitResult fit_monthly(const X13AutomaticRequest& request, bool fixed_structure, bool calendar = false) {
   X13AutomaticFitResult out;
 
   // Shape validation (throws std::invalid_argument, as the seams below do).
@@ -2129,6 +2245,17 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
         "detection (21-I)";
     return out;
   }
+  const auto months = [](int count) -> std::int64_t {
+    return count < 0 ? -static_cast<std::int64_t>(count) * kAnnualFrequency : count;
+  };
+  const auto backcast = months(request.backcast);
+  const auto forecast = months(request.forecast);
+  const auto max_length = std::min<std::size_t>(
+      std::numeric_limits<int>::max(), request.input.max_size());
+  if (request.input.size() > max_length ||
+      static_cast<std::uint64_t>(backcast + forecast) > max_length - request.input.size()) {
+    throw std::invalid_argument("x13 automatic fit extended series exceeds the supported index range");
+  }
   if (request.outlier_span &&
       (request.outlier_span->first != 0 ||
        request.outlier_span->second !=
@@ -2137,9 +2264,9 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
     return out;
   }
 
-  AutomaticPipeline pipeline(request, out);
+  AutomaticPipeline pipeline(request, out, static_cast<int>(backcast), static_cast<int>(forecast));
   try {
-    pipeline.run();
+    pipeline.run(fixed_structure, calendar);
   } catch (const std::runtime_error& error) {
     // The pinned catch(Exception) -> return null: the failed: status with
     // the chain kept so far (the invalid_argument shape violations of the
@@ -2154,4 +2281,102 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
   return out;
 }
 
+X13AutomaticFitResult fit_stock_airline(const std::vector<double>& observations,
+                                        int year, int month, bool detect_outliers, bool calendar = false) {
+  if (year < 1 || year > 9999)
+    throw std::invalid_argument("estimated X-13 requires a start year between 1 and 9999");
+  X13AutomaticRequest spec{};
+  spec.input = observations;
+  spec.first_year = year;
+  spec.first_period = month;
+  spec.precision = 1e-7;
+  spec.tcrate = 0.7;
+  spec.outliers_used = detect_outliers;
+  if (detect_outliers) {
+    spec.aicc_log_correction = -2.;
+    spec.outlier_types = {OutlierType::Additive, OutlierType::LevelShift,
+                          OutlierType::TransitoryChange};
+    spec.outlier_max_round = 30;
+    spec.outlier_max_outliers = 30;
+  }
+  spec.seasonal.assign(12, X11SeasonalRequest::msr);
+  spec.sigma = X11SigmaPolicy::legacy;
+  spec.forecast = -1;
+  return fit_monthly(spec, true, calendar);
+}
+
+}  // namespace
+
+X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
+  return fit_monthly(request, false);
+}
+
+X13AutomaticFitResult x13_estimated_rsa0(const std::vector<double>& observations, int year, int month) {
+  return fit_stock_airline(observations, year, month, false);
+}
+
+X13AutomaticFitResult x13_estimated_rsa1(const std::vector<double>& observations, int year, int month) {
+  return fit_stock_airline(observations, year, month, true);
+}
+
+X13AutomaticFitResult x13_estimated_rsa2c(const std::vector<double>& observations, int year, int month) {
+  return fit_stock_airline(observations, year, month, true, true);
+}
+
+
+namespace {
+const X13StockLikelihood& stock_likelihood(const X13AutomaticFitResult& fit) {
+  if (fit.status != "available" || !fit.stock_likelihood || fit.p || fit.bp || fit.mean ||
+      fit.q != 1 || fit.bq != 1 || fit.d != 1 || fit.bd != 1 ||
+      fit.coefficients[1].size() != 1 || fit.coefficients[3].size() != 1 ||
+      fit.effective_observations <= fit.stock_likelihood->estimated_parameters ||
+      fit.stock_likelihood->full_residuals.size() != fit.effective_observations)
+    throw std::invalid_argument("requires a complete stock X-13 airline fit");
+  return *fit.stock_likelihood;
+}
+} // namespace
+
+X13StockResidualDiagnostics x13_stock_residual_diagnostics(const X13AutomaticFitResult& fit) {
+  const auto& stats = stock_likelihood(fit);
+  return {tramo_residual_standard_error(stats.residual_ssq, static_cast<int>(fit.effective_observations),
+                                        static_cast<int>(stats.estimated_parameters)),
+          monthly_airline_residual_ljung_box(stats.full_residuals), portable_residual_normality(stats.full_residuals)};
+}
+
+X13StockForecastErrors x13_stock_forecast_errors(const X13AutomaticFitResult& fit, int months) {
+  const auto& stats = stock_likelihood(fit);
+  const auto& observed = fit.fit.preadjustment.a1;
+  if (months < 0 || observed.size() < 13 || observed.size() - 13 != fit.effective_observations)
+    throw std::invalid_argument("invalid stock X-13 forecast domain");
+  if (!months) return {"no_requested_predictions", {}};
+  if (observed.size() > static_cast<std::size_t>(std::numeric_limits<int>::max() - months))
+    throw std::length_error("extended stock X-13 forecast domain exceeds index range");
+  const calendar_domain domain{stats.start_year, stats.start_month, 12, static_cast<int>(observed.size()) + months};
+  std::vector<double> response = observed, coefficients;
+  std::vector<std::vector<double>> columns;
+  if (fit.stock_calendar) {
+    const auto& calendar = *fit.stock_calendar;
+    columns = x13_rsa2c_calendar_columns(calendar.selection, fit.log, domain);
+    coefficients = calendar.coefficients;
+    if (coefficients.size() != columns.size()) throw std::invalid_argument("invalid stock X-13 calendar design");
+    if (fit.log && calendar.selection.working_days) {
+      const auto factors = x13_rsa2c_leap_factors(domain, false);
+      for (std::size_t i = 0; i < response.size(); ++i) response[i] *= factors[i];
+    }
+  }
+  if (fit.log) for (auto& value : response) value = detail::fdlibm_log(value);
+  for (const auto& effect : fit.variables) {
+    auto& column = columns.emplace_back(observed.size() + months);
+    fill_outlier_column(effect.type, effect.position, 12, 0.7, column);
+    coefficients.push_back(effect.coefficient);
+  }
+  const auto p = coefficients.size();
+  if (p + 3 != stats.estimated_parameters || stats.regression_covariance.size() != p * p)
+    throw std::invalid_argument("invalid stock X-13 regression covariance");
+  const double variance = stats.residual_ssq / static_cast<double>(fit.effective_observations - stats.estimated_parameters);
+  auto errors = detail::airline_forecast_uncertainty(std::move(response), columns, false, fit.log,
+      fit.coefficients[1][0], fit.coefficients[3][0], coefficients, stats.regression_covariance, variance, months);
+  if (!errors) return {"covariance_range", {}};
+  return {"available", std::move(*errors)};
+}
 }  // namespace kalos

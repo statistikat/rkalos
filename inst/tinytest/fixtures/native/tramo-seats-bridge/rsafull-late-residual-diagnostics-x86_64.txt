@@ -1,0 +1,12 @@
+case late_td_12
+residuals.ser 3fffcca7587a06b5
+residuals.lb 4031088d11efa192 3fe85e560f027211 Chi2 with 22.0 degrees of freedom
+residuals.doornikhansen 3fd721ce4a159a7a 3feab59d484df9ac Chi2 with 2.0 degrees of freedom
+case late_td_14
+residuals.ser 3f98ef69ab091b14
+residuals.lb 4033fde865a89ba2 3fe0b269d04e4d5e Chi2 with 21.0 degrees of freedom
+residuals.doornikhansen 3fc27b3d132b1d20 3fedc570304c1cd2 Chi2 with 2.0 degrees of freedom
+case late_td_44
+residuals.ser 3f944ad13ee7e8c6
+residuals.lb 403cbb97eb66f3bc 3fc38a021e4ba8e4 Chi2 with 22.0 degrees of freedom
+residuals.doornikhansen 400660773fbfca58 3fcf9c3461723cc0 Chi2 with 2.0 degrees of freedom

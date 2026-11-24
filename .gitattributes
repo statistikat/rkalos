@@ -1,0 +1,3 @@
+# These paths contain byte-for-byte exports verified against core.lock.json.
+src/kalos/** -text
+inst/tinytest/fixtures/** -text

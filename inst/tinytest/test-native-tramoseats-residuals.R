@@ -1,0 +1,31 @@
+source("helpers/fixtures.R", local = TRUE)
+dir <- system.file("tinytest/fixtures/native/tramo-seats-bridge", package = "rkalos")
+inputs <- fixture_named_rsa0_cases(file.path(dir, "rsa0-x86_64.txt"))
+oracle <- fixture_named_rsa0_cases(file.path(dir, "rsa0-residuals-x86_64.txt"))
+points <- 0L
+for (id in names(oracle)) {
+  fields <- function(line) strsplit(line, " ", fixed = TRUE)[[1L]]
+  input <- fields(inputs[[id]][2L])
+  x <- stats::ts(fixture_hex_doubles(input[-seq_len(4L)]), frequency = 12, start = as.integer(input[2:3]))
+  fit <- rkalos::native_tramoseats_fit(x)
+  expected <- fields(oracle[[id]][2L])
+  value <- fit$residuals$tsres
+  expect_identical(as.integer(stats::start(value)), as.integer(expected[2:3]), info = id)
+  expect_identical(stats::frequency(value), 12, info = id)
+  expect_identical(as.integer(stats::end(value)), as.integer(stats::end(x)), info = id)
+  expect_identical(length(value), as.integer(expected[4L]), info = id)
+  want <- fixture_hex_doubles(expected[-seq_len(4L)])
+  expect_identical(writeBin(as.numeric(value), raw()), writeBin(want, raw()), info = id)
+  ser <- fixture_hex_doubles(fields(oracle[[id]][3L])[2L])
+  expect_identical(writeBin(fit$residuals$ser, raw()), writeBin(ser, raw()), info = id)
+  points <- points + length(value)
+}
+expect_identical(length(oracle), 6L)
+expect_identical(points, 570L)
+x <- stats::ts(as.numeric(AirPassengers), start = c(2010, 3L), frequency = 12)
+extended <- rkalos::native_tramoseats_fit(x, forecast = 6L, backcast = 3L)
+observed <- rkalos::native_tramoseats_fit(x, forecast = 0L)
+expect_identical(extended$residuals, observed$residuals)
+expect_identical(as.integer(stats::start(observed$residuals$tsres)), c(2011L, 4L))
+expect_identical(as.integer(stats::end(observed$residuals$tsres)), as.integer(stats::end(x)))
+expect_true(all(c("tsres", "ser") %in% rkalos::capabilities()$tramo_seats_fit$residuals))

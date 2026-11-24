@@ -35,8 +35,8 @@
 //    derived from the seam stream and its result compared bit-exactly with
 //    the seam fact the kernel machine already validated (result,
 //    specification, mean, picks, module events). Envelope-excluded seams
-//    (outlier-column warm-ML differencing states, the estimateModel
-//    attempts outside the F.2 family domain) are recorded fact-only,
+//    (outlier-column warm-ML differencing states and final estimation
+//    attempts without a qualified entry design) are recorded fact-only,
 //    never approximated;
 //  * the final surface with the D9 coefficient covariance: the regression
 //    block covariance is recomputed natively as unscaledCovariance *
@@ -78,6 +78,7 @@
 // (std::invalid_argument) for structural violations - the x13_automatic_fit
 // grammar adapted to the TRAMO seam doctrine.
 
+#include "kalos/tramo_calendar_f_test.hpp"
 #include "kalos/tramo_kernel_rounds.hpp"
 #include "kalos/tramo_model_builder.hpp"
 #include "kalos/tramo_outlier_scan.hpp"
@@ -102,6 +103,7 @@ struct TramoFitVariable {
     int position = 0;
     double coefficient = 0.0;
     std::vector<double> column;
+    double tc_rate = 0.7;  // monthly decay for extrapolating a fitted transitory change
 };
 
 // The resolved TramoSpec scalars of the fit request (one-for-one with the
@@ -132,7 +134,7 @@ struct TramoFitSpec {
     double ub1 = 0.97, ub2 = 0.91;
     // EstimateSpec.
     double precision = 1e-7;            // EstimateSpec.getTol()
-    double intermediate_precision = 1e-7;
+    double intermediate_precision = 1e-5;
     // RegressionSpec.
     bool mean_is_test = false;          // RegressionSpec.getMean().isTest()
     bool mean_used = true;              // RegressionSpec.getMean().isUsed()
@@ -153,6 +155,7 @@ struct TramoFitSpec {
     // templates register SarimaSpec.AIRLINE, which is request data the
     // b512ec2 shape did not carry. Unused (period 0) under auto modelling.)
     tramo_sarima_spec fixed_arima;
+    double final_unit_root_threshold = 0.96; // EstimateSpec.getUbp()
 };
 
 // One differencing/arma/scan seam of the cross-check record: which landed
@@ -211,6 +214,7 @@ struct TramoFitFinalRecord {
     double ls_ll = 0.0, ls_tadj = 0.0, ls_all = 0.0, ls_ssq = 0.0;
     double ls_aic = 0.0, ls_aicc = 0.0, ls_bic = 0.0, ls_bicc = 0.0;
     double ls_bic2 = 0.0, ls_hq = 0.0;
+    TramoFittedCalendar calendar;
 };
 
 // Request data for the live per-seam cross-checks the stage envelopes
@@ -229,9 +233,12 @@ struct TramoFitSeamInputs {
     int pass = 0, round = 0;            // kernel fields at the call
     int entry_nobs = 0;                 // regarima().getObservationsCount()
     // arma seams (the 23-D contract owns them as the JVM-pinned hand-over):
-    std::vector<double> ols_residuals;  // RegArimaUtility.olsResiduals at the call
+    std::vector<double> ols_residuals;  // optional verification when every entry regressor can be reconstructed
     int nobs = 0;                       // regarima().getObservationsCount()
     int spc = -1;                       // the comespa gate readout (-1: none)
+    // Optional ordered, dated AO/LS design at ARMA entry. Coefficients are
+    // re-estimated by OLS, and any supplied raw column must match its factory.
+    std::vector<TramoFitVariable> entry_variables{};
 };
 
 struct TramoFitRequest {
@@ -249,6 +256,7 @@ struct TramoFitRequest {
     std::vector<TramoFitSeamInputs> seam_inputs;
     // The final-model record.
     TramoFitFinalRecord final;
+    bool verify_final_record = true; // false computes the record from live estimation alone
 };
 
 // The coefficient-covariance block of the result (D9): the native
@@ -276,6 +284,7 @@ struct TramoFitResult {
     TramoOrders orders;
     std::vector<double> parameters;     // JVM [phi|bphi|theta|btheta] bits
     std::vector<TramoFitVariable> variables;
+    std::vector<double> regression_coefficients; // mean, then variables in description order
     TramoFitCovariance covariance;
     // sigma2 bookkeeping (the cl record views): ssq, the effective count
     // (cl dim), nx, nmissing, logDeterminant and the derived
@@ -299,6 +308,13 @@ struct TramoFitResult {
     TramoKernelRoundsRun kernel;
     std::vector<TramoFitSeamCheck> seam_checks;
     std::size_t seams_live = 0, seams_fact = 0;
+    bool first_candidate_computed = false; // first automatic order selection and refit
+    bool reference_model_computed = false; // first fitted model from observations and options
+    bool initial_regression_checked = false; // public pre-stage decision from intermediate likelihood
+    bool final_model_computed = false; // independently projected from the final estimator
+    std::size_t regression_tests_checked = 0; // mean decision and post-test t-statistics
+    std::size_t statistics_checked = 0; // model-statistics rows reproduced from live estimation
+    TramoFittedCalendar calendar;
 };
 
 // The automatic TRAMO fit. Order of operations (contract "stage order"):
@@ -310,6 +326,28 @@ struct TramoFitResult {
 // envelope REQUESTS answer the refused: status instead where the matrix
 // says so (the refusals are decisions, not shape errors).
 TramoFitResult tramo_fit(const TramoFitRequest& request);
+
+// Round-zero TRfull model constructed from the original observations, before
+// automatic order identification and the later model controllers.
+TramoFitResult estimate_tramo_trfull_reference(const std::vector<double>& series, int start_year, int start_month);
+
+// Stock monthly TRfull including automatic calendar, SARIMA and outlier selection.
+TramoFitResult estimate_tramo_trfull(const std::vector<double>& series, int start_year, int start_month);
+
+// Estimate every coefficient of an already selected monthly model. Outlier
+// positions are zero-based on the original series. The supplied orders,
+// calendar effects and outlier identities constitute the model specification.
+TramoFitResult refit_tramo_selected_model(const std::vector<double>& series, int start_year, int start_month,
+    const TramoOrders& orders, bool log, bool mean, const TramoStockCalendar& calendar,
+    const std::vector<std::pair<int, TramoOutlierKind>>& outliers);
+
+// Public monthly TR1 preprocessing, including automatic log/level selection,
+// automatic outliers and a fixed-order airline with a mean.
+TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_year, int start_month);
+
+// Monthly TR3 preprocessing with reference-model comparisons, lower-threshold
+// outlier scans, last-chance estimation, mean retesting and the late controllers.
+TramoFitResult estimate_tramo_tr3(const std::vector<double>& series, int start_year, int start_month);
 
 }  // namespace kalos
 

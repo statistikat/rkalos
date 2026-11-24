@@ -1,8 +1,719 @@
 # rkalos implementation status
 
-Updated **2026-11-23**. Persephone uses the independent rkalos package.
+Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
+
+## Family M5b full source verification (2026-11-24)
+
+The stock X-13 item 28 checkpoint in rkalos `f53ee8f` passed all 66
+files with **309,527/309,527** serial and **309,531/309,531** OpenMP
+assertions. Its OpenMP source check passed the examples and retained the
+two documented compiler warnings. Persephone `975c771` passed
+**8,244/8,244** assertions and its full source check with `Status: OK`,
+including examples, rebuilt vignettes and the PDF manual.
+
+## Stock X-13 residual diagnostics and forecast uncertainty (2026-11-24)
+
+Version `0.1.0.9025` returns the public stock residual standard error,
+Ljung–Box and Doornik–Hansen statistics, probabilities and degrees of
+freedom. The dated `series_forecast_stdev` supplies the original-series
+uncertainty over all twelve stock forecast months. The fit carries the
+core's availability status.
+
+All nine stock fits passed **761/761** assertions in serial and OpenMP.
+All 45 residual diagnostic scalars were bit-exact and the 108 forecast
+standard errors met their existing `2e-8 * (1 + abs(reference))` budget.
+Both builds passed the TRAMO residual independence (41), normality (32),
+RSA1 (990) and original-series forecast uncertainty (62) checks and
+their isolated Java-free smoke tests.
+
+## Stock X-13 residual and forecast reference checkpoint (2026-11-24)
+
+Kalos `3a1f413a1d309687ffc2f157139cf358a295d55e` supplies the public stock
+residual standard error, Ljung–Box and Doornik–Hansen tests, and original-series
+forecast standard errors for all nine X-13 fits. The reference includes
+45 diagnostic scalars and 396 errors at four forecast lengths. The
+canonical source and reference snapshots pass offline verification.
+
+## M6 combined SI for automatic and estimated X-13 (2026-11-24)
+
+Version `0.1.0.9024` returns the observed-domain combined SI verdict,
+three statistics and their probabilities on successful decoded and stock
+estimated X-13 fits. Six automatic fits cover mode selection and nonzero
+forecasts and backcasts. All nine stock X-13 fits and 29 raw RSAfull fits
+also match the public verdicts and all six numerical fields at the
+unchanged `1e-12 * (1 + abs(reference))` tolerance.
+
+Both serial and two-worker OpenMP builds passed the combined diagnostic
+suite (198/198), automatic X-13 suite (1,244/1,244), stock X-13 suite
+(671/671) and isolated Java-free checks.
+
+## M6 combined seasonality reference extension (2026-11-24)
+
+The Kalos `f26b06a7df660af22c13ff039e3279c269618b73` checkpoint adds
+public diagnostic captures for six decoded X-13 fits, nine stock estimated
+X-13 fits and 29 raw RSAfull fits. The R source and evidence snapshots
+pass offline verification.
+
+## Stock estimated X-13 fits in R (2026-11-24)
+
+Version `0.1.0.9023` exposes `native_x13_estimated_fit()` for monthly
+RSA0, RSA1 and RSA2c. The fitted record includes the estimated airline
+coefficients, detected outliers, likelihood, dated innovations, observed
+components and twelve monthly point forecasts. RSA2c also reports its
+selected calendar effects and their named coefficients.
+
+All nine reference fits passed **671/671** assertions in both the serial
+and two-worker OpenMP builds. The model parameters, likelihoods and 891
+innovations matched exactly. The 126 dated X-11 rows met the existing
+`1e-8` scaled comparison. Both builds also passed the existing fixed
+X-13 (645), automatic X-13 (1,213), horizon (668), and combined
+seasonality (82) checks and their isolated Java-free smoke tests.
+
+## Stock estimated X-13 RSA2c core checkpoint (2026-11-24)
+
+Kalos `a32dce69296148d22421c1157272ec4fa08451ca` extends stock
+monthly estimated X-13 to RSA2c. All nine public RSA0, RSA1 and RSA2c
+fits cover the original fitted calendar, outliers, estimators, likelihood,
+innovations and restored X-11 components. Both package makefiles link
+the canonical calendar candidate evaluator. Offline source and fixture
+verification passes.
+
+## Full source verification for the family M5 checkpoint (2026-11-24)
+
+The full source suite of rkalos `45cf058c46f225005ce73ebe04e1b96b6587d907`
+(version `0.1.0.9021`, Kalos `45e78cf`) passed **308,774/308,774**
+serial assertions across all 64 files. The two-worker OpenMP source
+check passed **308,778/308,778** and the examples. The two previously
+documented compiler warnings remain (the R header's unknown warning group
+and non-portable `-ffp-contract=off` flag). The matching Persephone source
+check at `21f09f3` passed **7,488/7,488**, including its examples, rebuilt
+vignettes and PDF manual, with `Status: OK`.
+
+## Stock estimated X-13 RSA0 and RSA1 core checkpoint (2026-11-24)
+
+Kalos `9443a9b960ad8779347d32038e36a50c21ad3b37` supplies the original
+monthly RSA0 and RSA1 estimation routes and their six public stock fits.
+The core checkpoint covers both estimated airline parameters, selected
+outliers, X-11 decisions, likelihoods, 594 innovations and 84 dated X-11
+rows. The generated R source and reference snapshot passes offline verification.
+
+## M6 combined SI outcomes in fitted R models (2026-11-24)
+
+Version `0.1.0.9022` exposes `diagnostics$combined_seasonality` on
+monthly TRAMO-SEATS and fixed X-13 fits. The summary is the public
+combined SI category. The stable and moving F tests and Kruskal–Wallis test
+return their statistic and upper-tail probability. A series shorter than
+three years returns a null diagnostic. Two fits with only the stochastic
+irregular term return the public `None` verdict. Fixed pseudo-additive
+models retain the explicit mode on original-scale data.
+
+The installed R suite checked all 24 actual raw product verdicts and 144
+numeric outputs (20 WK fits and four fixed X-13 modes, tolerance
+`1e-12 * (1 + abs(reference))`). Serial and two-worker OpenMP each passed
+**82/82** dedicated checks, **645/645** fixed X-13, **3,112/3,112**
+RSAfull, **2,130/2,130** RSA3, **990/990** RSA1, **498/498** RSA0
+and the Java-free native smoke. The previous M5 version `0.1.0.9021`
+passed its full serial suite, **308,774/308,774** in 64 files.
+[Combined SI product tests](inst/tinytest/test-native-combined-seasonality.R)
+
+## Combined SI seasonality core checkpoint (2026-11-24)
+
+Kalos `35287e3ae6e83d839edfa500fd671d210fb9b38d` adds the public
+combined SI verdict and its stable, moving and rank-based statistics.
+The checkpoint also preserves the explicit pseudo-additive mode on a
+non-log fixed X-13 fit. The R package links the standalone diagnostics unit
+on both platforms; its generated source and evidence pass offline verification.
+
+## M5 ordinary stock TRfull and RSAfull in R (2026-11-24)
+
+Version `0.1.0.9021` adds `native_tramo_preprocess(series, "TRfull")`
+and `native_tramoseats_fit(series, "RSAfull")` with case-insensitive aliases.
+Both fit the stock calendar, ARIMA model and outliers from the original
+monthly observations. Named trading-day, leap-year and Easter coefficients
+are separate from estimated outliers. The full fit returns its native
+calendar effect on the observed and forecast domains in original-series units.
+
+All 29 public fits matched 4,165 innovations, 145 residual diagnostic
+values, 26,160 merged product values, 5,232 calendar effects and 696
+conditional SEATS forecast errors bit-for-bit. The 696 preprocessing forecast
+errors met the existing scaled tolerance. Both the zero-horizon and custom
+seven-month calendar forecasts retained their expected lengths.
+
+Serial and two-worker OpenMP each passed **3,112/3,112** RSAfull checks,
+**2,130/2,130** RSA3, **990/990** RSA1, **601/601** standalone TR1/TR3
+and **498/498** RSA0 checks. Both Java-free native smoke tests passed.
+[Stock RSAfull product checks](inst/tinytest/test-native-tramoseats-rsafull.R)
+
+## Automatic monthly TRfull and RSAfull core checkpoint (2026-11-24)
+
+Kalos `45e78cff6a2daa573f59cc9301451341cbf5265f` fits the stock
+TRfull model from original observations, including three late trading-day
+controller cases, and provides the corresponding merged RSAfull product.
+The checkpoint includes independent reference evidence for the observed
+and forecast calendar effects, original-series forecast errors, conditional
+SEATS errors and residual diagnostics on all 29 models. The generated
+R source and fixture snapshot passes offline verification.
+
+## M5 monthly TR3 reference retries and RSA3 products (2026-11-24)
+
+Version `0.1.0.9020` supports the additional identification and outlier
+rounds after a rejected reference comparison. Standalone TR3 and complete
+RSA3 match all twenty fitted models, 2,105 dated innovations and 100
+residual diagnostic scalars. All 13,980 observations and forecasts in the
+200 final rows match the public JVM bit-for-bit. The 480 original-series
+forecast errors satisfy the existing scaled tolerance, and all 480
+conditional SEATS errors match exactly. A 36-month series exercises the
+separate case where preprocessing completes and the fitted model requires
+a SEATS approximation outside the admitted range.
+
+Serial and two-worker OpenMP each passed **2,130/2,130** RSA3,
+**601/601** standalone preprocessing, **990/990** RSA1 and **498/498**
+RSA0 assertions, plus the Java-free native smoke test. The earlier
+`0.1.0.9018` full suite passed **304,128/304,128** serial and
+**304,132/304,132** OpenMP, with the two documented compiler warnings.
+
+## Twenty-case monthly TR3 checkpoint (2026-11-24)
+
+Kalos `dd95f1363fba6c1e0b7c73eee27ec43adfcc4dca` covers the
+reference-comparison retries and restores known roots for pure seasonal AR
+factorization. The twenty raw RSA3 inputs have 2,105 innovations, 200 final
+component rows and 480 original-scale forecast errors. Both package makefiles
+link the canonical calendar units used by the selected-model code.
+The generated R source and evidence snapshot passes offline verification.
+
+## M5 selected-model forecast uncertainty in native RSA3 (2026-11-24)
+
+Version `0.1.0.9019` returns dated original-series forecast standard
+errors from the selected TR3 model. Thirteen fits matched all **312**
+public 24-month forecast errors within `2e-8 * (1 + abs(reference))`.
+All **312** conditional SEATS errors matched bit-for-bit. The first
+seven months of each forecast also matched when requested separately.
+A zero horizon returns no values and its own availability status.
+
+Serial and two-worker OpenMP each passed **1,161/1,161** RSA3,
+**990/990** RSA1, **130/130** TR1 and **498/498** RSA0 checks, plus
+the isolated native smoke run for all three templates. The earlier
+`0.1.0.9016` OpenMP source check passed **303,513/303,513** tests
+with the two existing compiler warnings.
+[Selected-model forecast checks](inst/tinytest/test-native-tramoseats-rsa3.R)
+
+## Selected-model monthly TR3 forecast uncertainty checkpoint (2026-11-24)
+
+Kalos `5547b342543e9e0504f1660e30a1fdf53033271a` projects the
+public original-series forecast standard error from a fitted monthly TR3
+model. Its 13-model oracle records the separate conditional SEATS
+standard errors. Both platform builds now compile the new source and CI
+uses the same core pin. Offline verification passed for **200 core files,
+112 fixtures and 377 evidence files**.
+
+## M6 public selected-model residual diagnostics in R (2026-11-24)
+
+Version `0.1.0.9018` returns the residual standard error, Ljung–Box
+independence and Doornik–Hansen normality results for TR3 preprocessing
+and RSA3 fits. The Ljung–Box degrees of freedom subtract the selected
+regular and seasonal AR and MA counts from 24. All **65 public JVM
+diagnostic values** matched bit-for-bit across 13 raw models with 21,
+22 or 23 degrees of freedom. At 24 residuals, independence is undefined
+and the normality probability remains available.
+
+Both serial and two-worker OpenMP passed **1,067/1,067** RSA3,
+**990/990** RSA1, **130/130** TR1 and **498/498** RSA0 checks and the
+isolated three-template Java-free smoke test. The full serial source
+suite for `0.1.0.9016` passed **303,509/303,509** across 63 files.
+[Selected-model diagnostic replay](inst/tinytest/test-native-tramoseats-rsa3.R)
+
+## Selected-model TR3 residual diagnostics checkpoint (2026-11-24)
+
+The package and CI now pin Kalos
+`a4dc93fce2d300a84544f6122e8f231954f30aec`. Its public monthly
+residual diagnostics account for the selected regular and seasonal AR
+and MA orders. Two JVM captures cover all 13 previously qualified raw
+RSA3 models. Offline verification passed for **199 core files, 112
+fixtures and 375 evidence files**.
+
+## M5 expanded monthly TR3 and RSA3 identification (2026-11-24)
+
+Version `0.1.0.9017` handles the seasonal controller restart, stationary
+scans with the newly qualified orders and a fourth estimation pass after
+the fast regression test removes the fitted mean. The R regression
+matrix now covers 13 distinct public monthly models. The native orders,
+fitted coefficients, likelihoods, **1,196 dated residuals and 8,340
+values in 130 component rows** agree with the pinned JVM bit-for-bit.
+A rejected first reference comparison still returns its engine error.
+
+Serial and two-worker OpenMP each passed **984/984** RSA3, **990/990**
+RSA1, **130/130** standalone TR1 and **498/498** RSA0 checks. Both
+installed packages also completed a Java-free smoke fit for each of the
+three raw templates. [RSA3 model and component replay](inst/tinytest/test-native-tramoseats-rsa3.R)
+
+## Monthly TR3 seasonal restarts and fourth-pass refits (2026-11-24)
+
+The new core and CI pin `66444bf9262a4a566b53f36fd97c77762e9243d5`
+includes the seasonal controller restart, the measured stationary
+outlier-scan designs and fourth-pass refitting after the mean is
+removed. The two new public captures expand the RSA3 reference
+matrix by seven models. Offline verification passed for **199 core
+files, 112 fixtures and 372 evidence files**.
+
+## M5 public original-series forecast errors on RSA1 (2026-11-24)
+
+Version `0.1.0.9016` exposes the dated TR1 preprocessing standard errors
+in `native_tramoseats_fit(series, "RSA1")$series_forecast_stdev`.
+Twelve level and log models matched all **288** values in the public
+24-month JVM projection within `2e-8 * (1 + abs(reference))`.
+Their 288 distinct SEATS conditional standard errors remained bit-exact.
+Seven fits also matched the first six public errors with a custom
+3-month backcast and 6-month forecast. A zero horizon returns an empty
+vector and the model reports its own numerical availability status.
+
+Serial and two-worker OpenMP each passed **990/990** RSA1,
+**448/448** RSA3 and **498/498** RSA0 checks and the isolated Java-free
+smoke check. The complete OpenMP source check at `0.1.0.9014` passed
+**302,994/302,994** tests, with two known platform compiler warnings.
+[RSA1 forecasts and uncertainty](inst/tinytest/test-native-tramoseats-rsa1.R)
+
+## RSA1 original-series forecast error checkpoint (2026-11-24)
+
+Kalos `5a72228cacc78ede80d460a56f9f317c58ddfea5` supplies the
+TR1 forecast projection on the original scale, including fitted-regressor
+uncertainty and the log-to-level correction. Both R platform builds
+compile the dedicated source. The source, installed lock and CI pin
+agree. Offline verification passed for **199 core files, 112 fixtures
+and 369 evidence files**.
+
+## M5 monthly TR3 and RSA3 at the R boundary (2026-11-24)
+
+Version `0.1.0.9015` accepts TR3/RSA3 in preprocessing and complete
+seasonal adjustment. Six automatically identified models reproduced the JVM
+orders, fitted AR/MA and regression coefficients, log/level choice,
+likelihoods, **573 dated residuals** and **3,960 values across 60 dated
+component rows** bit-for-bit. The fitted-model scope includes the first
+reference comparison and controller sweep. A 36-month series verified
+that a further identification round raises the core refusal in both APIs.
+RSA3 publishes dated residuals; template-specific residual diagnostics
+and original-series forecast errors await independent qualification.
+
+Serial and two-worker OpenMP each passed **448/448** RSA3 assertions,
+**919/919** RSA1, **130/130** TR1, **498/498** RSA0 and the Java-free
+smoke check. All **302,990/302,990** checks passed on the preceding
+`0.1.0.9014` serial source suite.
+[RSA3 replay](inst/tinytest/test-native-tramoseats-rsa3.R)
+
+## Monthly raw TR3 and RSA3 core integration (2026-11-24)
+
+The package and CI now pin Kalos `0ac66ffaac5c8ff7bb913813485a94da9ed58748`
+for first-pass monthly TR3 identification and SEATS extraction from
+original observations. The provider builds now include the late controller
+and its seasonal F and spectrum sources. Offline verification passed for
+**197 core files, 112 fixtures and 368 evidence files**.
+
+## M6 public residual diagnostics for TR1 and RSA1 (2026-11-24)
+
+Version `0.1.0.9014` exposes the preprocessing residual standard error,
+the 24-lag Ljung–Box test (22 degrees of freedom) and Doornik–Hansen
+normality test (2 degrees of freedom) through both monthly TR1 entry
+points. Six original, two shifted level and four monthly TC models
+matched all **60 public JVM scalars bit-for-bit**. At 24 residuals,
+the Ljung–Box result is undefined and normality remains available.
+
+Serial and two-worker OpenMP each passed all **919/919** RSA1 checks,
+**130/130** standalone TR1 checks, **498/498** RSA0 fit checks and
+**1,163/1,163** supplied-model checks, plus isolated Java-free smoke
+tests. The full serial suite at `0.1.0.9013` passed **302,924/302,924**
+checks across 62 files.
+[RSA1 diagnostic and component replay](inst/tinytest/test-native-tramoseats-rsa1.R)
+
+## Monthly TR1 residual diagnostics checkpoint (2026-11-24)
+
+The package and CI now pin Kalos
+`f65723338f5e7d014d7199d48c4be97385cecb09`. Its public residual
+standard error, Ljung–Box and Doornik–Hansen projections match 60
+binary64 outputs from twelve independent JVM fits, including the
+four monthly TC cases. Offline verification passed for **195 core
+files, 112 fixtures and 366 evidence files**.
+
+## M5 monthly transitory changes in R (2026-11-24)
+
+Version `0.1.0.9013` restores stock monthly TC effects in raw RSA1
+and caller-supplied TRAMO decompositions. `seats_from_tramo()` accepts
+dated TC coefficients with the stock monthly decay of 0.7 on both
+scales. The 12 fits match **120 component rows and 7,560 public JVM
+values bit-for-bit**, including four cases that estimate TCs.
+
+Serial and two-worker OpenMP each passed **853/853** RSA1 assertions,
+all four related numerical suites and isolated Java-free smoke tests.
+The complete OpenMP source check at `0.1.0.9011` passed all
+**302,491/302,491** assertions with the two known compiler warnings.
+[RSA1 product replay](inst/tinytest/test-native-tramoseats-rsa1.R)
+
+## M5 integration checkpoint for monthly transitory changes (2026-11-24)
+
+Kalos `bf5c08f1fafc5c8a6729b94213f40e520e12ef7a` supplies stock
+monthly TC restoration on both model scales and a paired four-case
+public oracle. Both locks and the CI toolchain agree. Offline verification
+passed for **194 core, 112 fixture and 363 evidence files**.
+
+## M5 additive AO and LS effects in R (2026-11-24)
+
+Version `0.1.0.9012` restores additive outlier effects in both
+`seats_from_tramo()` and `native_tramoseats_fit(series, "RSA1")`.
+Two more raw monthly series select the level transformation and estimate
+one AO and an LS/AO pair. The affected series, adjustment, components
+and forecasts matched **20 JVM rows and 1,200 values** bit-for-bit.
+
+The complete eight-case RSA1 comparison passed **563/563** assertions
+in serial and two-worker OpenMP, including **80 rows and 5,160 values**.
+Both builds passed the fitted-model, WK, TR1 preprocessing and RSA0 fit
+suites and their isolated Java-free smoke tests. The preceding
+`0.1.0.9011` passed **302,487/302,487** full serial checks across 62
+files. At `0.1.0.9009` all **301,942/301,942** OpenMP source checks
+passed with two existing compiler warnings and zero errors.
+[RSA1 product replay](inst/tinytest/test-native-tramoseats-rsa1.R)
+
+## M5 integration checkpoint for additive AO and LS effects (2026-11-24)
+
+Kalos `be98d5405b3f44c30035247779d3b252c1adbb66` restores level-scale
+outlier effects in monthly fitted and raw SEATS decompositions. The
+source and installed locks agree with the CI toolchain pin. Offline
+verification passed for **194 core, 112 fixture and 360 evidence files**.
+
+## M5 monthly RSA1 product fit in R (2026-11-24)
+
+Version `0.1.0.9011` accepts RSA1 and TR1 in `native_tramoseats_fit()`.
+The original observations determine log/level selection, airline estimates,
+automatic outliers and the dated SEATS product. Six public JVM fits
+matched all **60 final component rows and 3,960 values bit-for-bit**.
+The custom 3/6 backcast/forecast run matched the separately supplied
+mixed AO/LS fitted-model route in the initial, final and merged tables.
+The per-template capability inventory identifies the RSA1 dated residual
+series and records that preprocessing forecast errors remain unqualified.
+
+Both installed builds passed **419/419** RSA1 product checks,
+**130/130** TR1 preprocessing checks and **675/675** RSA0 fit and
+diagnostic checks. The fitted bridge and WK suites passed **1,160/1,160**
+and **7,676/7,676** respectively. Both isolated Java-free smoke tests
+executed the two raw adjustment templates and TR1 preprocessing.
+[RSA1 product replay](inst/tinytest/test-native-tramoseats-rsa1.R)
+
+## M5 integration checkpoint for raw monthly RSA1 decomposition (2026-11-23)
+
+Kalos `0e0f2723fef730d5ebbe073309d553e1ab43a765` supplies the public
+RSA1 product route and its qualified x86-64 cosine implementation. Both
+locks and the CI toolchain pin agree. Offline verification passed for
+**194 core, 112 fixture and 358 evidence files**. The earlier
+`b6fb5f9` OpenMP source check passed all **301,910/301,910** assertions
+with its two existing compiler warnings and zero errors.
+
+## M5 monthly TR1 preprocessing from observations (2026-11-23)
+
+Version `0.1.0.9010` adds `native_tramo_preprocess(series, "TR1")`,
+also accepting the template name RSA1. It returns the observed-data
+log/level decision, airline coefficients, mean and detected outliers,
+likelihood and dated preprocessing residuals. The six JVM fits cover
+both transforms, five AO/LS effects and 570 monthly residuals. All
+coefficients, likelihood fields and residual values matched bit-for-bit.
+
+Both installed builds passed **130/130** preprocessing assertions,
+**675/675** RSA0 fit and diagnostic assertions, **1,160/1,160**
+fitted bridge assertions and **7,676/7,676** WK extraction assertions.
+Both isolated Java-free smoke runs executed TR1 preprocessing and RSA0
+product extraction. The public seasonal-adjustment template remains RSA0.
+The preceding `0.1.0.9009` passed **301,938/301,938** serial assertions
+across 60 files.
+[TR1 reference replay](inst/tinytest/test-native-tramo-preprocess.R)
+
+## Incremental installs after a Kalos pin change (2026-11-23)
+
+The new fitted TRAMO record changed the C++ structure layout. An incremental
+install reused an older R wrapper object and crashed on the previously
+qualified fitted SEATS entry. Both Makevars templates now rebuild all
+wrapper and vendored objects when the generated core revision changes.
+Repeating the two incremental installs in their existing build trees
+rebuilt the stale wrapper and passed all **1,160/1,160** fitted SEATS
+checks plus **7,676/7,676** fixed-model WK checks in each build.
+
+## M5 integration checkpoint for raw monthly TR1 preprocessing (2026-11-23)
+
+Both locks and the CI toolchain now pin Kalos
+`33bca9b5bbff3d57a18bf3cb6d75653c288aecad`. The checkpoint supplies
+the public six-case TR1 preprocessing reference and original-series
+estimator. Offline verification passed for **194 core, 112 fixture and
+356 evidence files**. RSA0 remains the delivered raw decomposition template.
+
+## Windows checkout integrity for locked snapshots (2026-11-23)
+
+The Windows CI checkout converted the pinned Kalos text files to CRLF
+before `sync-core.py --verify`. A fresh Git checkout with
+`core.autocrlf=true` reproduced checksum changes in all 194 locked core
+files. Both locked export directories now preserve the exact blob bytes.
+A fresh Windows-style checkout passed verification for **194 core, 112
+fixture and 355 evidence files** while ordinary package sources still
+followed the platform checkout setting. At the previous `b6fb5f9`
+checkpoint the complete serial suite passed **301,906/301,906**.
+[Windows failure](https://github.com/statistikat/rkalos/actions/runs/45265672229/job/138011798506)
+
+## M6 RSA0 residual normality in R (2026-11-23)
+
+Version `0.1.0.9009` returns the public Doornik–Hansen residual normality
+statistic, upper-tail probability and two degrees of freedom in
+`fit$residuals$doornikhansen`. On AirPassengers the statistic is
+7.770552141622452 and the probability is 0.020542156888630703. All nine
+statistic/probability pairs matched the two-process JVM capture bit-for-bit.
+
+Both the installed serial and two-worker OpenMP packages passed
+**32/32** normality assertions, **643/643** existing RSA0 fit, residual
+and forecast-error assertions, **7,676/7,676** WK and **1,160/1,160**
+fitted bridge assertions. Both passed the isolated Java-free smoke test.
+[Public normality replay](inst/tinytest/test-native-tramoseats-normality.R)
+
+## M6 integration checkpoint for residual normality (2026-11-23)
+
+Kalos `9f6f74e417ec6f3f88ff4e994152a40438303169` adds the public RSA0
+Doornik–Hansen result and paired JVM evidence. Both locks and the CI
+toolchain pin agree. Offline verification passed for **194 core, 112
+fixture and 355 evidence files**.
+
+## M5 monthly SEATS legacy retries in R (2026-11-23)
+
+Version `0.1.0.9008` extends `seats_extract_wk()` and `seats_from_tramo()`
+to the monthly airline seasonal MA replacement and the mean-free
+(2,1,0)(1,1,0) seasonal AR-to-MA refit. The fitted mixed AO/LS example
+now returns its dated adjusted series, trend, seasonal and irregular
+components at both the default 0/24 and custom 3/6 backcast/forecast
+horizons. The degenerate airline case returns the public matrix-error
+status with empty component tables. The raw-series template remains RSA0.
+
+The installed serial and two-worker OpenMP packages each passed
+**7,676/7,676** fixed-model extraction assertions across 36 cases and
+eight extra airline threshold requests. The 1,095 frozen component rows
+contain **58,020** bit-exact values. All six fitted bridge configurations
+passed **1,160/1,160** assertions, including 7,338 WK values and 4,005
+merged product values matched bit-for-bit to the JVM. Changing the mean
+on the mixed model retains the documented refusal. Both builds passed
+the four RSA0 fit, residual and forecast-error suites (**643/643**) and
+the isolated Java-free smoke test.
+[Extraction replay](inst/tinytest/test-native-seats-extract-wk.R) and
+[fitted product replay](inst/tinytest/test-native-seats-from-tramo.R)
+
+The preceding version `0.1.0.9007` passed the full serial suite
+(**301,157/301,157** across 59 files). The OpenMP source check of
+`0.1.0.9006` passed all **301,120/301,120** assertions with its two
+existing macOS compiler warnings and zero errors.
+
+## M5 integration checkpoint for monthly SEATS approximation (2026-11-23)
+
+Kalos `c5bcf978cc7e92d0d5d9992b3c2caa6ad9d0eb65` extends legacy
+monthly approximation for two model families. Both locks and the CI
+toolchain pin agree. Offline verification passed for **192 core, 112
+fixture and 350 evidence files**, including the monthly airline threshold
+and seasonal AR-to-MA refit captures.
+
+## M6 RSA0 residual independence diagnostic (2026-11-23)
+
+Version `0.1.0.9007` returns `fit$residuals$lb` with the public
+Ljung–Box statistic, upper-tail probability, 22 degrees of freedom and
+24 lags. This public residual test uses zero-mean autocorrelations.
+The statistic and probability are undefined for 24 or fewer residuals.
+The installed serial and two-worker OpenMP packages each passed
+**41/41** explicit diagnostic checks
+covering the six original series and three short public fits, alongside
+**42/42** residual, **62/62** forecast-error and **498/498** fit checks.
+All seven finite pairs matched the paired JVM capture bit-for-bit.
+
+At `9e87b84`, the complete serial suite passed **301,116/301,116** over
+58 files. A fresh OpenMP run at `e92f076` using independent R processes
+also passed **301,078/301,078** across all 57 files in a single run.
+[Public diagnostic replay](inst/tinytest/test-native-tramoseats-ljung-box.R)
+
+## M6 integration checkpoint for public residual independence (2026-11-23)
+
+Kalos `aea3d152c63ca365b8dc53887aa16048c38323dd` supplies the public
+RSA0 Ljung–Box diagnostic and its nine-case JVM evidence. It also
+includes the faster original-series forecast error projection. Offline
+verification passed for **192 core, 112 fixture and 346 evidence
+files**, with matching source and installed locks and CI toolchain pin.
+
+## M6 RSA0 preprocessing residual diagnostics (2026-11-23)
+
+Version `0.1.0.9006` publishes `fit$residuals$tsres` as a dated monthly
+series and `fit$residuals$ser` as its scalar standard error. The six
+public JVM series begin 13 months after the input start and end with
+the input. All **570 residuals and six standard errors** matched
+bit-for-bit. The serial and two-worker OpenMP packages each passed
+**42/42** residual assertions, **62/62** forecast-error assertions and
+**498/498** raw RSA0 fit assertions. A shifted calendar and changing
+forecast/backcast spans also preserved the residual domain.
+[Residual replay](inst/tinytest/test-native-tramoseats-residuals.R)
+
+The preceding `e92f076` package passed all **301,074/301,074** serial
+assertions across 57 files. OpenMP passed **301,078/301,078** across the
+same files, including one isolated rerun after the forked test worker
+could not open OpenMP shared memory. Clean source checking reported
+the existing two compiler warnings and zero errors. Both isolated
+Java-free smoke runs passed.
+
+## M6 integration checkpoint for RSA0 preprocessing residuals (2026-11-23)
+
+Both locks and the CI tools pin Kalos `5c95dc158324e76243d1d7e161d993651edff57b`.
+The core exposes dated public RSA0 residuals and their scalar standard
+error. Offline verification passed for **192 core, 112 fixture and 345
+evidence files**. The checkpoint includes the six-case public JVM
+residual capture and intervening live automatic-TRAMO estimation changes.
+
+## M5/M6 RSA0 original-series forecast errors (2026-11-23)
+
+Version `0.1.0.9005` exposes the preprocessing `y_ef` projection as a
+dated `series_forecast_stdev`. Its companion status identifies available,
+zero-horizon and unavailable results. WK forecast uncertainty continues
+to appear in the `final` component table.
+
+The installed serial package passed **62/62** assertions on the paired
+six-case JVM capture and custom horizons. All **144** preprocessing
+values met the core's established `2e-8 * (1 + abs(reference))`
+tolerance. The largest absolute error was **2.42e-13**. The **144**
+corresponding WK series forecast standard deviations matched bit-for-bit.
+The adjacent raw RSA0 and fixed WK suites passed **498/498** and
+**7,369/7,369**.
+[Forecast-error replay](inst/tinytest/test-native-tramoseats-forecast-errors.R)
+
+## M5 integration checkpoint for preprocessing forecast uncertainty (2026-11-23)
+
+Both locks and the CI tools use Kalos `2fe3d8e8c8b6bfeae9fa4224517e9e0c12228fe8`.
+The core computes RSA0 preprocessing forecast standard deviations separately
+from the SEATS component uncertainty. Offline verification passed for
+**192 core, 112 fixture and 344 evidence files**, including the six-case
+paired JVM forecast-error reference.
+
+## M5 raw-series TRAMO/SEATS RSA0 (2026-11-23)
+
+Version `0.1.0.9004` exposes `native_tramoseats_fit()`. On complete
+monthly RSA0/TR0 data, it estimates the mean and airline MA coefficients
+and returns the likelihood, dated WK uncertainty, additive final
+components and horizon series. Four observed-domain aliases preserve the
+input's exact time attributes. Other templates, missing or quarterly
+data, insufficient residual degrees of freedom and unsupported native
+decompositions remain outside this gate. Product consumers can query
+`capabilities()$tramo_seats_fit$templates`.
+
+The serial and OpenMP (two-worker) installed packages each passed
+**498/498** RSA0 assertions. All **696 conditional standard deviations**
+in the nine observed and forecast uncertainty rows matched the
+independent WK reference bit-for-bit for the TR0 AirPassengers fit. All
+**30 fitted values and 3,960 product values** matched the six public JVM
+cases bit-for-bit. Custom spans, zero-horizon output, date preservation
+and refusal paths passed. A clean OpenMP source package check completed
+with zero errors and the existing Clang/R-header and floating-point flag
+warnings. The package overview example reproduced the full observed
+calendar and a 24-month trend forecast. The complete native smoke script
+passed in serial and OpenMP libraries isolated from the six forbidden
+Java-related R packages. The hosted CI smoke step also executes the full
+RSA0 fit before checking which namespaces it loaded. Adjacent fitted-model, WK and first-round
+differencing tests passed **718/718**, **7,369/7,369** and **142/142**.
+At the preceding published checkpoint `5f57f09`, the complete OpenMP
+suite passed **299,658/299,658** across 53 files.
+[Fit API](man/native_tramoseats_fit.Rd) · [JVM replay](inst/tinytest/test-native-tramoseats-fit.R)
+
+## M5 integration checkpoint for ordinary monthly RSA0 (2026-11-23)
+
+The checked snapshot advances to Kalos `fa7edeae3c68862e163633c7debce3d102248223`.
+It includes the raw-series TR0 estimator, its composed RSA0 product entry
+and the frozen six-case x86 JVM oracle. Both locks and the CI toolchain
+pin agree. Offline verification passed for **192 core, 112 fixture and
+343 evidence files**.
+
+## M5 SEATS from an existing fitted TRAMO model (2026-11-23)
+
+`seats_from_tramo()` accepts a complete monthly series, fitted SARIMA
+coefficients, fitted likelihood counts and optional AO/LS coefficients.
+It returns dated initial and final WK tables with their uncertainty, plus
+the product components after deterministic-effect restoration.
+
+The installed serial package passed **718/718** wrapper assertions.
+Four admitted fits reproduced all **8,160 binary64 values** across 116
+WK and merged rows in the pinned x86 JVM profile. Both mixed-model
+horizons raised the expected approximation refusal. The shared dating
+and domain-validation regressions also passed **7,369/7,369**.
+Ordinary-data parameter estimation has its own subsequent gate.
+[API](man/seats_from_tramo.Rd) · [JVM replay](inst/tinytest/test-native-seats-from-tramo.R)
+
+## M5 integration checkpoint for the fitted SEATS pipeline (2026-11-23)
+
+Kalos `c0594b9018d30b747d8834fab96391ceeb87f901` adds the deterministic
+component merge, its paired JVM architecture profiles, and the composed
+pipeline for an already fitted TRAMO model. Both installed and source
+locks agree. Offline verification passed for **190 core, 112 fixture
+and 342 evidence files**. The source CI workflow checks the matching
+toolchain revision.
+
+## M5 TRAMO differencing decision (2026-11-23)
+
+`tramo_differencing_decision()` runs the ordinary-input 23-C first-round
+module on complete monthly and quarterly series after outlier adjustment.
+It accepts the builder's named SARIMA orders and reports the resulting
+orders, mean, mean-test statistic, fallback decisions and processing log.
+The installed serial package passed **142/142** assertions. All 22
+captured direct and battery-entry decisions matched the JVM, including the
+binary64 mean-test statistics. Short-series airline and already-airline
+branches and invalid input checks also passed. The subsequent
+controller battery and complete TRAMO fit have separate gates.
+
+The full serial suite at `6b47f31` passed **299,515/299,515** assertions
+across 52 files. A clean OpenMP source build at `5f57f09` completed
+`R CMD check --no-tests --no-manual` with the two documented compiler
+warnings and zero errors.
+
+## M5 standard TRAMO model preparation (2026-11-23)
+
+`tramo_prepare_model(series, template)` invokes the pinned 23-A builder and
+returns the initial log/mean flags, SARIMA orders, registered variable
+names, one-based missing positions and interpolated monthly series. It
+accepts the seven standard templates without custom overrides. Template
+expansion here grants no automatic fit or calendar-selection capability.
+
+The installed serial package passed **139/139** assertions. The frozen JVM
+replay covered all seven templates, leading/interior/trailing missing
+runs, a non-January start, bit-exact interpolation and the refusal cases.
+[Preparation API](man/tramo_prepare_model.Rd) · [Builder regressions](inst/tinytest/test-native-tramo-prepare.R)
+
+## M5 fixed-model SEATS component extraction (2026-11-23)
+
+Version `0.1.0.9003` exposes `seats_extract_wk()`. The R gate compares all 36 frozen 24-C WK cases with the structured 24-D
+extraction API at Kalos `ef98f14`. It covers component and information
+order, absent versus present-empty rows, monthly dates, raw binary64
+values and the core's error and refusal decisions.
+
+The independent serial and OpenMP installations each passed **7,369/7,369**
+assertions. The 1,055 structured component rows accounted for 55,812 exact
+binary64 values, including conditional standard deviations and forecast and
+backcast rows. Each positive-length row carried its monthly `ts` domain.
+The run included all six refusal cases and the captured decomposition-error
+statuses. The primitive needs a supplied fitted model and positive innovation
+variance. End-to-end TRAMO/SEATS fitting has its own gate.
+[Installed API](man/seats_extract_wk.Rd) · [WK fixture replay](inst/tinytest/test-native-seats-extract-wk.R)
+
+## M5 integration checkpoint — fitted SEATS bridge (2026-11-23)
+
+The separate generated snapshot advances to Kalos `ef98f14`, with
+188 core files, 112 fixtures and 335 evidence files. Offline verification
+passed. This revision contains the structured WK decomposition, the
+qualified fixed-model bridge, and the paired JVM capture for the component
+merge. The CI provider recipe follows the new lock. Binding and product
+gates remain separate from this snapshot update.
+
+## Automatic X-13 forecast and backcast tables (2026-11-23)
+
+Version `0.1.0.9002` projects the positive-length 21-H.4 windows from Kalos
+`0e064dd` into R. The raw series is in `preadjustment$tables$a1a` (forecast)
+or `a1b` (backcast). The corresponding `finals$tables` entries use the roots
+`d11`, `d12`, `d16`, `d18` and suffix `a` or `b`. Each series carries
+its monthly calendar. Zero-length windows omit the optional keys.
+`capabilities()$automatic_fit$x11$horizon_tables` lists the ten table names. Observed outputs preserve the source `ts` time
+attributes. The four frozen horizon cases passed all 668 window, value,
+refusal and calendar assertions. The 13-case automatic suite passed all
+1,213 assertions, including zero-horizon omission and source-calendar
+precision. [Horizon fixture replay](inst/tinytest/test-native-x13-horizon.R)
 
 ## M5 R checkpoint — TRAMO preprocessing (2026-11-23)
 
@@ -55,6 +766,17 @@ correctly rounded binary64 values reproduced the final two cases. The
 standard suite continues to report the host-R differences. The fixture
 bytes, native calculations and tolerances were preserved.
 [Exact fixture reader](inst/tinytest/helpers/fixtures.R) · [Sigma replay](inst/tinytest/test-native-x11-sigma.R) · [Replacement replay](inst/tinytest/test-native-x11-replacement.R)
+
+**Generator portability update.** The installed test harness now supplies the
+capture host's trigonometry using the pinned Kalos glibc kernels. It parses
+the two large decimal literals in the sigma input generator at their
+round-trip binary64 values. All 147 local input regenerations now match the
+JVM capture exactly. All **18,717/18,717** assertions in the seven affected
+files passed on macOS ARM64, including the 59 previously failing assertions.
+The capture scripts and CSV files remained byte-identical to the core lock.
+The complete serial suite at `0e064dd` with the horizon and generator
+updates passed **292,146/292,146** assertions in 51 files.
+
 
 ## Completed split steps
 

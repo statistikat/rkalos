@@ -1,0 +1,28 @@
+case fit_ref_retry_0_5
+residuals.ser 3f88cdb1d05942f5
+residuals.lb 4044e86ee212ae36 3f83884c9a043580 Chi2 with 23.0 degrees of freedom
+residuals.doornikhansen 3fd8bbe665d473c6 3fea609307d6438c Chi2 with 2.0 degrees of freedom
+case fit_ref_retry_0_1
+residuals.ser 3f92073e8ac5d888
+residuals.lb 40460eb3bfc6f6b1 3f74dcb3ee553000 Chi2 with 23.0 degrees of freedom
+residuals.doornikhansen 401beee3db6610e2 3f9f2e796e35c7c0 Chi2 with 2.0 degrees of freedom
+case fit_ref_retry_1_5
+residuals.ser 3f8da5ff60aab420
+residuals.lb 4048bd4cbc4b67f8 3f313a1d79d37800 Chi2 with 20.0 degrees of freedom
+residuals.doornikhansen 4010c60d31501a32 3fbf73caecef02b0 Chi2 with 2.0 degrees of freedom
+case fit_ref_retry_2_0
+residuals.ser 3f87355c8f653d72
+residuals.lb 4047e19eee73d022 3f3230db67eee800 Chi2 with 19.0 degrees of freedom
+residuals.doornikhansen 40263490edbacf9d 3f6fcdb8340c7b00 Chi2 with 2.0 degrees of freedom
+case fit_ref_retry_0_4
+residuals.ser 3f8e1d5f8613d16b
+residuals.lb 40457599de8cf565 3f7d00d9d8e74e80 Chi2 with 23.0 degrees of freedom
+residuals.doornikhansen 3fe895580c98dd81 3fe5cb2f8b5a66a0 Chi2 with 2.0 degrees of freedom
+case fit_ref_retry_17_2
+residuals.ser 3f8e0a887ad4b556
+residuals.lb 404b2ac6d3cfe041 3f0b0dfb54788000 Chi2 with 20.0 degrees of freedom
+residuals.doornikhansen 40009e924452be9f 3fd6a67488b409b2 Chi2 with 2.0 degrees of freedom
+case fit_ref_retry_18_2
+residuals.ser 3f8cd076f381876c
+residuals.lb 4050b2f666eaebd9 3ecf898ffd800000 Chi2 with 23.0 degrees of freedom
+residuals.doornikhansen 3ff41600a587ee2a 3fe11519ae9dc32c Chi2 with 2.0 degrees of freedom

@@ -1,0 +1,16 @@
+case fit_fast_mean_26_0
+residuals.ser 3f8ffc68005323ba
+residuals.lb 4034b481699d014a 3fde88680bfdb54a Chi2 with 21.0 degrees of freedom
+residuals.doornikhansen 4011ffe53fe91f64 3fbafbcbc82c0e18 Chi2 with 2.0 degrees of freedom
+case fit_fast_mean_51_5
+residuals.ser 3f881328c51cda1c
+residuals.lb 403af555bb6ea94e 3fc60bd7ab7b6174 Chi2 with 21.0 degrees of freedom
+residuals.doornikhansen 3fea75654c361c3c 3fe52a164691f8f7 Chi2 with 2.0 degrees of freedom
+case fit_fast_mean_66_0
+residuals.ser 3f8b6bc07d5a25a7
+residuals.lb 403d7bc5f3a092da 3fba55a2e3db6138 Chi2 with 21.0 degrees of freedom
+residuals.doornikhansen 3ff737966aa50771 3fdefaecc3f1a06e Chi2 with 2.0 degrees of freedom
+case fit_fast_mean_73_2
+residuals.ser 3fa44c66085cb33c
+residuals.lb 402ea8e762694a86 3fe9cb194ae0e1ab Chi2 with 21.0 degrees of freedom
+residuals.doornikhansen 401a69a1708dff60 3fa2dabb068bbf60 Chi2 with 2.0 degrees of freedom

@@ -1,24 +1,11 @@
 #ifndef KALOS_TRAMO_REGRESSION_TESTS_HPP
 #define KALOS_TRAMO_REGRESSION_TESTS_HPP
 
-// Transcription of the NO-CALENDAR branch of the tramo regression-test layer
-// of the pinned jdplus 3.9.0 stack (item 23-E of
-// docs/tramo-seats-roadmap.md): the rows of ModelStatistics.of that the refStats
-// gate consumes, the Ljung-Box/se/BIC machines behind them, the mean-rule
-// layer (AmiOptions.checkMu, the round-0 acceptAirline rule, the mean-test
-// thresholds the two regression-test modules read) and the non-automatic
-// members of FastRegressionTest / DefaultRegressionTest that a request can
-// reach without a trading-day, length-of-period or Easter column.
-//
-// Boundary (docs/contracts/tramo-regression-tests-contract.md): every request
-// that would drive a calendar-variable kernel - the Fast machine's
-// auto-identified td/lp/easter tests and the Default machine's calendar
-// builder fields and calendar accept paths - belongs to item 21-I.3
-// (maintainer ruling of 2026-11-22 in docs/calendar-roadmap.md, I-4: no
-// second trading-day implementation here). Those requests are refused fail
-// closed with the pinned reasons below; nothing is approximated. Calendar-
-// free requests run the transcription in full.
-//
+// Monthly TRAMO regression tests and automatic mean decisions. The Fast
+// module also retests automatically identified TD, LP and Easter variables
+// using their positions in the current model's likelihood. Default calendar
+// builder fields are covered separately in the 21-I roadmap.
+
 // The likelihood hand-overs are REQUIRED REQUEST DATA (21-G precedent): the
 // decisions consume the coefficients, the unscaledCovariance diagonal, ssq,
 // dim and the free-parameter count of an already-completed estimation, never
@@ -149,10 +136,8 @@ struct TramoModelStatisticsRequest {
     int ami_outliers = 0;
 };
 
-// The rows the tramo decision layer consumes, plus the record-only block it
-// never reads (the skewness/stableMean/stableVariance surfaces stay at the
-// builder defaults here; the JVM kernels are not landed and the tramo gate
-// never reads them - decision-inert, documented, not transcribed).
+// The rows consumed by the pass2 gate. For a model-comparison panel including
+// skewness and sample stability use tramo_model_comparison_panel.
 // `built == false` is the JVM throw surface (the main Ljung-Box build feeds
 // Chi2(df = m - k <= 0), which throws out of of() with no catch): no row is
 // invented, every double is NaN and the caller must not consume the row.
@@ -329,9 +314,8 @@ struct TramoRegressionTestRequest {
     bool adjust = false;
     bool join_test = false;
 
-    // Variables the Fast machine filters: a calendar-kind variable that
-    // carries the ami attribute is the 21-I.3 seam and is refused; the
-    // plain (non-ami) ones are inert in the pinned filters and ride along.
+    // The Fast machine retests the first automatically identified variable
+    // of each kind. Plain calendar variables remain in the description.
     // auto_moving_holiday has no filter in the pinned machine at all (no
     // corpus witness) and is refused as outside the qualified envelope.
     bool plain_trading_days = false;
@@ -341,6 +325,13 @@ struct TramoRegressionTestRequest {
     bool auto_length_of_period = false;
     bool auto_easter = false;
     bool auto_moving_holiday = false;
+    // Zero-based ModelDescription.findPosition columns in the *original*
+    // likelihood, including the mean. Other regressors may precede or follow.
+    int trading_days_position = -1;
+    int trading_days_dimension = 1;
+    int length_of_period_position = -1;
+    int easter_position = -1;
+    double variable_threshold = 1.96;
 };
 
 struct TramoRegressionTestDecision {
@@ -357,6 +348,9 @@ struct TramoRegressionTestDecision {
     bool inert_trading_days = false;
     bool inert_length_of_period = false;
     bool inert_easter = false;
+    bool removed_trading_days = false;
+    bool removed_length_of_period = false;
+    bool removed_easter = false;
 };
 
 TramoRegressionTestDecision run_tramo_regression_tests(

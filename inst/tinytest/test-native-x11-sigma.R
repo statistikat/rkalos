@@ -2,7 +2,7 @@ source("helpers/fixtures.R", local = TRUE)
 local({
   raw<-getFromNamespace('.native_x11_sigma_weights','rkalos')
   pub<-getFromNamespace('native_x11_sigma_weights','rkalos')
-  source_fixture('fixtures/native/x11-sigma-cases.R',local=TRUE)
+  source_x11_capture_generator('fixtures/native/x11-sigma-cases.R')
   bits<-function(a,b) identical(is.na(a),is.na(b)) && identical(a[!is.na(a)],b[!is.na(b)])
   manifest<-read.csv('fixtures/native/x11-sigma/cases.csv')
   inputs<-read_numeric_fixture('fixtures/native/x11-sigma/inputs.csv', 'value')

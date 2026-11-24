@@ -124,7 +124,6 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
   }
   f <- frequency
   start <- c(first_year, start_period)
-  ordinal <- as.double(first_year) * f + start_period - 1
   backcast <- calendar_int(backcast, "backcast")
   forecast <- calendar_int(forecast, "forecast")
   y <- as.numeric(series)
@@ -140,16 +139,34 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
     rg$tsig,calendar,easter,trading_days,user_variables,seasonal,sigma,lower_sigma,
     upper_sigma,msr_policy,mode,as.integer(backcast),as.integer(forecast))
   result$sigma_provenance<-provenance
+  result <- date_estimated_x13_result(result, series, start, f)
+  structure(result, class = "persephone_native_x13_automatic_fit")
+}
+
+date_estimated_x13_result <- function(result, series, start, f) {
+  y <- as.numeric(series)
+  ordinal <- as.double(start[1L]) * f + start[2L] - 1L
   extended_ordinal <- ordinal - result$effective_backcast
   extended_length <- length(y) + result$effective_backcast + result$effective_forecast
   ext_start <- if (result$effective_backcast > 0L)
     c(floor(extended_ordinal / f), extended_ordinal %% f + 1L) else start
+  observed_ts <- function(x) {
+    out <- stats::ts(x, start = start, frequency = f)
+    if (stats::is.ts(series)) attr(out, "tsp") <- stats::tsp(series)
+    out
+  }
+  forecast_ordinal <- ordinal + length(y)
+  forecast_start <- c(floor(forecast_ordinal / f), forecast_ordinal %% f + 1)
+  if (length(result$series_forecast_stdev))
+    result$series_forecast_stdev <- stats::ts(result$series_forecast_stdev, start = forecast_start, frequency = f)
   if(!is.null(result[["preadjustment"]])) { # past the fail-closed guards
     basis<-list();avail<-list()
     for(name in names(result$preadjustment$tables)) {
       tab<-result$preadjustment$tables[[name]]
-      result$preadjustment$tables[[name]]<-stats::ts(tab,
-        start=if(length(tab)==length(y))start else ext_start,frequency=f)
+      table_start <- switch(name, a1a = forecast_start, a1b = ext_start,
+                            if (length(tab) == length(y)) start else ext_start)
+      result$preadjustment$tables[[name]] <- if (!name %in% c("a1a", "a1b") && length(tab) == length(y))
+        observed_ts(tab) else stats::ts(tab, start = table_start, frequency = f)
       basis[[name]]<-seq_along(tab)
       avail[[name]]<-seq_along(tab)[!is.na(tab)]
     }
@@ -161,17 +178,22 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
   }
   if(identical(result$status,"available")) {
     for(name in c("d10","d11","d12","d13","c17"))
-      result$results[[name]]<-stats::ts(result$results[[name]],
-        start=if(length(result$results[[name]])==length(y))start else ext_start,frequency=f)
-    result$finals$tables<-.x13_decorate_tables(result$finals$tables,start,f)
+      result$results[[name]] <- if (length(result$results[[name]]) == length(y))
+        observed_ts(result$results[[name]]) else stats::ts(result$results[[name]], start = ext_start, frequency = f)
+    for (name in names(result$finals$tables)) {
+      table_start <- if (endsWith(name, "a")) forecast_start else if (endsWith(name, "b")) ext_start else start
+      tab <- result$finals$tables[[name]]
+      result$finals$tables[[name]] <- if (endsWith(name, "a") || endsWith(name, "b"))
+        stats::ts(tab, start = table_start, frequency = f) else observed_ts(tab)
+    }
     for(name in c("finalSA","finalTrend","finalIrregular"))
-      result[[name]]<-stats::ts(result[[name]],start=start,frequency=f)
-    result$series<-stats::ts(y,start=start,frequency=f)
+      result[[name]] <- observed_ts(result[[name]])
+    result$series <- observed_ts(y)
   } else {
     result$records_only<-if(grepl("^failed:",result$status))
       "the machine threw inside the pinned calc body; the decision chain kept "
     else "the provenance echo is complete; the pinned fail-closed matrix refuses the request"
   }
   result$fitted<-identical(result$status,"available")
-  structure(result,class="persephone_native_x13_automatic_fit")
+  result
 }

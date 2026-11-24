@@ -69,6 +69,10 @@
     .Call(`_rkalos_native_filter`, values, weights, offsets)
 }
 
+.capture_trig <- function(values, sine) {
+    .Call(`_rkalos_capture_trig`, values, sine)
+}
+
 .native_cholesky_solve <- function(matrix, rhs) {
     .Call(`_rkalos_native_cholesky_solve`, matrix, rhs)
 }
@@ -109,12 +113,56 @@
     .Call(`_rkalos_native_regression_likelihood`, values, design, coefficients, ar, ma, seasonal_ar, seasonal_ma, period, d, seasonal_d, mean, variance, rank_tolerance)
 }
 
+.native_seats_extract_wk <- function(spec, calendar, series) {
+    .Call(`_rkalos_native_seats_extract_wk`, spec, calendar, series)
+}
+
+.native_seats_from_tramo <- function(spec, calendar, series, outliers) {
+    .Call(`_rkalos_native_seats_from_tramo`, spec, calendar, series, outliers)
+}
+
+.native_tramoseats_rsa0 <- function(series, year, month, backcast, forecast) {
+    .Call(`_rkalos_native_tramoseats_rsa0`, series, year, month, backcast, forecast)
+}
+
+.native_tramoseats_rsa1 <- function(series, year, month, backcast, forecast) {
+    .Call(`_rkalos_native_tramoseats_rsa1`, series, year, month, backcast, forecast)
+}
+
+.native_tramoseats_rsa3 <- function(series, year, month, backcast, forecast) {
+    .Call(`_rkalos_native_tramoseats_rsa3`, series, year, month, backcast, forecast)
+}
+
+.native_tramoseats_rsafull <- function(series, year, month, backcast, forecast) {
+    .Call(`_rkalos_native_tramoseats_rsafull`, series, year, month, backcast, forecast)
+}
+
 .native_stationary_likelihood <- function(values, transition, observation, noise_loading, observation_variance = NULL, mean = NULL, variance = NULL) {
     .Call(`_rkalos_native_stationary_likelihood`, values, transition, observation, noise_loading, observation_variance, mean, variance)
 }
 
 .native_arma_likelihood <- function(values, ar, ma, seasonal_ar, seasonal_ma, period, mean = NULL, variance = NULL) {
     .Call(`_rkalos_native_arma_likelihood`, values, ar, ma, seasonal_ar, seasonal_ma, period, mean, variance)
+}
+
+.native_tramo_differencing <- function(values, period, orders, mean, log, seasonal, initial) {
+    .Call(`_rkalos_native_tramo_differencing`, values, period, orders, mean, log, seasonal, initial)
+}
+
+.native_tramo_tr1 <- function(series, year, month) {
+    .Call(`_rkalos_native_tramo_tr1`, series, year, month)
+}
+
+.native_tramo_tr3 <- function(series, year, month) {
+    .Call(`_rkalos_native_tramo_tr3`, series, year, month)
+}
+
+.native_tramo_trfull <- function(series, year, month) {
+    .Call(`_rkalos_native_tramo_trfull`, series, year, month)
+}
+
+.native_tramo_prepare_model <- function(values, name, year, month, frequency) {
+    .Call(`_rkalos_native_tramo_prepare_model`, values, name, year, month, frequency)
 }
 
 .native_tramo_critical_value <- function(observations) {
@@ -239,6 +287,10 @@
 
 .native_x13_fit_automatic <- function(values, frequency, start_period, first_year, aicc_log_correction, max_d, max_bd, ub1, ub2, cancel, differencing_precision, models_count, max_p, max_q, max_bp, max_bq, balanced, mixed, accept_white_noise, arma_eps, outliers_used, otypes, span, outlier_max_round, outlier_max_outliers, tcrate, precision, mean_precision, va, reduce_va, ljung_box_limit, check_mu, accept_airline, ur_limit, mean_test_initial, mean_test_final, tsig, calendar, easter, trading_days, user_variables, seasonal, sigma, lower_sigma, upper_sigma, msr_policy, mode, backcast, forecast) {
     .Call(`_rkalos_native_x13_fit_automatic`, values, frequency, start_period, first_year, aicc_log_correction, max_d, max_bd, ub1, ub2, cancel, differencing_precision, models_count, max_p, max_q, max_bp, max_bq, balanced, mixed, accept_white_noise, arma_eps, outliers_used, otypes, span, outlier_max_round, outlier_max_outliers, tcrate, precision, mean_precision, va, reduce_va, ljung_box_limit, check_mu, accept_airline, ur_limit, mean_test_initial, mean_test_final, tsig, calendar, easter, trading_days, user_variables, seasonal, sigma, lower_sigma, upper_sigma, msr_policy, mode, backcast, forecast)
+}
+
+.native_x13_estimated_fit <- function(observations, year, month, preset) {
+    .Call(`_rkalos_native_x13_estimated_fit`, observations, year, month, preset)
 }
 
 .native_x13_fit <- function(values, variables_list, log, frequency, start_period, seasonal, trend_length, sigma, lower_sigma, upper_sigma, msr_policy, mode, backcast, forecast) {

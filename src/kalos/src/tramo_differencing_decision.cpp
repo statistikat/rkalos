@@ -211,67 +211,6 @@ void optimize_landing(const Orders& o, const SarModel& in, const std::vector<dou
     out = std::move(result);
 }
 
-// FastEigenValuesSolver (Polynomial.roots() default solver) over the ladder's
-// degree domain: factorize dispatches degree 0 to no roots, degree 1 to the
-// monic closed form -c0 / c1, and degree 2 to the quadratic
-// denom = 2 * a, disc = b * b - 4 * a * c with the complex pair
-// ((-b) / denom, sqrt(-disc) / denom) + conj when disc < 0 and the real pair
-// ((-b + sqrt(disc)) / denom, (-b - sqrt(disc)) / denom) otherwise (a NaN
-// disc takes the real branch through the JVM dcmpg). The degree >= 3 qr
-// branch is unported; the ladder's blocks (p <= 2, bp <= 1) never reach it
-// and a higher degree fails closed instead of substituting another engine.
-// ComplexType.abs is the scaled modulus m * sqrt(1 + (n / m) ^ 2) with the
-// (0, 0) and n == 0 shortcuts, NOT the correctly rounded std::hypot.
-struct Complex {
-    double re, im;
-};
-
-std::vector<Complex> jvm_closed_roots(const std::vector<double>& asc) {
-    int deg = static_cast<int>(asc.size()) - 1;
-    while (deg > 0 && asc[deg] == 0.0) {
-        --deg;
-    }
-    std::vector<Complex> out;
-    if (deg == 0) {
-        return out;
-    }
-    if (deg == 1) {
-        out.push_back({-asc[0] / asc[1], 0.0});
-        return out;
-    }
-    if (deg > 2) {
-        throw std::runtime_error("decide_tramo_differencing: the searchur root "
-                                 "domain exceeds the ported closed forms");
-    }
-    const double a = asc[2], b = asc[1], c0 = asc[0];
-    const double denom = 2.0 * a;
-    const double disc = b * b - 4.0 * a * c0;
-    if (disc < 0.0) {
-        const double s = std::sqrt(-disc);
-        const Complex z{-b / denom, s / denom};
-        out.push_back(z);
-        out.push_back({z.re, -z.im});
-        return out;
-    }
-    const double s = std::sqrt(disc);
-    out.push_back({(-b + s) / denom, 0.0});
-    out.push_back({(-b - s) / denom, 0.0});
-    return out;
-}
-
-double jvm_complex_abs(double re, double im) {
-    if (re == 0.0 && im == 0.0) {
-        return 0.0;
-    }
-    const double a = std::fabs(re), b = std::fabs(im);
-    const double m = std::max(a, b), n = std::min(a, b);
-    if (n == 0.0) {
-        return m;
-    }
-    const double t = n / m;
-    return m * std::sqrt(1.0 + t * t);
-}
-
 struct Ladder {
     const TramoDifferencingRequest& rq;
     const int maxd = 2;
@@ -333,39 +272,36 @@ struct Ladder {
             v -= mu;
         }
 
-        SarModel raw;
-        bool err = false;
+        // A raw HannanRissanen.process exception exits the entire module.
+        // In particular, a short wide design fails at the pinned rawR solve.
+        std::array<std::vector<double>, 4> blk;
         try {
-            const auto blk = detail::hannan_rissanen_pipeline(
-                w, HannanRissanenOrders{spec.p, spec.bp, spec.q, spec.bq,
-                    spec.period});
-            raw.phi = blk[0];
-            raw.bphi = blk[1];
-            raw.th = blk[2];
-            raw.bth = blk[3];
-            raw.phi.resize(static_cast<std::size_t>(spec.p), 0.0);
-            raw.bphi.resize(static_cast<std::size_t>(spec.bp), 0.0);
-            raw.th.resize(static_cast<std::size_t>(spec.q), 0.0);
-            raw.bth.resize(static_cast<std::size_t>(spec.bq), 0.0);
-        } catch (const std::exception&) {
-            err = true; // HannanRissanen.process false, useDefaultIfFailed
+            blk = detail::hannan_rissanen_pipeline(
+                w, HannanRissanenOrders{spec.p, spec.bp, spec.q, spec.bq, spec.period});
+        } catch (const std::runtime_error& err) {
+            throw TramoLadderError{err.what()};
         }
-
-        if (!err) {
-            last = raw;
-            has_last = true;
-            if (b && !model_stable(last)) {
-                if (spec.p > 1) {
-                    err = true;
-                } else if (spec.p == 1 && std::fabs(last.phi1()) > 1.02) {
-                    err = true;
-                } else if (spec.bp != 1) {
-                    stabilize_model(last);
-                } else if (std::fabs(last.bphi1()) > 1.02) {
-                    err = true;
-                } else {
-                    stabilize_model(last);
-                }
+        last.phi = blk[0];
+        last.bphi = blk[1];
+        last.th = blk[2];
+        last.bth = blk[3];
+        last.phi.resize(static_cast<std::size_t>(spec.p), 0.0);
+        last.bphi.resize(static_cast<std::size_t>(spec.bp), 0.0);
+        last.th.resize(static_cast<std::size_t>(spec.q), 0.0);
+        last.bth.resize(static_cast<std::size_t>(spec.bq), 0.0);
+        has_last = true;
+        bool err = false;
+        if (b && !model_stable(last)) {
+            if (spec.p > 1) {
+                err = true;
+            } else if (spec.p == 1 && std::fabs(last.phi1()) > 1.02) {
+                err = true;
+            } else if (spec.bp != 1) {
+                stabilize_model(last);
+            } else if (std::fabs(last.bphi1()) > 1.02) {
+                err = true;
+            } else {
+                stabilize_model(last);
             }
         }
         if (err) {
@@ -403,12 +339,12 @@ struct Ladder {
         mirrored.push_back(1.0);
         int count = 0;
         double max = 0.0;
-        for (const auto& root : jvm_closed_roots(mirrored)) {
-            const double im = std::fabs(root.im);
-            const double modulus = jvm_complex_abs(root.re, root.im);
-            if (modulus >= ub && im <= 0.05 && root.re > 0.0) {
+        for (const auto& root : detail::jvm_closed_roots(mirrored)) {
+            const double im = std::fabs(root.imag);
+            const double modulus = detail::jvm_complex_abs(root.real, root.imag);
+            if (modulus >= ub && im <= 0.05 && root.real > 0.0) {
                 ++count;
-            } else if (im <= 0.02 && root.re > 0.0 && modulus > max) {
+            } else if (im <= 0.02 && root.real > 0.0 && modulus > max) {
                 max = modulus;
             }
         }
@@ -685,26 +621,17 @@ TramoDifferencingDecision decide_tramo_differencing(
     auto& events = decision.events;
     events.push_back("push differencing selection");
 
-    const int nobs = request.nobs > 0 ? request.nobs
-                                      : static_cast<int>(request.series.size());
-    if (!comespd(request.period, nobs, request.seasonal)) {
-        events.push_back("remark default model selected (not enough obs.)");
-        decision.default_model = true;
-        // airline(): spec.isAirline(seasonal) guard, then setAirline and
-        // setMean(false) on the description.
-        // Dated 2026-11-23 (javap SarimaOrders.isAirline/setAirline +
-        // fit_shortfail seam-17 witness): the airline form is
-        // ARIMA(0,1,1)(0,1,1) - the seasonal block carries bp = 0
-        // (SarimaOrders.airline(freq) under seasonality, m011(freq)
-        // otherwise); the first landing transcribed the AR guards and the
-        // seasonal write as 1, and no battery row reached the seasonal
-        // guard in a discriminating entry shape.
-        const bool reg_air =
-            request.p0 == 0 && request.q0 == 1 && request.d0 == 1;
-        const bool seas_air =
-            request.bp0 == 0 && request.bq0 == 1 && request.bd0 == 1;
-        if (reg_air && (!request.seasonal || seas_air)) {
+    auto apply_airline = [&] {
+        const bool regular = request.p0 == 0 && request.q0 == 1 && request.d0 == 1;
+        const bool seasonal = request.bp0 == 0 && request.bq0 == 1 && request.bd0 == 1;
+        if (regular && (!request.seasonal || seasonal)) {
             decision.result = TramoDifferencingDecision::Result::Unprocessed;
+            decision.spec_p = request.p0;
+            decision.spec_d = request.d0;
+            decision.spec_q = request.q0;
+            decision.spec_bp = request.bp0;
+            decision.spec_bd = request.bd0;
+            decision.spec_bq = request.bq0;
         } else {
             decision.airline_applied = true;
             decision.result = TramoDifferencingDecision::Result::Changed;
@@ -717,6 +644,13 @@ TramoDifferencingDecision decide_tramo_differencing(
             decision.mean = false;
         }
         events.push_back("pop");
+    };
+    const int nobs = request.nobs > 0 ? request.nobs
+                                      : static_cast<int>(request.series.size());
+    if (!comespd(request.period, nobs, request.seasonal)) {
+        events.push_back("remark default model selected (not enough obs.)");
+        decision.default_model = true;
+        apply_airline();
         return decision;
     }
 
@@ -738,31 +672,7 @@ TramoDifferencingDecision decide_tramo_differencing(
     if (failed) {
         events.push_back("remark differencing selection failed");
         decision.selection_failed = true;
-        // Dated 2026-11-23 (javap SarimaOrders.isAirline/setAirline +
-        // fit_shortfail seam-17 witness): the airline form is
-        // ARIMA(0,1,1)(0,1,1) - the seasonal block carries bp = 0
-        // (SarimaOrders.airline(freq) under seasonality, m011(freq)
-        // otherwise); the first landing transcribed the AR guards and the
-        // seasonal write as 1, and no battery row reached the seasonal
-        // guard in a discriminating entry shape.
-        const bool reg_air =
-            request.p0 == 0 && request.q0 == 1 && request.d0 == 1;
-        const bool seas_air =
-            request.bp0 == 0 && request.bq0 == 1 && request.bd0 == 1;
-        if (reg_air && (!request.seasonal || seas_air)) {
-            decision.result = TramoDifferencingDecision::Result::Unprocessed;
-        } else {
-            decision.airline_applied = true;
-            decision.result = TramoDifferencingDecision::Result::Changed;
-            decision.spec_p = 0;
-            decision.spec_d = 1;
-            decision.spec_q = 1;
-            decision.spec_bp = 0;
-            decision.spec_bd = request.seasonal ? 1 : 0;
-            decision.spec_bq = request.seasonal ? 1 : 0;
-            decision.mean = false;
-        }
-        events.push_back("pop");
+        apply_airline();
         return decision;
     }
 

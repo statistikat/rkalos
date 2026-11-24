@@ -9,6 +9,7 @@
 // matches the original bytecode offsets. The public matrices are row-major
 // flats, converted at the boundary.
 #include "kalos/final_information.hpp"
+#include "pinned_cholesky.hpp"
 
 #include "kalos/detail/filter_utility.hpp"
 
@@ -336,6 +337,15 @@ std::vector<double> symmetric_inverse(const std::vector<double>& a_row_major, in
 }
 
 } // namespace
+
+bool detail::pinned_lcholesky(std::vector<double>& matrix, int size) {
+    try {
+        lcholesky(matrix, size, 0.0);
+        return true;
+    } catch (const matrix_exception&) {
+        return false;
+    }
+}
 
 final_information_result final_information(const final_information_request& req) {
     final_information_result res;

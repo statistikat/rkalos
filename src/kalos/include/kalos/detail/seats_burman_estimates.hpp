@@ -41,7 +41,10 @@
 #pragma once
 
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -326,7 +329,7 @@ class BurmanEstimates {
     double iv = outer.get_iv();       // getInnovationVariance()
     if (iv != 1.0)                    // dcmpl ifeq: NaN scales
       mapoly = p_times_d(mapoly, std::sqrt(iv));
-    Poly arpoly = BackFilter(p_times_(outer)).p;  // getAr() = ar.times(delta)
+    Poly arpoly = seats_model::p_times(outer.delta, outer.ar);  // SarimaModel.getAr()
 
     for (int c = 0; c < ncomp; ++c) {
       const AModel& a = wk_.component(c);
@@ -363,10 +366,6 @@ class BurmanEstimates {
     init_solver();
   }
 
-  static BackFilter p_times_(const AModel& a) {
-    return BackFilter(seats_model::p_times(a.ar, a.delta));
-  }
-
   // ---- initSolver ---------------------------------------------------------
   // MatrixWindow quirk: top(0) yields cur (start 0, nrows 0); each vnext(k)
   // advances start by the PREVIOUS nrows then sets nrows = k, so the ma
@@ -399,15 +398,22 @@ class BurmanEstimates {
     const AModel& outer = wk_.outer;
     const int q = static_cast<int>(ma_.size()) - 1;
     const int p = static_cast<int>(ar_.size()) - 1;
-    nf = q > p ? 2 * q : p + q;
+    const auto padding = q > p ? 2LL * q : static_cast<long long>(p) + q;
+    if (padding > std::numeric_limits<int>::max())
+      throw std::invalid_argument("seats_extract_wk: filter padding exceeds the index range");
+    nf = static_cast<int>(padding);
     nbc = nf > nbcasts_ ? nf : nbcasts_;
     nfc = nf > nfcasts_ ? nf : nfcasts_;
+    const auto span = static_cast<std::uint64_t>(nbc) + nfc + data_.size();
+    if (span > std::numeric_limits<int>::max())
+      throw std::invalid_argument("seats_extract_wk: extended series exceeds the monthly index range");
 
     XfModel xm;
     xm.stat = outer.ar;
     xm.nonstat = outer.delta;
     xm.ma = am_ma_bf(outer).p;
     xm.var = outer.get_iv();
+    xm.sarima = true;
     ExactFc fx;
     fx.prepare(xm, bmean_);  // return value popped by the JVM
     xfcasts_ = fx.forecasts(data_, nfc);

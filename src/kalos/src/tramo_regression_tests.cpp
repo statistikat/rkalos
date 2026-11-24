@@ -1,4 +1,4 @@
-// Transcription of the NO-CALENDAR branch of the tramo regression-test layer
+// Monthly TRAMO regression-test layer, including the Fast calendar tests,
 // of the pinned jdplus 3.9.0 stack (item 23-E). The bytecode pin lives in
 // docs/contracts/tramo-regression-tests-contract.md (decoded facts distilled
 // in tmp_opencode/kalos-m5-pinning.md SECTION 25); the double-captured JVM
@@ -62,8 +62,8 @@ void require_valid_hand_over(const TramoTestStatistics& statistics) {
 // low; a NaN |t| compares below both thresholds and counts in NEITHER.
 TramoTAcceptance t_accept(const std::vector<double>& t, int first, int dim,
                           double tlow, double thigh, int nsig) {
-    if (first < 0 || dim < 0 ||
-        static_cast<std::size_t>(first + dim) > t.size())
+    if (first < 0 || dim < 0 || static_cast<std::size_t>(dim) > t.size() ||
+        static_cast<std::size_t>(first) > t.size() - static_cast<std::size_t>(dim))
         throw std::invalid_argument(
             "the tested t-window lies outside the likelihood hand-over");
     TramoTAcceptance out;
@@ -370,22 +370,11 @@ TramoTAcceptance tramo_t_accepts(const TramoTestStatistics& statistics,
 
 TramoRegressionTestDecision run_tramo_regression_tests(
     const TramoRegressionTestRequest& request) {
-    // Fail-closed boundary: every request that would drive a calendar kernel
-    // belongs to item 21-I.3 (docs/calendar-roadmap.md I-4 ruling); the
-    // reasons name the owning item so callers can route them.
     if (request.kind == TramoRegressionTestKind::fast) {
-        if (request.auto_trading_days)
-            throw std::invalid_argument(
-                "an automatically identified trading-days variable in the fast regression "
-                "test machine belongs to item 21-I.3 (calendar branch)");
-        if (request.auto_length_of_period)
-            throw std::invalid_argument(
-                "an automatically identified length-of-period variable in the fast "
-                "regression test machine belongs to item 21-I.3 (calendar branch)");
-        if (request.auto_easter)
-            throw std::invalid_argument(
-                "an automatically identified Easter variable in the fast regression test "
-                "machine belongs to item 21-I.3 (calendar branch)");
+        if ((request.auto_trading_days && (request.trading_days_position < 0 || request.trading_days_dimension < 1))
+            || (request.auto_length_of_period && request.length_of_period_position < 0)
+            || (request.auto_easter && request.easter_position < 0))
+            throw std::invalid_argument("fast calendar tests require the fitted column positions");
         if (request.auto_moving_holiday)
             throw std::invalid_argument(
                 "a moving-holiday variable has no filter in the pinned fast regression "
@@ -423,31 +412,40 @@ TramoRegressionTestDecision run_tramo_regression_tests(
         return decision;
     }
 
-    if (!request.test_mean || !request.mean) {
-        // Fast: meanTest == null (testMean off) or regarima().isMean() false
-        // leaves the mean branch inert; with no reachable calendar arm the
-        // run is Unchanged (Fast) / Unchanged (Default with a mean test
-        // wired but no mean regressor: the branch guard fails).
-        return decision;
+    const bool calendar = request.kind == TramoRegressionTestKind::fast &&
+        (request.auto_trading_days || request.auto_length_of_period || request.auto_easter);
+    const bool test_mean = request.test_mean && request.mean;
+    if (!calendar && !test_mean) return decision;
+    const auto t = tramo_test_tstats(request.statistics, true);
+    if (calendar) {
+        auto passes = [&](int first, int width) {
+            return t_accept(t, first, width, request.variable_threshold, request.variable_threshold, 1).accepted;
+        };
+        bool drop_days = request.auto_trading_days && !passes(request.trading_days_position,
+                                                               request.trading_days_dimension);
+        // A significant LP retains the associated TD variable even when its
+        // own t test failed. LP is retested only after an unsuccessful TD test.
+        if (drop_days && request.auto_length_of_period) {
+            drop_days = !passes(request.length_of_period_position, 1);
+            decision.removed_length_of_period = drop_days;
+        }
+        decision.removed_trading_days = drop_days;
+        decision.removed_easter = request.auto_easter && !passes(request.easter_position, 1);
+        if (drop_days || decision.removed_easter) {
+            decision.result = TramoRegressionTestResult::changed;
+            decision.estimation_cleared = true;
+        }
     }
-
-    // meanTest.accept(cl, k, 0, 1) with the T(tmean) shape (tlow = thigh =
-    // tmean, nsig = 1) over the ADDMU arm.
-    if (request.statistics.coefficients.empty())
-        throw std::invalid_argument(
-            "the mean test requires a likelihood hand-over with at least one coefficient");
-    const std::vector<double> t = tramo_test_tstats(request.statistics, true);
+    if (!test_mean) return decision;
+    if (t.empty()) throw std::invalid_argument("the mean test requires a fitted mean coefficient");
     decision.mean_tstat = t[0];
     decision.mean_test_ran = true;
     const TramoTAcceptance accepted =
         t_accept(t, 0, 1, request.mean_threshold, request.mean_threshold, 1);
     decision.mean_test_accepted = accepted.accepted;
 
-    const bool changed = !accepted.accepted;
-    decision.result =
-        changed ? TramoRegressionTestResult::changed
-                : TramoRegressionTestResult::unchanged;
-    if (changed) {
+    if (!accepted.accepted) {
+        decision.result = TramoRegressionTestResult::changed;
         decision.mean = false;       // newDesc.setMean(false)
         decision.estimation_cleared = true;  // m.set(newDesc, null) /
                                              // m.clearEstimation()

@@ -37,9 +37,13 @@ public:
 private:
     std::vector<double> observation_loading(const std::vector<double>& z,
                                             const Interrupt& interrupt) const;
-    void compress(const DenseMatrix& loading, const Interrupt& interrupt);
+    void compress_transpose(std::size_t rows, const Interrupt& interrupt);
 
     DenseMatrix factor_;
+    // QR uses the transposed loading directly. Both buffers belong to this filter.
+    std::vector<double> qr_input_;
+    std::vector<double> qr_workspace_;
+    std::size_t qr_workspace_rows_ = 0;
     std::size_t compression_count_ = 0;
     std::size_t clipped_negative_count_ = 0;
     double initialization_residual_ = 0;

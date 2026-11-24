@@ -114,6 +114,10 @@ struct TramoOutlierRoundsResult {
     std::vector<TramoOutlierRoundEvent> trace;
 };
 
+// Checks the stationary monthly orders, mean and factory options verified
+// by the raw automatic candidates and their captured multi-round traces.
+bool tramo_stationary_scan_supported(const TramoOutlierScanRequest& request);
+
 // Runs the full multi-round machine on the 23-B request shape (the caps are
 // read as FIELD values, see the header note; the scan unit ignores them).
 // Static request violations throw std::invalid_argument exactly like

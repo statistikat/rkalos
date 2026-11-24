@@ -1,0 +1,24 @@
+{
+  "java_version": "21.0.11",
+  "application_revision": "b625852e5ea1ff8cfa6f64b9fe6a7c1fdb940c09",
+  "inputs": {
+    "air.csv": "0f7a018e6420fc312c9af3022b1bc52452a6e19b5ed7dccbdb3de307dd4e9df6",
+    "ao.csv": "219c7cc73c2c7ab5a31db7076e0bdf5da596737a519523ab3556c24a6bae2632",
+    "seas.csv": "326efc58d35b73b470c04beb11fb8c33fef441e998145fa114729434707bd088"
+  },
+  "jars": {
+    "jdplus-sa-base-api-3.9.0.jar": "3242fc40ed6e6684b9d0b8840aed234f2693457668b9d61c698c177339a6f5d6",
+    "jdplus-sa-base-core-3.9.0.jar": "265722774bd56e43888264e345a69482070e458ecc6f1e41d9ac3f6d11b2e8d4",
+    "jdplus-toolkit-base-api-3.9.0.jar": "fed5fe554c1e64e371d40a1a55d449323cc2630a0d5ea33a3a34e47f7926c2c8",
+    "jdplus-toolkit-base-core-3.9.0.jar": "1880e23dc1665be2822c30c4da11ea0f2482a8da5c3e9c80b372ff6b8375dd71",
+    "protobuf-java-4.36.1.jar": "26434a93561a1a44bf7157b2630fa73a5b4d8df20e94df167bc03fcd14abd7e4",
+    "jdplus-sa-base-protobuf-3.9.0.jar": "915390adbf47211a369e237dd8edf9c467603ca671db862fa87d0188566e4a97",
+    "jdplus-sa-base-r-3.9.0.jar": "a1bc89be0190a574739e07409f6ca24b9586fb14cfc3f8de24e3246f78b5c4f5",
+    "jdplus-toolkit-base-protobuf-3.9.0.jar": "72af2d1e888259c378a859db7af07086b7bc258146a369be0c16431f7fad1d16",
+    "jdplus-toolkit-base-r-3.9.0.jar": "801bb20ca3d3cb3f5677cb34af44fa469fe1d9fd9980d76bdefcc5873c3a9ed9",
+    "jdplus-x13-base-api-3.9.0.jar": "583f644a804c50582a0fa6aa9010ce73bf262f3125100ae98814bc8428aff10c",
+    "jdplus-x13-base-core-3.9.0.jar": "3100ca6f6729f56a961d2b00148dfa348670a8d58b46edb5cb706a318c8c51de",
+    "jdplus-x13-base-protobuf-3.9.0.jar": "ffffc634cd0e56d861a897b454a835c250c9b592b717c53864ab4cac72100c55",
+    "jdplus-x13-base-r-3.9.0.jar": "cba1b340edb650944ef467c59864e0f7304c3498d121e57c81d9491c3840ba9c"
+  }
+}

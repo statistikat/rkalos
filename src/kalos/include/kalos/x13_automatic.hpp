@@ -1,5 +1,6 @@
 #ifndef KALOS_X13_AUTOMATIC_HPP
 #define KALOS_X13_AUTOMATIC_HPP
+#include "x13_estimated_calendar.hpp"
 // Item 21-H.1: the automatic-spec X-13 pipeline driver (stage Z). This is
 // the pinned RegArimaKernel.calc transcription (docs/contracts/
 // x13-automatic-pipeline-contract.md) composed on the qualified stage-Z
@@ -16,7 +17,7 @@
 // this kind is a distinct request/result pair behind its own entry point
 // and x13_fit.hpp/cpp carry no change.
 //
-// Delivered scope (contract envelope): frequency 12, horizons {0, 0}, the
+// Delivered scope (contract envelope): frequency 12, checked backcast and forecast horizons (21-H.4), the
 // four decomposition modes through the pinned forcing, a complete finite
 // input, outlier span = the full estimation domain, transform.function =
 // Auto (the decoder builds the LogLevelModule only in that case).
@@ -73,7 +74,7 @@ enum class X13FitSpecKind { fixed_spec, automatic_spec };
 // (mean_test_initial 1.96 / mean_test_final 1.0) and the FinalEstimator
 // tsig (builder default 1.0). The X-11 block mirrors the decoder X11Spec
 // (filters Msr allowed, Henderson 0 = automatic, REQUIRED sigma policy,
-// sigma cuttings, horizons {0, 0} only).
+// sigma cuttings and horizons in months or negative annual counts).
 struct X13AutomaticRequest {
     std::vector<double> input; // complete, finite, monthly
     int frequency=12;
@@ -222,7 +223,23 @@ struct AutoVariableRecord {
     double coefficient=0.;
     std::vector<double> column;   // the factory column over the model span
 };
-// The result of one automatic-spec fit.
+// The public RegArimaModel likelihood and innovations for a stock estimated template.
+struct X13StockLikelihood {
+    double residual_ssq = 0.;
+    std::size_t estimated_parameters = 0;
+    std::vector<double> full_residuals; // starts after d + 12*bd observations
+    int start_year = 0, start_month = 0; // input domain
+    std::vector<double> regression_covariance; // row-major, in fitted model order
+};
+
+// Stock estimated RSA2c calendar variables precede the outlier variables in model order.
+struct X13StockCalendarFit {
+    X13Rsa2cCalendar selection;
+    std::vector<std::string> names; // td, lp, easter, in fitted order
+    std::vector<double> coefficients;
+};
+
+// The result of one automatic-spec or stock estimated fit.
 struct X13AutomaticFitResult {
     // "available" | "unsupported:<...>" (fail-closed matrix) |
     // "failed:<stage>" (the pinned return-null chain outcomes, chain kept).
@@ -236,11 +253,13 @@ struct X13AutomaticFitResult {
     // Selected regression variables (ami outliers) with their columns and
     // final coefficients, in model order.
     std::vector<AutoVariableRecord> variables;
+    std::optional<X13StockCalendarFit> stock_calendar;
     // Landing statistics of the final estimation (the G2 recipe at the
     // final point; never bit-claimed).
     std::string estimation_status;
     double log_likelihood=0., aicc=0.;
     std::size_t effective_observations=0;
+    std::optional<X13StockLikelihood> stock_likelihood;
     // The decision chain, in pinned execution order (provenance of the
     // whole run: "the final description plus the chain is the full
     // regeneration recipe of the fit").
@@ -255,5 +274,28 @@ struct X13AutomaticFitResult {
 // the chain kept so far. Shape violations throw std::invalid_argument
 // exactly as the seams below do.
 X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request);
+
+// Stock monthly X-13 RSA0 with estimated airline parameters and a one-year
+// forecast extension. The observed series starts at the given year and month.
+X13AutomaticFitResult x13_estimated_rsa0(const std::vector<double>& observations, int year, int month);
+// Stock RSA1 selects the transformation and detects AO, LS and TC outliers.
+X13AutomaticFitResult x13_estimated_rsa1(const std::vector<double>& observations, int year, int month);
+// Stock RSA2c estimates the working-day and Easter candidates before the outlier pass.
+X13AutomaticFitResult x13_estimated_rsa2c(const std::vector<double>& observations, int year, int month);
+
+struct X13StockResidualDiagnostics {
+    double standard_error;
+    LjungBoxTest ljung_box;
+    std::optional<ResidualNormalityTest> normality;
+};
+X13StockResidualDiagnostics x13_stock_residual_diagnostics(const X13AutomaticFitResult& fit);
+
+struct X13StockForecastErrors {
+    std::string status;
+    std::vector<double> standard_errors;
+};
+// Public original-scale preprocessing forecast uncertainty (y_ef). A nonnegative
+// month count begins immediately after the input. Zero requests an empty result.
+X13StockForecastErrors x13_stock_forecast_errors(const X13AutomaticFitResult& fit, int months);
 } // namespace kalos
 #endif

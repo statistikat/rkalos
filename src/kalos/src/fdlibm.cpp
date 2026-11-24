@@ -668,4 +668,76 @@ double fdlibm_sin(double x) {
     }
 }
 
+
+// FdLibm.Pow for the binary64 exponent 1/3 used by DoornikHansen.
+// The split logarithm and exponential follow fdlibm e_pow.c:
+// Copyright (C) 2004 by Sun Microsystems, Inc. All rights reserved.
+// Permission to use, copy, modify, and distribute this software is freely
+// granted, provided that this notice is preserved.
+double fdlibm_power_one_third(double x) {
+    if (x == 0. || x == 1. || std::isinf(x)) return std::abs(x);
+    if (!(x > 0.)) return std::numeric_limits<double>::quiet_NaN();
+    auto upper = [](double v) { return with_hi(0., hi_word(v)); };
+
+    // Range reduction about 1 or 1.5, with log2(1.5) split at 24 bits.
+    int exponent = 0;
+    if (hi_word(x) < 0x00100000u) { x *= 0x1p53; exponent -= 53; }
+    const auto high = hi_word(x);
+    exponent += static_cast<int>(high >> 20) - 1023;
+    const auto fraction = high & 0xfffffu;
+    auto normalized = fraction | 0x3ff00000u;
+    const bool center_one_half = fraction > 0x3988eu && fraction < 0xbb67au;
+    if (fraction >= 0xbb67au) { ++exponent; normalized -= 0x100000u; }
+    x = with_hi(x, normalized);
+    const double center = center_one_half ? 1.5 : 1.;
+    const double offset_hi = center_one_half ? 0x1.2b8034p-1 : 0.;
+    const double offset_lo = center_one_half ? 0x1.cfdeb43cfd006p-27 : 0.;
+    const double diff = x - center, inverse_sum = 1. / (x + center);
+    const double ratio = diff * inverse_sum, ratio_hi = upper(ratio);
+    const double sum_hi = with_hi(0., ((normalized >> 1) | 0x20000000u) + 0x80000u +
+                                     (center_one_half ? 0x40000u : 0u));
+    const double sum_lo = x - (sum_hi - center);
+    const double ratio_lo = inverse_sum * ((diff - ratio_hi * sum_hi) - ratio_hi * sum_lo);
+    const double sq = ratio * ratio;
+    double tail = sq * sq * (0x1.3333333333303p-1 + sq * (0x1.b6db6db6fabffp-2 +
+        sq * (0x1.55555518f264dp-2 + sq * (0x1.17460a91d4101p-2 +
+        sq * (0x1.d864a93c9db65p-3 + sq * 0x1.a7e284a454eefp-3)))));
+    tail += ratio_lo * (ratio_hi + ratio);
+    const double sq_hi = ratio_hi * ratio_hi;
+    const double poly_hi = upper(3. + sq_hi + tail);
+    const double poly_lo = tail - ((poly_hi - 3.) - sq_hi);
+    const double u = ratio_hi * poly_hi, v = ratio_lo * poly_hi + poly_lo * ratio;
+    const double product_hi = upper(u + v), product_lo = v - (product_hi - u);
+    const double log_part_hi = 0x1.ec709ep-1 * product_hi;
+    const double log_part_lo = -0x1.e2fe0145b01f5p-28 * product_hi +
+        product_lo * 0x1.ec709dc3a03fdp-1 + offset_lo;
+    const double log_hi = upper(((log_part_hi + log_part_lo) + offset_hi) + exponent);
+    const double log_lo = log_part_lo - (((log_hi - exponent) - offset_hi) - log_part_hi);
+
+    constexpr double power = 1. / 3.;
+    const double power_hi = upper(power);
+    const double exp_lo = (power - power_hi) * log_hi + power * log_lo;
+    double exp_hi = power_hi * log_hi;
+    const double argument = exp_lo + exp_hi;
+    // FdLibm rounds the power of two once, before the final exponential.
+    const auto abs_hi = hi_word(argument) & 0x7fffffffu;
+    int scale = 0;
+    if (abs_hi > 0x3fe00000u) {
+        const int k = static_cast<int>(abs_hi >> 20) - 1023;
+        const auto rounded = abs_hi + (0x100000u >> (k + 1));
+        const int width = static_cast<int>(rounded >> 20) - 1023;
+        scale = static_cast<int>(((rounded & 0xfffffu) | 0x100000u) >> (20 - width));
+        if (argument < 0.) scale = -scale;
+        exp_hi -= scale;
+    }
+    const double t = upper(exp_lo + exp_hi);
+    const double z_hi = t * 0x1.62e43p-1;
+    const double z_lo = (exp_lo - (t - exp_hi)) * 0x1.62e42fefa39efp-1 - t * 0x1.05c610ca86c39p-29;
+    const double z = z_hi + z_lo, w = z_lo - (z - z_hi), z2 = z * z;
+    const double a = z - z2 * (0x1.555555555553ep-3 + z2 * (-0x1.6c16c16bebd93p-9 +
+        z2 * (0x1.1566aaf25de2cp-14 + z2 * (-0x1.bbd41c5d26bf1p-20 + z2 * 0x1.6376972bea4d0p-25))));
+    const double remainder = (z * a) / (a - 2.) - (w + z * w);
+    return std::scalbn(1. - (remainder - z), scale);
+}
+
 } // namespace kalos::detail

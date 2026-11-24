@@ -1,19 +1,46 @@
 # Capabilities refer to the bundled, qualified surface, not planned features.
-# schema_version 2 adds the restricted_fit block and the x13 primitive names;
-# every pre-existing field keeps its schema-1 meaning. In particular fit
-# stays FALSE and keeps its schema-1 meaning: UNRESTRICTED fitting (the ARIMA
-# route: estimation, missing values, nonzero horizons, the length-of-period
-# transform, benchmarking) remains unimplemented. What is qualified is the
-# restricted fixed-coefficient X-13 fit described by restricted_fit below and
-# (additively, same schema-2 semantics) the automatic-spec X-13 fit described
-# by automatic_fit; gate on native_x13_fit_restricted / native_x13_fit_
-# automatic (or the blocks), never on fit. Field semantics are documented in
-# IMPLEMENTATION_STATUS.md.
+# The legacy fit field describes unrestricted fitting. Use restricted_fit
+# and automatic_fit for qualified X-13 routes and tramo_seats_fit for RSA0.
 capabilities <- function() {
     list(backend = "native", schema_version = 2L,
                 status = "unimplemented", fit = FALSE,
                 native_x13_fit_restricted = TRUE,
                 native_x13_fit_automatic = TRUE,
+                tramo_preprocessing = list(available = TRUE, templates = c("TR1", "TR3", "TRfull"), aliases = c("RSA1", "RSA3", "RSAfull"), frequency = 12L,
+                  minimum_observations = 24L, complete_finite_input_only = TRUE,
+                  by_template = list(TR1 = list(residuals = c("tsres", "ser", "lb", "doornikhansen")),
+                    TR3 = list(residuals = c("tsres", "ser", "lb", "doornikhansen"), identification = "reference_retries",
+                               seasonal_restart = TRUE, fast_mean_refit = TRUE),
+                    TRfull = list(residuals = c("tsres", "ser", "lb", "doornikhansen"),
+                                  calendar = c("working_days", "trading_days", "leap_year", "easter"))),
+                  residuals = c("tsres", "ser", "lb", "doornikhansen"),
+                  entry_point = "native_tramo_preprocess"),
+                tramo_seats_fit = list(available = TRUE, templates = c("RSA0", "RSA1", "RSA3", "RSAfull"), aliases = c("TR0", "TR1", "TR3", "TRfull"),
+                  by_template = list(
+                    RSA0 = list(modes = "additive", residuals = c("tsres", "ser", "lb", "doornikhansen"),
+                                series_forecast_stdev = TRUE),
+                    RSA1 = list(modes = c("additive", "multiplicative"), residuals = c("tsres", "ser", "lb", "doornikhansen"),
+                                outlier_types = c("AO", "LS", "TC"), tc_rate = 0.7,
+                                series_forecast_stdev = TRUE),
+                    RSA3 = list(modes = c("additive", "multiplicative"), residuals = c("tsres", "ser", "lb", "doornikhansen"),
+                                identification = "reference_retries", seasonal_restart = TRUE,
+                                fast_mean_refit = TRUE, series_forecast_stdev = TRUE),
+                    RSAfull = list(modes = c("additive", "multiplicative"), residuals = c("tsres", "ser", "lb", "doornikhansen"),
+                                   calendar = c("working_days", "trading_days", "leap_year", "easter"),
+                                   calendar_effect = c("observed", "forecast"), series_forecast_stdev = TRUE)),
+                  series_forecast_stdev = TRUE, residuals = c("tsres", "ser", "lb", "doornikhansen"),
+                  frequency = 12L, complete_finite_input_only = TRUE, mode = c("additive", "multiplicative"),
+                  entry_point = "native_tramoseats_fit"),
+                estimated_x13_fit = list(available = TRUE, templates = c("RSA0", "RSA1", "RSA2c"),
+                  frequency = 12L, complete_finite_input_only = TRUE, forecast = 12L, backcast = 0L,
+                  residuals = c("tsres", "ser", "lb", "doornikhansen"),
+                  series_forecast_stdev = TRUE, entry_point = "native_x13_estimated_fit"),
+                combined_seasonality = list(getter = "diagnostics.seas-si-combined",
+                  tramo_seats_fit = c("RSA0", "RSA1", "RSA3", "RSAfull"), restricted_x13_fit = TRUE,
+                  automatic_x13_fit = TRUE, estimated_x13_fit = c("RSA0", "RSA1", "RSA2c"),
+                  minimum_years = 3L),
+                seats_approximation = list(mode = "legacy", frequency = 12L,
+                  families = c("airline seasonal MA replacement", "mean-free (2,1,0)(1,1,0) seasonal AR-to-MA refit")),
                 restricted_fit = list(
                   schema_version = 2L,     # 2L: sigma_policy_required -> sigma_policy_default (maintainer 2026-11-17)
                   native_x13_fit_restricted = TRUE,
@@ -58,6 +85,8 @@ capabilities <- function() {
                     msr_requests_pinned = TRUE,      # one "msr" per calendar period: the decoder G4 surface, not an option
                     automatic_henderson = TRUE,      # trend_length 0 (the restricted fit refuses it)
                     sigma_policy_default = "legacy", # same maintainer 2026-11-17 decision as restricted_fit; $sigma_provenance reports "legacy (default)" vs "(explicit)"
+                    horizon_tables = c("a1a", "a1b", "d11a", "d12a", "d16a", "d18a",
+                                       "d11b", "d12b", "d16b", "d18b"),
                     horizon_envelope = "backcast/forecast month counts, a negative count meaning |h| annual frequencies (the core normalizes); the 21-H.4 initialStep route extends the downstream composition only \u2014 decisions, landing and the preadjustment stay horizon-invariant",
                                          # replaces zero_horizon_only (schema 3L): R-qualified by the 4-case JVM horizon capture in test-native-x13-horizon.R; the RESTRICTED fit stays zero-horizon-only
                     modes = c("additive", "multiplicative", "log_additive", "pseudo_additive")
@@ -79,10 +108,11 @@ capabilities <- function() {
                                "arma_information", "arma_residual_information", "arma_legacy_covariance",
                                "regression_information", "joint_regression_information", "arma_residuals", "arma_legacy_residuals",
                                "interpolation_information", "interpolation_arma_information", "forecast_information", "forecast_arma_information", "prediction_moments", "x11_symmetric_filters", "x11_musgrave_endpoints", "x11_mean_endpoints", "x11_seasonal_endpoints", "x11_seasonal_processing", "x11_trend_selection", "x11_seasonal_stage_policy", "x11_msr_tables", "x11_msr_pilot", "x11_msr_selection", "x11_additive_normalization", "x11_additive_initial_tables", "x11_pass_level_selection", "x11_decomposition_modes", "x13_deterministic_allocation", "x13_restricted_fixed_fit", "x13_automatic_spec_fit",
-                               "tramo_critical_value", "tramo_seasonality", "tramo_transform_decision"),
+                               "tramo_critical_value", "tramo_seasonality", "tramo_transform_decision", "seats_extract_wk", "tramo_prepare_model",
+                               "tramo_differencing_decision", "seats_from_tramo"),
                 methods = character(), specification_blocks = character(),
                 packages_available = NA, runtime_checked = FALSE,
-                reason = "Native seasonal-adjustment fitting is not implemented; the restricted fixed-coefficient X-13 fit of restricted_fit and the automatic-spec X-13 fit of automatic_fit are qualified.")
+                reason = "Unrestricted fitting is unavailable. Qualified methods are described by restricted_fit, automatic_fit and tramo_seats_fit.")
 }
 
 core_version <- function() {

@@ -8,10 +8,14 @@
 // header envelope.
 #include "kalos/arma_diagnostics.hpp"
 
+#include "kalos/detail/fdlibm.hpp"
 #include "kalos/detail/special_functions.hpp"
+#include "kalos/outlier_scoring.hpp"
 #include "mlj_engine.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 
 namespace kalos {
@@ -36,6 +40,57 @@ double ssq_of(const std::vector<double>& x) {
         s += v * v;
     }
     return s;
+}
+
+struct ResidualMoments {
+    double skewness;
+    double kurtosis;
+};
+
+ResidualMoments residual_moments(const std::vector<double>& residuals) {
+    const double n = static_cast<double>(residuals.size());
+    const double mean = sum_of(residuals) / n;
+    double sum2 = 0.0, sum3 = 0.0, sum4 = 0.0;
+    for (const double value : residuals) {
+        if (!std::isfinite(value)) {
+            throw std::invalid_argument("residual moments require finite residuals");
+        }
+        const double deviation = value - mean;
+        const double square = deviation * deviation;
+        const double cube = square * deviation;
+        sum2 += square;
+        sum3 += cube;
+        sum4 += cube * deviation;
+    }
+    const double variance = sum2 / n;
+    const double skewness = sum3 / (variance * std::sqrt(variance) * n);
+    const double kurtosis = sum4 / (variance * variance * n);
+
+    return {skewness, kurtosis};
+}
+
+struct ResidualSample {
+    double mean;
+    double variance;
+};
+
+ResidualSample residual_sample(const std::vector<double>& residuals, int start, int length) {
+    double sum = 0.0, ssq = 0.0;
+    for (int i = start; i < start + length; ++i) {
+        const double x = residuals[i];
+        sum += x;
+        ssq += x * x;
+    }
+    return {sum / length, ssq / length};
+}
+
+double student_two_sided(double t, double df) {
+    if (t == 0.0) return 1.0;
+    const auto beta = detail::special_inc_beta(df / 2, 0.5, df / (df + t * t));
+    if (!beta) return std::numeric_limits<double>::quiet_NaN();
+    // Preserve rounding in SpecialFunctions.studentProbability followed by T.getProbability.
+    const double delta = (1 - *beta) / 2;
+    return 2 * (t < 0 ? 0.5 - delta : 1 - (0.5 + delta));
 }
 
 } // namespace
@@ -97,17 +152,10 @@ int calc_lb_length(int annual_frequency, int neff) {
     return k;
 }
 
-LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp) {
-    const int n = static_cast<int>(seq.size());
-    if (n == 0) {
-        throw std::invalid_argument("ljung_box_test needs a non-empty sequence");
-    }
-    // calcLb: mean = tmp.sum() / n; tmp.sub(mean) (here on the local copy).
-    const double mean = sum_of(seq) / static_cast<double>(n);
-    std::vector<double> data(seq.size());
-    for (std::size_t i = 0; i < seq.size(); ++i) {
-        data[i] = seq[i] - mean;
-    }
+namespace {
+
+LjungBoxTest ljung_box_at_zero(const std::vector<double>& data, int k, int nhp) {
+    const int n = static_cast<int>(data.size());
     // value(): sign filter is the default 0 (add every term); lag = 1.
     double acc = 0.0;
     for (int i = 1; i <= k; ++i) {
@@ -124,6 +172,120 @@ LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp) {
     }
     const double p = detail::chi2_upper_p(df, stat);
     return LjungBoxTest{true, stat, p, df};
+}
+
+} // namespace
+
+LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp) {
+    const int n = static_cast<int>(seq.size());
+    if (n == 0) {
+        throw std::invalid_argument("ljung_box_test needs a non-empty sequence");
+    }
+    // calcLb: mean = tmp.sum() / n; tmp.sub(mean) (here on the local copy).
+    const double mean = sum_of(seq) / static_cast<double>(n);
+    std::vector<double> data(seq.size());
+    for (std::size_t i = 0; i < seq.size(); ++i) {
+        data[i] = seq[i] - mean;
+    }
+    return ljung_box_at_zero(data, k, nhp);
+}
+
+LjungBoxTest monthly_tramo_residual_ljung_box(const std::vector<double>& residuals, int arma_parameters) {
+    if (arma_parameters < 0 || arma_parameters >= 24) {
+        throw std::invalid_argument("monthly TRAMO residual test requires 0 to 23 fitted ARMA parameters");
+    }
+    if (residuals.empty() || residuals.size() > static_cast<std::size_t>(std::numeric_limits<int>::max() - 2)) {
+        throw std::invalid_argument("monthly TRAMO residual count is outside the supported range");
+    }
+    if (residuals.size() <= 24) {
+        for (double value : residuals) {
+            if (!std::isfinite(value)) throw std::invalid_argument("monthly TRAMO residuals must be finite");
+        }
+        return {true, std::nan(""), std::nan(""), 24.0 - arma_parameters};
+    }
+    return ljung_box_at_zero(residuals, 24, arma_parameters);
+}
+
+LjungBoxTest monthly_airline_residual_ljung_box(const std::vector<double>& residuals) {
+    return monthly_tramo_residual_ljung_box(residuals, 2);
+}
+
+static std::optional<ResidualNormalityTest> residual_normality(const std::vector<double>& residuals,
+        double (*power_one_third)(double)) {
+    if (residuals.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+        throw std::invalid_argument("tramo_residual_normality requires a JVM-sized series");
+    }
+    if (residuals.size() <= 7) return std::nullopt;
+    const double n = static_cast<double>(residuals.size());
+    const auto [skewness, kurtosis] = residual_moments(residuals);
+
+    // DoornikHansen.build() transforms sample skewness to a normal score.
+    const double beta = 3 * (n * n + 27 * n - 70) * (n + 1) * (n + 3)
+                      / ((n - 2) * (n + 5) * (n + 7) * (n + 9));
+    const double w2 = -1 + std::sqrt(2 * (beta - 1));
+    const double delta = 1 / std::sqrt(0.5 * detail::fdlibm_log(w2));
+    const double y = skewness * std::sqrt((w2 - 1) * (n + 1) * (n + 3) / (12 * (n - 2)));
+    const double z1 = delta * detail::fdlibm_log(y + std::sqrt(y * y + 1));
+
+    // The kurtosis transform is conditional on observed squared skewness.
+    const double den = (n - 3) * (n + 1) * (n * n + 15 * n - 4);
+    const double a = (n - 2) * (n + 5) * (n + 7) * (n * n + 27 * n - 70) / (den * 6);
+    const double c = (n - 7) * (n + 5) * (n + 7) * (n * n + 2 * n - 5) / (den * 6);
+    const double k = (n + 5) * (n + 7) * (n * n * n + n * n * 37 + 11 * n - 313) / (den * 12);
+    const double alpha = a + c * skewness * skewness;
+    const double chi = 2 * k * (kurtosis - 1 - skewness * skewness);
+    const double z2 = std::sqrt(alpha * 9)
+        * (power_one_third(chi / (2 * alpha)) - 1 + 1 / (9 * alpha));
+    const double value = z1 * z1 + z2 * z2;
+    return ResidualNormalityTest{value, detail::chi2_upper_p(ResidualNormalityTest::df, value)};
+}
+
+std::optional<ResidualNormalityTest> tramo_residual_normality(const std::vector<double>& residuals) {
+    return residual_normality(residuals, [](double x) { return std::pow(x, 1.0 / 3.0); });
+}
+
+std::optional<ResidualNormalityTest> portable_residual_normality(const std::vector<double>& residuals) {
+    return residual_normality(residuals, detail::fdlibm_power_one_third);
+}
+
+TramoComparatorResidualTests tramo_comparator_residual_tests(const std::vector<double>& residuals) {
+    if (residuals.size() < 4 || residuals.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+        throw std::invalid_argument("monthly TRAMO sample comparisons require at least four residuals");
+    const int n = static_cast<int>(residuals.size());
+    const double skew = residual_moments(residuals).skewness;
+    const double lower = standard_normal_lower_cdf(skew / std::sqrt(6.0 / n));
+    const double skew_p = 2 * (skew < 0 ? lower : 1 - lower);
+
+    // ModelStatistics.of uses [0, n-drop) and [drop, n). These samples can
+    // overlap on long series. Sample.ofResiduals measures variance around zero.
+    const int drop = std::min(n / 2 + n % 2, 120);
+    const int length = n - drop;
+    const auto first = residual_sample(residuals, 0, length);
+    const auto second = residual_sample(residuals, drop, length);
+    const double df = length - 1;
+    const double pooled = (first.variance * df + second.variance * df) / (2 * df);
+    const double t = (second.mean - first.mean) / std::sqrt(pooled / length + pooled / length);
+    const double ratio = second.variance / first.variance;
+    return {std::abs(skew), skew_p, t, student_two_sided(t, 2 * df),
+            ratio, detail::f_upper_p(ratio, df, df)};
+}
+
+// Preserve the original public RSA0 entry points.
+LjungBoxTest rsa0_residual_ljung_box(const std::vector<double>& residuals) {
+    return monthly_airline_residual_ljung_box(residuals);
+}
+
+std::optional<ResidualNormalityTest> rsa0_residual_normality(const std::vector<double>& residuals) {
+    return tramo_residual_normality(residuals);
+}
+
+double tramo_residual_standard_error(double residual_ssq, int effective, int estimated_parameters) {
+    if (!std::isfinite(residual_ssq) || residual_ssq < 0 || estimated_parameters < 1 ||
+        effective < estimated_parameters)
+        throw std::invalid_argument("invalid fitted likelihood for TRAMO residual standard error");
+    // RegSarimaModel.niidTests() counts free coefficients. LikelihoodStatistics
+    // includes the variance itself as one additional estimated parameter.
+    return std::sqrt(residual_ssq / (effective - (estimated_parameters - 1)));
 }
 
 double calc_res_stat_rtval(const std::vector<double>& seq) {

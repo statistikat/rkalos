@@ -74,3 +74,14 @@ DEF_MAXOUTLIERS 50 (record-only: the ODM builder overrides); Builder eps
 
 The C++ replay lands with the tramo_outlier_rounds unit (23-F F.2); its
 golden generator will read this directory.
+
+Stationary AR(1)/AR(2) supplement, 2026-11-23
+The six series in stationary-cases.txt are the unchanged observations
+from the 23-F fit corpus. The scan headers set log/mean, stationary regular
+orders, AO/LS/TC and the 1e-5 TRAMO intermediate precision.
+The same Scratch23g source produced stationary-witness.out in two fresh
+Temurin 21.0.11 x86-64 JVMs with -XX:+UnlockDiagnosticVMOptions and
+-XX:DisableIntrinsic=_dexp,_dlog. The six jdplus 3.9.0 jars and their hashes
+are listed in ../tramo-seats-bridge/reference.json. From this directory:
+  "$JDK/bin/java" -XX:+UnlockDiagnosticVMOptions -XX:DisableIntrinsic=_dexp,_dlog -cp "$CP" Scratch23g.java stationary-cases.txt
+The source-file launcher compiles and executes the preserved probe.

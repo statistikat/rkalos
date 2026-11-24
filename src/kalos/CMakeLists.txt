@@ -5,17 +5,6 @@ option(KALOS_BUILD_TESTS "Build standalone tests" ON)
 option(KALOS_SANITIZERS "Enable address and undefined behavior sanitizers" OFF)
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(KalosOpenBLAS REQUIRED)
-include(CheckCXXSourceCompiles)
-set(CMAKE_REQUIRED_LIBRARIES Kalos::OpenBLAS)
-check_cxx_source_compiles("#include <cblas.h>
-#include <lapacke.h>
-#include <type_traits>
-static_assert(sizeof(int)==4 && std::is_same<lapack_int,int>::value, \"LP64 required\");
-int main() { return openblas_get_config() ? 0 : 1; }" KALOS_LP64_PROVIDER)
-unset(CMAKE_REQUIRED_LIBRARIES)
-if(NOT KALOS_LP64_PROVIDER)
-  message(FATAL_ERROR "Kalos requires OpenBLAS with CBLAS, LAPACKE and a 32-bit LP64 integer ABI")
-endif()
 # A committed binding snapshot supplies its own exact revision header.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/kalos/revision.hpp")
   file(READ "${CMAKE_CURRENT_SOURCE_DIR}/include/kalos/revision.hpp" KALOS_REVISION_HEADER)
@@ -32,6 +21,7 @@ endif()
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated/kalos")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/kalos/revision.hpp" "${KALOS_REVISION_HEADER}")
 add_library(kalos STATIC
+  src/combined_seasonality.cpp
   src/arma_diagnostics.cpp
   src/arma_identification.cpp
   src/arma_information.cpp
@@ -78,7 +68,9 @@ add_library(kalos STATIC
   src/ssq_levmar.cpp
   src/ssq_deviances.cpp
   src/state_space.cpp
+  src/tramo_calendar_f_test.cpp
   src/tramo_arma_selection.cpp
+  src/tramo_seasonal_f_test.cpp
   src/tramo_differencing_battery.cpp
   src/tramo_differencing_decision.cpp
   src/tramo_final_estimation.cpp
@@ -88,7 +80,13 @@ add_library(kalos STATIC
   src/tramo_outlier_scan.cpp
   src/tramo_outlier_rounds.cpp
   src/tramo_regression_tests.cpp
+  src/tramo_seasonal_spectrum.cpp
+  src/tramo_seats_bridge.cpp
   src/tramo_seats_model_validator.cpp
+  src/tramo_tr0.cpp
+  src/tramo_tr1_forecast.cpp
+  src/tramo_tr3_forecast.cpp
+  src/tramo_seats_pipeline.cpp
   src/tramo_transform_decision.cpp
   src/transformation_decision.cpp
   src/transforms.cpp
@@ -112,6 +110,7 @@ add_library(kalos STATIC
   src/x11_trend_selection.cpp
   src/x13_allocation.cpp
   src/x13_automatic.cpp
+  src/x13_estimated_calendar.cpp
   src/x13_fit.cpp
   backends/openblas.cpp)
 add_library(kalos::kalos ALIAS kalos)
@@ -184,6 +183,7 @@ if(KALOS_BUILD_TESTS)
   enable_testing()
   foreach(test_name IN ITEMS
     test_arma_diagnostics
+    test_combined_seasonality
     test_arma_identification
     test_arma_information
     test_arma_objective
@@ -228,10 +228,16 @@ if(KALOS_BUILD_TESTS)
     test_tramo_differencing_battery
     test_tramo_final_estimation
     test_tramo_fit
+    test_tramo_selected_model
     test_tramo_kernel_rounds
     test_tramo_model_builder
     test_tramo_outlier_scan
+    test_tramo_calendar_f_test
+    test_tramo_calendar_effect
     test_tramo_regression_tests
+    test_tramo_seats_bridge
+    test_tramo_seats_rsa0
+    test_tramo_seats_automatic
     test_tramo_seats_model
     test_tramo_transform_decision
     test_transformation_decision
@@ -251,6 +257,8 @@ if(KALOS_BUILD_TESTS)
     test_x11_normalization
     test_x11_pseudo_additive
     test_x11_selection_pass
+    test_x13_estimated_calendar
+    test_x13_estimated_selection
     test_x11_seasonal_endpoints
     test_x11_seasonal_plan
     test_x11_seasonal_processing
@@ -258,6 +266,7 @@ if(KALOS_BUILD_TESTS)
     test_x11_sigma
     test_x11_trend_selection
     test_x13_allocation
+    test_x13_estimated_templates
     test_x13_automatic
     test_x13_fit)
     add_executable(${test_name} tests/${test_name}.cpp)
@@ -267,6 +276,95 @@ if(KALOS_BUILD_TESTS)
       target_compile_options(${test_name} PRIVATE /UNDEBUG)
     else()
       target_compile_options(${test_name} PRIVATE -UNDEBUG)
+    endif()
+    if(test_name STREQUAL "test_x13_fit")
+      target_compile_definitions(test_x13_fit PRIVATE
+        KALOS_PSEUDO_FIXED="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-nonlog-pseudo/fixed-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_tramo_outlier_scan")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_CALENDAR_OUTLIERS_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/calendar-outliers.txt")
+    endif()
+    if(test_name STREQUAL "test_tramo_differencing_battery")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_SEASONAL_PEAKS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-differencing-battery/monthly-spectral-peaks.txt"
+        KALOS_SEASONAL_F_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-differencing-battery/seasonal-f.txt")
+    endif()
+    if(test_name STREQUAL "test_arma_diagnostics")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_TRAMO_DIAGNOSTIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge")
+    endif()
+    if(test_name STREQUAL "test_seats_extract_wk")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_SPECTRUM_COS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/spectrum-cos-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_combined_seasonality")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_COMBINED_RSA2C="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/stock-rsa2c-x86_64.txt"
+        KALOS_COMBINED_STOCK="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/stock-x86_64.txt"
+        KALOS_COMBINED_X13_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles"
+        KALOS_COMBINED_SI_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge"
+        KALOS_COMBINED_SI_FIXED="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/fixed-x13-x86_64.txt"
+        KALOS_COMBINED_SI_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/public-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_tramo_selected_model")
+      add_test(NAME test_tramo_trfull_reference COMMAND ${test_name}
+        "${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-reference-x86_64.txt")
+      add_test(NAME test_tramo_seats_rsafull COMMAND ${test_name} automatic)
+      add_test(NAME test_tramo_rsafull_late_calendar COMMAND ${test_name} automatic
+        "${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-late-calendar-x86_64.txt")
+      set_tests_properties(test_tramo_trfull_reference test_tramo_seats_rsafull test_tramo_rsafull_late_calendar PROPERTIES ENVIRONMENT
+        "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_SELECTED_FORECAST_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-forecast-errors-x86_64.txt"
+        KALOS_LATE_FORECAST_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-late-forecast-errors-x86_64.txt"
+        KALOS_LATE_WK_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-late-wk-x86_64.txt"
+        KALOS_SELECTED_WK_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-calendar-wk-x86_64.txt"
+        KALOS_SELECTED_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_tramo_seats_automatic")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_AUTOMATIC_ORACLES="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge")
+    endif()
+    if(test_name STREQUAL "test_tramo_seats_rsa0")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_RSA0_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-x86_64.txt"
+        KALOS_RSA0_ERRORS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-forecast-errors-x86_64.txt"
+        KALOS_RSA0_RESIDUALS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-residuals-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_x13_estimated_calendar")
+      add_test(NAME test_x13_rsa2c_scale COMMAND ${test_name}
+        "${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/rsa2c-scale-x86_64.txt")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_ESTIMATED_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/rsa2c-calendar-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_x13_estimated_selection")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_ESTIMATED_TEMPLATE_PANELS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates")
+    endif()
+    if(test_name STREQUAL "test_tramo_calendar_effect")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_CALENDAR_EFFECT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge")
+    endif()
+    if(test_name STREQUAL "test_tramo_calendar_f_test")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_CALENDAR_F_TEST_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/panel.txt"
+        KALOS_FULL_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/full.txt"
+        KALOS_RESIDUAL_TD_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/residual-td.txt"
+        KALOS_TD_CONTROLLER_OUTLIERS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/td-controller-outliers.txt"
+        KALOS_TD_CONTROLLER_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/td-controller.txt")
+    endif()
+    if(test_name STREQUAL "test_tramo_seats_bridge")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_BRIDGE_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/bridge.txt"
+        KALOS_MERGE_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/merge.txt"
+        KALOS_MERGE_X64="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/merge-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_x13_estimated_templates")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_X13_TEMPLATE_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles"
+        KALOS_X13_DIAGNOSTIC_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/diagnostics-x86_64.txt"
+        KALOS_X13_TEMPLATE_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/templates-x86_64.txt")
     endif()
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES ENVIRONMENT
@@ -278,6 +376,8 @@ if(KALOS_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES TIMEOUT 3600)
     endif()
     if(test_name STREQUAL "test_tramo_regression_tests")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_FAST_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/fast-calendar.txt")
       # 23-E golden replay over the double-captured tramo-regression-tests
       # corpus (ModelStatistics rows, both tstats arms, the refStats gate and
       # the two regression-test machines); generous for the sanitizer lane.
@@ -308,6 +408,9 @@ if(KALOS_BUILD_TESTS)
   # the full sweep is slow but far inside the timeout.
   add_executable(test_x13_automatic_oracle tests/test_x13_automatic_oracle.cpp)
   target_link_libraries(test_x13_automatic_oracle PRIVATE kalos::kalos)
+  target_compile_definitions(test_x13_automatic_oracle PRIVATE
+    KALOS_AUTOMATIC_SI="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/automatic-x13-x86_64.txt"
+    KALOS_PSEUDO_AUTO="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-nonlog-pseudo/automatic-x86_64.txt")
   add_test(NAME test_x13_automatic_oracle
            COMMAND test_x13_automatic_oracle)
   set_tests_properties(test_x13_automatic_oracle PROPERTIES

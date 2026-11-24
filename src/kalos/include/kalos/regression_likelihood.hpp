@@ -14,7 +14,7 @@ namespace kalos {
 // Unlike response values, regressors must be finite even at missing responses.
 // Zero columns are supported; at most 32 coefficients are accepted in this pilot.
 struct RegressionDesign {
-    std::size_t columns;
+    std::size_t columns = 0;
     std::vector<double> values;
     std::vector<double> coefficients; // Finite fixed values; zero placeholders for free values.
     std::vector<std::uint8_t> fixed;

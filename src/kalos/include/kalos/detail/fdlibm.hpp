@@ -17,6 +17,8 @@ namespace kalos::detail {
 // 21-D contract) so that Math.exp/log equal the FdLibm bytecode semantics.
 double fdlibm_exp(double x);
 double fdlibm_log(double x);
+// StrictMath.pow(x, 1.0/3.0) for the portable residual normality profile.
+double fdlibm_power_one_third(double x);
 
 // CI-FDLIBM routing kernels (provenance table, pinned runtime
 // OpenJDK 21.0.11+10-1-24.04.2-Ubuntu, bytecode dumps under

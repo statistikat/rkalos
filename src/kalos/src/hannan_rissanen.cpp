@@ -496,10 +496,19 @@ HannanRissanenStart hannan_rissanen_start(const std::vector<double>& response,
                 adjusted[i] = response[i] - design.values[i] * b;
             }
         } else if (design.columns > 0) {
-            DenseMatrix x(n, design.columns, design.values);
-            const DenseMatrix b(n, 1, response);
-            const auto fit = qr_least_squares(x, b, 1e-10, checked_interrupt);
-            adjusted = fit.residuals.values(); // y - X b, observation order.
+            std::vector<std::vector<double>> columns;
+            for (std::size_t j = 0; j < design.columns; ++j) {
+                checkpoint(checked_interrupt);
+                auto first = design.values.begin() + static_cast<std::ptrdiff_t>(j * n);
+                columns.emplace_back(first, first + static_cast<std::ptrdiff_t>(n));
+            }
+            const auto b = detail::pinned_ols_coefficients(response, columns);
+            if (!b) throw std::runtime_error("Hannan-Rissanen initialization: OLS failed");
+            for (std::size_t j = 0; j < columns.size(); ++j) {
+                checkpoint(checked_interrupt);
+                for (std::size_t i = 0; i < n; ++i)
+                    adjusted[i] += -(*b)[j] * columns[j][i];
+            }
         }
         // Pinned root-mean-square guard on those residuals.
         double ssq = 0.0;

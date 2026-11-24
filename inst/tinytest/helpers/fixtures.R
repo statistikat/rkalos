@@ -13,6 +13,25 @@ source_fixture <- function(file, local = FALSE, ...) {
   invisible(result)
 }
 
+# Recreate these two historical generators with their capture environment's
+# trigonometry and binary64 literals. The staged kernel checks still read the
+# independent JVM CSVs, and the generated inputs must match them bit for bit.
+source_x11_capture_generator <- function(file, destination = parent.frame()) {
+  env <- new.env(parent = destination)
+  trig <- getFromNamespace(".capture_trig", "rkalos")
+  env$sin <- function(x) trig(x, TRUE)
+  env$cos <- function(x) trig(x, FALSE)
+  code <- readLines(file)
+  for (literal in c("1e300", "1e298")) {
+    hex <- sprintf("%a", fixture_doubles(literal))
+    code <- gsub(literal, hex, code, fixed = TRUE)
+  }
+  eval(parse(text = code), envir = env)
+  names <- ls(env, pattern = "^x11_(sigma|replacement)_(input|cases)$")
+  for (name in names) assign(name, env[[name]], envir = destination)
+  invisible(NULL)
+}
+
 # The frozen decimal strings encode binary64 values. On platforms where long
 # double == double, R's decimal conversion can round these one ULP away.
 fixture_doubles <- function(values) {
@@ -31,4 +50,18 @@ read_numeric_fixture <- function(path, columns = "value") {
   data <- utils::read.csv(path, colClasses=stats::setNames(rep("character", length(columns)), columns))
   for (column in columns) data[[column]] <- fixture_doubles(data[[column]])
   data
+}
+
+fixture_hex_doubles <- function(tokens) {
+  b <- vapply(seq(1L, 15L, 2L), function(i) strtoi(substr(tokens, i, i + 1L), 16L),
+              integer(length(tokens)))
+  stream <- if (length(tokens) == 1L) b else t(b)
+  readBin(as.raw(stream), double(), n = length(tokens), endian = "big")
+}
+
+fixture_named_rsa0_cases <- function(path) {
+  lines <- readLines(path)
+  blocks <- split(lines, cumsum(startsWith(lines, "case ")))
+  ids <- vapply(blocks, function(x) sub("^case ", "", x[1L]), character(1))
+  stats::setNames(blocks, ids)
 }

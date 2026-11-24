@@ -18,6 +18,7 @@
 // Violations raise std::invalid_argument before any JVM-visible state.
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 namespace kalos {
@@ -48,6 +49,42 @@ struct LjungBoxTest {
 };
 
 LjungBoxTest ljung_box_test(const std::vector<double>& seq, int k, int nhp);
+
+// Public RSA0 residuals.lb (NiidTests.ljungBox): uses autocorrelations at
+// a known zero mean, 24 monthly lags and two fitted ARMA parameters.
+// Residual lengths <= 24 give the JVM's undefined statistic and p-value.
+LjungBoxTest rsa0_residual_ljung_box(const std::vector<double>& residuals);
+
+// Public residuals.doornikhansen for complete fitted RSA0 residuals.
+struct ResidualNormalityTest {
+    double value;
+    double p;
+    static constexpr double df = 2.0;
+};
+
+// NiidTests.normalityTest() has no result for seven or fewer observations.
+std::optional<ResidualNormalityTest> rsa0_residual_normality(const std::vector<double>& residuals);
+
+// ModelStatistics.of skewness and sample stability tests for monthly TRAMO fits.
+struct TramoComparatorResidualTests {
+    double absolute_skewness;
+    double skewness_p;
+    double mean_statistic;
+    double stable_mean_p;
+    double variance_ratio;
+    double stable_variance_p;
+};
+
+TramoComparatorResidualTests tramo_comparator_residual_tests(const std::vector<double>& residuals);
+
+// Public preprocessing residual diagnostics. Monthly TRAMO tests use the
+// fitted regular and seasonal ARMA parameter count for the 24-lag statistic.
+LjungBoxTest monthly_tramo_residual_ljung_box(const std::vector<double>& residuals, int arma_parameters);
+double tramo_residual_standard_error(double residual_ssq, int effective, int estimated_parameters);
+LjungBoxTest monthly_airline_residual_ljung_box(const std::vector<double>& residuals);
+std::optional<ResidualNormalityTest> tramo_residual_normality(const std::vector<double>& residuals);
+// Public monthly normality test under the stock X-13 portable JVM math profile.
+std::optional<ResidualNormalityTest> portable_residual_normality(const std::vector<double>& residuals);
 
 // ModelController.calcResStat side effect: mean / sqrt(var / n) with
 // mean = sum / n and var = ssq / n - mean * mean (var / n under the root).

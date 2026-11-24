@@ -211,6 +211,17 @@ double transform_branch_ll(
 
 } // namespace
 
+TramoSeasonalityStatistics tramo_seasonality_statistics(const std::vector<double>& values) {
+    if (values.empty() || !std::all_of(values.begin(), values.end(), [](double x) { return std::isfinite(x); }))
+        throw std::invalid_argument("tramo_seasonality_statistics: finite monthly observations required");
+    TramoSeasonalityStatistics stats;
+    stats.qs.value = qs_statistic(values);
+    stats.qs.p_value = detail::chi2_upper_p(2.0, stats.qs.value);
+    stats.qs.valid = std::isfinite(stats.qs.value) && std::isfinite(stats.qs.p_value);
+    stats.friedman = friedman_test(values);
+    return stats;
+}
+
 TramoSeasonalityReport tramo_seasonality(const std::vector<double>& values) {
     if (values.size() < 2) {
         throw std::invalid_argument("tramo_seasonality: at least two observations are required");
@@ -223,10 +234,9 @@ TramoSeasonalityReport tramo_seasonality(const std::vector<double>& values) {
     TramoSeasonalityReport report;
     report.differenced = differenced_mean_removed(values);
 
-    report.qs.value = qs_statistic(report.differenced);
-    report.qs.p_value = detail::chi2_upper_p(2.0, report.qs.value);
-    report.qs.valid = std::isfinite(report.qs.value) && std::isfinite(report.qs.p_value);
-    report.friedman = friedman_test(report.differenced);
+    const auto statistics = tramo_seasonality_statistics(report.differenced);
+    report.qs = statistics.qs;
+    report.friedman = statistics.friedman;
 
     // TramoSeasonalityDetector.hasSeasonality: the dcmpg ladder on the two
     // p-values (a NaN p takes neither branch).

@@ -20,10 +20,10 @@
 // Envelope (fail-closed, pinned docs/contracts/seats-wk-extraction-contract
 // .md): monthly series (D11), the Burman/WK estimator only - KalmanSmoother
 // is D1, a non-zero innovation variance (var 0 takes the JVM
-// ConcentratedLikelihood variance path), not Noisy (24-B parity) and no
-// approximation_required decision (D6: the DefaultModelApproximator retry
-// loop is NOT ported; the validator already classifies those requests -
-// the classical frozen airline and the fixMa degenerate case live there).
+// ConcentratedLikelihood variance path). Legacy approximation covers the
+// monthly (0,1,q)(0,1,BQ) case with q <= 1 and the seasonal AR-to-MA
+// refit for a mean-free (2,1,0)(1,1,0) model. Other required approximations and
+// Noisy mode are outside this surface.
 // A decomposition that came back null under mode None is a DATA outcome,
 // not a refusal: the JVM SeatsException status row is mirrored. Mid-run
 // JVM aborts (EcoException / DemetraException from the prediction-error
@@ -36,14 +36,33 @@
 // inputs; an unexpected C++ exception is a mirror divergence, not a JVM
 // behaviour.
 
+#include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "kalos/tramo_seats_model_validator.hpp"
 
 namespace kalos {
 
+enum class seats_component {
+  series, trend, seasonal, seasonally_adjusted, irregular, calendar_effect
+};
+
+enum class seats_information {
+  value, stdev, forecast, stdev_forecast, backcast, stdev_backcast
+};
+
+struct seats_component_series {
+  seats_component component;
+  seats_information information;
+  std::int64_t start_year;
+  int start_month;  // 1 = January
+  std::vector<double> values;
+};
+
 struct seats_extract_wk_result {
+  bool model_changed = false;  // successful SEATS model validation or approximation changed the model
   // JVM-faithful fact lines in probe order: "status ..." first, then
   // "dom actual|backcast|forecast n N start <year> <annualPosition>"
   // (only on status ok), then the init rows and finally the final rows,
@@ -60,12 +79,23 @@ struct seats_extract_wk_result {
   // dotted-free keys "dom actual" etc. match like the 24-B accessor).
   std::string fact(const std::string& key) const;
 
+  // Present rows follow the JVM ComponentType x ComponentInformation order.
+  // A present, zero-length series retains its start. Error results have no rows.
+  const std::vector<seats_component_series>& initial_components() const { return initial_; }
+  const std::vector<seats_component_series>& final_components() const { return final_; }
+
   seats_extract_wk_result() = default;
   explicit seats_extract_wk_result(std::vector<std::string> facts)
       : facts_(std::move(facts)) {}
 
+  seats_extract_wk_result(std::vector<std::string> facts,
+                          std::vector<seats_component_series> initial,
+                          std::vector<seats_component_series> final)
+      : facts_(std::move(facts)), initial_(std::move(initial)), final_(std::move(final)) {}
+
  private:
   std::vector<std::string> facts_;
+  std::vector<seats_component_series> initial_, final_;
 };
 
 // Runs the extraction mirror over `request' (the frozen fixed-parameter
