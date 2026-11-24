@@ -4,6 +4,19 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 combined SI for automatic and estimated X-13 (2026-11-24)
+
+Version `0.1.0.9024` returns the observed-domain combined SI verdict,
+three statistics and their probabilities on successful decoded and stock
+estimated X-13 fits. Six automatic fits cover mode selection and nonzero
+forecasts and backcasts. All nine stock X-13 fits and 29 raw RSAfull fits
+also match the public verdicts and all six numerical fields at the
+unchanged `1e-12 * (1 + abs(reference))` tolerance.
+
+Both serial and two-worker OpenMP builds passed the combined diagnostic
+suite (198/198), automatic X-13 suite (1,244/1,244), stock X-13 suite
+(671/671) and isolated Java-free checks.
+
 ## M6 combined seasonality reference extension (2026-11-24)
 
 The Kalos `f26b06a7df660af22c13ff039e3279c269618b73` checkpoint adds

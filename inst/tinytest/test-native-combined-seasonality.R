@@ -40,4 +40,30 @@ cap <- rkalos::capabilities()$combined_seasonality
 expect_identical(cap$getter, "diagnostics.seas-si-combined")
 expect_identical(cap$tramo_seats_fit, c("RSA0", "RSA1", "RSA3", "RSAfull"))
 expect_true(cap$restricted_x13_fit)
-expect_false(cap$automatic_x13_fit)
+expect_true(cap$automatic_x13_fit)
+expect_identical(cap$estimated_x13_fit, c("RSA0", "RSA1", "RSA2c"))
+
+stock <- c(read_panel("combined-seasonality", "stock"), read_panel("combined-seasonality", "stock-rsa2c"))
+full_inputs <- c(read_panel("tramo-seats-bridge", "rsafull"), read_panel("tramo-seats-bridge", "rsafull-late-calendar"))
+expect_identical(length(stock), 38L)
+for (header in names(stock)) {
+  id <- tokens(header)[1L]
+  if (startsWith(id, "x13_")) {
+    key <- strsplit(id, "_", fixed = TRUE)[[1L]]
+    rows <- readLines(file.path(dir, "x13-refusal-jvm-profiles", paste0(key[3L], ".csv")))
+    series <- stats::ts(fixture_doubles(rows[-1L]), start = as.integer(strsplit(rows[1L], ",")[[1L]]), frequency = 12)
+    fit <- native_x13_estimated_fit(series, key[2L])
+  } else {
+    lines <- full_inputs[[sub("^rsafull_", "", id)]]
+    field <- tokens(lines[startsWith(lines, "input ")])
+    series <- stats::ts(fixture_hex_doubles(field[-seq_len(4L)]), start = as.integer(field[2:3]), frequency = 12)
+    fit <- native_tramoseats_fit(series, "RSAfull")
+  }
+  lines <- stock[[header]]
+  test <- fit$diagnostics$combined_seasonality
+  reference <- fixture_hex_doubles(tokens(lines[startsWith(lines, "statistics ")])[-1L])
+  actual <- unlist(test[-1L], use.names = FALSE)
+  expect_identical(test$summary, tokens(lines[startsWith(lines, "summary ")])[2L], info = id)
+  expect_identical(length(actual), length(reference), info = id)
+  expect_true(all(abs(actual - reference) <= 1e-12 * (1 + abs(reference))), info = id)
+}

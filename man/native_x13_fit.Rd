@@ -49,7 +49,7 @@ forecasts (\code{a1a}) or backcasts (\code{a1b}). The corresponding
 backcasts. Each is a monthly \code{ts} on its own domain. Zero-length windows
 omit these optional names. Inspect \code{status} before
 using fitted quantities. Invalid input shapes raise errors.
-Successful restricted fits report the combined SI seasonality verdict and its stable, moving
+Successful restricted and automatic fits report the combined SI seasonality verdict and its stable, moving
 and Kruskal--Wallis tests in \code{diagnostics$combined_seasonality}.
 Its \code{summary} is \code{"Present"}, \code{"ProbablyNone"} or \code{"None"}.
 The diagnostic is \code{NULL} when fewer than three years are available.}

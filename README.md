@@ -83,7 +83,7 @@ transformation and outliers. RSA2c also tests working-day, leap-year
 and Easter effects. All return their final components and
 the stock twelve-month forecasts.
 
-TRAMO-SEATS and fixed-specification X-13 fits return the combined SI
+TRAMO-SEATS and fixed, automatic and stock estimated X-13 fits return the combined SI
 seasonality verdict in `fit$diagnostics$combined_seasonality$summary`.
 The same object reports the stable-seasonality, moving-seasonality and
 Kruskal–Wallis statistics and their upper-tail probabilities.

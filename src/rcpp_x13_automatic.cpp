@@ -1,4 +1,5 @@
 #include "rcpp_x13_shared.hpp"
+#include "rcpp_combined_seasonality.hpp"
 #include "rcpp_x11_selection_records.hpp"
 #include "kalos/x13_automatic.hpp"
 #include <cmath>
@@ -309,6 +310,7 @@ Rcpp::List wrap_estimated_x13(Rcpp::List out, const kalos::X13AutomaticFitResult
             seasonal);
     }
     if(result.status=="available") { // the final description and the tables
+        out["diagnostics"] = wrap_si_diagnostics(kalos::x13_si_seasonality(result.fit));
         Rcpp::List block;
         for(const auto& coefficients : result.coefficients)
             block.push_back(kalos_x13_rcpp::reals_out(coefficients));

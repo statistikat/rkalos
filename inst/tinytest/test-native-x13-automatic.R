@@ -585,4 +585,22 @@ local({
     for (component in c("series", "finalSA", "finalTrend", "finalIrregular"))
       expect_identical(stats::tsp(t1[[component]]), stats::tsp(yts))
   })
+  # The fitted D8 diagnostic uses the observed domain for all six original requests.
+  panel <- fixture_named_rsa0_cases("fixtures/native/combined-seasonality/automatic-x13-x86_64.txt")
+  expect_identical(length(panel), 6L)
+  for (header in names(panel)) {
+    id <- sub(" .*", "", header)
+    fields <- regmatches(id, regexec("^(.*)_([^_]+)_([0-9]+)_([0-9]+)$", id))[[1L]]
+    result <- fit_case(fields[2L], mode = modes[[fields[3L]]], backcast = as.integer(fields[4L]),
+                       forecast = as.integer(fields[5L]))
+    test <- result$diagnostics$combined_seasonality
+    lines <- panel[[header]]
+    expect_identical(test$summary, sub("^summary ", "", lines[startsWith(lines, "summary ")]), info = id)
+    stats <- strsplit(lines[startsWith(lines, "statistics ")], " ", fixed = TRUE)[[1L]]
+    reference <- fixture_hex_doubles(stats[-1L])
+    actual <- unlist(test[-1L], use.names = FALSE)
+    expect_identical(length(actual), length(reference), info = id)
+    expect_true(all(abs(actual - reference) <= 1e-12 * (1 + abs(reference))), info = id)
+  }
+
 })

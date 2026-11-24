@@ -40,7 +40,8 @@ if ("--native" %in% args) {
   stock <- native_x13_estimated_fit(datasets::AirPassengers, "RSA2c")
   stopifnot(identical(stock$status, "available"), isTRUE(stock$model$calendar$working_days),
             identical(stats::tsp(stock$finalSA), stats::tsp(datasets::AirPassengers)),
-            length(stock$preadjustment$tables$a1a) == 12L)
+            length(stock$preadjustment$tables$a1a) == 12L,
+            identical(stock$diagnostics$combined_seasonality$summary, "Present"))
   rsa0 <- native_tramoseats_fit(datasets::AirPassengers)
   trend_forecast <- with(rsa0$merged, values[[which(component == "Trend" & information == "Forecast")]])
   stopifnot(identical(cap$tramo_seats_fit$templates, c("RSA0", "RSA1", "RSA3", "RSAfull")), identical(rsa0$status, "ok"),

@@ -23,6 +23,7 @@ fits expose \code{series}, \code{finalSA}, \code{finalTrend} and
 \code{selection}, \code{results} and \code{finals} records contain the
 X-11 decisions and tables, including the original-series forecast
 \code{preadjustment$tables$a1a} and the dated final forecasts.}
+\details{The combined SI diagnostic in \code{diagnostics$combined_seasonality} reports its verdict and three tests on the observed D8 domain.}
 \seealso{\code{\link{native_x13_fit}}, \code{\link{native_x13_fit_automatic}}}
 \examples{
 fit <- native_x13_estimated_fit(AirPassengers, "RSA0")
