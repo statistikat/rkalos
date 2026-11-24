@@ -48,7 +48,11 @@ forecasts (\code{a1a}) or backcasts (\code{a1b}). The corresponding
 \code{d18a} for forecasts, and the same roots with suffix \code{b} for
 backcasts. Each is a monthly \code{ts} on its own domain. Zero-length windows
 omit these optional names. Inspect \code{status} before
-using fitted quantities. Invalid input shapes raise errors.}
+using fitted quantities. Invalid input shapes raise errors.
+Successful restricted fits report the combined SI seasonality verdict and its stable, moving
+and Kruskal--Wallis tests in \code{diagnostics$combined_seasonality}.
+Its \code{summary} is \code{"Present"}, \code{"ProbablyNone"} or \code{"None"}.
+The diagnostic is \code{NULL} when fewer than three years are available.}
 \seealso{\code{\link{capabilities}}}
 \examples{
 x <- native_x13_fit(AirPassengers, seasonal = rep("s3x3", 12), trend_length = 13L)

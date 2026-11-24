@@ -28,6 +28,7 @@ if ("--native" %in% args) {
   rsa1 <- native_tramoseats_fit(datasets::AirPassengers, "RSA1")
   stopifnot(identical(rsa1$status, "ok"), identical(rsa1$mode, "multiplicative"),
             identical(stats::tsp(rsa1$finalTrend), stats::tsp(datasets::AirPassengers)))
+  stopifnot(identical(rsa1$diagnostics$combined_seasonality$summary, "Present"))
   rsa3 <- native_tramoseats_fit(datasets::AirPassengers, "RSA3", forecast = 0L)
   stopifnot(identical(rsa3$status, "ok"), identical(rsa3$template, "RSA3"),
             identical(stats::tsp(rsa3$finalSA), stats::tsp(datasets::AirPassengers)),

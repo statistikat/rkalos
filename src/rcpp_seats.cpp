@@ -1,4 +1,5 @@
 #include "rcpp_tramo_fit.hpp"
+#include "rcpp_combined_seasonality.hpp"
 #include <kalos/tramo_seats_pipeline.hpp>
 #include <kalos/calendar_generation.hpp>
 
@@ -125,6 +126,8 @@ Rcpp::List native_tramoseats_rsa0(const std::vector<double>& series, int year, i
     return Rcpp::List::create(
         Rcpp::_["status"] = decomposition.extraction.fact("status"),
         Rcpp::_["residuals"] = residuals,
+        Rcpp::_["diagnostics"] = wrap_si_diagnostics(kalos::seats_si_seasonality(
+            decomposition.extraction.final_components(), 12, model.log)),
         Rcpp::_["series_forecast_stdev_status"] = errors.status,
         Rcpp::_["series_forecast_stdev"] = errors.standard_errors,
         Rcpp::_["model"] = Rcpp::List::create(
@@ -151,6 +154,8 @@ Rcpp::List wrap_automatic_seats(const kalos::tramo_seats_automatic_result& fit,
         const kalos::tramo_tr0_forecast_errors_result& errors) {
     const auto& decomposition = fit.decomposition;
     auto result = wrap_tramo_preprocessing(fit.preprocessing);
+    result["diagnostics"] = wrap_si_diagnostics(kalos::seats_si_seasonality(
+        decomposition.extraction.final_components(), 12, fit.preprocessing.log));
     result["series_forecast_stdev_status"] = errors.status;
     result["series_forecast_stdev"] = errors.standard_errors;
     result["status"] = decomposition.extraction.fact("status");

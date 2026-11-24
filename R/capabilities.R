@@ -31,6 +31,9 @@ capabilities <- function() {
                   series_forecast_stdev = TRUE, residuals = c("tsres", "ser", "lb", "doornikhansen"),
                   frequency = 12L, complete_finite_input_only = TRUE, mode = c("additive", "multiplicative"),
                   entry_point = "native_tramoseats_fit"),
+                combined_seasonality = list(getter = "diagnostics.seas-si-combined",
+                  tramo_seats_fit = c("RSA0", "RSA1", "RSA3", "RSAfull"), restricted_x13_fit = TRUE,
+                  automatic_x13_fit = FALSE, minimum_years = 3L),
                 seats_approximation = list(mode = "legacy", frequency = 12L,
                   families = c("airline seasonal MA replacement", "mean-free (2,1,0)(1,1,0) seasonal AR-to-MA refit")),
                 restricted_fit = list(

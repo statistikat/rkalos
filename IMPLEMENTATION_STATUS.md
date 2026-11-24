@@ -4,6 +4,25 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 combined SI outcomes in fitted R models (2026-11-24)
+
+Version `0.1.0.9022` exposes `diagnostics$combined_seasonality` on
+monthly TRAMO-SEATS and fixed X-13 fits. The summary is the public
+combined SI category. The stable and moving F tests and Kruskal–Wallis test
+return their statistic and upper-tail probability. A series shorter than
+three years returns a null diagnostic. Two fits with only the stochastic
+irregular term return the public `None` verdict. Fixed pseudo-additive
+models retain the explicit mode on original-scale data.
+
+The installed R suite checked all 24 actual raw product verdicts and 144
+numeric outputs (20 WK fits and four fixed X-13 modes, tolerance
+`1e-12 * (1 + abs(reference))`). Serial and two-worker OpenMP each passed
+**82/82** dedicated checks, **645/645** fixed X-13, **3,112/3,112**
+RSAfull, **2,130/2,130** RSA3, **990/990** RSA1, **498/498** RSA0
+and the Java-free native smoke. The previous M5 version `0.1.0.9021`
+passed its full serial suite, **308,774/308,774** in 64 files.
+[Combined SI product tests](inst/tinytest/test-native-combined-seasonality.R)
+
 ## Combined SI seasonality core checkpoint (2026-11-24)
 
 Kalos `35287e3ae6e83d839edfa500fd671d210fb9b38d` adds the public

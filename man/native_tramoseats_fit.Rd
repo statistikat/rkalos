@@ -34,5 +34,9 @@ normality test in \code{residuals$doornikhansen}. The Ljung--Box degrees of free
 
 RSA1, RSA3 and RSAfull return the model, likelihood and residuals of \code{native_tramo_preprocess},
 plus \code{model_changed} indicating a SEATS model adjustment. The fitted
-mode is multiplicative for log and additive for level transformations. Zero forecast months report \code{"no_requested_predictions"}.}
+mode is multiplicative for log and additive for level transformations. Zero forecast months report \code{"no_requested_predictions"}.
+The fitted models report the combined SI seasonality verdict and its stable, moving
+and Kruskal--Wallis tests in \code{diagnostics$combined_seasonality}.
+Its \code{summary} is \code{"Present"}, \code{"ProbablyNone"} or \code{"None"}.
+The diagnostic is \code{NULL} when fewer than three years are available.}
 \seealso{\code{\link{native_tramo_preprocess}}, \code{\link{seats_from_tramo}}}

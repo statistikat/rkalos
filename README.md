@@ -75,6 +75,11 @@ calendar selection. The fitted model reports the named calendar coefficients
 separately from outliers. The complete fit also returns dated observed and
 forecast calendar effects on the original series scale.
 
+TRAMO-SEATS and fixed-specification X-13 fits return the combined SI
+seasonality verdict in `fit$diagnostics$combined_seasonality$summary`.
+The same object reports the stable-seasonality, moving-seasonality and
+Kruskal–Wallis statistics and their upper-tail probabilities.
+
 Install OpenBLAS with CBLAS and LAPACKE (qualification version 0.3.34). Set `KALOS_OPENBLAS_ROOT` to its prefix before building and installing the source archive. For custom or static providers, set `KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler and linker flags including dependencies.
 C++17 and Rcpp are required. Configure probes optional OpenMP with R's actual
 compiler; failed probes select serial execution. `KALOS_NUM_THREADS` takes
