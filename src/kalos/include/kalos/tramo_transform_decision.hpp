@@ -63,6 +63,8 @@ struct TramoSeasonalityReport {
 struct TramoSeasonalityStatistics {
     TramoSeasonalityTest qs, friedman;
 };
+// Qs on a finite, stationary monthly sequence at lags 12 and 24.
+TramoSeasonalityTest monthly_qs_test(const std::vector<double>& values);
 TramoSeasonalityStatistics tramo_seasonality_statistics(const std::vector<double>& values);
 
 // The detector machine over one complete finite monthly series.

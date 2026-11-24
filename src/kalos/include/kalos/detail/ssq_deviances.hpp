@@ -171,6 +171,8 @@ std::optional<PinnedOlsFit> pinned_fast_ols_fit(const std::vector<double>& y,
 
 std::optional<PinnedOlsFit> pinned_ols_fit(const std::vector<double>& y,
     const std::vector<std::vector<double>>& xcols);
+std::optional<PinnedOlsFit> pinned_ols_fit(const std::vector<double>& y,
+    const std::vector<std::vector<double>>& xcols, std::vector<double>* unscaled_covariance);
 
 std::optional<std::vector<double>> pinned_ols_coefficients(const std::vector<double>& y,
     const std::vector<std::vector<double>>& xcols);

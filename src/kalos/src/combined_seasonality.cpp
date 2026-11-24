@@ -3,6 +3,10 @@
 #include "kalos/detail/special_functions.hpp"
 #include "kalos/seats_extract_wk.hpp"
 #include "kalos/x13_fit.hpp"
+#include "kalos/tramo_transform_decision.hpp"
+#include "kalos/detail/ssq_deviances.hpp"
+#include "mlj_engine.hpp"
+#include "pinned_cholesky.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -165,6 +169,86 @@ std::optional<CombinedSiSeasonality> x13_si_seasonality(const X13FitResult& fit)
     // and PseudoAdditive as additive for this test's center.
     return combined_si_seasonality(si, fit.frequency, fit.first_period,
                                    log_additive || fit.mode_effective == X11DecompositionMode::multiplicative);
+}
+
+AdjustedSeasonality monthly_adjusted_seasonality(const std::vector<double>& series,
+    int differencing_order, bool mean) {
+    if (differencing_order < 0 || differencing_order > 3 ||
+        !std::all_of(series.begin(), series.end(), [](double value) { return std::isfinite(value); }))
+        throw std::invalid_argument("adjusted seasonality requires finite observations and a fitted differencing order");
+    if (series.size() <= static_cast<std::size_t>(differencing_order)) return {};
+
+    auto data = series;
+    for (int order = 0; order < differencing_order; ++order) {
+        for (std::size_t i = 0; i + 1 < data.size(); ++i) data[i] = data[i+1] - data[i];
+        data.pop_back();
+    }
+    if (mean) {
+        const double average = std::accumulate(data.begin(), data.end(), 0.) / data.size();
+        for (double& value : data) value -= average;
+    }
+
+    AdjustedSeasonality result;
+    const auto qs = monthly_qs_test(data);
+    if (qs.valid) result.qs = AdjustedSeasonalityTest{qs.value, qs.p_value};
+    // FTest.processAr regresses on a constant, one AR lag and eleven
+    // periodic contrasts. Phase zero starts at the first response row.
+    constexpr int months = 12, contrasts = months - 1, columns = contrasts + 2;
+    const auto rows = data.size() - 1;
+    if (rows < columns) return result;
+    const std::vector<double> response(data.begin()+1, data.end());
+    std::vector<std::vector<double>> design(columns, std::vector<double>(rows, 0.));
+    std::fill(design[0].begin(), design[0].end(), 1.);
+    std::copy_n(data.begin(), rows, design[1].begin());
+    for (std::size_t i = 0; i < rows; ++i) {
+        const int phase = static_cast<int>(i % months);
+        for (int j = 0; j < contrasts; ++j)
+            design[2+j][i] = phase == j ? 1. : phase == contrasts ? -1. : 0.;
+    }
+    std::vector<double> covariance;
+    auto fit = detail::pinned_ols_fit(response, design, &covariance);
+    if (!fit || fit->rank != columns) return result;
+    if (rows == columns) {
+        const double undefined = std::numeric_limits<double>::quiet_NaN();
+        result.seasonal_f = AdjustedSeasonalityTest{undefined, undefined};
+        return result;
+    }
+    std::vector<double> block(contrasts * contrasts);
+    for (int col = 0; col < contrasts; ++col)
+        for (int row = 0; row < contrasts; ++row)
+            block[col * contrasts + row] = covariance[(row + 2) * columns + col + 2];
+    if (!detail::pinned_lcholesky(block, contrasts)) return result;
+    std::vector<double> beta(fit->coefficients.begin()+2, fit->coefficients.end());
+    mlj::solve_lx(block, contrasts, beta);
+    const double df = static_cast<double>(rows - columns);
+    const double f = (mlj::ssq(beta.data(), beta.size()) / contrasts) / (fit->residual_ssq / df);
+    result.seasonal_f = AdjustedSeasonalityTest{f, detail::f_upper_p(f, contrasts, df)};
+    return result;
+}
+
+AdjustedSeasonality seats_adjusted_seasonality(const std::vector<seats_component_series>& wk_initial,
+    int differencing_order, bool mean) {
+    for (const auto& item : wk_initial) {
+        if (item.component == seats_component::seasonally_adjusted && item.information == seats_information::value)
+            return monthly_adjusted_seasonality(item.values, differencing_order, mean);
+    }
+    return {};
+}
+
+AdjustedSeasonality x13_adjusted_seasonality(const X13FitResult& fit, int differencing_order, bool mean) {
+    if (fit.status != "available" || fit.frequency != 12) return {};
+    if (fit.backcast < 0 || fit.forecast < 0 ||
+        static_cast<std::size_t>(fit.backcast) + static_cast<std::size_t>(fit.forecast) > fit.d11.size())
+        throw std::invalid_argument("invalid extended X-13 D11 domain");
+    std::vector<double> observed(fit.d11.begin() + fit.backcast, fit.d11.end() - fit.forecast);
+    if (fit.mode_effective == X11DecompositionMode::multiplicative ||
+        fit.mode_effective == X11DecompositionMode::log_additive) {
+        for (auto& value : observed) {
+            if (!(value > 0.)) return {};
+            value = detail::fdlibm_log(value);
+        }
+    }
+    return monthly_adjusted_seasonality(observed, differencing_order, mean);
 }
 
 }  // namespace kalos

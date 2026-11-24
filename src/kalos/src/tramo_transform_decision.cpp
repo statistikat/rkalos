@@ -211,13 +211,21 @@ double transform_branch_ll(
 
 } // namespace
 
+TramoSeasonalityTest monthly_qs_test(const std::vector<double>& values) {
+    if (values.empty() || !std::all_of(values.begin(), values.end(), [](double x) { return std::isfinite(x); }))
+        throw std::invalid_argument("monthly Qs test requires finite observations");
+    TramoSeasonalityTest qs;
+    qs.value = qs_statistic(values);
+    qs.p_value = detail::chi2_upper_p(2.0, qs.value);
+    qs.valid = std::isfinite(qs.value) && std::isfinite(qs.p_value);
+    return qs;
+}
+
 TramoSeasonalityStatistics tramo_seasonality_statistics(const std::vector<double>& values) {
     if (values.empty() || !std::all_of(values.begin(), values.end(), [](double x) { return std::isfinite(x); }))
         throw std::invalid_argument("tramo_seasonality_statistics: finite monthly observations required");
     TramoSeasonalityStatistics stats;
-    stats.qs.value = qs_statistic(values);
-    stats.qs.p_value = detail::chi2_upper_p(2.0, stats.qs.value);
-    stats.qs.valid = std::isfinite(stats.qs.value) && std::isfinite(stats.qs.p_value);
+    stats.qs = monthly_qs_test(values);
     stats.friedman = friedman_test(values);
     return stats;
 }

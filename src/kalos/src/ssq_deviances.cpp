@@ -1526,6 +1526,11 @@ std::optional<PinnedOlsFit> pinned_fast_ols_fit(const std::vector<double>& y,
 
 std::optional<PinnedOlsFit> pinned_ols_fit(const std::vector<double>& y,
     const std::vector<std::vector<double>>& xcols) {
+    return pinned_ols_fit(y, xcols, nullptr);
+}
+
+std::optional<PinnedOlsFit> pinned_ols_fit(const std::vector<double>& y,
+    const std::vector<std::vector<double>>& xcols, std::vector<double>* unscaled_covariance) {
     // OlsComputer.compute: a response whose scaled norm misses
     // Constants.epsilon yields the null result (the dcmpg comparison lets a
     // NaN norm through); the matrix tail runs
@@ -1541,6 +1546,7 @@ std::optional<PinnedOlsFit> pinned_ols_fit(const std::vector<double>& y,
         }
     }
     if (xcols.empty()) {
+        if (unscaled_covariance) unscaled_covariance->clear();
         double ssq = 0.0;
         for (const double v : y) ssq += v * v;
         return PinnedOlsFit{{}, 0, ssq};
@@ -1550,6 +1556,11 @@ std::optional<PinnedOlsFit> pinned_ols_fit(const std::vector<double>& y,
     auto sol = least_squares_n(decomp, y, 1e-9);
     if (sol.singular) {
         return std::nullopt;
+    }
+    if (unscaled_covariance) {
+        std::vector<double> diagonal;
+        if (!regression_covariance_from_qr(decomp, sol.rank, diagonal, unscaled_covariance))
+            return std::nullopt;
     }
     return PinnedOlsFit{std::move(sol.b), sol.rank, sol.ssq_err};
 }
