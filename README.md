@@ -65,7 +65,7 @@ Use `native_tramo_preprocess(series, "TR3")` or
 `native_tramoseats_fit(series, "RSA3")` for monthly automatic SARIMA
 order selection. Fitted models accepted at the first reference comparison
 and subsequent controller sweep expose the orders, coefficients, dated
-residuals and, for RSA3, SEATS components. The seasonal controller can
+residuals and, for RSA3, SEATS components and original-series forecast errors. The seasonal controller can
 restart identification, and removal of the mean can trigger a fourth
 estimation pass. A rejected first reference
 comparison raises an explicit error.

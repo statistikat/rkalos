@@ -146,9 +146,12 @@ Rcpp::List native_tramoseats_rsa0(const std::vector<double>& series, int year, i
 }
 
 namespace {
-Rcpp::List wrap_automatic_seats(const kalos::tramo_seats_automatic_result& fit) {
+Rcpp::List wrap_automatic_seats(const kalos::tramo_seats_automatic_result& fit,
+        const kalos::tramo_tr0_forecast_errors_result& errors) {
     const auto& decomposition = fit.decomposition;
     auto result = wrap_tramo_preprocessing(fit.preprocessing);
+    result["series_forecast_stdev_status"] = errors.status;
+    result["series_forecast_stdev"] = errors.standard_errors;
     result["status"] = decomposition.extraction.fact("status");
     result["model_changed"] = decomposition.extraction.model_changed;
     result["initial"] = component_table(decomposition.extraction.initial_components());
@@ -162,15 +165,12 @@ Rcpp::List wrap_automatic_seats(const kalos::tramo_seats_automatic_result& fit) 
 Rcpp::List native_tramoseats_rsa1(const std::vector<double>& series, int year, int month,
         int backcast, int forecast) {
     const auto fit = kalos::run_tramo_seats_rsa1(series, year, month, backcast, forecast);
-    const auto errors = kalos::tramo_tr1_forecast_errors(fit.preprocessing, forecast);
-    auto result = wrap_automatic_seats(fit);
-    result["series_forecast_stdev_status"] = errors.status;
-    result["series_forecast_stdev"] = errors.standard_errors;
-    return result;
+    return wrap_automatic_seats(fit, kalos::tramo_tr1_forecast_errors(fit.preprocessing, forecast));
 }
 
 // [[Rcpp::export(name = ".native_tramoseats_rsa3", rng = false)]]
 Rcpp::List native_tramoseats_rsa3(const std::vector<double>& series, int year, int month,
         int backcast, int forecast) {
-    return wrap_automatic_seats(kalos::run_tramo_seats_rsa3(series, year, month, backcast, forecast));
+    const auto fit = kalos::run_tramo_seats_rsa3(series, year, month, backcast, forecast);
+    return wrap_automatic_seats(fit, kalos::tramo_tr3_forecast_errors(fit.preprocessing, forecast));
 }

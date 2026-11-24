@@ -4,6 +4,22 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 selected-model forecast uncertainty in native RSA3 (2026-11-24)
+
+Version `0.1.0.9019` returns dated original-series forecast standard
+errors from the selected TR3 model. Thirteen fits matched all **312**
+public 24-month forecast errors within `2e-8 * (1 + abs(reference))`.
+All **312** conditional SEATS errors matched bit-for-bit. The first
+seven months of each forecast also matched when requested separately.
+A zero horizon returns no values and its own availability status.
+
+Serial and two-worker OpenMP each passed **1,161/1,161** RSA3,
+**990/990** RSA1, **130/130** TR1 and **498/498** RSA0 checks, plus
+the isolated native smoke run for all three templates. The earlier
+`0.1.0.9016` OpenMP source check passed **303,513/303,513** tests
+with the two existing compiler warnings.
+[Selected-model forecast checks](inst/tinytest/test-native-tramoseats-rsa3.R)
+
 ## Selected-model monthly TR3 forecast uncertainty checkpoint (2026-11-24)
 
 Kalos `5547b342543e9e0504f1660e30a1fdf53033271a` projects the

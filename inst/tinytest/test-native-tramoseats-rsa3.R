@@ -5,6 +5,8 @@ cases <- do.call(c, lapply(files, function(file) fixture_named_rsa0_cases(file.p
 diagnostics <- c(fixture_named_rsa0_cases(file.path(dir, "rsa3-residual-diagnostics-x86_64.txt")),
                  fixture_named_rsa0_cases(file.path(dir, "rsa3-mean-retry-diagnostics-x86_64.txt")))
 expect_identical(sort(names(cases)), sort(names(diagnostics)))
+forecast_errors <- fixture_named_rsa0_cases(file.path(dir, "rsa3-forecast-errors-x86_64.txt"))
+expect_identical(sort(names(cases)), sort(names(forecast_errors)))
 tokens <- function(line) strsplit(line, " ", fixed = TRUE)[[1L]]
 exact <- function(x, expected, id) {
   expect_identical(writeBin(as.numeric(x), raw()), writeBin(fixture_hex_doubles(expected), raw()), info = id)
@@ -33,7 +35,22 @@ for (id in names(cases)) {
   expect_identical(fit$residuals$lb$df, 24 - length(fit$model$parameters), info = id)
   expect_identical(fit$residuals$lb$lags, 24L, info = id)
   expect_identical(fit$residuals$doornikhansen$df, 2, info = id)
-  expect_identical(fit$series_forecast_stdev_status, "not_qualified", info = id)
+  forecast_reference <- forecast_errors[[id]]
+  errors <- tokens(forecast_reference[startsWith(forecast_reference, "y_ef ")])
+  values <- fixture_hex_doubles(errors[-seq_len(4L)])
+  actual <- fit$series_forecast_stdev
+  expect_identical(fit$series_forecast_stdev_status, "available", info = id)
+  expect_identical(as.integer(stats::start(actual)), as.integer(errors[2:3]), info = id)
+  expect_identical(length(actual), as.integer(errors[4L]), info = id)
+  expect_true(all(abs(as.numeric(actual) - values) <= 2e-8 * (1 + abs(values))), info = id)
+  wk <- tokens(forecast_reference[startsWith(forecast_reference, "wk_series_stdev_forecast ")])
+  index <- which(fit$final$component == "Series" & fit$final$information == "StdevForecast")
+  exact(fit$final$values[[index]], wk[-seq_len(4L)], id)
+  custom <- rkalos::native_tramoseats_fit(series, "RSA3", forecast = 7L)
+  expect_identical(stats::start(custom$series_forecast_stdev), stats::start(actual), info = id)
+  expect_identical(length(custom$series_forecast_stdev), 7L, info = id)
+  expect_true(all(abs(as.numeric(custom$series_forecast_stdev) - head(values, 7L)) <=
+                    2e-8 * (1 + abs(head(values, 7L)))), info = id)
   expect_identical(fit$model_changed, field("product")[4L] == "true", info = id)
   model <- field("model")
   expect_identical(unname(fit$model$orders), as.integer(model[7:12]), info = id)
@@ -83,10 +100,13 @@ for (id in names(cases)) {
 expect_identical(c(length(cases), residual_count, rows, points), c(13L, 1196L, 130L, 8340L))
 scope <- rkalos::capabilities()$tramo_seats_fit$by_template$RSA3
 expect_identical(scope$residuals, c("tsres", "ser", "lb", "doornikhansen"))
-expect_false(scope$series_forecast_stdev)
+expect_true(scope$series_forecast_stdev)
 expect_true(scope$seasonal_restart)
 expect_true(scope$fast_mean_refit)
 expect_identical(scope$identification, "first_reference_comparison")
+zero <- rkalos::native_tramoseats_fit(AirPassengers, "RSA3", forecast = 0L)
+expect_identical(zero$series_forecast_stdev_status, "no_requested_predictions")
+expect_identical(zero$series_forecast_stdev, numeric())
 custom <- rkalos::native_tramoseats_fit(AirPassengers, "RSA3", forecast = 6L, backcast = 3L)
 expect_identical(length(custom$merged$values[[which(custom$merged$component == "Trend" & custom$merged$information == "Forecast")]]), 6L)
 expect_identical(length(custom$merged$values[[which(custom$merged$component == "Trend" & custom$merged$information == "Backcast")]]), 3L)

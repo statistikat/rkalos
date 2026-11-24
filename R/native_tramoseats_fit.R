@@ -14,10 +14,6 @@ native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, bac
     fit <- if (template == "RSA3") .native_tramoseats_rsa3 else .native_tramoseats_rsa1
     result <- fit(as.numeric(series), domain$start[1L], domain$start[2L], months[1L], months[2L])
     result <- format_tramo_preprocessing(result, series, domain)
-    if (template == "RSA3") {
-      result$series_forecast_stdev <- numeric()
-      result$series_forecast_stdev_status <- if (months[2L]) "not_qualified" else "no_requested_predictions"
-    }
   } else {
     result <- .native_tramoseats_rsa0(as.numeric(series), domain$start[1L], domain$start[2L], months[1L], months[2L])
     result$residuals$tsres <- stats::ts(result$residuals$tsres, start = result$residuals$start,

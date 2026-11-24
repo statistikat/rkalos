@@ -22,7 +22,7 @@ capabilities <- function() {
                                 series_forecast_stdev = TRUE),
                     RSA3 = list(modes = c("additive", "multiplicative"), residuals = c("tsres", "ser", "lb", "doornikhansen"),
                                 identification = "first_reference_comparison", seasonal_restart = TRUE,
-                                fast_mean_refit = TRUE, series_forecast_stdev = FALSE)),
+                                fast_mean_refit = TRUE, series_forecast_stdev = TRUE)),
                   series_forecast_stdev = TRUE, residuals = c("tsres", "ser", "lb", "doornikhansen"),
                   frequency = 12L, complete_finite_input_only = TRUE, mode = c("additive", "multiplicative"),
                   entry_point = "native_tramoseats_fit"),

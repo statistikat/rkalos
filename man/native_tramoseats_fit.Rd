@@ -26,10 +26,10 @@ All three also expose \code{residuals$ser}, the residual standard error, the
 normality test in \code{residuals$doornikhansen}. The Ljung--Box degrees of freedom are 24 minus the number of fitted AR and MA coefficients. Both tests report \code{value},
 \code{pvalue} and \code{df}. The Ljung--Box result is undefined for at most
 24 residuals, and normality is absent for at most seven residuals. The dated
-\code{series_forecast_stdev} gives the fitted preprocessing forecast errors for RSA0 or RSA1 when
+\code{series_forecast_stdev} gives the fitted preprocessing forecast errors for all three monthly templates when
 \code{series_forecast_stdev_status} is \code{"available"}.
 
 RSA1 returns the model, likelihood and residuals of \code{native_tramo_preprocess},
 plus \code{model_changed} indicating a SEATS model adjustment. Its fitted
-mode is multiplicative for log and additive for level transformations. RSA3 original-series forecast errors remain unavailable. Zero forecast months report \code{"no_requested_predictions"}.}
+mode is multiplicative for log and additive for level transformations. Zero forecast months report \code{"no_requested_predictions"}.}
 \seealso{\code{\link{native_tramo_preprocess}}, \code{\link{seats_from_tramo}}}

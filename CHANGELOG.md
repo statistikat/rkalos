@@ -2,6 +2,9 @@
 
 ## Development version
 
+Version 0.1.0.9019 adds original-series forecast standard errors for the
+selected monthly TR3 model on the level and log scales.
+
 Version 0.1.0.9018 returns the monthly TR3 residual standard error,
 model-adjusted Ljung–Box test and Doornik–Hansen test in both TR3 and RSA3 fits.
 
