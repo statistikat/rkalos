@@ -19,7 +19,16 @@ struct X13Rsa2cCalendarCandidate {
     double log_likelihood = 0;
     double ssq = 0;
     double aicc = 0;
+    std::array<double, 2> ma{}; // regular and seasonal moving-average coefficients
 };
+
+struct X13Rsa2cScale {
+    bool log = false;
+    bool compared = false;
+    X13Rsa2cCalendarCandidate level, logarithm;
+};
+
+X13Rsa2cScale x13_rsa2c_scale(const std::vector<double>& observations, int start_year, int start_month);
 
 struct X13Rsa2cCalendarTest {
     X13Rsa2cCalendar selected;

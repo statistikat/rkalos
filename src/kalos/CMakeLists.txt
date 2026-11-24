@@ -330,6 +330,8 @@ if(KALOS_BUILD_TESTS)
         KALOS_RSA0_RESIDUALS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-residuals-x86_64.txt")
     endif()
     if(test_name STREQUAL "test_x13_estimated_calendar")
+      add_test(NAME test_x13_rsa2c_scale COMMAND ${test_name}
+        "${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/rsa2c-scale-x86_64.txt")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_ESTIMATED_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/rsa2c-calendar-x86_64.txt")
     endif()
@@ -403,6 +405,7 @@ if(KALOS_BUILD_TESTS)
   add_executable(test_x13_automatic_oracle tests/test_x13_automatic_oracle.cpp)
   target_link_libraries(test_x13_automatic_oracle PRIVATE kalos::kalos)
   target_compile_definitions(test_x13_automatic_oracle PRIVATE
+    KALOS_AUTOMATIC_SI="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/automatic-x13-x86_64.txt"
     KALOS_PSEUDO_AUTO="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-nonlog-pseudo/automatic-x86_64.txt")
   add_test(NAME test_x13_automatic_oracle
            COMMAND test_x13_automatic_oracle)

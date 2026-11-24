@@ -85,6 +85,10 @@ struct X13PreadjustInput {
     // r = transformed(input) - v27 over the input window.
     int backcast=0,forecast=0;
     std::optional<ArimaForecastModel> arima; // required when a horizon is nonzero
+    // Optional factors on the extended monthly domain of a log/LeapYear model.
+    // The model response uses the forward factors and the days-related effect,
+    // combined deterministic effect and original-series forecasts use the reverse.
+    std::vector<double> leap_forward, leap_reverse;
 };
 // The stored (backTransform'ed) preadjustment tables of X13Kernel.
 // initialStep: a1 is the interpolated series (= the complete input) on the

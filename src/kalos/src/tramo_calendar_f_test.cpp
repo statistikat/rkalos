@@ -47,12 +47,12 @@ struct CalendarLikelihood {
 // DEFAULT_COMPUTER, whose QR layout differs from the optimization objective.
 CalendarLikelihood fit_calendar_likelihood(const std::vector<double>& series,
     const std::vector<double>& differences, const std::vector<double>& filter, Columns columns,
-    bool mean, double precision, bool collect_diagnostics, bool seasonal = true) {
+    bool mean, double precision, bool collect_diagnostics, bool seasonal = true,
+    detail::CalendarAirlineProcessor processor = detail::CalendarAirlineProcessor::gls) {
     Columns filtered;
     if (mean) filtered.emplace_back(differences.size(), 1.0);
     for (const auto& column : columns)
         filtered.push_back(detail::pinned_backfilter_apply(filter, column));
-    const auto hr = hannan_rissanen_start(differences, make_design(filtered), {0, 0, 1, seasonal ? 1 : 0, 12});
 
     SarimaEstimationRequest request{};
     request.series.values = series;
@@ -68,8 +68,21 @@ CalendarLikelihood fit_calendar_likelihood(const std::vector<double>& series,
     }
     request.control = {precision, 1e-4, true, false, true, true,
         EstimationStartingPoint::HannanRissanen, EstimationSolver::PinnedLevenbergMarquardt};
-    std::array<std::vector<double>, 4> start{{{}, hr.coefficients[2], {}, hr.coefficients[3]}};
-    const auto fit = optimize_sarima_from(request, start);
+    const auto fit = [&] {
+        if (processor == detail::CalendarAirlineProcessor::reg_sarima) {
+            request.series.values = differences;
+            request.series.missing.assign(differences.size(), 0);
+            request.design = make_design(filtered);
+            request.spec_d = request.d;
+            request.spec_bd = request.seasonal_d;
+            request.d = request.seasonal_d = 0;
+            request.control.starting_point = EstimationStartingPoint::Multiple;
+            return estimate_sarima_fixed(request);
+        }
+        const auto hr = hannan_rissanen_start(differences, make_design(filtered), {0, 0, 1, seasonal ? 1 : 0, 12});
+        std::array<std::vector<double>, 4> start{{{}, hr.coefficients[2], {}, hr.coefficients[3]}};
+        return optimize_sarima_from(request, start);
+    }();
     if (!std::isfinite(fit.log_likelihood))
         throw std::runtime_error("TRAMO calendar F-test candidate estimation failed");
     auto ma = fit.coefficients[1];
@@ -164,11 +177,11 @@ TramoCalendarFTestResult compare_calendar_models(const std::vector<double>& seri
 } // namespace
 
 detail::CalendarAirlineLikelihood detail::fit_calendar_airline(const std::vector<double>& series,
-        const std::vector<std::vector<double>>& columns, double precision) {
+        const std::vector<std::vector<double>>& columns, double precision, CalendarAirlineProcessor processor) {
     const auto filter = pinned_differencing_polynomial(12, 1, 1);
     auto fit = fit_calendar_likelihood(series, pinned_backfilter_apply(filter, series), filter,
-                                       columns, false, precision, false);
-    return {fit.point.log_likelihood, fit.point.ssq_err};
+                                       columns, false, precision, false, true, processor);
+    return {fit.point.log_likelihood, fit.point.ssq_err, std::move(fit.ma)};
 }
 
 std::vector<std::vector<double>> tramo_stock_calendar_columns(const TramoStockCalendar& selection,

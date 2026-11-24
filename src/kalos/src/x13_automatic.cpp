@@ -276,7 +276,7 @@ class AutomaticPipeline {
   const std::string& stage() const { return stage_; }
   int round() const { return round_; }
 
-  void run(bool fixed_structure) {
+  void run(bool fixed_structure, bool calendar) {
     transitory_rate_ = transitory_change_rate(kAnnualFrequency,
                                              request_.tcrate);
     y_ = request_.input;  // the level domain; log below if chosen
@@ -325,10 +325,31 @@ class AutomaticPipeline {
     }
 
     stage_ = "transformation";
-    transformation_prepass();
+    if (calendar) {
+      const auto scale = x13_rsa2c_scale(y_, request_.first_year, request_.first_period);
+      auto compared = x13_rsa2c_calendar_test(y_, request_.first_year, request_.first_period, scale.log);
+      model_.desc.log = scale.log;
+      calendar_ = compared.selected;
+      y_ = std::move(compared.transformed);
+      fill_calendar_design();
+      auto best = std::min_element(compared.easter.begin(), compared.easter.end(),
+          [](const auto& left, const auto& right) { return left.aicc < right.aicc; });
+      Estimation retained{};
+      retained.coefficients[1] = {best->ma[0]};
+      retained.coefficients[3] = {best->ma[1]};
+      retained.log_likelihood = best->log_likelihood;
+      retained.status = "available";
+      model_.estimation = retained;
+      model_.last_coefficients = retained.coefficients;
+      model_.has_coefficients = true;
+      calendar_adjustment_ = best->transformation_adjustment;
+      unadjusted_jacobian_ = compared.trading_days[0].transformation_adjustment;
+    } else {
+      transformation_prepass();
+    }
 
     stage_ = "meantest";
-    // regAIC: calendarTest/easterTest fail-closed (21-I) -> Unchanged.
+    // The stock RSA2c prepass above includes the two regAIC tests.
     check_mu(kCheckMuCalc, "meantest0", 0, nullptr);
 
     if (need_outliers_) {
@@ -386,6 +407,25 @@ class AutomaticPipeline {
   std::vector<double> y_;  // the transformed (level or log) working series
   double transitory_rate_ = 0.;
 
+  std::optional<X13Rsa2cCalendar> calendar_;
+  std::vector<std::vector<double>> calendar_columns_;
+  double calendar_adjustment_ = 0, unadjusted_jacobian_ = 0;
+
+  void fill_calendar_design() {
+    calendar_columns_ = x13_rsa2c_calendar_columns(*calendar_, model_.desc.log,
+        {request_.first_year, request_.first_period, 12, static_cast<int>(y_.size())});
+  }
+
+  std::vector<std::string> calendar_names() const {
+    std::vector<std::string> names;
+    if (calendar_->working_days) {
+      names.push_back("td");
+      if (!model_.desc.log) names.push_back("lp");
+    }
+    if (calendar_->easter_duration) names.push_back("easter");
+    return names;
+  }
+
   // Whether the retained estimation was fitted with the mean column in the
   // design. The transformation prepass retains the CHOSEN-branch estimation,
   // which is always a mean-free fit; a mean-on description paired with it is
@@ -439,6 +479,7 @@ class AutomaticPipeline {
     if (model_.desc.mean) {
       columns.emplace_back(n, 1.);  // the Griffies mean column (raw ones)
     }
+    for (const auto& col : calendar_columns_) columns.push_back(diff_column(col));
     for (const OutlierVariable& variable : *set) {
       columns.push_back(diff_column(outlier_column(variable)));
     }
@@ -464,7 +505,7 @@ class AutomaticPipeline {
         variables != nullptr ? variables : &model_.desc.variables;
     const std::size_t n = y_.size();
     RegressionDesign design;
-    std::vector<std::vector<double>> columns;
+    auto columns = calendar_columns_;
     for (const OutlierVariable& variable : *set) {
       columns.push_back(outlier_column(variable));
     }
@@ -1005,6 +1046,13 @@ class AutomaticPipeline {
     RegressionVariableTestRequest test;
     test.statistics = landing_statistics();
     int position = 0;
+    const auto names = calendar_ ? calendar_names() : std::vector<std::string>{};
+    for (const auto& name : names) {
+      const auto kind = name == "td" ? RegressionVariableKind::trading_days
+                      : name == "lp" ? RegressionVariableKind::length_of_period
+                                     : RegressionVariableKind::moving_holiday;
+      test.variables.push_back({kind, position++, 1});
+    }
     for (std::size_t i = 0; i < model_.desc.variables.size(); ++i) {
       // ami outliers are never tested by the live machine (kind other); the
       // layout keeps the description order for the audit fields.
@@ -1012,17 +1060,30 @@ class AutomaticPipeline {
           RegressionVariableLayout{RegressionVariableKind::other, position++, 1});
     }
     test.mean_test = mean_cutoff;
-    test.td_test = 0.;   // decoder: no tdTest inside the envelope
-    test.mh_test = 0.;   // moving holidays only with a live easter (21-I)
-    test.derived_test = false;
+    test.td_test = calendar_ ? 1.96 : 0.;
+    test.mh_test = calendar_ ? 1.96 : 0.;
+    test.derived_test = calendar_.has_value();
     test.td_joint = 0.;  // the dead joint branch, unit-rejects nonzero
     test.mean = model_.desc.mean;
-    test.adjusted = false;  // log && lp != None: lp is None in scope
-    test.preadjustment = 0;
+    test.adjusted = calendar_ && calendar_->working_days && model_.desc.log;
+    test.preadjustment = test.adjusted ? 1 : 0;
     RegressionVariableTestResult outcome = run_regression_variable_tests(test);
     const bool changed = outcome.changed;
     if (changed) {
       model_.desc.mean = outcome.mean;
+      if (calendar_) {
+        for (std::size_t j = 0; j < names.size(); ++j) {
+          if (!outcome.removed[j]) continue;
+          if (names[j] == "easter") calendar_->easter_duration = 0;
+          else calendar_->working_days = false;
+        }
+        if (test.adjusted && !calendar_->working_days) {
+          y_ = request_.input;
+          for (auto& y : y_) y = detail::fdlibm_log(y);
+          calendar_adjustment_ = unadjusted_jacobian_;
+        }
+        fill_calendar_design();
+      }
       clear_estimation();
     }
     AutoDecisionRecord entry;
@@ -1878,6 +1939,11 @@ class AutomaticPipeline {
     if (model_.desc.mean) {
       ++col;
     }
+    if (calendar_) {
+      X13StockCalendarFit record{*calendar_, calendar_names(), {}};
+      for (std::size_t j = 0; j < record.names.size(); ++j) record.coefficients.push_back(regression.at(col++));
+      out.stock_calendar = std::move(record);
+    }
     for (const OutlierVariable& variable : model_.desc.variables) {
       AutoVariableRecord record;
       record.name = variable.name;
@@ -1902,7 +1968,9 @@ class AutomaticPipeline {
       // by the oracle stats facts: ao -333.0415626 with d=0, bd=1; rw
       // -450.5425654 with d=1, bd=0; level cases carry no adjustment).
       double adjusted_log_likelihood = out.log_likelihood;
-      if (out.log) {
+      if (calendar_) {
+        adjusted_log_likelihood += calendar_adjustment_;
+      } else if (out.log) {
         const std::size_t skip = static_cast<std::size_t>(
             model_.desc.d + model_.desc.bd * kAnnualFrequency);
         for (std::size_t i = skip; i < request_.input.size(); ++i) {
@@ -1973,6 +2041,19 @@ class AutomaticPipeline {
       forecasts_model.theta = blocks[1];
       forecasts_model.btheta = blocks[3];
       preadjust.arima = forecasts_model;
+    }
+    if (out.stock_calendar) {
+      const auto& record = *out.stock_calendar;
+      const calendar_domain extended{request_.first_year, request_.first_period, 12, static_cast<int>(request_.input.size()) + nf};
+      const auto columns = x13_rsa2c_calendar_columns(record.selection, out.log, extended);
+      for (std::size_t i = 0; i < columns.size(); ++i) {
+        const auto cls = record.names[i] == "easter" ? X13VariableClass::moving_holiday : X13VariableClass::days_related;
+        preadjust.variables.push_back({cls, X13Component::calendar_effect, {record.coefficients[i]}, {columns[i]}});
+      }
+      if (out.log && record.selection.working_days) {
+        preadjust.leap_forward = x13_rsa2c_leap_factors(extended, false);
+        preadjust.leap_reverse = x13_rsa2c_leap_factors(extended, true);
+      }
     }
     for (const AutoVariableRecord& variable : out.variables) {
       X13AllocationVariable allocation;
@@ -2105,7 +2186,7 @@ class AutomaticPipeline {
 // ---------------------------------------------------------------------------
 
 namespace {
-X13AutomaticFitResult fit_monthly(const X13AutomaticRequest& request, bool fixed_structure) {
+X13AutomaticFitResult fit_monthly(const X13AutomaticRequest& request, bool fixed_structure, bool calendar = false) {
   X13AutomaticFitResult out;
 
   // Shape validation (throws std::invalid_argument, as the seams below do).
@@ -2178,7 +2259,7 @@ X13AutomaticFitResult fit_monthly(const X13AutomaticRequest& request, bool fixed
 
   AutomaticPipeline pipeline(request, out, static_cast<int>(backcast), static_cast<int>(forecast));
   try {
-    pipeline.run(fixed_structure);
+    pipeline.run(fixed_structure, calendar);
   } catch (const std::runtime_error& error) {
     // The pinned catch(Exception) -> return null: the failed: status with
     // the chain kept so far (the invalid_argument shape violations of the
@@ -2194,7 +2275,7 @@ X13AutomaticFitResult fit_monthly(const X13AutomaticRequest& request, bool fixed
 }
 
 X13AutomaticFitResult fit_stock_airline(const std::vector<double>& observations,
-                                        int year, int month, bool detect_outliers) {
+                                        int year, int month, bool detect_outliers, bool calendar = false) {
   if (year < 1 || year > 9999)
     throw std::invalid_argument("estimated X-13 requires a start year between 1 and 9999");
   X13AutomaticRequest spec{};
@@ -2214,7 +2295,7 @@ X13AutomaticFitResult fit_stock_airline(const std::vector<double>& observations,
   spec.seasonal.assign(12, X11SeasonalRequest::msr);
   spec.sigma = X11SigmaPolicy::legacy;
   spec.forecast = -1;
-  return fit_monthly(spec, true);
+  return fit_monthly(spec, true, calendar);
 }
 
 }  // namespace
@@ -2229,6 +2310,10 @@ X13AutomaticFitResult x13_estimated_rsa0(const std::vector<double>& observations
 
 X13AutomaticFitResult x13_estimated_rsa1(const std::vector<double>& observations, int year, int month) {
   return fit_stock_airline(observations, year, month, true);
+}
+
+X13AutomaticFitResult x13_estimated_rsa2c(const std::vector<double>& observations, int year, int month) {
+  return fit_stock_airline(observations, year, month, true, true);
 }
 
 }  // namespace kalos

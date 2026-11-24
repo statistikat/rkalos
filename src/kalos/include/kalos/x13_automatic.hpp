@@ -1,5 +1,6 @@
 #ifndef KALOS_X13_AUTOMATIC_HPP
 #define KALOS_X13_AUTOMATIC_HPP
+#include "x13_estimated_calendar.hpp"
 // Item 21-H.1: the automatic-spec X-13 pipeline driver (stage Z). This is
 // the pinned RegArimaKernel.calc transcription (docs/contracts/
 // x13-automatic-pipeline-contract.md) composed on the qualified stage-Z
@@ -229,7 +230,14 @@ struct X13StockLikelihood {
     std::vector<double> full_residuals; // starts after d + 12*bd observations
 };
 
-// The result of one automatic-spec fit.
+// Stock estimated RSA2c calendar variables precede the outlier variables in model order.
+struct X13StockCalendarFit {
+    X13Rsa2cCalendar selection;
+    std::vector<std::string> names; // td, lp, easter, in fitted order
+    std::vector<double> coefficients;
+};
+
+// The result of one automatic-spec or stock estimated fit.
 struct X13AutomaticFitResult {
     // "available" | "unsupported:<...>" (fail-closed matrix) |
     // "failed:<stage>" (the pinned return-null chain outcomes, chain kept).
@@ -243,6 +251,7 @@ struct X13AutomaticFitResult {
     // Selected regression variables (ami outliers) with their columns and
     // final coefficients, in model order.
     std::vector<AutoVariableRecord> variables;
+    std::optional<X13StockCalendarFit> stock_calendar;
     // Landing statistics of the final estimation (the G2 recipe at the
     // final point; never bit-claimed).
     std::string estimation_status;
@@ -269,5 +278,7 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request);
 X13AutomaticFitResult x13_estimated_rsa0(const std::vector<double>& observations, int year, int month);
 // Stock RSA1 selects the transformation and detects AO, LS and TC outliers.
 X13AutomaticFitResult x13_estimated_rsa1(const std::vector<double>& observations, int year, int month);
+// Stock RSA2c estimates the working-day and Easter candidates before the outlier pass.
+X13AutomaticFitResult x13_estimated_rsa2c(const std::vector<double>& observations, int year, int month);
 } // namespace kalos
 #endif

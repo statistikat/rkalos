@@ -4,6 +4,15 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Stock estimated X-13 RSA2c core checkpoint (2026-11-24)
+
+Kalos `a32dce69296148d22421c1157272ec4fa08451ca` extends stock
+monthly estimated X-13 to RSA2c. All nine public RSA0, RSA1 and RSA2c
+fits cover the original fitted calendar, outliers, estimators, likelihood,
+innovations and restored X-11 components. Both package makefiles link
+the canonical calendar candidate evaluator. Offline source and fixture
+verification passes.
+
 ## Full source verification for the family M5 checkpoint (2026-11-24)
 
 The full source suite of rkalos `45cf058c46f225005ce73ebe04e1b96b6587d907`

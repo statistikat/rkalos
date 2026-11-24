@@ -1,6 +1,7 @@
 #include "kalos/x13_estimated_calendar.hpp"
 #include "kalos/detail/calendar_airline_likelihood.hpp"
 #include "kalos/detail/fdlibm.hpp"
+#include "kalos/transformation_decision.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -39,15 +40,25 @@ Input transform(const std::vector<double>& observations, const calendar_domain& 
 }
 
 X13Rsa2cCalendarCandidate fit_candidate(const Input& input, const X13Rsa2cCalendar& calendar,
-                                        bool log, const calendar_domain& domain) {
+                                        bool log, const calendar_domain& domain,
+                                        detail::CalendarAirlineProcessor processor = detail::CalendarAirlineProcessor::gls) {
     const auto columns = x13_rsa2c_calendar_columns(calendar, log, domain);
-    const auto fit = detail::fit_calendar_airline(input.series, columns, 1e-5);
+    const auto fit = detail::fit_calendar_airline(input.series, columns, processor == detail::CalendarAirlineProcessor::gls ? 1e-5 : 1e-7, processor);
     const int n = domain.length - 13;
     const int k = 3 + static_cast<int>(columns.size()); // two moving averages and the variance
     const double aicc = -2 * (fit.log_likelihood + input.adjustment -
                              static_cast<double>(n) * k / (n - k - 1));
-    return {n, k, input.adjustment, fit.log_likelihood, fit.ssq, aicc};
+    return {n, k, input.adjustment, fit.log_likelihood, fit.ssq, aicc, {fit.ma[0], fit.ma[1]}};
 }
+calendar_domain monthly_domain(const std::vector<double>& observations, int start_year, int start_month, bool log) {
+    if (start_month < 1 || start_month > 12 || start_year < 1 || start_year > 9999 ||
+        observations.size() <= 20 || observations.size() > std::numeric_limits<int>::max() ||
+        std::any_of(observations.begin(), observations.end(), [log](double v) {
+            return !std::isfinite(v) || (log && v <= 0);
+        })) throw std::invalid_argument("RSA2c requires a complete monthly series on its selected scale");
+    return {start_year, start_month, 12, static_cast<int>(observations.size())};
+}
+
 } // namespace
 
 std::vector<double> x13_rsa2c_leap_factors(const calendar_domain& domain, bool reverse) {
@@ -75,14 +86,21 @@ std::vector<std::vector<double>> x13_rsa2c_calendar_columns(const X13Rsa2cCalend
     return columns;
 }
 
+X13Rsa2cScale x13_rsa2c_scale(const std::vector<double>& observations, int start_year, int start_month) {
+    const auto domain = monthly_domain(observations, start_year, start_month, false);
+    X13Rsa2cScale result;
+    if (std::any_of(observations.begin(), observations.end(), [](double y) { return y <= 0; })) return result;
+    constexpr auto processor = detail::CalendarAirlineProcessor::reg_sarima;
+    result.level = fit_candidate({observations}, {true, 0}, false, domain, processor);
+    result.logarithm = fit_candidate(transform(observations, domain, true, true), {true, 0}, true, domain, processor);
+    result.compared = true;
+    result.log = log_level_choose_log(result.level.aicc, result.logarithm.aicc, -2.0);
+    return result;
+}
+
 X13Rsa2cCalendarTest x13_rsa2c_calendar_test(const std::vector<double>& observations,
         int start_year, int start_month, bool log) {
-    if (start_month < 1 || start_month > 12 || start_year < 1 || start_year > 9999 ||
-        observations.size() <= 20 || observations.size() > std::numeric_limits<int>::max() ||
-        std::any_of(observations.begin(), observations.end(), [log](double v) {
-            return !std::isfinite(v) || (log && v <= 0);
-        })) throw std::invalid_argument("RSA2c requires a complete monthly series on its selected scale");
-    const calendar_domain domain{start_year, start_month, 12, static_cast<int>(observations.size())};
+    const auto domain = monthly_domain(observations, start_year, start_month, log);
     const auto unadjusted = transform(observations, domain, log, false);
     const auto adjusted = transform(observations, domain, log, true);
     X13Rsa2cCalendarTest result;
