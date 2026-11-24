@@ -89,6 +89,12 @@ seasonality verdict in `fit$diagnostics$combined_seasonality$summary`.
 The same object reports the stable-seasonality, moving-seasonality and
 Kruskal–Wallis statistics and their upper-tail probabilities.
 
+`monthly_adjusted_seasonality(series, differencing_order, mean)` computes
+the public all-years Qs and seasonal F tests on the model-scale adjusted
+observations. The fitted preprocessing model supplies the ordinary
+difference count `d + bd` and its mean flag. Each test is reported
+independently, or as absent when the stationary sample is too short.
+
 Install OpenBLAS with CBLAS and LAPACKE (qualification version 0.3.34). Set `KALOS_OPENBLAS_ROOT` to its prefix before building and installing the source archive. For custom or static providers, set `KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler and linker flags including dependencies.
 C++17 and Rcpp are required. Configure probes optional OpenMP with R's actual
 compiler; failed probes select serial execution. `KALOS_NUM_THREADS` takes

@@ -4,6 +4,38 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 adjusted-series seasonality replay (2026-11-24)
+
+Version `0.1.0.9026` exports `monthly_adjusted_seasonality()`, which
+returns the SI-qs verdict and seasonal F test on an adjusted series
+through the `native_adjusted_seasonality()` boundary and reports them in
+the capabilities descriptor. The core pin moved `3a1f413a1d309687ffc2f157139cf358a295d55e`
+to `7299cdefff357309b84f4409cbc76e7f556bb761` (lock schema 2; verified
+206 core, 112 fixture and 404 evidence files), adding the adjusted
+seasonality API and the X-13 automatic diagnostics evidence.
+
+The new replay suite matches the published adjusted-series corpus on all
+32 cases: 62 available `seas-sa-f` tests (two short cases assert `NULL`)
+and **124/124** numeric fields bit-exact under IEEE equality with NaN-pair
+and signed-zero tolerance, mirroring the core's direct-row semantics; no
+fitted-product tier is replayed here. The suite ran **168/168**. The
+explicit `OBJECTS` lists in `src/Makevars.in` and `src/Makevars.win.in`
+gained `rcpp_adjusted_seasonality.o`; the first tarball build failed the
+load test with the missing symbol until that line landed.
+
+Serial and two-worker OpenMP lanes each passed the adjusted-seasonality
+(168/168), combined-seasonality (198/198) and stock X-13 (761/761) suites
+for **1,127/1,127** assertions per lane, and both passed the isolated
+Java-free smoke test on the fresh build. These are JVM-free suites only;
+no rjd3 comparison was attempted. Both lanes statically bound the pinned
+OpenBLAS 0.3.34 LP64 provider via `KALOS_OPENBLAS_ROOT` (configure:
+"OpenBLAS C API check passed; shared object bound to its own LAPACK
+symbols"); rkalos has no runtime provider switch. The CI provider fetch
+now pins `ref: 7299cdefff357309b84f4409cbc76e7f556bb761` and builds it
+with `python .kalos-provider/tools/build-openblas.py
+--prefix "$RUNNER_TEMP/openblas" --jobs 2`, exporting
+`KALOS_OPENBLAS_ROOT=$RUNNER_TEMP/openblas`.
+
 ## Family M5b full source verification (2026-11-24)
 
 The stock X-13 item 28 checkpoint in rkalos `f53ee8f` passed all 66

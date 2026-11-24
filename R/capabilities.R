@@ -39,6 +39,9 @@ capabilities <- function() {
                   tramo_seats_fit = c("RSA0", "RSA1", "RSA3", "RSAfull"), restricted_x13_fit = TRUE,
                   automatic_x13_fit = TRUE, estimated_x13_fit = c("RSA0", "RSA1", "RSA2c"),
                   minimum_years = 3L),
+                adjusted_seasonality = list(tests = c("seas-sa-qs", "seas-sa-f"), frequency = 12L,
+                  differencing_orders = "fitted ordinary difference count d + bd (0 to 3)",
+                  entry_point = "monthly_adjusted_seasonality"),
                 seats_approximation = list(mode = "legacy", frequency = 12L,
                   families = c("airline seasonal MA replacement", "mean-free (2,1,0)(1,1,0) seasonal AR-to-MA refit")),
                 restricted_fit = list(

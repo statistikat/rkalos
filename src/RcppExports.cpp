@@ -10,6 +10,19 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// native_adjusted_seasonality
+Rcpp::List native_adjusted_seasonality(const std::vector<double>& values, int differencing_order, bool mean);
+RcppExport SEXP _rkalos_native_adjusted_seasonality(SEXP valuesSEXP, SEXP differencing_orderSEXP, SEXP meanSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< int >::type differencing_order(differencing_orderSEXP);
+    Rcpp::traits::input_parameter< bool >::type mean(meanSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_adjusted_seasonality(values, differencing_order, mean));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_arma_parameter_map
 Rcpp::List native_arma_parameter_map(SEXP specification, SEXP initial, SEXP margin);
 RcppExport SEXP _rkalos_native_arma_parameter_map(SEXP specificationSEXP, SEXP initialSEXP, SEXP marginSEXP) {
@@ -1222,6 +1235,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_rkalos_native_adjusted_seasonality", (DL_FUNC) &_rkalos_native_adjusted_seasonality, 3},
     {"_rkalos_native_arma_parameter_map", (DL_FUNC) &_rkalos_native_arma_parameter_map, 3},
     {"_rkalos_native_arma_decode", (DL_FUNC) &_rkalos_native_arma_decode, 4},
     {"_rkalos_native_arma_identification", (DL_FUNC) &_rkalos_native_arma_identification, 7},

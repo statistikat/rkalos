@@ -4,6 +4,7 @@ PKG_CXXFLAGS = -ffp-contract=off @OPENMP_FLAGS@
 PKG_LIBS = @OPENMP_FLAGS@ @KALOS_OPENBLAS_LINK@ @KALOS_LOCAL_BIND@
 OBJECTS = RcppExports.o \
   kalos/backends/openblas.o \
+  rcpp_adjusted_seasonality.o \
   rcpp_arma_objective.o \
   rcpp_diffuse_state_space.o \
   rcpp_interface.o \
