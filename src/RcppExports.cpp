@@ -507,6 +507,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_residual_trading_days_tests
+Rcpp::List native_residual_trading_days_tests(const std::vector<double>& sa, const std::vector<double>& irregular, int start_year, int start_month);
+RcppExport SEXP _rkalos_native_residual_trading_days_tests(SEXP saSEXP, SEXP irregularSEXP, SEXP start_yearSEXP, SEXP start_monthSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type sa(saSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type irregular(irregularSEXP);
+    Rcpp::traits::input_parameter< int >::type start_year(start_yearSEXP);
+    Rcpp::traits::input_parameter< int >::type start_month(start_monthSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_residual_trading_days_tests(sa, irregular, start_year, start_month));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_seats_extract_wk
 Rcpp::List native_seats_extract_wk(const Rcpp::List& spec, const Rcpp::List& calendar, std::vector<double> series);
 RcppExport SEXP _rkalos_native_seats_extract_wk(SEXP specSEXP, SEXP calendarSEXP, SEXP seriesSEXP) {
@@ -1264,6 +1277,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_likelihood_adjustment", (DL_FUNC) &_rkalos_native_likelihood_adjustment, 4},
     {"_rkalos_native_core_version", (DL_FUNC) &_rkalos_native_core_version, 0},
     {"_rkalos_native_regression_likelihood", (DL_FUNC) &_rkalos_native_regression_likelihood, 13},
+    {"_rkalos_native_residual_trading_days_tests", (DL_FUNC) &_rkalos_native_residual_trading_days_tests, 4},
     {"_rkalos_native_seats_extract_wk", (DL_FUNC) &_rkalos_native_seats_extract_wk, 3},
     {"_rkalos_native_seats_from_tramo", (DL_FUNC) &_rkalos_native_seats_from_tramo, 4},
     {"_rkalos_native_tramoseats_rsa0", (DL_FUNC) &_rkalos_native_tramoseats_rsa0, 5},

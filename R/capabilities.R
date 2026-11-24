@@ -42,6 +42,21 @@ capabilities <- function() {
                 adjusted_seasonality = list(tests = c("seas-sa-qs", "seas-sa-f"), frequency = 12L,
                   differencing_orders = "fitted ordinary difference count d + bd (0 to 3)",
                   entry_point = "monthly_adjusted_seasonality"),
+                # Public residual trading-day F-tests (M7 cutover): the four
+                # JVM dashboard scalars, served by the pure primitive and
+                # surfaced on every product fit route that carries both
+                # components on the success path (all four do: X-13
+                # finalSA/finalIrregular, SEATS merged SeasonallyAdjusted/
+                # Irregular Value rows; a route without one of them would
+                # omit the fields, never fabricate them).
+                td_tests = list(fields = c("td.ftest.sa", "td.ftest.i"),
+                  shape = "list(value, pvalue) (rjd3-side resolution target of diagnostics.td-sa-all / td-i-all)",
+                  names = c("td-sa-all", "td-sa-last", "td-i-all", "td-i-last"),
+                  flast = "pinned capture option flast = 0: -all and -last share one fit, bit-identical",
+                  routes = c("native_x13_fit", "native_x13_fit_automatic", "native_x13_estimated_fit", "native_tramoseats_fit"),
+                  computed_from = "the fit's own SA and irregular component series on their published observed domain (both components longer than the core's eight-observation degrees-of-freedom guard and testable by the pinned machine; a route without them, with a shorter component, or with a component the core declines to fit, omits the fields)",
+                  bit_claims = "primitive bit-exact vs the 24-case double-JVM oracle on its bit-frozen component series (the oracle capture domain is the bridge flag profile); product-fit scalars wiring-exact with tolerance-qualified component inputs",
+                  entry_point = "native_residual_trading_days_tests"),
                 seats_approximation = list(mode = "legacy", frequency = 12L,
                   families = c("airline seasonal MA replacement", "mean-free (2,1,0)(1,1,0) seasonal AR-to-MA refit")),
                 restricted_fit = list(
@@ -113,7 +128,7 @@ capabilities <- function() {
                                "regression_information", "joint_regression_information", "arma_residuals", "arma_legacy_residuals",
                                "interpolation_information", "interpolation_arma_information", "forecast_information", "forecast_arma_information", "prediction_moments", "x11_symmetric_filters", "x11_musgrave_endpoints", "x11_mean_endpoints", "x11_seasonal_endpoints", "x11_seasonal_processing", "x11_trend_selection", "x11_seasonal_stage_policy", "x11_msr_tables", "x11_msr_pilot", "x11_msr_selection", "x11_additive_normalization", "x11_additive_initial_tables", "x11_pass_level_selection", "x11_decomposition_modes", "x13_deterministic_allocation", "x13_restricted_fixed_fit", "x13_automatic_spec_fit",
                                "tramo_critical_value", "tramo_seasonality", "tramo_transform_decision", "seats_extract_wk", "tramo_prepare_model",
-                               "tramo_differencing_decision", "seats_from_tramo"),
+                               "tramo_differencing_decision", "seats_from_tramo", "residual_trading_days_tests"),
                 methods = character(), specification_blocks = character(),
                 packages_available = NA, runtime_checked = FALSE,
                 reason = "Unrestricted fitting is unavailable. Qualified methods are described by restricted_fit, automatic_fit and tramo_seats_fit.")

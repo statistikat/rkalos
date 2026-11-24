@@ -61,6 +61,7 @@ add_library(kalos STATIC
   src/regression_likelihood.cpp
   src/regression_variable_tests.cpp
   src/residual_information.cpp
+  src/residual_trading_days_tests.cpp
   src/sarima_stabilization.cpp
   src/seats_extract_wk.cpp
   src/sparse_history.cpp
@@ -220,6 +221,7 @@ if(KALOS_BUILD_TESTS)
     test_regression_likelihood
     test_regression_variable_tests
     test_residual_information
+    test_residual_trading_days
     test_seats_extract_wk
     test_seats_linear_filters
     test_special_functions
@@ -303,6 +305,10 @@ if(KALOS_BUILD_TESTS)
       target_compile_definitions(${test_name} PRIVATE
         KALOS_ADJUSTED_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles"
         KALOS_ADJUSTED_SEASONALITY_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/adjusted-seasonality/public-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_residual_trading_days")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_RESIDUAL_TRADING_DAYS_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/residual-trading-days/public-x86_64.txt")
     endif()
     if(test_name STREQUAL "test_combined_seasonality")
       target_compile_definitions(${test_name} PRIVATE

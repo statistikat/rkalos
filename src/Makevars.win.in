@@ -25,6 +25,8 @@ OBJECTS = RcppExports.o \
   kalos/src/combined_seasonality.o \
   kalos/src/calendar_generation.o \
   kalos/src/tramo_calendar_f_test.o \
+  kalos/src/residual_trading_days_tests.o \
+  rcpp_residual_trading_days_tests.o \
   kalos/src/tramo_differencing_battery.o \
   kalos/src/tramo_seasonal_f_test.o \
   kalos/src/tramo_seasonal_spectrum.o \

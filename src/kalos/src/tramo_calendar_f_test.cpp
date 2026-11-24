@@ -177,11 +177,21 @@ TramoCalendarFTestResult compare_calendar_models(const std::vector<double>& seri
 } // namespace
 
 detail::CalendarAirlineLikelihood detail::fit_calendar_airline(const std::vector<double>& series,
-        const std::vector<std::vector<double>>& columns, double precision, CalendarAirlineProcessor processor) {
-    const auto filter = pinned_differencing_polynomial(12, 1, 1);
+        const std::vector<std::vector<double>>& columns, double precision, CalendarAirlineProcessor processor,
+        bool with_diagnostics, bool seasonal) {
+    const auto filter = pinned_differencing_polynomial(12, 1, seasonal ? 1 : 0);
     auto fit = fit_calendar_likelihood(series, pinned_backfilter_apply(filter, series), filter,
-                                       columns, false, precision, false, true, processor);
-    return {fit.point.log_likelihood, fit.point.ssq_err, std::move(fit.ma)};
+                                       columns, false, precision, with_diagnostics, seasonal, processor);
+    CalendarAirlineLikelihood result;
+    result.log_likelihood = fit.point.log_likelihood;
+    result.ssq = fit.point.ssq_err;
+    result.ma = std::move(fit.ma);
+    result.dimension = fit.dimension;
+    if (with_diagnostics) {
+        result.coefficients = std::move(fit.point.b);
+        result.unscaled_covariance = std::move(fit.regression.unscaled_covariance);
+    }
+    return result;
 }
 
 std::vector<std::vector<double>> tramo_stock_calendar_columns(const TramoStockCalendar& selection,

@@ -42,6 +42,13 @@ native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, bac
       attributes(value) <- list(tsp = stats::tsp(series), class = "ts")
       result[[key]] <- value
     }
+    # Public residual trading-day F-tests (M7 cutover): computed from this
+    # fit's own SEATS SeasonallyAdjusted/Irregular merged Value rows (the
+    # finalSA/finalIrregular stamped above) on the observed domain the
+    # bridge published; the merged table carries every component, so all
+    # four templates supply both fields on the success path.
+    result$diagnostics <- .attach_td_tests(result$diagnostics, result$finalSA, result$finalIrregular,
+                                           domain$start)
   }
   class(result) <- c("native_tramoseats_fit", "list")
   result

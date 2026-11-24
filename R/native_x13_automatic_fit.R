@@ -193,6 +193,11 @@ date_estimated_x13_result <- function(result, series, start, f) {
     }
     for(name in c("finalSA","finalTrend","finalIrregular"))
       result[[name]] <- observed_ts(result[[name]])
+    # Public residual trading-day F-tests (M7 cutover): computed from this
+    # fit's own finalSA/finalIrregular on the shared observed domain start
+    # (the automatic and estimated routes both land here on their success
+    # path; refusals keep the provenance echo and never carry the surface).
+    result$diagnostics <- .attach_td_tests(result$diagnostics, result$finalSA, result$finalIrregular, start)
     result$series <- observed_ts(y)
   } else {
     result$records_only<-if(grepl("^failed:",result$status))

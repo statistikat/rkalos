@@ -117,6 +117,10 @@
     .Call(`_rkalos_native_regression_likelihood`, values, design, coefficients, ar, ma, seasonal_ar, seasonal_ma, period, d, seasonal_d, mean, variance, rank_tolerance)
 }
 
+.native_residual_trading_days_tests <- function(sa, irregular, start_year, start_month) {
+    .Call(`_rkalos_native_residual_trading_days_tests`, sa, irregular, start_year, start_month)
+}
+
 .native_seats_extract_wk <- function(spec, calendar, series) {
     .Call(`_rkalos_native_seats_extract_wk`, spec, calendar, series)
 }

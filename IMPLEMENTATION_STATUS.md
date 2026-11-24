@@ -4,6 +4,84 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Residual trading-day F-tests and the 20e6063 re-pin (2026-11-24)
+
+Version `0.1.0.9028` serves the JVM dashboard's residual trading-day
+F-tests (`diagnostics.td-sa-all` / `td-sa-last` / `td-i-all` / `td-i-last`)
+at the R boundary and surfaces them on every product fit route. The
+vendored core moved `e2138a32ff8f9cf0cacf678791834b785ccc13dc` →
+`20e6063dea6f97d2957a7a3057313812c6f5d2f0` (lock schema 2; verified 208
+core — up from 206 — 112 fixture and 410 evidence files): the new API
+`include/kalos/residual_trading_days_tests.hpp` and
+`src/residual_trading_days_tests.cpp` (81 lines), the generalization of
+the shared calendar-airline engine — `include/kalos/detail/
+calendar_airline_likelihood.hpp` (14+/2−) and `src/kalos/src/
+tramo_calendar_f_test.cpp` (14+/4−) give `fit_calendar_airline`
+`with_diagnostics`/`seasonal` parameters whose defaults keep the pinned
+airline behaviour, so every existing call site is untouched — plus the
+upstream CTest registration in `src/kalos/CMakeLists.txt` (6+, inert for
+the R source build), the generated `revision.hpp` and the two lock files.
+The kalos ledger and evidence documents stay outside the manifest
+allowlist, as in prior pins; the 24-case double-JVM oracle fixture
+`fixtures/native/residual-trading-days/public-x86_64.txt` was already
+vendored at `e2138a3` and is unchanged. The CI provider fetch now pins
+`ref: 20e6063dea6f97d2957a7a3057313812c6f5d2f0`.
+
+The exported `native_residual_trading_days_tests(sa, irregular,
+start_year, start_month)` serves the four public names natively: each
+component runs an ARIMA (0,1,1)(0,0,0)[12] over the six
+GenericTradingDays TD7 contrast columns as the only design (no mean),
+the pinned JointTest evaluating the concentrated likelihood as
+`F = (ssq(b)/6)/(ssq/(dim−7))` on `F(6, dim−7)`; the capture option is
+`flast = 0`, so a component's `-last` pair is its `-all` pair bit for
+bit. The Rcpp entry rides the same `ScopedSingleBlas` guard as the X-13
+entries; the wrapper validates marshalling and the core fails closed on
+the eight-observation degrees-of-freedom guard, non-finite series and
+invalid domains. The routes attach `diagnostics[["td.ftest.sa"]]` /
+`diagnostics[["td.ftest.i"]]` (the rjd3-side shape Persephone's
+`metric("diagnostics.td-sa-all", …)` resolves) in the R wrappers, from
+each fit's own decorated `finalSA`/`finalIrregular` on their published
+observed domain: the restricted route follows the wrapper's own dating
+(ts calendar, else the year-1 convention), and the SEATS merged
+`Value` rows carry both components for all four templates. The attach
+is diagnostic, never a precondition: a missing, short or untestable
+component — the automatic route delivers `available` fits whose
+composition collapses to identically-zero components (`quick`/`noout`
+under `pseudo_additive`, witnessed by the D8 panel of
+`test-native-x13-automatic.R`), which the pinned machine declines to
+fit — leaves the fields absent and the fit delivered, never a fabricated
+number and never a failed fit; the primitive itself stays fail-closed.
+`capabilities()` gains the `td_tests` block and the
+`residual_trading_days_tests` primitive; the top-level descriptor stays
+`schema_version = 2L`, an additive block on the precedent of
+`adjusted_seasonality`.
+
+The new `test-native-residual-trading-days.R` (326 assertions) replays
+all 24 oracle cases — 192 raw binary64 words (four names × `value`/
+`pvalue`, all bit-identical, mirroring the core's CTest #39) — plus
+names, pinned-option (`-last` = `-all`) and fail-closed probes. The
+product layer is honest about its claim: the fixture's component series
+are bit-frozen inputs, while a product fit's components are
+tolerance-qualified compositions, so route scalars are pinned
+wiring-identical (bit-identical to applying the primitive to the same
+fit's own components on the same domain; `native_x13_estimated_fit`
+RSA0, `native_tramoseats_fit` RSAfull, restricted `native_x13_fit`)
+plus finiteness and consistency, never fixture-bit-exact; the oracle
+capture domain is the bridge flag profile. The refusal half keeps the
+21-I calendar deferral provenance-only, and the omission half pins the
+zero-composition delivery above.
+
+The full Java-free suite (69 files, no rjd3/rJava) passed
+**310,280/310,280** assertions in the serial lane and
+**310,284/310,284** in the two-worker OpenMP lane — each exactly its
+`e2138a3` baseline (309,954 / 309,958) plus the 326 new assertions,
+with every other file's count byte-identical to the baseline logs
+(verified file by file, one diff line per lane: the new file). Both
+lanes passed the isolated `--native` Java-free smoke test with
+byte-identical logs and report the pinned provider `OpenBLAS 0.3.34
+DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX SINGLE_THREADED` on core
+revision `20e6063…`.
+
 ## Automatic-route public residual diagnostics and the e2138a3 re-pin (2026-11-24)
 
 Version `0.1.0.9027` forwards the automatic X-13 route's public final-model

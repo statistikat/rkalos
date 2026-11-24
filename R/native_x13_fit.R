@@ -70,6 +70,10 @@ native_x13_fit <- function(series,variables=list(),log=FALSE,seasonal,trend_leng
     result$finals$tables<-.x13_decorate_tables(result$finals$tables,start,f)
     for(name in c("finalSA","finalTrend","finalIrregular"))
       result[[name]]<-stats::ts(result[[name]],start=start,frequency=f)
+    # Public residual trading-day F-tests (M7 cutover): computed from this
+    # fit's own finalSA/finalIrregular on their published observed domain —
+    # the dating the wrapper just stamped (ts calendar, else year 1).
+    result$diagnostics<-.attach_td_tests(result$diagnostics,result$finalSA,result$finalIrregular,start)
   } else {
     result$records_only<-"the provenance echo is complete; the pinned stage refuses any run before that"
   }

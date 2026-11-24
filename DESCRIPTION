@@ -1,7 +1,7 @@
 Package: rkalos
 Type: Package
 Title: R Interface to the Kalos Time Series Engine
-Version: 0.1.0.9027
+Version: 0.1.0.9028
 Authors@R: c(
   person("Angelika", "Meraner", email = "angelika.meraner@statistik.gv.at", role = c("aut","cre")),
   person("Alexander", "Kowarik", email = "alexander.kowarik@statistik.gv.at", role = c("ctb")),
