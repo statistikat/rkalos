@@ -24,9 +24,16 @@ lane showed a pre-existing native-versus-live-JVM parity gap (118 of
 8,444 expectations, every one inside an rjd3-gated parity block, all
 frozen-replay assertions green) that reproduces identically at the exact
 M5b configuration today (101 of 8,243), so it is not attributable to this
-re-pin. Maintainer decision 2026-11-24: re-baseline the Persephone parity
-references against the live rjd3 stack as a recorded re-baseline under the
-M3 tolerance policy; that slice is tracked separately.
+re-pin. Resolution: re-baselining proved impossible (no failing
+expectation reads a stored reference; all 118 compare in-session native
+against in-session JVM fits). The root cause is a JVM math-flag capture
+domain split — the bridge parity captures are qualified under
+`-XX:DisableIntrinsic=_dexp,_dlog` (or on aarch64, where that domain is
+the default), while this host's default JVM runs the enabled-intrinsics
+domain; on x86-64 no single JVM configuration greens the whole suite.
+Maintainer decision 2026-11-24: the Persephone oracle lane now runs in
+two capture-domain passes on x86-64 (persephone3 `d5ee808`), with a
+fail-loud domain guard and a required bridge-domain CI step.
 
 ## Core re-pin: completed WK factorizer chain (2026-11-24)
 
