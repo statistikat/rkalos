@@ -4,6 +4,21 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Stock X-13 residual diagnostics and forecast uncertainty (2026-11-24)
+
+Version `0.1.0.9025` returns the public stock residual standard error,
+Ljung–Box and Doornik–Hansen statistics, probabilities and degrees of
+freedom. The dated `series_forecast_stdev` supplies the original-series
+uncertainty over all twelve stock forecast months. The fit carries the
+core's availability status.
+
+All nine stock fits passed **761/761** assertions in serial and OpenMP.
+All 45 residual diagnostic scalars were bit-exact and the 108 forecast
+standard errors met their existing `2e-8 * (1 + abs(reference))` budget.
+Both builds passed the TRAMO residual independence (41), normality (32),
+RSA1 (990) and original-series forecast uncertainty (62) checks and
+their isolated Java-free smoke tests.
+
 ## Stock X-13 residual and forecast reference checkpoint (2026-11-24)
 
 Kalos `3a1f413a1d309687ffc2f157139cf358a295d55e` supplies the public stock

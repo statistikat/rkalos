@@ -157,6 +157,8 @@ date_estimated_x13_result <- function(result, series, start, f) {
   }
   forecast_ordinal <- ordinal + length(y)
   forecast_start <- c(floor(forecast_ordinal / f), forecast_ordinal %% f + 1)
+  if (length(result$series_forecast_stdev))
+    result$series_forecast_stdev <- stats::ts(result$series_forecast_stdev, start = forecast_start, frequency = f)
   if(!is.null(result[["preadjustment"]])) { # past the fail-closed guards
     basis<-list();avail<-list()
     for(name in names(result$preadjustment$tables)) {

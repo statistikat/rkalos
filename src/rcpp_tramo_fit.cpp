@@ -1,18 +1,10 @@
 #include "rcpp_tramo_fit.hpp"
-#include <kalos/arma_diagnostics.hpp>
+#include "rcpp_monthly_residuals.hpp"
 
 Rcpp::List wrap_monthly_tramo_residuals(const std::vector<double>& values, double standard_error, int arma_parameters) {
     const auto lb = kalos::monthly_tramo_residual_ljung_box(values, arma_parameters);
     const auto normality = kalos::tramo_residual_normality(values);
-    Rcpp::RObject dh = R_NilValue;
-    if (normality) {
-        dh = Rcpp::List::create(Rcpp::_["value"] = normality->value,
-            Rcpp::_["pvalue"] = normality->p, Rcpp::_["df"] = normality->df);
-    }
-    return Rcpp::List::create(Rcpp::_["tsres"] = values, Rcpp::_["ser"] = standard_error,
-        Rcpp::_["lb"] = Rcpp::List::create(Rcpp::_["value"] = lb.value, Rcpp::_["pvalue"] = lb.p,
-            Rcpp::_["df"] = lb.df, Rcpp::_["lags"] = 24),
-        Rcpp::_["doornikhansen"] = dh);
+    return wrap_monthly_residuals(values, standard_error, lb, normality);
 }
 
 

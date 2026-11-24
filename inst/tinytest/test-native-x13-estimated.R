@@ -1,6 +1,7 @@
 source("helpers/fixtures.R", local = TRUE)
 directory <- system.file("tinytest/fixtures/native", package = "rkalos", mustWork = TRUE)
 cases <- fixture_named_rsa0_cases(file.path(directory, "x13-estimated-templates/templates-x86_64.txt"))
+diagnostics <- fixture_named_rsa0_cases(file.path(directory, "x13-estimated-templates/diagnostics-x86_64.txt"))
 tokens <- function(line) strsplit(line, " ", fixed = TRUE)[[1L]]
 rows <- innovations <- points <- 0L
 for (header in names(cases)) {
@@ -14,6 +15,23 @@ for (header in names(cases)) {
   expect_identical(class(fit), c("native_x13_estimated_fit", "list"), info = header)
   expect_identical(fit$series, series, info = header)
   expect_identical(c(fit$effective_backcast, fit$effective_forecast), c(0L, 12L), info = header)
+  diagnostic <- diagnostics[[header]]
+  item <- function(name) tokens(diagnostic[startsWith(diagnostic, paste0(name, " "))])
+  expect_identical(fit$residuals$ser, fixture_hex_doubles(item("residuals.ser")[2L]), info = header)
+  for (name in c("lb", "doornikhansen")) {
+    ref <- item(paste0("residuals.", name))
+    actual <- fit$residuals[[name]]
+    expect_identical(c(actual$value, actual$pvalue), fixture_hex_doubles(ref[2:3]), info = paste(header, name))
+    expect_identical(as.numeric(actual$df), as.numeric(ref[6L]), info = paste(header, name))
+  }
+  ref <- item("y_ef_12")
+  errors <- fit$series_forecast_stdev
+  expected <- fixture_hex_doubles(ref[-seq_len(4L)])
+  expect_identical(fit$series_forecast_stdev_status, "available", info = header)
+  expect_identical(as.integer(stats::start(errors)), as.integer(ref[2:3]), info = header)
+  expect_identical(stats::tsp(errors), stats::tsp(fit$preadjustment$tables$a1a), info = header)
+  expect_identical(length(errors), length(expected), info = header)
+  expect_true(all(abs(as.numeric(errors) - expected) <= 2e-8 * (1 + abs(expected))), info = header)
   lines <- cases[[header]]
   field <- function(key) tokens(lines[startsWith(lines, paste0(key, " "))])
   model <- field("model")

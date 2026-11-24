@@ -17,7 +17,9 @@ forecast months and zero backcast months.}
 status, fitted ARIMA model and estimated regression variables. The
 \code{likelihood} list reports the log likelihood, residual sum of squares
 and observation and parameter counts; \code{residuals$tsres} contains the
-dated monthly innovations. RSA2c reports its selected calendar and named coefficients in \code{model$calendar}. Successful
+dated monthly innovations. The same record includes their standard error,
+Ljung--Box and Doornik--Hansen tests. \code{series_forecast_stdev} is the dated
+original-series forecast standard error when \code{series_forecast_stdev_status} is available. RSA2c reports its selected calendar and named coefficients in \code{model$calendar}. Successful
 fits expose \code{series}, \code{finalSA}, \code{finalTrend} and
 \code{finalIrregular} on the input calendar. The \code{preadjustment},
 \code{selection}, \code{results} and \code{finals} records contain the

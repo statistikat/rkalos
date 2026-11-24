@@ -41,6 +41,9 @@ if ("--native" %in% args) {
   stopifnot(identical(stock$status, "available"), isTRUE(stock$model$calendar$working_days),
             identical(stats::tsp(stock$finalSA), stats::tsp(datasets::AirPassengers)),
             length(stock$preadjustment$tables$a1a) == 12L,
+            identical(stock$series_forecast_stdev_status, "available"),
+            identical(stats::tsp(stock$series_forecast_stdev), stats::tsp(stock$preadjustment$tables$a1a)),
+            is.finite(stock$residuals$lb$pvalue), is.finite(stock$residuals$doornikhansen$pvalue),
             identical(stock$diagnostics$combined_seasonality$summary, "Present"))
   rsa0 <- native_tramoseats_fit(datasets::AirPassengers)
   trend_forecast <- with(rsa0$merged, values[[which(component == "Trend" & information == "Forecast")]])

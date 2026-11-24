@@ -81,7 +81,8 @@ fits with estimated airline coefficients and automatic X-11 filter
 selection. RSA0 fits on the original scale. RSA1 selects the
 transformation and outliers. RSA2c also tests working-day, leap-year
 and Easter effects. All return their final components and
-the stock twelve-month forecasts.
+the stock twelve-month forecasts with their original-series standard errors.
+The residual record includes the standard error, Ljung–Box and Doornik–Hansen tests.
 
 TRAMO-SEATS and fixed, automatic and stock estimated X-13 fits return the combined SI
 seasonality verdict in `fit$diagnostics$combined_seasonality$summary`.

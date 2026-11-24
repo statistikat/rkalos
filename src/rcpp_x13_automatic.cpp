@@ -1,5 +1,6 @@
 #include "rcpp_x13_shared.hpp"
 #include "rcpp_combined_seasonality.hpp"
+#include "rcpp_monthly_residuals.hpp"
 #include "rcpp_x11_selection_records.hpp"
 #include "kalos/x13_automatic.hpp"
 #include <cmath>
@@ -523,7 +524,12 @@ Rcpp::List native_x13_estimated_fit(const std::vector<double>& observations, int
         out["likelihood"] = Rcpp::List::create(Rcpp::_["effective"] = static_cast<double>(result.effective_observations),
             Rcpp::_["estimated"] = static_cast<double>(likelihood.estimated_parameters),
             Rcpp::_["log_likelihood"] = result.log_likelihood, Rcpp::_["ssq"] = likelihood.residual_ssq);
-        out["residuals"] = Rcpp::List::create(Rcpp::_["tsres"] = likelihood.full_residuals);
+        const auto diagnostic = kalos::x13_stock_residual_diagnostics(result);
+        out["residuals"] = wrap_monthly_residuals(likelihood.full_residuals, diagnostic.standard_error,
+                                                  diagnostic.ljung_box, diagnostic.normality);
+        const auto errors = kalos::x13_stock_forecast_errors(result, result.fit.forecast);
+        out["series_forecast_stdev_status"] = errors.status;
+        out["series_forecast_stdev"] = errors.standard_errors;
     }
     auto product = wrap_estimated_x13(out, result, Rcpp::CharacterVector(12, "msr"), "jdplus", "estimated_fit");
     if (result.status == "available" && result.stock_calendar) {
