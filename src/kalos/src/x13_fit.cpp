@@ -4,6 +4,7 @@
 // log-additive results-builder stage where the mode is log_additive, and
 // finals — with the unsupported-domain guards of docs/contracts/
 // x13-fit-contract.md in front.
+#include "kalos/detail/x13_effective_mode.hpp"
 #include "kalos/x13_fit.hpp"
 
 #include "kalos/detail/fdlibm.hpp"
@@ -12,15 +13,6 @@
 #include <stdexcept>
 namespace kalos {
 namespace {
-// The pinned X13Kernel.updateSpec forcing (item 22c M3c contract): a non-log
-// model runs X-11 additively unless PseudoAdditive was explicitly requested.
-// A log model keeps LogAdditive and otherwise defaults to Multiplicative.
-X11DecompositionMode forceMode(bool log, X11DecompositionMode mode) {
-    if(mode==X11DecompositionMode::pseudo_additive) return mode;
-    if(!log) return X11DecompositionMode::additive;
-    if(mode==X11DecompositionMode::log_additive) return mode;
-    return X11DecompositionMode::multiplicative;
-}
 // The pinned X11Kernel results-builder stage of the LogAdditive run
 // (finalResults -> ratioBiasCorrection, the X11Spec default bias), the
 // tables finals consumes. With A=exp(d10step), B=exp(d12step),
@@ -69,7 +61,7 @@ X13FitResult x13_fit(const X13FitRequest& request) {
     out.lower_sigma=request.lower_sigma; out.upper_sigma=request.upper_sigma;
     out.msr_policy=request.msr_policy;
     out.mode_requested=request.mode;
-    out.mode_effective=forceMode(request.log,request.mode);
+    out.mode_effective=detail::x13_effective_mode(request.log,request.mode);
     out.backcast=request.backcast; out.forecast=request.forecast;
     // Shape of the request itself: one seasonal request per calendar period
     // (the pinned X11Spec carries one filter per period).

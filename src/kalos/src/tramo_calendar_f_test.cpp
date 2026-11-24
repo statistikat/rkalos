@@ -1,5 +1,6 @@
 #include "kalos/tramo_calendar_f_test.hpp"
 #include "kalos/calendar_generation.hpp"
+#include "kalos/detail/calendar_airline_likelihood.hpp"
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/tramo_regression_tests.hpp"
 #include "kalos/detail/special_functions.hpp"
@@ -161,6 +162,14 @@ TramoCalendarFTestResult compare_calendar_models(const std::vector<double>& seri
     return {base, one, six, selected};
 }
 } // namespace
+
+detail::CalendarAirlineLikelihood detail::fit_calendar_airline(const std::vector<double>& series,
+        const std::vector<std::vector<double>>& columns, double precision) {
+    const auto filter = pinned_differencing_polynomial(12, 1, 1);
+    auto fit = fit_calendar_likelihood(series, pinned_backfilter_apply(filter, series), filter,
+                                       columns, false, precision, false);
+    return {fit.point.log_likelihood, fit.point.ssq_err};
+}
 
 std::vector<std::vector<double>> tramo_stock_calendar_columns(const TramoStockCalendar& selection,
     const calendar_domain& domain) {

@@ -110,6 +110,7 @@ add_library(kalos STATIC
   src/x11_trend_selection.cpp
   src/x13_allocation.cpp
   src/x13_automatic.cpp
+  src/x13_estimated_calendar.cpp
   src/x13_fit.cpp
   backends/openblas.cpp)
 add_library(kalos::kalos ALIAS kalos)
@@ -256,6 +257,7 @@ if(KALOS_BUILD_TESTS)
     test_x11_normalization
     test_x11_pseudo_additive
     test_x11_selection_pass
+    test_x13_estimated_calendar
     test_x13_estimated_selection
     test_x11_seasonal_endpoints
     test_x11_seasonal_plan
@@ -264,6 +266,7 @@ if(KALOS_BUILD_TESTS)
     test_x11_sigma
     test_x11_trend_selection
     test_x13_allocation
+    test_x13_estimated_templates
     test_x13_automatic
     test_x13_fit)
     add_executable(${test_name} tests/${test_name}.cpp)
@@ -326,6 +329,10 @@ if(KALOS_BUILD_TESTS)
         KALOS_RSA0_ERRORS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-forecast-errors-x86_64.txt"
         KALOS_RSA0_RESIDUALS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-residuals-x86_64.txt")
     endif()
+    if(test_name STREQUAL "test_x13_estimated_calendar")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_ESTIMATED_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/rsa2c-calendar-x86_64.txt")
+    endif()
     if(test_name STREQUAL "test_x13_estimated_selection")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_ESTIMATED_TEMPLATE_PANELS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates")
@@ -347,6 +354,11 @@ if(KALOS_BUILD_TESTS)
         KALOS_BRIDGE_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/bridge.txt"
         KALOS_MERGE_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/merge.txt"
         KALOS_MERGE_X64="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/merge-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_x13_estimated_templates")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_X13_TEMPLATE_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles"
+        KALOS_X13_TEMPLATE_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/templates-x86_64.txt")
     endif()
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES ENVIRONMENT
@@ -390,6 +402,8 @@ if(KALOS_BUILD_TESTS)
   # the full sweep is slow but far inside the timeout.
   add_executable(test_x13_automatic_oracle tests/test_x13_automatic_oracle.cpp)
   target_link_libraries(test_x13_automatic_oracle PRIVATE kalos::kalos)
+  target_compile_definitions(test_x13_automatic_oracle PRIVATE
+    KALOS_PSEUDO_AUTO="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-nonlog-pseudo/automatic-x86_64.txt")
   add_test(NAME test_x13_automatic_oracle
            COMMAND test_x13_automatic_oracle)
   set_tests_properties(test_x13_automatic_oracle PROPERTIES

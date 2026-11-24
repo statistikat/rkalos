@@ -35,6 +35,7 @@
 // mean-free base (the JVM Griffies mean is inexpressible there, recorded per
 // entry with the "mean on: excluded from the ODM base (delta)" note).
 
+#include "kalos/detail/x13_effective_mode.hpp"
 #include "kalos/x13_automatic.hpp"
 
 #include "kalos/detail/fdlibm.hpp"
@@ -187,14 +188,6 @@ const char* component_name(X13Component effect) {
   }
 }
 
-// The pinned X13Kernel.updateSpec forcing (verbatim copy of the x13_fit.cpp
-// file-local stage; the fixed path keeps its own byte-identical copy).
-X11DecompositionMode forceMode(bool log, X11DecompositionMode mode) {
-    if(!log) return X11DecompositionMode::additive;
-    if(mode==X11DecompositionMode::log_additive
-        ||mode==X11DecompositionMode::pseudo_additive) return mode;
-    return X11DecompositionMode::multiplicative;
-}
 
 // The pinned X11Kernel results-builder stage (verbatim x13_fit.cpp copy).
 void logAdditiveResults(const std::vector<double>& step10,
@@ -283,7 +276,7 @@ class AutomaticPipeline {
   const std::string& stage() const { return stage_; }
   int round() const { return round_; }
 
-  void run() {
+  void run(bool fixed_structure) {
     transitory_rate_ = transitory_change_rate(kAnnualFrequency,
                                              request_.tcrate);
     y_ = request_.input;  // the level domain; log below if chosen
@@ -291,12 +284,22 @@ class AutomaticPipeline {
     // (init) the X13ModelBuilder airline start + the critical-value rule
     // (process(): va0 = options.va > 0 ? va : X13Utility.calcCv(n)).
     model_.desc = Description{};  // log=false, mean=false, (0,1,1)(0,1,1)
+    // Stock RSA0 goes straight from the fixed airline description to the
+    // final estimator. Its outlier factory list and regression design are empty.
+    if (fixed_structure && !request_.outliers_used) {
+      stage_ = "final estimation";
+      estimate_final_parameters();
+      stage_ = "final";
+      build_result(true);
+      return;
+    }
+
     pcr_ = request_.ljung_box_limit;  // clear(): pcr = options.ljungBoxLimit
     va0_ = request_.va > 0. ? request_.va
                             : default_critical_value(y_.size());
     curva_ = va0_;
     need_outliers_ = request_.outliers_used;
-    need_auto_modelling_ = true;  // autoModel != null for this kind
+    need_auto_modelling_ = !fixed_structure;
     {
       AutoDecisionRecord entry;
       entry.stage = "init";
@@ -340,8 +343,13 @@ class AutomaticPipeline {
       }
     }
 
-    // isAutoModelling() is always true for this kind: the non-auto branch
-    // (finalEstimator.estimate + build) is unreachable here.
+    if (fixed_structure) {
+      stage_ = "final estimation";
+      estimate_final_parameters();
+      stage_ = "final";
+      build_result(true);
+      return;
+    }
     stage_ = "estimation";
     estimate_if_needed();
     reference_ = std::make_unique<Modelling>(model_);
@@ -1605,6 +1613,20 @@ class AutomaticPipeline {
     return blocks;
   }
 
+  void estimate_final_parameters() {
+    auto request = base_request(request_.precision,
+                                EstimationStartingPoint::Multiple, false);
+    SarimaEstimationResult fit_result = estimate_sarima_fixed(request);
+    Estimation estimation;
+    estimation.coefficients = fit_result.coefficients;
+    estimation.status = fit_result.status;
+    estimation.log_likelihood = fit_result.log_likelihood;
+    model_.last_coefficients = estimation.coefficients;
+    model_.has_coefficients = true;
+    model_.estimation = std::move(estimation);
+    estimation_has_mean_ = model_.desc.mean;
+  }
+
   bool run_cascade(std::vector<AutoCascadeRoundRecord>& records) {
     for (int cround = 0; cround < kMaxCascadeRounds; ++cround) {
       AutoCascadeRoundRecord record;
@@ -1625,18 +1647,8 @@ class AutomaticPipeline {
         // (base_request), fast_derivatives = false; the recorded solver
         // delta against the JVM's LM minimizer is retired by the ruling.
         stage_ = "final estimation";
-        auto request = base_request(request_.precision,
-                                    EstimationStartingPoint::Multiple, false);
-        SarimaEstimationResult fit_result = estimate_sarima_fixed(request);
-        Estimation estimation;
-        estimation.coefficients = fit_result.coefficients;
-        estimation.status = fit_result.status;
-        estimation.log_likelihood = fit_result.log_likelihood;
-        model_.last_coefficients = estimation.coefficients;
-        model_.has_coefficients = true;
-        model_.estimation = std::move(estimation);
-        estimation_has_mean_ = model_.desc.mean;
-        record.estimation_status = std::move(fit_result.status);
+        estimate_final_parameters();
+        record.estimation_status = model_.estimation->status;
         record.estimation_ok = true;
 
         // FinalEstimator.estimate's dim is desc.mapping().getDim() and
@@ -1777,7 +1789,53 @@ class AutomaticPipeline {
 
   // ---- the final description + downstream composition ------------------------------
 
-  void build_result() {
+  // The public model differences the regression-adjusted series, then runs
+  // FastKalmanFilter on the stationary ARMA. Its residuals have one value
+  // per stationary observation even when GLS estimates regression terms.
+  std::vector<double> stock_regression() {
+    ensure_domain();
+    const auto design = build_raw_design();
+    const auto& desc = model_.desc;
+    const auto point = raw_point();
+    std::vector<std::vector<double>> columns;
+    if (desc.mean) columns.emplace_back(yd_.size(), 1.);
+    for (std::size_t j = 0; j < design.columns; ++j) {
+      const auto begin = design.values.begin() + j * y_.size();
+      columns.push_back(diff_column(std::vector<double>(begin, begin + y_.size())));
+    }
+    detail::PinnedRegressionDiagnostics diagnostics;
+    const auto fit = detail::pinned_deviances_evaluate_multi(
+        yd_, desc.p, desc.bp, desc.q, desc.bq, kAnnualFrequency, columns, point,
+        detail::PinnedComputerShape::Full, &diagnostics);
+    if (!fit || fit->b.size() != columns.size())
+      throw std::runtime_error("stock X-13 final likelihood unavailable");
+
+    auto residuals = std::move(diagnostics.qr_residuals);
+    if (!columns.empty()) {
+      auto adjusted = y_;
+      for (std::size_t j = 0; j < design.columns; ++j) {
+        const double coefficient = fit->b[j + desc.mean];
+        for (std::size_t i = 0; i < adjusted.size(); ++i)
+          adjusted[i] += -coefficient * design.values[j * adjusted.size() + i];
+      }
+      auto stationary = diff_column(std::move(adjusted));
+      if (desc.mean)
+        for (auto& value : stationary) value -= fit->b.front();
+      auto innovations = detail::pinned_fast_kalman_residuals(
+          stationary, desc.p, desc.bp, desc.q, desc.bq, kAnnualFrequency, point);
+      if (!innovations)
+        throw std::runtime_error("stock X-13 final residuals unavailable");
+      residuals = std::move(*innovations);
+    }
+    if (residuals.size() != yd_.size())
+      throw std::runtime_error("invalid stock X-13 residual length");
+    result_.stock_likelihood = X13StockLikelihood{
+        fit->ssq_err, 1 + columns.size() + point.size(), std::move(residuals)};
+    result_.log_likelihood = fit->log_likelihood;
+    return fit->b;
+  }
+
+  void build_result(bool stock = false) {
     X13AutomaticFitResult& out = result_;
     out.log = model_.desc.log;
     out.mean = model_.desc.mean;
@@ -1807,9 +1865,14 @@ class AutomaticPipeline {
 
     // The landing composition at the final point (the G2 recipe; never
     // bit-claimed): the outlier coefficients and the AICC echo.
-    RegressionLikelihood fit = landing_fit();
-    if (fit.status != "available") {
-      throw std::runtime_error("final likelihood unavailable: " + fit.status);
+    std::vector<double> regression;
+    if (stock) {
+      regression = stock_regression();
+    } else {
+      auto fit = landing_fit();
+      if (fit.status != "available")
+        throw std::runtime_error("final likelihood unavailable: " + fit.status);
+      regression = std::move(fit.coefficients);
     }
     std::size_t col = 0;
     if (model_.desc.mean) {
@@ -1822,7 +1885,7 @@ class AutomaticPipeline {
       record.regeffect = component_name(variable.effect);
       record.position = variable.position;
       record.coefficient =
-          col < fit.coefficients.size() ? fit.coefficients[col] : 0.;
+          col < regression.size() ? regression[col] : 0.;
       record.column = outlier_column(variable);
       out.variables.push_back(std::move(record));
       ++col;
@@ -1831,7 +1894,7 @@ class AutomaticPipeline {
       const double neff = static_cast<double>(out.effective_observations);
       const double parameters =
           static_cast<double>(arma_dim_of(estimation.coefficients) +
-                              fit.coefficients.size() + 1);
+                              regression.size() + 1);
       // AICC rides the ADJUSTED log-likelihood (LikelihoodStatistics.calc
       // reads adjustedLogLikelihood; the Builder adds the transformation
       // Jacobian): in log mode the JVM subtracts sum(log y_t) over the
@@ -1868,7 +1931,7 @@ class AutomaticPipeline {
     fit_result.upper_sigma = request_.upper_sigma;
     fit_result.msr_policy = request_.msr_policy;
     fit_result.mode_requested = request_.mode;
-    fit_result.mode_effective = forceMode(out.log, request_.mode);
+    fit_result.mode_effective = detail::x13_effective_mode(out.log, request_.mode);
     // The pinned process semantics (item 21-H.4): the spec horizons are
     // month counts; a negative value means |h| annual frequencies.
     const int nb = backcast_;
@@ -2041,7 +2104,8 @@ class AutomaticPipeline {
 // The public entry point.
 // ---------------------------------------------------------------------------
 
-X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
+namespace {
+X13AutomaticFitResult fit_monthly(const X13AutomaticRequest& request, bool fixed_structure) {
   X13AutomaticFitResult out;
 
   // Shape validation (throws std::invalid_argument, as the seams below do).
@@ -2114,7 +2178,7 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
 
   AutomaticPipeline pipeline(request, out, static_cast<int>(backcast), static_cast<int>(forecast));
   try {
-    pipeline.run();
+    pipeline.run(fixed_structure);
   } catch (const std::runtime_error& error) {
     // The pinned catch(Exception) -> return null: the failed: status with
     // the chain kept so far (the invalid_argument shape violations of the
@@ -2127,6 +2191,44 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
     out.chain.push_back(std::move(entry));
   }
   return out;
+}
+
+X13AutomaticFitResult fit_stock_airline(const std::vector<double>& observations,
+                                        int year, int month, bool detect_outliers) {
+  if (year < 1 || year > 9999)
+    throw std::invalid_argument("estimated X-13 requires a start year between 1 and 9999");
+  X13AutomaticRequest spec{};
+  spec.input = observations;
+  spec.first_year = year;
+  spec.first_period = month;
+  spec.precision = 1e-7;
+  spec.tcrate = 0.7;
+  spec.outliers_used = detect_outliers;
+  if (detect_outliers) {
+    spec.aicc_log_correction = -2.;
+    spec.outlier_types = {OutlierType::Additive, OutlierType::LevelShift,
+                          OutlierType::TransitoryChange};
+    spec.outlier_max_round = 30;
+    spec.outlier_max_outliers = 30;
+  }
+  spec.seasonal.assign(12, X11SeasonalRequest::msr);
+  spec.sigma = X11SigmaPolicy::legacy;
+  spec.forecast = -1;
+  return fit_monthly(spec, true);
+}
+
+}  // namespace
+
+X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
+  return fit_monthly(request, false);
+}
+
+X13AutomaticFitResult x13_estimated_rsa0(const std::vector<double>& observations, int year, int month) {
+  return fit_stock_airline(observations, year, month, false);
+}
+
+X13AutomaticFitResult x13_estimated_rsa1(const std::vector<double>& observations, int year, int month) {
+  return fit_stock_airline(observations, year, month, true);
 }
 
 }  // namespace kalos

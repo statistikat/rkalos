@@ -222,6 +222,13 @@ struct AutoVariableRecord {
     double coefficient=0.;
     std::vector<double> column;   // the factory column over the model span
 };
+// The public RegArimaModel likelihood and innovations for a stock estimated template.
+struct X13StockLikelihood {
+    double residual_ssq = 0.;
+    std::size_t estimated_parameters = 0;
+    std::vector<double> full_residuals; // starts after d + 12*bd observations
+};
+
 // The result of one automatic-spec fit.
 struct X13AutomaticFitResult {
     // "available" | "unsupported:<...>" (fail-closed matrix) |
@@ -241,6 +248,7 @@ struct X13AutomaticFitResult {
     std::string estimation_status;
     double log_likelihood=0., aicc=0.;
     std::size_t effective_observations=0;
+    std::optional<X13StockLikelihood> stock_likelihood;
     // The decision chain, in pinned execution order (provenance of the
     // whole run: "the final description plus the chain is the full
     // regeneration recipe of the fit").
@@ -255,5 +263,11 @@ struct X13AutomaticFitResult {
 // the chain kept so far. Shape violations throw std::invalid_argument
 // exactly as the seams below do.
 X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request);
+
+// Stock monthly X-13 RSA0 with estimated airline parameters and a one-year
+// forecast extension. The observed series starts at the given year and month.
+X13AutomaticFitResult x13_estimated_rsa0(const std::vector<double>& observations, int year, int month);
+// Stock RSA1 selects the transformation and detects AO, LS and TC outliers.
+X13AutomaticFitResult x13_estimated_rsa1(const std::vector<double>& observations, int year, int month);
 } // namespace kalos
 #endif

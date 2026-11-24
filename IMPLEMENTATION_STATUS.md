@@ -4,6 +4,14 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Stock estimated X-13 RSA0 and RSA1 core checkpoint (2026-11-24)
+
+Kalos `9443a9b960ad8779347d32038e36a50c21ad3b37` supplies the original
+monthly RSA0 and RSA1 estimation routes and their six public stock fits.
+The core checkpoint covers both estimated airline parameters, selected
+outliers, X-11 decisions, likelihoods, 594 innovations and 84 dated X-11
+rows. The generated R source and reference snapshot passes offline verification.
+
 ## M6 combined SI outcomes in fitted R models (2026-11-24)
 
 Version `0.1.0.9022` exposes `diagnostics$combined_seasonality` on
