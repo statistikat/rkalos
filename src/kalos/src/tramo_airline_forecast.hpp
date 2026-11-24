@@ -3,8 +3,17 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <optional>
+#include <vector>
 
 namespace kalos::detail {
+
+// Original-scale forecast uncertainty of the complete monthly airline model.
+// Response is on the estimation scale; columns cover the observation and forecast domains.
+std::optional<std::vector<double>> airline_forecast_uncertainty(
+    std::vector<double> response, const std::vector<std::vector<double>>& columns,
+    bool mean, bool log, double theta, double seasonal, const std::vector<double>& coefficients,
+    const std::vector<double>& covariance, double innovation_variance, int months);
 
 // Conditional distribution of the last 13 innovations of the differenced
 // monthly airline model. Each observed response or design column uses the

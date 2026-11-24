@@ -228,6 +228,8 @@ struct X13StockLikelihood {
     double residual_ssq = 0.;
     std::size_t estimated_parameters = 0;
     std::vector<double> full_residuals; // starts after d + 12*bd observations
+    int start_year = 0, start_month = 0; // input domain
+    std::vector<double> regression_covariance; // row-major, in fitted model order
 };
 
 // Stock estimated RSA2c calendar variables precede the outlier variables in model order.
@@ -280,5 +282,20 @@ X13AutomaticFitResult x13_estimated_rsa0(const std::vector<double>& observations
 X13AutomaticFitResult x13_estimated_rsa1(const std::vector<double>& observations, int year, int month);
 // Stock RSA2c estimates the working-day and Easter candidates before the outlier pass.
 X13AutomaticFitResult x13_estimated_rsa2c(const std::vector<double>& observations, int year, int month);
+
+struct X13StockResidualDiagnostics {
+    double standard_error;
+    LjungBoxTest ljung_box;
+    std::optional<ResidualNormalityTest> normality;
+};
+X13StockResidualDiagnostics x13_stock_residual_diagnostics(const X13AutomaticFitResult& fit);
+
+struct X13StockForecastErrors {
+    std::string status;
+    std::vector<double> standard_errors;
+};
+// Public original-scale preprocessing forecast uncertainty (y_ef). A nonnegative
+// month count begins immediately after the input. Zero requests an empty result.
+X13StockForecastErrors x13_stock_forecast_errors(const X13AutomaticFitResult& fit, int months);
 } // namespace kalos
 #endif

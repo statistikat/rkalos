@@ -210,7 +210,8 @@ LjungBoxTest monthly_airline_residual_ljung_box(const std::vector<double>& resid
     return monthly_tramo_residual_ljung_box(residuals, 2);
 }
 
-std::optional<ResidualNormalityTest> tramo_residual_normality(const std::vector<double>& residuals) {
+static std::optional<ResidualNormalityTest> residual_normality(const std::vector<double>& residuals,
+        double (*power_one_third)(double)) {
     if (residuals.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
         throw std::invalid_argument("tramo_residual_normality requires a JVM-sized series");
     }
@@ -234,9 +235,17 @@ std::optional<ResidualNormalityTest> tramo_residual_normality(const std::vector<
     const double alpha = a + c * skewness * skewness;
     const double chi = 2 * k * (kurtosis - 1 - skewness * skewness);
     const double z2 = std::sqrt(alpha * 9)
-        * (std::pow(chi / (2 * alpha), 1.0 / 3.0) - 1 + 1 / (9 * alpha));
+        * (power_one_third(chi / (2 * alpha)) - 1 + 1 / (9 * alpha));
     const double value = z1 * z1 + z2 * z2;
     return ResidualNormalityTest{value, detail::chi2_upper_p(ResidualNormalityTest::df, value)};
+}
+
+std::optional<ResidualNormalityTest> tramo_residual_normality(const std::vector<double>& residuals) {
+    return residual_normality(residuals, [](double x) { return std::pow(x, 1.0 / 3.0); });
+}
+
+std::optional<ResidualNormalityTest> portable_residual_normality(const std::vector<double>& residuals) {
+    return residual_normality(residuals, detail::fdlibm_power_one_third);
 }
 
 TramoComparatorResidualTests tramo_comparator_residual_tests(const std::vector<double>& residuals) {

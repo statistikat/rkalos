@@ -363,6 +363,7 @@ if(KALOS_BUILD_TESTS)
     if(test_name STREQUAL "test_x13_estimated_templates")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_X13_TEMPLATE_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles"
+        KALOS_X13_DIAGNOSTIC_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/diagnostics-x86_64.txt"
         KALOS_X13_TEMPLATE_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/templates-x86_64.txt")
     endif()
     add_test(NAME ${test_name} COMMAND ${test_name})

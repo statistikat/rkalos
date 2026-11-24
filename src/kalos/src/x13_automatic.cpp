@@ -37,6 +37,7 @@
 
 #include "kalos/detail/x13_effective_mode.hpp"
 #include "kalos/x13_automatic.hpp"
+#include "tramo_airline_forecast.hpp"
 
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/detail/hostlineage.hpp"
@@ -1890,8 +1891,14 @@ class AutomaticPipeline {
     }
     if (residuals.size() != yd_.size())
       throw std::runtime_error("invalid stock X-13 residual length");
+    const auto npar = 1 + columns.size() + point.size();
+    if (yd_.size() <= npar || diagnostics.unscaled_covariance.size() != columns.size() * columns.size())
+      throw std::runtime_error("invalid stock X-13 final covariance");
+    const double scale = fit->ssq_err / static_cast<double>(yd_.size() - npar + 1);
+    for (double& v : diagnostics.unscaled_covariance) v *= scale;
     result_.stock_likelihood = X13StockLikelihood{
-        fit->ssq_err, 1 + columns.size() + point.size(), std::move(residuals)};
+        fit->ssq_err, npar, std::move(residuals), request_.first_year, request_.first_period,
+        std::move(diagnostics.unscaled_covariance)};
     result_.log_likelihood = fit->log_likelihood;
     return fit->b;
   }
@@ -2316,4 +2323,60 @@ X13AutomaticFitResult x13_estimated_rsa2c(const std::vector<double>& observation
   return fit_stock_airline(observations, year, month, true, true);
 }
 
+
+namespace {
+const X13StockLikelihood& stock_likelihood(const X13AutomaticFitResult& fit) {
+  if (fit.status != "available" || !fit.stock_likelihood || fit.p || fit.bp || fit.mean ||
+      fit.q != 1 || fit.bq != 1 || fit.d != 1 || fit.bd != 1 ||
+      fit.coefficients[1].size() != 1 || fit.coefficients[3].size() != 1 ||
+      fit.effective_observations <= fit.stock_likelihood->estimated_parameters ||
+      fit.stock_likelihood->full_residuals.size() != fit.effective_observations)
+    throw std::invalid_argument("requires a complete stock X-13 airline fit");
+  return *fit.stock_likelihood;
+}
+} // namespace
+
+X13StockResidualDiagnostics x13_stock_residual_diagnostics(const X13AutomaticFitResult& fit) {
+  const auto& stats = stock_likelihood(fit);
+  return {tramo_residual_standard_error(stats.residual_ssq, static_cast<int>(fit.effective_observations),
+                                        static_cast<int>(stats.estimated_parameters)),
+          monthly_airline_residual_ljung_box(stats.full_residuals), portable_residual_normality(stats.full_residuals)};
+}
+
+X13StockForecastErrors x13_stock_forecast_errors(const X13AutomaticFitResult& fit, int months) {
+  const auto& stats = stock_likelihood(fit);
+  const auto& observed = fit.fit.preadjustment.a1;
+  if (months < 0 || observed.size() < 13 || observed.size() - 13 != fit.effective_observations)
+    throw std::invalid_argument("invalid stock X-13 forecast domain");
+  if (!months) return {"no_requested_predictions", {}};
+  if (observed.size() > static_cast<std::size_t>(std::numeric_limits<int>::max() - months))
+    throw std::length_error("extended stock X-13 forecast domain exceeds index range");
+  const calendar_domain domain{stats.start_year, stats.start_month, 12, static_cast<int>(observed.size()) + months};
+  std::vector<double> response = observed, coefficients;
+  std::vector<std::vector<double>> columns;
+  if (fit.stock_calendar) {
+    const auto& calendar = *fit.stock_calendar;
+    columns = x13_rsa2c_calendar_columns(calendar.selection, fit.log, domain);
+    coefficients = calendar.coefficients;
+    if (coefficients.size() != columns.size()) throw std::invalid_argument("invalid stock X-13 calendar design");
+    if (fit.log && calendar.selection.working_days) {
+      const auto factors = x13_rsa2c_leap_factors(domain, false);
+      for (std::size_t i = 0; i < response.size(); ++i) response[i] *= factors[i];
+    }
+  }
+  if (fit.log) for (auto& value : response) value = detail::fdlibm_log(value);
+  for (const auto& effect : fit.variables) {
+    auto& column = columns.emplace_back(observed.size() + months);
+    fill_outlier_column(effect.type, effect.position, 12, 0.7, column);
+    coefficients.push_back(effect.coefficient);
+  }
+  const auto p = coefficients.size();
+  if (p + 3 != stats.estimated_parameters || stats.regression_covariance.size() != p * p)
+    throw std::invalid_argument("invalid stock X-13 regression covariance");
+  const double variance = stats.residual_ssq / static_cast<double>(fit.effective_observations - stats.estimated_parameters);
+  auto errors = detail::airline_forecast_uncertainty(std::move(response), columns, false, fit.log,
+      fit.coefficients[1][0], fit.coefficients[3][0], coefficients, stats.regression_covariance, variance, months);
+  if (!errors) return {"covariance_range", {}};
+  return {"available", std::move(*errors)};
+}
 }  // namespace kalos

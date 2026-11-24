@@ -49,21 +49,32 @@ tramo_tr0_forecast_errors_result tramo_tr1_forecast_errors(const TramoFitResult&
     // does not invert their polynomial, including at the near-unit fitted AO.
     auto response = fit.builder.interpolated;
     if (fit.log) for (double& x : response) x = detail::fdlibm_log(x);
-    response.reserve(n + months);
     std::vector<std::vector<double>> columns;
     for (const auto& effect : fit.variables) {
         auto& column = columns.emplace_back(n + months);
         fill_outlier_column(static_cast<OutlierType>(effect.type), effect.position, 12, effect.tc_rate, column);
     }
-    auto design = [&](std::size_t j, std::size_t t) { return j == 0 ? 1.0 : difference(columns[j - 1], t); };
+    auto errors = detail::airline_forecast_uncertainty(std::move(response), columns, true, fit.log,
+        theta, seasonal, fit.regression_coefficients, fit.covariance.covariance, model.innovation_variance, months);
+    if (!errors) return {"covariance_range", {}};
+    return {"available", std::move(*errors)};
+}
+
+std::optional<std::vector<double>> detail::airline_forecast_uncertainty(
+    std::vector<double> response, const std::vector<std::vector<double>>& columns,
+    bool mean, bool log, double theta, double seasonal, const std::vector<double>& coefficients,
+    const std::vector<double>& covariance, double innovation_variance, int months) {
+    const auto n = response.size(), p = coefficients.size();
+    response.reserve(n + months);
+    auto design = [&](std::size_t j, std::size_t t) { return mean && j == 0 ? 1.0 : difference(columns[j - mean], t); };
     detail::AirlineForecastBoundary boundary(theta, seasonal);
     using State = detail::AirlineForecastBoundary::State;
     State response_state{};
     std::vector<State> design_states(p);
     for (std::size_t t = 13; t < n; ++t) {
         const double variance = boundary.advance();
-        if (!(variance > 0.0) || !std::isfinite(variance)) return {"covariance_range", {}};
-        if (fit.log) boundary.observe(response_state, difference(response, t), variance);
+        if (!(variance > 0.0) || !std::isfinite(variance)) return std::nullopt;
+        if (log) boundary.observe(response_state, difference(response, t), variance);
         for (std::size_t j = 0; j < p; ++j) boundary.observe(design_states[j], design(j, t), variance);
     }
     // The regression sensitivity is future X minus its integrated conditional
@@ -80,23 +91,23 @@ tramo_tr0_forecast_errors_result tramo_tr1_forecast_errors(const TramoFitResult&
             integrated += running[j];
             sensitivity[j] = integrated - projection(weights, design_states[j]);
         }
-        double variance = model.innovation_variance * process;
+        double variance = innovation_variance * process;
         for (std::size_t i = 0; i < p; ++i)
             for (std::size_t j = 0; j < p; ++j)
-                variance += sensitivity[i] * fit.covariance.covariance[i * p + j] * sensitivity[j];
+                variance += sensitivity[i] * covariance[i * p + j] * sensitivity[j];
         double error = std::sqrt(variance);
-        if (fit.log) {
+        if (log) {
             response.push_back(response[t - 1] + response[t - 12] - response[t - 13]);
             const double raw = response.back() + projection(weights, response_state) +
-                std::inner_product(sensitivity.begin(), sensitivity.end(), fit.regression_coefficients.begin(), 0.0);
+                std::inner_product(sensitivity.begin(), sensitivity.end(), coefficients.begin(), 0.0);
             // JD+ LogNormal.stdev uses the raw forecast and its total variance.
             const double log_variance = error * error;
             error = detail::fdlibm_exp(raw + 0.5 * log_variance) * std::sqrt(detail::fdlibm_exp(log_variance) - 1);
         }
-        if (!std::isfinite(error)) return {"covariance_range", {}};
+        if (!std::isfinite(error)) return std::nullopt;
         errors[h - 1] = error;
     }
-    return {"available", std::move(errors)};
+    return errors;
 }
 
 }  // namespace kalos

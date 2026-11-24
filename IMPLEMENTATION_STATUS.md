@@ -4,6 +4,14 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Stock X-13 residual and forecast reference checkpoint (2026-11-24)
+
+Kalos `3a1f413a1d309687ffc2f157139cf358a295d55e` supplies the public stock
+residual standard error, Ljung–Box and Doornik–Hansen tests, and original-series
+forecast standard errors for all nine X-13 fits. The reference includes
+45 diagnostic scalars and 396 errors at four forecast lengths. The
+canonical source and reference snapshots pass offline verification.
+
 ## M6 combined SI for automatic and estimated X-13 (2026-11-24)
 
 Version `0.1.0.9024` returns the observed-domain combined SI verdict,

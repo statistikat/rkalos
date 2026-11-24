@@ -83,6 +83,8 @@ LjungBoxTest monthly_tramo_residual_ljung_box(const std::vector<double>& residua
 double tramo_residual_standard_error(double residual_ssq, int effective, int estimated_parameters);
 LjungBoxTest monthly_airline_residual_ljung_box(const std::vector<double>& residuals);
 std::optional<ResidualNormalityTest> tramo_residual_normality(const std::vector<double>& residuals);
+// Public monthly normality test under the stock X-13 portable JVM math profile.
+std::optional<ResidualNormalityTest> portable_residual_normality(const std::vector<double>& residuals);
 
 // ModelController.calcResStat side effect: mean / sqrt(var / n) with
 // mean = sum / n and var = ssq / n - mean * mean (var / n under the root).
