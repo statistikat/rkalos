@@ -4,6 +4,30 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Family M6 full source verification — rkalos leg (2026-11-24)
+
+The rkalos `eb64ba3` (core `b4f2e1d`) full source check replicated the
+`check.yml` Linux job: `R CMD build` from a clean archive export and
+`R CMD check --no-manual` with the pinned single-thread OpenBLAS 0.3.34
+provider, `JAVA_HOME` disabled, `OMP_NUM_THREADS=2` and a dependency-minimal
+temporary library. Status: **1 WARNING** — the retained, documented
+non-portable `-ffp-contract=off` flag in `PKG_CXXFLAGS` (introduced in
+`c7b92d6` and recorded in every M-era entry; the R-header warning of earlier
+lanes is macOS-only and does not materialize on this toolchain). Zero
+NOTEs, zero compiler warnings, examples OK; the tests phase ran all 67
+Java-free files with **309,936/309,936** assertions, reproducing the
+committed OpenMP-lane count, and the post-check probe reported
+QUALIFICATION OK with `probe_threads = 2` on core `b4f2e1d1f5ee…`.
+
+The paired Persephone leg is recorded as pending: the Persephone oracle
+lane showed a pre-existing native-versus-live-JVM parity gap (118 of
+8,444 expectations, every one inside an rjd3-gated parity block, all
+frozen-replay assertions green) that reproduces identically at the exact
+M5b configuration today (101 of 8,243), so it is not attributable to this
+re-pin. Maintainer decision 2026-11-24: re-baseline the Persephone parity
+references against the live rjd3 stack as a recorded re-baseline under the
+M3 tolerance policy; that slice is tracked separately.
+
 ## Core re-pin: completed WK factorizer chain (2026-11-24)
 
 The core pin moved `7299cdefff357309b84f4409cbc76e7f556bb761` to
