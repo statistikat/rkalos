@@ -25,6 +25,7 @@ OBJECTS = RcppExports.o \
   kalos/src/tramo_seasonal_f_test.o \
   kalos/src/tramo_seasonal_spectrum.o \
   kalos/src/tramo_regression_tests.o \
+  kalos/src/tramo_tr3_forecast.o \
   kalos/src/tramo_tr1_forecast.o \
   kalos/src/tramo_tr0.o \
   kalos/src/tramo_seats_pipeline.o \

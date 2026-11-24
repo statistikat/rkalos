@@ -46,4 +46,7 @@ struct TramoFitResult;
 // including AO, LS and stock TC effects and the lognormal back-transformation.
 tramo_tr0_forecast_errors_result tramo_tr1_forecast_errors(const TramoFitResult& fit, int months);
 
+// Public original-series errors for monthly, automatically identified TR3 models.
+tramo_tr0_forecast_errors_result tramo_tr3_forecast_errors(const TramoFitResult& fit, int months);
+
 }  // namespace kalos

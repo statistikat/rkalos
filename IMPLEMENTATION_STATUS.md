@@ -4,6 +4,15 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Selected-model monthly TR3 forecast uncertainty checkpoint (2026-11-24)
+
+Kalos `5547b342543e9e0504f1660e30a1fdf53033271a` projects the
+public original-series forecast standard error from a fitted monthly TR3
+model. Its 13-model oracle records the separate conditional SEATS
+standard errors. Both platform builds now compile the new source and CI
+uses the same core pin. Offline verification passed for **200 core files,
+112 fixtures and 377 evidence files**.
+
 ## M6 public selected-model residual diagnostics in R (2026-11-24)
 
 Version `0.1.0.9018` returns the residual standard error, Ljung–Box
