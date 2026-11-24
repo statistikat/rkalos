@@ -58,3 +58,33 @@ Rcpp::List native_tramo_tr1(const std::vector<double>& series, int year, int mon
 Rcpp::List native_tramo_tr3(const std::vector<double>& series, int year, int month) {
     return wrap_tramo_preprocessing(kalos::estimate_tramo_tr3(series, year, month));
 }
+
+void attach_tramo_calendar(Rcpp::List& result, const kalos::TramoFittedCalendar& calendar) {
+    const auto& selection = calendar.selection;
+    std::string days = "none";
+    std::vector<std::string> labels;
+    if (selection.trading_days == kalos::TramoTradingDays::WorkingDays) {
+        days = "working_days";
+        labels.push_back("td");
+    } else if (selection.trading_days == kalos::TramoTradingDays::TradingDays) {
+        days = "trading_days";
+        for (int i = 0; i < 6; ++i) labels.push_back("td[" + std::to_string(i) + "]");
+    }
+    if (selection.leap_year) labels.push_back("lp");
+    if (selection.easter) labels.push_back("easter");
+    Rcpp::NumericVector coefficients = Rcpp::wrap(calendar.coefficients);
+    coefficients.attr("names") = labels;
+    Rcpp::List model = result["model"];
+    model["calendar"] = Rcpp::List::create(Rcpp::_["trading_days"] = days,
+        Rcpp::_["leap_year"] = selection.leap_year, Rcpp::_["easter"] = selection.easter,
+        Rcpp::_["coefficients"] = coefficients);
+    result["model"] = model;
+}
+
+// [[Rcpp::export(name = ".native_tramo_trfull", rng = false)]]
+Rcpp::List native_tramo_trfull(const std::vector<double>& series, int year, int month) {
+    const auto fit = kalos::estimate_tramo_trfull(series, year, month);
+    auto result = wrap_tramo_preprocessing(fit);
+    attach_tramo_calendar(result, fit.calendar);
+    return result;
+}

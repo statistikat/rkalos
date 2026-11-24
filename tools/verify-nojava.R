@@ -32,9 +32,13 @@ if ("--native" %in% args) {
   stopifnot(identical(rsa3$status, "ok"), identical(rsa3$template, "RSA3"),
             identical(stats::tsp(rsa3$finalSA), stats::tsp(datasets::AirPassengers)),
             identical(rsa3$series_forecast_stdev_status, "no_requested_predictions"))
+  full <- native_tramoseats_fit(datasets::AirPassengers, "RSAfull", forecast = 7L)
+  stopifnot(identical(full$status, "ok"), identical(full$template, "RSAfull"),
+            identical(stats::tsp(full$calendar_effect), stats::tsp(datasets::AirPassengers)),
+            length(full$calendar_effect_forecast) == 7L)
   rsa0 <- native_tramoseats_fit(datasets::AirPassengers)
   trend_forecast <- with(rsa0$merged, values[[which(component == "Trend" & information == "Forecast")]])
-  stopifnot(identical(cap$tramo_seats_fit$templates, c("RSA0", "RSA1", "RSA3")), identical(rsa0$status, "ok"),
+  stopifnot(identical(cap$tramo_seats_fit$templates, c("RSA0", "RSA1", "RSA3", "RSAfull")), identical(rsa0$status, "ok"),
             identical(stats::tsp(rsa0$finalSA), stats::tsp(datasets::AirPassengers)),
             length(trend_forecast) == 24L)
   convolve <- getFromNamespace(".native_convolve", "rkalos")

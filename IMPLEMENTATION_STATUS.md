@@ -4,6 +4,26 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 ordinary stock TRfull and RSAfull in R (2026-11-24)
+
+Version `0.1.0.9021` adds `native_tramo_preprocess(series, "TRfull")`
+and `native_tramoseats_fit(series, "RSAfull")` with case-insensitive aliases.
+Both fit the stock calendar, ARIMA model and outliers from the original
+monthly observations. Named trading-day, leap-year and Easter coefficients
+are separate from estimated outliers. The full fit returns its native
+calendar effect on the observed and forecast domains in original-series units.
+
+All 29 public fits matched 4,165 innovations, 145 residual diagnostic
+values, 26,160 merged product values, 5,232 calendar effects and 696
+conditional SEATS forecast errors bit-for-bit. The 696 preprocessing forecast
+errors met the existing scaled tolerance. Both the zero-horizon and custom
+seven-month calendar forecasts retained their expected lengths.
+
+Serial and two-worker OpenMP each passed **3,112/3,112** RSAfull checks,
+**2,130/2,130** RSA3, **990/990** RSA1, **601/601** standalone TR1/TR3
+and **498/498** RSA0 checks. Both Java-free native smoke tests passed.
+[Stock RSAfull product checks](inst/tinytest/test-native-tramoseats-rsafull.R)
+
 ## Automatic monthly TRfull and RSAfull core checkpoint (2026-11-24)
 
 Kalos `45e78cff6a2daa573f59cc9301451341cbf5265f` fits the stock

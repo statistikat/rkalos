@@ -133,6 +133,10 @@
     .Call(`_rkalos_native_tramoseats_rsa3`, series, year, month, backcast, forecast)
 }
 
+.native_tramoseats_rsafull <- function(series, year, month, backcast, forecast) {
+    .Call(`_rkalos_native_tramoseats_rsafull`, series, year, month, backcast, forecast)
+}
+
 .native_stationary_likelihood <- function(values, transition, observation, noise_loading, observation_variance = NULL, mean = NULL, variance = NULL) {
     .Call(`_rkalos_native_stationary_likelihood`, values, transition, observation, noise_loading, observation_variance, mean, variance)
 }
@@ -151,6 +155,10 @@
 
 .native_tramo_tr3 <- function(series, year, month) {
     .Call(`_rkalos_native_tramo_tr3`, series, year, month)
+}
+
+.native_tramo_trfull <- function(series, year, month) {
+    .Call(`_rkalos_native_tramo_trfull`, series, year, month)
 }
 
 .native_tramo_prepare_model <- function(values, name, year, month, frequency) {

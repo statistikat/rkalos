@@ -1,5 +1,6 @@
 #include "rcpp_tramo_fit.hpp"
 #include <kalos/tramo_seats_pipeline.hpp>
+#include <kalos/calendar_generation.hpp>
 
 namespace {
 Rcpp::DataFrame component_table(const std::vector<kalos::seats_component_series>& rows) {
@@ -173,4 +174,24 @@ Rcpp::List native_tramoseats_rsa3(const std::vector<double>& series, int year, i
         int backcast, int forecast) {
     const auto fit = kalos::run_tramo_seats_rsa3(series, year, month, backcast, forecast);
     return wrap_automatic_seats(fit, kalos::tramo_tr3_forecast_errors(fit.preprocessing, forecast));
+}
+
+// [[Rcpp::export(name = ".native_tramoseats_rsafull", rng = false)]]
+Rcpp::List native_tramoseats_rsafull(const std::vector<double>& series, int year, int month,
+        int backcast, int forecast) {
+    const auto fit = kalos::run_tramo_seats_rsafull(series, year, month, backcast, forecast);
+    const auto& model = fit.preprocessing;
+    auto result = wrap_automatic_seats(fit, kalos::tramo_selected_forecast_errors(model, forecast));
+    attach_tramo_calendar(result, model.calendar);
+    result["calendar_effect_forecast"] = Rcpp::NumericVector(0);
+    for (const auto& row : fit.decomposition.finals) {
+        if (row.component != kalos::seats_component::series ||
+            (row.information != kalos::seats_information::value &&
+             row.information != kalos::seats_information::forecast)) continue;
+        kalos::calendar_domain domain{static_cast<int>(row.start_year), row.start_month, 12,
+                                      static_cast<int>(row.values.size())};
+        const char* key = row.information == kalos::seats_information::value ? "calendar_effect" : "calendar_effect_forecast";
+        result[key] = kalos::tramo_stock_calendar_effect_original_scale(model.calendar, domain, model.log);
+    }
+    return result;
 }

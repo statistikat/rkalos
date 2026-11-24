@@ -70,7 +70,7 @@ expect_identical(c(sum(lengths(cases)), residual_count, variables), c(26L, 2675L
 alias <- rkalos::native_tramo_preprocess(AirPassengers, "rsa1")
 expect_identical(alias$template, "TR1")
 expect_identical(as.integer(stats::start(alias$residuals$tsres)), c(1950L, 2L))
-expect_identical(rkalos::capabilities()$tramo_preprocessing$templates, c("TR1", "TR3"))
+expect_identical(rkalos::capabilities()$tramo_preprocessing$templates, c("TR1", "TR3", "TRfull"))
 expect_error(rkalos::native_tramo_preprocess(AirPassengers, "TR2"), "TR1")
 expect_error(rkalos::native_tramo_preprocess(stats::ts(1:30, frequency = 4)), "monthly")
 expect_error(rkalos::native_tramo_preprocess(stats::ts(1:23, frequency = 12)), "24")

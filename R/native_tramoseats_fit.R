@@ -1,8 +1,9 @@
 native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, backcast = 0L) {
-  templates <- c(RSA0 = "RSA0", TR0 = "RSA0", RSA1 = "RSA1", TR1 = "RSA1", RSA3 = "RSA3", TR3 = "RSA3")
+  templates <- c(RSA0 = "RSA0", TR0 = "RSA0", RSA1 = "RSA1", TR1 = "RSA1", RSA3 = "RSA3", TR3 = "RSA3",
+                 RSAFULL = "RSAfull", TRFULL = "RSAfull")
   if (!is.character(template) || !is.null(dim(template)) || length(template) != 1L ||
       is.na(template) || !toupper(template) %in% names(templates))
-    stop("The native TRAMO/SEATS fit supports RSA0 (TR0), RSA1 (TR1) and RSA3 (TR3).", call. = FALSE)
+    stop("The native TRAMO/SEATS fit supports RSA0 (TR0), RSA1 (TR1), RSA3 (TR3) and RSAfull (TRfull).", call. = FALSE)
   template <- unname(templates[[toupper(template)]])
   domain <- native_regular_domain(series)
   if (domain$frequency != 12L || any(!is.finite(series)))
@@ -11,7 +12,7 @@ native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, bac
     stop("The start year exceeds the supported native range.", call. = FALSE)
   months <- seats_validate_horizons(backcast, forecast, domain$frequency, length(series))
   if (template != "RSA0") {
-    fit <- if (template == "RSA3") .native_tramoseats_rsa3 else .native_tramoseats_rsa1
+    fit <- switch(template, RSA1 = .native_tramoseats_rsa1, RSA3 = .native_tramoseats_rsa3, RSAfull = .native_tramoseats_rsafull)
     result <- fit(as.numeric(series), domain$start[1L], domain$start[2L], months[1L], months[2L])
     result <- format_tramo_preprocessing(result, series, domain)
   } else {
@@ -21,11 +22,13 @@ native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, bac
     result$residuals$start <- NULL
   }
   result <- seats_date_components(result, domain$frequency, c("initial", "final", "merged"))
-  if (length(result$series_forecast_stdev)) {
-    first <- domain$start_ordinal + length(series)
-    result$series_forecast_stdev <- stats::ts(result$series_forecast_stdev,
-      start = c(first %/% domain$frequency, first %% domain$frequency + 1), frequency = domain$frequency)
+  first <- domain$start_ordinal + length(series)
+  future_start <- c(first %/% domain$frequency, first %% domain$frequency + 1)
+  for (name in c("series_forecast_stdev", "calendar_effect_forecast")) {
+    if (length(result[[name]]))
+      result[[name]] <- stats::ts(result[[name]], start = future_start, frequency = domain$frequency)
   }
+  if (length(result$calendar_effect)) attributes(result$calendar_effect) <- list(tsp = stats::tsp(series), class = "ts")
   result$template <- template
   result$method <- "tramoseats"
   result$mode <- if (isTRUE(result$model$log)) "multiplicative" else "additive"

@@ -58,7 +58,7 @@ dated standard errors in `series_forecast_stdev` describe the original series.
 preprocessing model. Its result contains the selected transformation,
 fitted airline parameters, dated residuals and estimated outlier effects.
 The residual standard error and the Ljung–Box and Doornik–Hansen statistics
-and probabilities are available on all three monthly templates. RSA3 uses the
+and probabilities are available on all four monthly templates. RSA3 and RSAfull use the
 number of selected AR and MA parameters for its Ljung–Box degrees of freedom.
 
 Use `native_tramo_preprocess(series, "TR3")` or
@@ -68,6 +68,12 @@ residuals. RSA3 also exposes SEATS components and original-series forecast
 errors. Identification supports seasonal restarts, fourth-pass mean refits
 and reference-comparison retries, including reduced outlier thresholds and
 last-chance estimation.
+
+Use `native_tramo_preprocess(series, "TRfull")` or
+`native_tramoseats_fit(series, "RSAfull")` for automatic monthly stock
+calendar selection. The fitted model reports the named calendar coefficients
+separately from outliers. The complete fit also returns dated observed and
+forecast calendar effects on the original series scale.
 
 Install OpenBLAS with CBLAS and LAPACKE (qualification version 0.3.34). Set `KALOS_OPENBLAS_ROOT` to its prefix before building and installing the source archive. For custom or static providers, set `KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler and linker flags including dependencies.
 C++17 and Rcpp are required. Configure probes optional OpenMP with R's actual
