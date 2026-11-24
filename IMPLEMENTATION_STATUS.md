@@ -4,6 +4,61 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Automatic-route public residual diagnostics and the e2138a3 re-pin (2026-11-24)
+
+Version `0.1.0.9027` forwards the automatic X-13 route's public final-model
+residual diagnostics to the R boundary. The vendored core moved
+`a7d4b12a7b7f7e1aa335d4e2bcd849b52df10e5a` → `e2138a32ff8f9cf0cacf678791834b785ccc13dc`
+(lock schema 2; verified 206 core, 112 fixture and 410 evidence files):
+`src/kalos/src/x13_automatic.cpp` (37+) populates the public
+final-model likelihood on the automatic success path and exports the new
+`kalos::x13_automatic_residual_diagnostics` accessor,
+`include/kalos/x13_automatic.hpp` (16+/1−) carries its declaration and the
+capture-domain contract, plus the upstream CTest registration in
+`src/kalos/CMakeLists.txt` (17+, inert for the R source build — the R
+export has never vendored `tests/`), the generated `revision.hpp` and the
+two lock files. The kalos ledger and evidence-pack documents
+(`IMPLEMENTATION_STATUS.md`, `docs/EVIDENCE_PACKAGE.md`) are outside the
+manifest allowlist, exactly as in prior pins; the nine-case double-JVM
+oracle fixture `fixtures/native/x13-automatic-diagnostics/public-x86_64.txt`
+was already vendored and is unchanged. The CI provider fetch now pins
+`ref: e2138a32ff8f9cf0cacf678791834b785ccc13dc`.
+
+`native_x13_fit_automatic()` now attaches the `residuals` record on the
+available path — `tsres`, `ser`, `lb` (24 lags) and `doornikhansen` —
+through the same `wrap_monthly_residuals` shape the estimated entry
+delivers, with the estimated route's R-side `ts()` dating convention
+(`start + d + frequency · bd`, mirroring `native_x13_estimated_fit.R`);
+refusals never carry a surface and the accessor fails closed on a partial
+one. `capabilities()$automatic_fit$residuals` reports the field — an
+additive named field on the existing module, so the block keeps
+`schema_version = 3L`, the precedent of `0aaa37b` on `estimated_x13_fit`.
+The estimated-route surface (`x13_stock_residual_diagnostics`, portable
+Doornik–Hansen arm) is untouched and stays byte-pinned by
+`test-native-x13-estimated.R`; on this route the Doornik–Hansen arm is
+the bridge capture domain (`tramo_residual_normality`, where the oracle
+file's words match, per the kalos ledger).
+
+The new `test-native-x13-automatic-diagnostics.R` (22 assertions) replays
+the fixture's `stock_rsa3_air` block at the R boundary through the
+decoder-equivalent RSA3 automatic request — the golden `ao` module state
+over the frozen airline capture — bit-exact on the final description, the
+131 residual words at 1950-2 (`ser` `3fa2f1afa0217296`, Ljung–Box
+`4037dc965a542ec1`/`3fd6b07d5d88af9e` at df 22, Doornik–Hansen
+`400c5e77bf83a962`/`3fc5bc662ee34c00` at df 2), plus the refusal half: the
+pinned 21-I deferral answers verbatim and carries no residual surface.
+
+The full Java-free suite (67 `test-native-*` files plus
+`test-package-boundary.R`, 68 files, no rjd3/rJava) passed
+**309,954/309,954** assertions in the serial lane and
+**309,958/309,958** in the two-worker OpenMP lane — each exactly its
+`a7d4b12` baseline (309,932 / 309,936) plus the 22 new assertions, with
+every other file's count byte-identical to the baseline logs (verified
+file by file, zero diffs). Both lanes passed the isolated `--native`
+Java-free smoke test with byte-identical logs and report the pinned
+provider `OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX
+SINGLE_THREADED` on core revision `e2138a3…`.
+
 ## Core re-pin: Complex.cart-normalized factorizer chain (2026-11-24)
 
 The core pin moved `b4f2e1d1f5eeac4b819a0a2a7a615aa3732f9a19` to

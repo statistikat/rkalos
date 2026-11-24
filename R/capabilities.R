@@ -97,6 +97,7 @@ capabilities <- function() {
                   monthly_only = TRUE,               # qualified on the frequency-12 corpus only
                   frequency = 12L,
                   complete_finite_input_only = TRUE, # missing-value interpolation is not part of the automatic description build
+                  residuals = c("tsres", "ser", "lb", "doornikhansen"), # final-model public diagnostics of an available fit (M7 cutover: the nine-case double-JVM oracle plus the R-boundary pin test-native-x13-automatic-diagnostics.R; the Doornik-Hansen arm is the bridge capture domain); additive field, schema stays 3L
                   deferred = "calendar, easter-detection, automatic-trading-days and user-variable detection answer 'unsupported:x13 automatic fit defers calendar/easter/TD/user detection (21-I)'",
                   qualification = "13-case pinned JVM oracle, decision-bit exact end to end at the core tier (21-H.3); re-pinned at the R boundary in test-native-x13-automatic.R; horizons qualified on the 4-case 21-H.4 horizon capture in test-native-x13-horizon.R (bit decisions, transcribed table bands)",
                   refusals = "verbatim unsupported:/failed: statuses from the core; NEVER a fallback to the restricted fit; see IMPLEMENTATION_STATUS.md",

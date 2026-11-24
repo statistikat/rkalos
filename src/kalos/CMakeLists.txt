@@ -436,6 +436,23 @@ if(KALOS_BUILD_TESTS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
     TIMEOUT 3600)
+  # M7 (item 27 cutover gap): the nine-case double-JVM automatic X-13 public
+  # residual diagnostics oracle (residual series, residuals.ser,
+  # residuals.lb with the ARMA-count degrees of freedom and
+  # residuals.doornikhansen, all bit claims) over the automatic route's
+  # final-model likelihood surface. The three stock RSA3 blocks reuse the
+  # x13-refusal-jvm-profiles CSVs.
+  add_executable(test_x13_automatic_diagnostics tests/test_x13_automatic_diagnostics.cpp)
+  target_link_libraries(test_x13_automatic_diagnostics PRIVATE kalos::kalos)
+  target_compile_definitions(test_x13_automatic_diagnostics PRIVATE
+    KALOS_X13_AUTOMATIC_DIAGNOSTICS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-automatic-diagnostics/public-x86_64.txt"
+    KALOS_X13_TEMPLATE_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles")
+  add_test(NAME test_x13_automatic_diagnostics
+           COMMAND test_x13_automatic_diagnostics)
+  set_tests_properties(test_x13_automatic_diagnostics PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
+    TIMEOUT 3600)
 endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

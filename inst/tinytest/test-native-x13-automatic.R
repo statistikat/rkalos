@@ -349,7 +349,7 @@ local({
     expect_true(is.list(af))
     expect_identical(names(af),c('schema_version','native_x13_fit_automatic','transform',
       'automodel','outliers','ami','regression','x11','monthly_only','frequency',
-      'complete_finite_input_only','deferred','qualification','refusals','entry_points'))
+      'complete_finite_input_only','residuals','deferred','qualification','refusals','entry_points'))
     expect_identical(af$schema_version,3L,info='3L: x11 zero_horizon_only -> horizon_envelope (21-H.4)')
     expect_true(af$native_x13_fit_automatic)
     expect_identical(names(af$transform),c('auto_log_test','aicc_correction_required'))

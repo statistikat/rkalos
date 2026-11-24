@@ -504,7 +504,20 @@ Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period
         Rcpp::_["scope"]="automatic_spec_x13_fit_only",Rcpp::_["backend"]="native");
     const ScopedSingleBlas worker;
     const auto result=kalos::x13_automatic_fit(request);
-    return wrap_estimated_x13(out, result, Rcpp::CharacterVector(seasonal), msr_name, "automatic_fit");
+    auto product=wrap_estimated_x13(out, result, Rcpp::CharacterVector(seasonal), msr_name, "automatic_fit");
+    if(result.stock_likelihood) {
+        // The public automatic-route residual diagnostics (M7 item 27 cutover): the
+        // residuals.ser / residuals.lb / residuals.doornikhansen surface over the
+        // final-model likelihood this route populates on its success path, in the
+        // same wrap_monthly_residuals shape the estimated entry delivers (the
+        // Doornik-Hansen arm is the bridge capture domain pinned by the core's
+        // x13_automatic_residual_diagnostics). Refusals never carry the surface;
+        // the accessor fails closed on a partial one, never a fallback.
+        const auto diagnostic=kalos::x13_automatic_residual_diagnostics(result);
+        product["residuals"]=wrap_monthly_residuals(result.stock_likelihood->full_residuals,
+            diagnostic.standard_error,diagnostic.ljung_box,diagnostic.normality);
+    }
+    return product;
 }
 
 // [[Rcpp::export(name = ".native_x13_estimated_fit", rng = false)]]

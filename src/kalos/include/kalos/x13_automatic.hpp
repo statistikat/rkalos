@@ -223,7 +223,9 @@ struct AutoVariableRecord {
     double coefficient=0.;
     std::vector<double> column;   // the factory column over the model span
 };
-// The public RegArimaModel likelihood and innovations for a stock estimated template.
+// The public RegArimaModel likelihood and innovations of the final fitted
+// model: populated by the stock estimated templates and, since the M7
+// cutover entry, by every available automatic fit.
 struct X13StockLikelihood {
     double residual_ssq = 0.;
     std::size_t estimated_parameters = 0;
@@ -289,6 +291,19 @@ struct X13StockResidualDiagnostics {
     std::optional<ResidualNormalityTest> normality;
 };
 X13StockResidualDiagnostics x13_stock_residual_diagnostics(const X13AutomaticFitResult& fit);
+
+// The public automatic-route residual diagnostics (M7, item 27 cutover):
+// the residuals.ser / residuals.lb / residuals.doornikhansen getters over
+// the final-model likelihood of ANY complete automatic fit (the surface the
+// stock consumer above pins for the airline-only estimated templates).
+// The fit populates the likelihood surface on the success path; the
+// Ljung-Box degrees of freedom mirror the fitted regular+seasonal ARMA
+// parameter count, and the Doornik-Hansen arm mirrors the bridge capture
+// domain of this surface (tramo_residual_normality), where the stock
+// consumer pins the estimated-template capture domain
+// (portable_residual_normality). Guards: status "available", the surface
+// present with its full effective-observation residual length.
+X13StockResidualDiagnostics x13_automatic_residual_diagnostics(const X13AutomaticFitResult& fit);
 
 struct X13StockForecastErrors {
     std::string status;

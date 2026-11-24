@@ -2159,6 +2159,21 @@ class AutomaticPipeline {
     entry.notes = {"downstream composed", "available"};
     push(std::move(entry));
     out.status = "available";
+    if (!stock) {
+      // M7 (item 27 cutover): the public automatic-route residual surface
+      // (the probe's residuals / residuals.ser / residuals.lb /
+      // residuals.doornikhansen getters, nine-case double-JVM oracle
+      // validation/evidence/native/x13-automatic-diagnostics/). The stock
+      // final-model producer is model-generic inside; the automatic route
+      // reuses it verbatim, success path only. The landing_fit coefficient
+      // echo above (never bit-claimed) stays the exported regression
+      // surface; only the estimated log-likelihood is restored, because
+      // the stock producer publishes the final-likelihood value the
+      // estimated templates claim bit-exact.
+      const double landing_log_likelihood = out.log_likelihood;
+      stock_regression();
+      out.log_likelihood = landing_log_likelihood;
+    }
   }
 
   // ---- state ------------------------------------------------------------------------
@@ -2341,6 +2356,28 @@ X13StockResidualDiagnostics x13_stock_residual_diagnostics(const X13AutomaticFit
   return {tramo_residual_standard_error(stats.residual_ssq, static_cast<int>(fit.effective_observations),
                                         static_cast<int>(stats.estimated_parameters)),
           monthly_airline_residual_ljung_box(stats.full_residuals), portable_residual_normality(stats.full_residuals)};
+}
+
+X13StockResidualDiagnostics x13_automatic_residual_diagnostics(const X13AutomaticFitResult& fit) {
+  if (fit.status != "available" || !fit.stock_likelihood ||
+      fit.stock_likelihood->full_residuals.size() != fit.effective_observations ||
+      fit.effective_observations <= fit.stock_likelihood->estimated_parameters)
+    throw std::invalid_argument("requires an available X-13 automatic fit with the final-model residual surface");
+  const auto& stats = *fit.stock_likelihood;
+  // The Ljung-Box hyperparameter count mirrors the free regular+seasonal
+  // ARMA parameter count (the 24-lag statistic; the oracle's df annotations
+  // 22/21/20 for the (0,1,1)(0,1,1), (1,0,1)(0,1,1) and (2,0,1)(0,1,1)
+  // landings pin the rule). Doornik-Hansen mirrors the bridge capture
+  // domain, where Math.pow runs on the intrinsic path
+  // (tramo_residual_normality, the pinned precedent of the
+  // tramo-seats-bridge residual diagnostics panels); the stock consumer
+  // above pins the estimated-template capture domain, where the pow
+  // intrinsics are disabled and the StrictMath bytecode semantics are
+  // mirrored by portable_residual_normality.
+  return {tramo_residual_standard_error(stats.residual_ssq, static_cast<int>(fit.effective_observations),
+                                        static_cast<int>(stats.estimated_parameters)),
+          monthly_tramo_residual_ljung_box(stats.full_residuals, fit.p + fit.q + fit.bp + fit.bq),
+          tramo_residual_normality(stats.full_residuals)};
 }
 
 X13StockForecastErrors x13_stock_forecast_errors(const X13AutomaticFitResult& fit, int months) {

@@ -140,6 +140,11 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
     upper_sigma,msr_policy,mode,as.integer(backcast),as.integer(forecast))
   result$sigma_provenance<-provenance
   result <- date_estimated_x13_result(result, series, start, f)
+  if (length(result$residuals$tsres)) { # the estimated route's dating convention (native_x13_estimated_fit.R)
+    first <- as.double(start[1L]) * f + start[2L] - 1L + result$model$d + f * result$model$bd
+    result$residuals$tsres <- stats::ts(result$residuals$tsres,
+      start = c(first %/% f, first %% f + 1), frequency = f)
+  }
   structure(result, class = "persephone_native_x13_automatic_fit")
 }
 
