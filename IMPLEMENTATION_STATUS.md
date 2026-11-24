@@ -4,6 +4,17 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Full source verification for the family M5 checkpoint (2026-11-24)
+
+The full source suite of rkalos `45cf058c46f225005ce73ebe04e1b96b6587d907`
+(version `0.1.0.9021`, Kalos `45e78cf`) passed **308,774/308,774**
+serial assertions across all 64 files. The two-worker OpenMP source
+check passed **308,778/308,778** and the examples. The two previously
+documented compiler warnings remain (the R header's unknown warning group
+and non-portable `-ffp-contract=off` flag). The matching Persephone source
+check at `21f09f3` passed **7,488/7,488**, including its examples, rebuilt
+vignettes and PDF manual, with `Status: OK`.
+
 ## Stock estimated X-13 RSA0 and RSA1 core checkpoint (2026-11-24)
 
 Kalos `9443a9b960ad8779347d32038e36a50c21ad3b37` supplies the original
