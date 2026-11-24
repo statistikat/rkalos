@@ -1,12 +1,17 @@
 source("helpers/fixtures.R", local = TRUE)
 dir <- system.file("tinytest/fixtures/native/tramo-seats-bridge", package = "rkalos")
-files <- c("rsa3-x86_64.txt", "rsa3-additional-x86_64.txt", "rsa3-mean-retry-x86_64.txt")
+files <- c("rsa3-x86_64.txt", "rsa3-additional-x86_64.txt", "rsa3-mean-retry-x86_64.txt",
+           "rsa3-ref-retry-x86_64.txt")
 cases <- do.call(c, lapply(files, function(file) fixture_named_rsa0_cases(file.path(dir, file))))
 diagnostics <- c(fixture_named_rsa0_cases(file.path(dir, "rsa3-residual-diagnostics-x86_64.txt")),
-                 fixture_named_rsa0_cases(file.path(dir, "rsa3-mean-retry-diagnostics-x86_64.txt")))
+                 fixture_named_rsa0_cases(file.path(dir, "rsa3-mean-retry-diagnostics-x86_64.txt")),
+                 fixture_named_rsa0_cases(file.path(dir, "rsa3-ref-retry-diagnostics-x86_64.txt")))
 expect_identical(sort(names(cases)), sort(names(diagnostics)))
-forecast_errors <- fixture_named_rsa0_cases(file.path(dir, "rsa3-forecast-errors-x86_64.txt"))
+forecast_errors <- c(fixture_named_rsa0_cases(file.path(dir, "rsa3-forecast-errors-x86_64.txt")),
+                     fixture_named_rsa0_cases(file.path(dir, "rsa3-ref-retry-forecast-errors-x86_64.txt")))
 expect_identical(sort(names(cases)), sort(names(forecast_errors)))
+wk_cases <- fixture_named_rsa0_cases(file.path(dir, "rsa3-ref-retry-wk-x86_64.txt"))
+names(wk_cases) <- sub(" .*", "", names(wk_cases))
 tokens <- function(line) strsplit(line, " ", fixed = TRUE)[[1L]]
 exact <- function(x, expected, id) {
   expect_identical(writeBin(as.numeric(x), raw()), writeBin(fixture_hex_doubles(expected), raw()), info = id)
@@ -46,6 +51,19 @@ for (id in names(cases)) {
   wk <- tokens(forecast_reference[startsWith(forecast_reference, "wk_series_stdev_forecast ")])
   index <- which(fit$final$component == "Series" & fit$final$information == "StdevForecast")
   exact(fit$final$values[[index]], wk[-seq_len(4L)], id)
+  if (id %in% names(wk_cases)) {
+    wk <- wk_cases[[id]]
+    expected_rows <- wk[startsWith(wk, "wk ")]
+    expect_identical(nrow(fit$final), length(expected_rows), info = id)
+    for (line in expected_rows) {
+      row <- tokens(line)
+      index <- which(fit$final$component == row[2L] & fit$final$information == row[3L])
+      expect_identical(length(index), 1L, info = paste(id, row[2L], row[3L]))
+      output <- fit$final$values[[index]]
+      expect_identical(as.integer(stats::start(output)), as.integer(row[4:5]), info = id)
+      exact(output, row[-seq_len(6L)], paste(id, row[2L], row[3L]))
+    }
+  }
   custom <- rkalos::native_tramoseats_fit(series, "RSA3", forecast = 7L)
   expect_identical(stats::start(custom$series_forecast_stdev), stats::start(actual), info = id)
   expect_identical(length(custom$series_forecast_stdev), 7L, info = id)
@@ -97,13 +115,13 @@ for (id in names(cases)) {
   }
   rows <- rows + length(expected)
 }
-expect_identical(c(length(cases), residual_count, rows, points), c(13L, 1196L, 130L, 8340L))
+expect_identical(c(length(cases), residual_count, rows, points), c(20L, 2105L, 200L, 13980L))
 scope <- rkalos::capabilities()$tramo_seats_fit$by_template$RSA3
 expect_identical(scope$residuals, c("tsres", "ser", "lb", "doornikhansen"))
 expect_true(scope$series_forecast_stdev)
 expect_true(scope$seasonal_restart)
 expect_true(scope$fast_mean_refit)
-expect_identical(scope$identification, "first_reference_comparison")
+expect_identical(scope$identification, "reference_retries")
 zero <- rkalos::native_tramoseats_fit(AirPassengers, "RSA3", forecast = 0L)
 expect_identical(zero$series_forecast_stdev_status, "no_requested_predictions")
 expect_identical(zero$series_forecast_stdev, numeric())
@@ -112,8 +130,8 @@ expect_identical(length(custom$merged$values[[which(custom$merged$component == "
 expect_identical(length(custom$merged$values[[which(custom$merged$component == "Trend" & custom$merged$information == "Backcast")]]), 3L)
 i <- seq_len(36L)
 retry <- stats::ts(round(2000 + i^2 / 100 + 70 * sin(2 * pi * i / 12) + 10 * cos(i)), frequency = 12)
-expect_error(rkalos::native_tramo_preprocess(retry, "TR3"), "requires another identification round")
-expect_error(rkalos::native_tramoseats_fit(retry, "RSA3"), "requires another identification round")
+expect_identical(rkalos::native_tramo_preprocess(retry, "TR3")$status, "available")
+expect_error(rkalos::native_tramoseats_fit(retry, "RSA3"), "approximation_required")
 short <- rkalos::native_tramoseats_fit(stats::ts(as.numeric(AirPassengers)[1:37], frequency = 12), "RSA3")
 expect_identical(length(short$residuals$tsres), 24L)
 expect_true(is.nan(short$residuals$lb$value))

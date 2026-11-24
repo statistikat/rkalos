@@ -63,12 +63,11 @@ number of selected AR and MA parameters for its Ljung–Box degrees of freedom.
 
 Use `native_tramo_preprocess(series, "TR3")` or
 `native_tramoseats_fit(series, "RSA3")` for monthly automatic SARIMA
-order selection. Fitted models accepted at the first reference comparison
-and subsequent controller sweep expose the orders, coefficients, dated
-residuals and, for RSA3, SEATS components and original-series forecast errors. The seasonal controller can
-restart identification, and removal of the mean can trigger a fourth
-estimation pass. A rejected first reference
-comparison raises an explicit error.
+order selection. The fitted model exposes its orders, coefficients and dated
+residuals. RSA3 also exposes SEATS components and original-series forecast
+errors. Identification supports seasonal restarts, fourth-pass mean refits
+and reference-comparison retries, including reduced outlier thresholds and
+last-chance estimation.
 
 Install OpenBLAS with CBLAS and LAPACKE (qualification version 0.3.34). Set `KALOS_OPENBLAS_ROOT` to its prefix before building and installing the source archive. For custom or static providers, set `KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler and linker flags including dependencies.
 C++17 and Rcpp are required. Configure probes optional OpenMP with R's actual

@@ -4,6 +4,24 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M5 monthly TR3 reference retries and RSA3 products (2026-11-24)
+
+Version `0.1.0.9020` supports the additional identification and outlier
+rounds after a rejected reference comparison. Standalone TR3 and complete
+RSA3 match all twenty fitted models, 2,105 dated innovations and 100
+residual diagnostic scalars. All 13,980 observations and forecasts in the
+200 final rows match the public JVM bit-for-bit. The 480 original-series
+forecast errors satisfy the existing scaled tolerance, and all 480
+conditional SEATS errors match exactly. A 36-month series exercises the
+separate case where preprocessing completes and the fitted model requires
+a SEATS approximation outside the admitted range.
+
+Serial and two-worker OpenMP each passed **2,130/2,130** RSA3,
+**601/601** standalone preprocessing, **990/990** RSA1 and **498/498**
+RSA0 assertions, plus the Java-free native smoke test. The earlier
+`0.1.0.9018` full suite passed **304,128/304,128** serial and
+**304,132/304,132** OpenMP, with the two documented compiler warnings.
+
 ## Twenty-case monthly TR3 checkpoint (2026-11-24)
 
 Kalos `dd95f1363fba6c1e0b7c73eee27ec43adfcc4dca` covers the
