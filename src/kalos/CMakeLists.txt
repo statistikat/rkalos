@@ -300,6 +300,9 @@ if(KALOS_BUILD_TESTS)
     endif()
     if(test_name STREQUAL "test_combined_seasonality")
       target_compile_definitions(${test_name} PRIVATE
+        KALOS_COMBINED_RSA2C="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/stock-rsa2c-x86_64.txt"
+        KALOS_COMBINED_STOCK="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/stock-x86_64.txt"
+        KALOS_COMBINED_X13_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles"
         KALOS_COMBINED_SI_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge"
         KALOS_COMBINED_SI_FIXED="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/fixed-x13-x86_64.txt"
         KALOS_COMBINED_SI_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/public-x86_64.txt")

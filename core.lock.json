@@ -1,9 +1,9 @@
 {
   "schema_version": 2,
   "repository": "https://github.com/statistikat/kalos",
-  "commit": "a32dce69296148d22421c1157272ec4fa08451ca",
+  "commit": "f26b06a7df660af22c13ff039e3279c269618b73",
   "version": "0.1.0",
-  "source_manifest_sha256": "f143607597b07bd3b97d808565aa33c5a2e6d054b040fc50a59317b81f80f1a6",
+  "source_manifest_sha256": "84eb838810afde5f9323054196ace0f25df0a71ad814dad29b3f60ed1f259219",
   "generated_files": [
     "include/kalos/revision.hpp"
   ],
@@ -12,7 +12,7 @@
       "directory": "src/kalos",
       "section": "core",
       "files": {
-        "CMakeLists.txt": "a5182edfc4c88cdd45daa57f27c896b04627a6d53dea94b9035fdfd74c534d61",
+        "CMakeLists.txt": "491178e3f9235c911f3a7f525871a4b8bc0bb51baac028680390b0e03e69dec1",
         "backends/openblas.cpp": "a0d604e0a5997fc08d08a8923d7efb23d120bda863aaee812d3fe1044a1770e0",
         "cmake/FindKalosOpenBLAS.cmake": "6b6ec5f7c98f3f3e6f505d4bab69329bae6e6e4310a7d525db7699071e4bec73",
         "cmake/kalosConfig.cmake.in": "988ab7fd16970096c2b66b251550d3869ffc10202d8dd9e3677efb22d415ad4a",
@@ -73,7 +73,7 @@
         "include/kalos/preparation.hpp": "86d4a4319a5d687854cbe48d53ee7e7312fc45823b676f6aa57fb5dfa7a32161",
         "include/kalos/regression_likelihood.hpp": "70d602b0d7eefae7edfddcfaa404d2a38e29d94ca88dab24b6204a7a3f61ad55",
         "include/kalos/regression_variable_tests.hpp": "a816f8ec79a8183c899703c0b61e5e1955149271be38599d63ca15a6daecf63b",
-        "include/kalos/revision.hpp": "8c97dee8703543d2c60937baf863ad89e6aa48ffd2bd248c3ae39870c57f148a",
+        "include/kalos/revision.hpp": "98a9f1331d601cef52ed7bd17218893bf52a0f7547e517d06a47797d32ba1891",
         "include/kalos/seats_extract_wk.hpp": "e3aca67a4c135b0a979e4d040815b0b08d77d9c3e4b88a8d96cc6108390d3190",
         "include/kalos/sparse_history.hpp": "4a0a34d5f653e6d314fbf2bf72a323c3d72297c18ea39cc3c6f73c98bab13e79",
         "include/kalos/state_space.hpp": "13aa70201814f68da74e82b8b75db8102d51d61ce076b87dd8aa6c1323cd3a5a",
@@ -343,6 +343,7 @@
       "directory": "inst/tinytest/fixtures",
       "section": "evidence",
       "files": {
+        "native/adjusted-seasonality/public-x86_64.txt": "92a579cd62fb0df24c963da965970d1a00b11cd0290adb5e1a8ec10adae152a0",
         "native/arma-refinement/SHA256SUMS.csv": "bed596d4b98610b44f1e323bff1ce0305741d050ff12048f36a5cdab5d04fb2b",
         "native/arma-refinement/cases.csv": "7556f83188bccaf58690288a459f83cc271e0cfefbb767386ffa95bf7d33f64a",
         "native/arma-refinement/estimation.csv": "b4e7fb57f8b8a6ef17d95d5e5c80f37b80d0d4549f8dda1d5bba590be16ed03c",
@@ -358,6 +359,8 @@
         "native/combined-seasonality/automatic-x13-x86_64.txt": "31a78037cafc4e7f1076a3520f4dac4aed9cb774a545778f362df03f5e9aaaaa",
         "native/combined-seasonality/fixed-x13-x86_64.txt": "d2c629a23b6862c1f3e34ef3f2b1103f884f6ff0cf978c08508eff99c015f851",
         "native/combined-seasonality/public-x86_64.txt": "fcad11cf3be66d16ade151c8695796d863dfb29eebac153e64f8d80adbb606cb",
+        "native/combined-seasonality/stock-rsa2c-x86_64.txt": "3718acbd7fad7e143eb89642e7f3a7b94d50575c4bd40b0d486caa47714a3fd3",
+        "native/combined-seasonality/stock-x86_64.txt": "41da1bef3242cbfd439649848c26a8de41d5fa2a021ba5d5e2aa6f98affa2005",
         "native/decompose-ucarima/SHA256SUMS.csv": "9190e6e764b2b5d468572b7dfcccac274828743cfcde72f95ab0666e461714c4",
         "native/decompose-ucarima/cases.csv": "2d18f582bcf74a77b845bfbe50d2847dc1d44016405db36cb2d917221f4888da",
         "native/decompose-ucarima/inputs.csv": "581fdb5977c3544459a65f98178f10b033839c3b7e3c268d2b8b7c2be239f046",

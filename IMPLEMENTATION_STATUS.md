@@ -4,6 +4,13 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## M6 combined seasonality reference extension (2026-11-24)
+
+The Kalos `f26b06a7df660af22c13ff039e3279c269618b73` checkpoint adds
+public diagnostic captures for six decoded X-13 fits, nine stock estimated
+X-13 fits and 29 raw RSAfull fits. The R source and evidence snapshots
+pass offline verification.
+
 ## Stock estimated X-13 fits in R (2026-11-24)
 
 Version `0.1.0.9023` exposes `native_x13_estimated_fit()` for monthly
