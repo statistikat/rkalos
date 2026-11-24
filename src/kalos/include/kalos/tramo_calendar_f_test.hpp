@@ -22,6 +22,23 @@ struct TramoCalendarFCandidate {
 
 enum class TramoTradingDays { None, WorkingDays, TradingDays };
 
+struct TramoStockCalendar {
+    TramoTradingDays trading_days = TramoTradingDays::None;
+    bool leap_year = false;
+    bool easter = false;
+};
+
+struct TramoFittedCalendar {
+    TramoStockCalendar selection;
+    std::vector<double> coefficients; // TD contrasts, leap year, then Easter
+};
+
+struct calendar_domain;
+std::vector<std::vector<double>> tramo_stock_calendar_columns(const TramoStockCalendar& selection,
+    const calendar_domain& domain);
+
+std::vector<double> tramo_stock_calendar_effect(const TramoFittedCalendar& fit, const calendar_domain& domain);
+
 struct TramoCalendarFTestResult {
     double base_ssq;
     TramoCalendarFCandidate working_days;
@@ -48,6 +65,11 @@ struct TramoFullCalendarResult {
 
 TramoFullCalendarResult tramo_full_initial_calendar(const std::vector<double>& series,
     int start_year, int start_month, bool log);
+
+// When the seasonality pretest clears seasonal differencing and seasonal MA,
+// all calendar candidates inherit the resulting nonseasonal IMA(1,1) model.
+TramoFullCalendarResult tramo_full_initial_calendar(const std::vector<double>& series,
+    int start_year, int start_month, bool log, bool seasonal);
 
 // The late TradingDaysController checks the concentrated-likelihood residuals
 // against a working-days contrast on their actual right-aligned monthly domain.

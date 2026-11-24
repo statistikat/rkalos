@@ -37,7 +37,7 @@ struct CalendarLikelihood {
     int dimension;
 
     std::vector<double> tstats() const {
-        return tramo_test_tstats({point.b, covariance_diagonal, point.ssq_err, dimension, 2}, true);
+        return tramo_test_tstats({point.b, covariance_diagonal, point.ssq_err, dimension, static_cast<int>(ma.size())}, true);
     }
 };
 
@@ -46,21 +46,22 @@ struct CalendarLikelihood {
 // DEFAULT_COMPUTER, whose QR layout differs from the optimization objective.
 CalendarLikelihood fit_calendar_likelihood(const std::vector<double>& series,
     const std::vector<double>& differences, const std::vector<double>& filter, Columns columns,
-    bool mean, double precision, bool collect_diagnostics) {
+    bool mean, double precision, bool collect_diagnostics, bool seasonal = true) {
     Columns filtered;
     if (mean) filtered.emplace_back(differences.size(), 1.0);
     for (const auto& column : columns)
         filtered.push_back(detail::pinned_backfilter_apply(filter, column));
-    const auto hr = hannan_rissanen_start(differences, make_design(filtered), {0, 0, 1, 1, 12});
+    const auto hr = hannan_rissanen_start(differences, make_design(filtered), {0, 0, 1, seasonal ? 1 : 0, 12});
 
     SarimaEstimationRequest request{};
     request.series.values = series;
     request.series.missing.resize(series.size());
     request.period = 12;
-    request.d = request.seasonal_d = 1;
+    request.d = 1;
+    request.seasonal_d = seasonal;
     if (mean) columns.insert(columns.begin(), std::vector<double>(series.size(), 1.0));
     request.design = make_design(columns);
-    for (const int block : {1, 3}) {
+    for (int block = 1; block <= (seasonal ? 3 : 1); block += 2) {
         request.blocks[block].initial.resize(1);
         request.blocks[block].fixed.resize(1);
     }
@@ -70,11 +71,12 @@ CalendarLikelihood fit_calendar_likelihood(const std::vector<double>& series,
     const auto fit = optimize_sarima_from(request, start);
     if (!std::isfinite(fit.log_likelihood))
         throw std::runtime_error("TRAMO calendar F-test candidate estimation failed");
-    std::vector<double> ma{fit.coefficients[1].front(), fit.coefficients[3].front()};
+    auto ma = fit.coefficients[1];
+    ma.insert(ma.end(), fit.coefficients[3].begin(), fit.coefficients[3].end());
     detail::PinnedRegressionDiagnostics diagnostics;
     auto likelihood = filtered.empty() && !collect_diagnostics
-        ? detail::pinned_deviances_evaluate(differences, 0, 0, 1, 1, 12, {}, ma)
-        : detail::pinned_deviances_evaluate_multi(differences, 0, 0, 1, 1, 12,
+        ? detail::pinned_deviances_evaluate(differences, 0, 0, 1, seasonal, 12, {}, ma)
+        : detail::pinned_deviances_evaluate_multi(differences, 0, 0, 1, seasonal, 12,
             filtered, ma, detail::PinnedComputerShape::Fixed, collect_diagnostics ? &diagnostics : nullptr);
     if (!likelihood || !(likelihood->ssq_err > 0.0))
         throw std::runtime_error("TRAMO calendar candidate has no usable residual variance");
@@ -108,8 +110,8 @@ TramoCalendarAirlineFit controller_fit(CalendarLikelihood fit, int observations,
             stats.ssq, mean ? std::optional<double>(t.front()) : std::nullopt, *panel, std::move(outliers)};
 }
 
-TramoCalendarFCandidate compare(double base, double residual_ssq, int df, int contrasts) {
-    const int denominator_df = df - 2;
+TramoCalendarFCandidate compare(double base, double residual_ssq, int df, int contrasts, int fitted_parameters) {
+    const int denominator_df = df - fitted_parameters;
     const double mean_square = residual_ssq / denominator_df;
     const double f = (base - residual_ssq) / (mean_square * contrasts);
     const double probability = f <= 0.0 ? 0.0 : 1.0 - detail::f_upper_p(f, contrasts, denominator_df);
@@ -119,32 +121,32 @@ TramoCalendarFCandidate compare(double base, double residual_ssq, int df, int co
 }
 TramoCalendarFTestResult compare_calendar_models(const std::vector<double>& series,
     int start_year, int start_month, bool mean, double significance, double precision,
-    std::vector<double>* selected_tstats) {
+    std::vector<double>* selected_tstats, bool seasonal = true) {
     const bool full = selected_tstats != nullptr;
     if (!(significance >= 0 && significance <= 1) || !(precision > 0) || !std::isfinite(precision))
         throw std::invalid_argument("TRAMO calendar F-test requires a probability and positive finite precision");
     // The largest candidate includes 13 differencing losses, six TD contrasts,
     // two MA coefficients, any mean, and in TRfull a leap-year and Easter term.
-    if (series.size() <= static_cast<std::size_t>(21 + mean + (full ? 2 : 0)) ||
+    if (series.size() <= static_cast<std::size_t>(8 + 13 * seasonal + mean + (full ? 2 : 0)) ||
         series.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
         throw std::invalid_argument("TRAMO calendar F-test requires positive residual degrees of freedom");
     const calendar_domain domain{start_year, start_month, 12, static_cast<int>(series.size())};
     const auto working = trading_days_contrast(day_clustering::td2, domain);
     const auto trading = trading_days_contrast(day_clustering::td7, domain);
-    const auto filter = detail::pinned_differencing_polynomial(12, 1, 1);
+    const auto filter = detail::pinned_differencing_polynomial(12, 1, seasonal);
     const auto differences = detail::pinned_backfilter_apply(filter, series);
     const auto easter = full ? easter_column(6, easter_correction::simple, 0, domain) : std::vector<double>{};
     auto estimate = [&](Columns columns, std::vector<double>* stats = nullptr) {
         if (full) columns.push_back(easter);
         const auto fit = fit_calendar_likelihood(series, differences, filter, std::move(columns),
-                                                mean, precision, stats != nullptr);
+                                                mean, precision, stats != nullptr, seasonal);
         if (stats) *stats = fit.tstats();
         return fit.point.ssq_err;
     };
     const int df = static_cast<int>(differences.size()) - mean - full;
     const double base = estimate({}, selected_tstats);
-    const auto one = compare(base, estimate(working), df-1, 1);
-    const auto six = compare(base, estimate(trading), df-6, 6);
+    const auto one = compare(base, estimate(working), df-1, 1, 1 + seasonal);
+    const auto six = compare(base, estimate(trading), df-6, 6, 1 + seasonal);
     const double threshold = 1.0 - significance;
     TramoTradingDays selected = TramoTradingDays::None;
     if (six.lower_probability > one.lower_probability && six.lower_probability > threshold)
@@ -160,6 +162,34 @@ TramoCalendarFTestResult compare_calendar_models(const std::vector<double>& seri
 }
 } // namespace
 
+std::vector<std::vector<double>> tramo_stock_calendar_columns(const TramoStockCalendar& selection,
+    const calendar_domain& domain) {
+    Columns columns;
+    switch (selection.trading_days) {
+    case TramoTradingDays::None: break;
+    case TramoTradingDays::WorkingDays: columns = trading_days_contrast(day_clustering::td2, domain); break;
+    case TramoTradingDays::TradingDays: columns = trading_days_contrast(day_clustering::td7, domain); break;
+    default: throw std::invalid_argument("unknown TRAMO trading-days selection");
+    }
+    if (selection.leap_year) columns.push_back(length_of_period_column(calendar_lop::leap_year, domain));
+    if (selection.easter) columns.push_back(easter_column(6, easter_correction::simple, 0, domain));
+    return columns;
+}
+
+std::vector<double> tramo_stock_calendar_effect(const TramoFittedCalendar& fit, const calendar_domain& domain) {
+    const auto columns = tramo_stock_calendar_columns(fit.selection, domain);
+    if (columns.size() != fit.coefficients.size() || domain.length < 0)
+        throw std::invalid_argument("TRAMO calendar coefficient count or domain is invalid");
+    std::vector<double> effect(domain.length, 0.0);
+    for (std::size_t j = 0; j < columns.size(); ++j) {
+        const double coefficient = fit.coefficients[j];
+        if (!std::isfinite(coefficient)) throw std::invalid_argument("non-finite calendar coefficient");
+        for (std::size_t i = 0; i < effect.size(); ++i)
+            effect[i] += coefficient * columns[j][i];
+    }
+    return effect;
+}
+
 TramoCalendarFTestResult tramo_calendar_f_test(const std::vector<double>& series,
     int start_year, int start_month, bool mean, double significance, double precision) {
     return compare_calendar_models(series, start_year, start_month, mean, significance, precision, nullptr);
@@ -167,6 +197,11 @@ TramoCalendarFTestResult tramo_calendar_f_test(const std::vector<double>& series
 
 TramoFullCalendarResult tramo_full_initial_calendar(const std::vector<double>& series,
     int start_year, int start_month, bool log) {
+    return tramo_full_initial_calendar(series, start_year, start_month, log, true);
+}
+
+TramoFullCalendarResult tramo_full_initial_calendar(const std::vector<double>& series,
+    int start_year, int start_month, bool log, bool seasonal) {
     auto estimation_series = series;
     if (log) {
         for (auto& value : estimation_series) {
@@ -176,7 +211,7 @@ TramoFullCalendarResult tramo_full_initial_calendar(const std::vector<double>& s
     }
     std::vector<double> tstats;
     const auto comparison = compare_calendar_models(estimation_series, start_year, start_month,
-                                                     true, 0.01, 1e-5, &tstats);
+                                                     true, 0.01, 1e-5, &tstats, seasonal);
     // Test-model columns are mean, any TD contrasts, LP (when TD selected), Easter.
     const auto lp = comparison.selected == TramoTradingDays::None ? std::nullopt :
         std::optional<double>(tstats.at(tstats.size() - 2));

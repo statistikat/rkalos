@@ -2,6 +2,7 @@
 
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/outlier_scoring.hpp"
+#include "kalos/calendar_generation.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -66,7 +67,8 @@ tramo_seats_model_request make_tramo_seats_model(const TramoFitResult& fit) {
     require(model.innovation_variance > 0, "transmitted variance underflow");
     copy_parameters(fit, model);
 
-    std::vector<double> effect(input.size(), 0.0);
+    auto effect = tramo_stock_calendar_effect(fit.calendar,
+        {model.start_year, model.start_month, 12, build.domain_length});
     for (const auto& var : fit.variables) {
         require(var.type == TramoOutlierKind::Ao || var.type == TramoOutlierKind::Ls ||
                 (var.type == TramoOutlierKind::Tc && var.tc_rate == 0.7),

@@ -150,7 +150,7 @@ TramoKernelRoundsRun tramo_run_kernel_rounds(
     const auto need_differencing = [&]() {
         if (!need_auto || round2_guard())
             return false;
-        return orders.d < 2 || orders.bd >= 1;
+        return orders.d < 2 || orders.bd < 1;
     };
     const auto need_auto_desc = [&]() { return need_auto && !round2_guard(); };
     const auto need_outliers_desc = [&]() {

@@ -78,6 +78,7 @@
 // (std::invalid_argument) for structural violations - the x13_automatic_fit
 // grammar adapted to the TRAMO seam doctrine.
 
+#include "kalos/tramo_calendar_f_test.hpp"
 #include "kalos/tramo_kernel_rounds.hpp"
 #include "kalos/tramo_model_builder.hpp"
 #include "kalos/tramo_outlier_scan.hpp"
@@ -213,6 +214,7 @@ struct TramoFitFinalRecord {
     double ls_ll = 0.0, ls_tadj = 0.0, ls_all = 0.0, ls_ssq = 0.0;
     double ls_aic = 0.0, ls_aicc = 0.0, ls_bic = 0.0, ls_bicc = 0.0;
     double ls_bic2 = 0.0, ls_hq = 0.0;
+    TramoFittedCalendar calendar;
 };
 
 // Request data for the live per-seam cross-checks the stage envelopes
@@ -312,6 +314,7 @@ struct TramoFitResult {
     bool final_model_computed = false; // independently projected from the final estimator
     std::size_t regression_tests_checked = 0; // mean decision and post-test t-statistics
     std::size_t statistics_checked = 0; // model-statistics rows reproduced from live estimation
+    TramoFittedCalendar calendar;
 };
 
 // The automatic TRAMO fit. Order of operations (contract "stage order"):
@@ -324,13 +327,23 @@ struct TramoFitResult {
 // says so (the refusals are decisions, not shape errors).
 TramoFitResult tramo_fit(const TramoFitRequest& request);
 
+// Round-zero TRfull model constructed from the original observations, before
+// automatic order identification and the later model controllers.
+TramoFitResult estimate_tramo_trfull_reference(const std::vector<double>& series, int start_year, int start_month);
+
+// Estimate every coefficient of an already selected monthly model. Outlier
+// positions are zero-based on the original series. The supplied orders,
+// calendar effects and outlier identities constitute the model specification.
+TramoFitResult refit_tramo_selected_model(const std::vector<double>& series, int start_year, int start_month,
+    const TramoOrders& orders, bool log, bool mean, const TramoStockCalendar& calendar,
+    const std::vector<std::pair<int, TramoOutlierKind>>& outliers);
+
 // Public monthly TR1 preprocessing, including automatic log/level selection,
 // automatic outliers and a fixed-order airline with a mean.
 TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_year, int start_month);
 
-// Monthly TR3 identification through the first reference comparison and
-// controller sweep, including a late seasonality restart and estimation
-// after removal of the mean. A rejected first comparison requires a further pass.
+// Monthly TR3 preprocessing with reference-model comparisons, lower-threshold
+// outlier scans, last-chance estimation, mean retesting and the late controllers.
 TramoFitResult estimate_tramo_tr3(const std::vector<double>& series, int start_year, int start_month);
 
 }  // namespace kalos

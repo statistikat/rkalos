@@ -1,4 +1,5 @@
 #include "kalos/detail/sarima_stabilization.hpp"
+#include "kalos/detail/ucarima_engine.hpp"
 
 #include "kalos/linear_algebra.hpp"
 
@@ -70,7 +71,17 @@ bool stabilize_coefficient_block(std::vector<double>& block) {
     std::vector<double> polynomial(length + 1, 0.0);
     polynomial[0] = 1.0;
     for (std::size_t i = 0; i < length; ++i) polynomial[i + 1] = block[i];
-    const auto found = length <= 2 ? jvm_closed_roots(polynomial) : polynomial_roots(polynomial);
+    std::vector<ComplexRoot> found;
+    if (length <= 2) {
+        found = jvm_closed_roots(polynomial);
+    } else {
+        try {
+            for (const auto& root : p_roots(p_of(std::move(polynomial)), "SARIMA stabilization"))
+                found.push_back({root.re, root.im});
+        } catch (const jvm_decompose_abort&) {
+            throw std::runtime_error("SARIMA stabilization root calculation failed");
+        }
+    }
     if (found.empty()) return false;
     std::vector<std::complex<double>> roots;
     roots.reserve(found.size());

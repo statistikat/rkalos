@@ -128,6 +128,7 @@ inline vd trim_copy(const vd& a) {
 // ---------------------------------------------------------------------------
 struct Poly {
   vd c;
+  std::vector<cplx> cached_roots;
   Poly() : c{0.0} {}
   explicit Poly(vd a) : c(std::move(a)) {}
   int degree() const { return static_cast<int>(c.size()) - 1; }
@@ -159,7 +160,21 @@ inline Poly p_factor(double x, int n) {
   vd a(static_cast<std::size_t>(n) + 1, 0.0);
   a[0] = 1.0;
   a[static_cast<std::size_t>(n)] = -x;
-  return p_of(std::move(a));
+  Poly p = p_of(std::move(a));
+  if (x > 0.0) {
+    // Polynomial.factor stores these roots on the factor. Resolving them
+    // again through a companion matrix changes the seasonal AR partition.
+    const double radius = glibc_pow(1.0 / x, 1.0 / n);
+    if (n == 4) {
+      p.cached_roots = {{radius, 0.0}, {0.0, radius}, {-radius, 0.0}, {0.0, -radius}};
+    } else {
+      const double step = 2.0 * kPi / n;
+      p.cached_roots.reserve(static_cast<std::size_t>(n));
+      for (int j = 0; j < n; ++j)
+        p.cached_roots.push_back({radius * hotspot_spectrum_cos(step * j), radius * glibc_sin(step * j)});
+    }
+  }
+  return p;
 }
 
 inline vd pl_times(const vd& a, const vd& b) {  // Polynomials.times
@@ -791,6 +806,7 @@ struct fe_solver {
 // Polynomial.roots() (fastSolver dispatch). degree 0 -> empty; 1-2 use the
 // monic/quadratic closed forms; >= 3 the qr cascade above.
 inline std::vector<cplx> p_roots(const Poly& p, const char* what) {
+  if (!p.cached_roots.empty()) return p.cached_roots;
   int n = p.degree();
   if (n >= 3) {
     fe_solver s;

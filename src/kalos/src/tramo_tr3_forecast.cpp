@@ -1,4 +1,5 @@
 #include "kalos/tramo_tr0.hpp"
+#include "kalos/calendar_generation.hpp"
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/detail/seats_exact_forecasts.hpp"
 #include "kalos/outlier_scoring.hpp"
@@ -31,21 +32,21 @@ Vector initial_state(const Vector& values, const Vector& difference, int dimensi
 
 }  // namespace
 
-tramo_tr0_forecast_errors_result tramo_tr3_forecast_errors(const TramoFitResult& fit, int months) {
-    if (months < 0) throw std::invalid_argument("tramo_tr3_forecast_errors: negative forecast count");
+tramo_tr0_forecast_errors_result tramo_selected_forecast_errors(const TramoFitResult& fit, int months) {
+    if (months < 0) throw std::invalid_argument("tramo_selected_forecast_errors: negative forecast count");
     const auto model = make_tramo_seats_model(fit);
     const auto n = model.series.size(), p = fit.regression_coefficients.size();
     if (n > static_cast<std::size_t>(std::numeric_limits<int>::max() - months))
-        throw std::length_error("tramo_tr3_forecast_errors: extended domain exceeds the index range");
+        throw std::length_error("tramo_selected_forecast_errors: extended domain exceeds the index range");
     const auto differencing_order = static_cast<long long>(model.d) + 12LL * model.bd;
     if (differencing_order != static_cast<long long>(n) - fit.ls_eff)
-        throw std::invalid_argument("tramo_tr3_forecast_errors: invalid effective sample size");
+        throw std::invalid_argument("tramo_selected_forecast_errors: invalid effective sample size");
     const auto covariance_size = fit.covariance.covariance.size();
     const bool square = p ? covariance_size / p == p && covariance_size % p == 0 : covariance_size == 0;
-    if (p != fit.variables.size() + static_cast<std::size_t>(fit.mean) || p >= n ||
+    if (p != fit.variables.size() + fit.calendar.coefficients.size() + static_cast<std::size_t>(fit.mean) || p >= n ||
         fit.covariance.n != p || !square ||
         static_cast<std::size_t>(fit.ls_npar) != fit.parameters.size() + p + 1)
-        throw std::invalid_argument("tramo_tr3_forecast_errors: invalid fitted coefficients or covariance");
+        throw std::invalid_argument("tramo_selected_forecast_errors: invalid fitted coefficients or covariance");
 
     if (months == 0) return {"no_requested_predictions", {}};
 
@@ -78,7 +79,7 @@ tramo_tr0_forecast_errors_result tramo_tr3_forecast_errors(const TramoFitResult&
     const auto shock = xf::RatFunc::of(ma, full).coefficients(dim);
     const auto disturbance = xf::v_matrix(shock, 1);
 
-    // Response followed by the original-domain drift and outlier columns.
+    // Response followed by the original-domain drift, calendar and outlier columns.
     // A unit drift integrates a column of ones on the differenced domain.
     const auto length = n + months;
     std::vector<Vector> data{fit.builder.interpolated};
@@ -90,6 +91,11 @@ tramo_tr0_forecast_errors_result tramo_tr3_forecast_errors(const TramoFitResult&
             for (std::size_t k = 1; k <= degree; ++k) drift[t] -= difference.c[k] * drift[t - k];
         }
     }
+    auto calendar = tramo_stock_calendar_columns(fit.calendar.selection,
+        {model.start_year, model.start_month, 12, static_cast<int>(length)});
+    if (calendar.size() != fit.calendar.coefficients.size())
+        throw std::invalid_argument("tramo_selected_forecast_errors: inconsistent calendar design");
+    for (auto& column : calendar) data.push_back(std::move(column));
     for (const auto& effect : fit.variables) {
         auto& column = data.emplace_back(length);
         fill_outlier_column(static_cast<OutlierType>(effect.type), effect.position, 12, effect.tc_rate, column);
@@ -129,6 +135,10 @@ tramo_tr0_forecast_errors_result tramo_tr3_forecast_errors(const TramoFitResult&
         for (std::size_t i = 0; i < covariance.a.size(); ++i) covariance.a[i] += disturbance.a[i];
     }
     return {"available", std::move(errors)};
+}
+
+tramo_tr0_forecast_errors_result tramo_tr3_forecast_errors(const TramoFitResult& fit, int months) {
+    return tramo_selected_forecast_errors(fit, months);
 }
 
 }  // namespace kalos

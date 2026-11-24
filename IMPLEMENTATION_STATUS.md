@@ -4,6 +4,15 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Twenty-case monthly TR3 checkpoint (2026-11-24)
+
+Kalos `dd95f1363fba6c1e0b7c73eee27ec43adfcc4dca` covers the
+reference-comparison retries and restores known roots for pure seasonal AR
+factorization. The twenty raw RSA3 inputs have 2,105 innovations, 200 final
+component rows and 480 original-scale forecast errors. Both package makefiles
+link the canonical calendar units used by the selected-model code.
+The generated R source and evidence snapshot passes offline verification.
+
 ## M5 selected-model forecast uncertainty in native RSA3 (2026-11-24)
 
 Version `0.1.0.9019` returns dated original-series forecast standard

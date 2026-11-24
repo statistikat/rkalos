@@ -394,7 +394,8 @@ struct Driver {
             ctx.seasonal = true;
             return R::Changed;  // seasonal flip without a specification change
         }
-        if (!swap && !ctx.seasonal) {
+        // The residual tests can turn on seasonality even when the default model is already selected.
+        if (!ctx.seasonal) {
             if (dcmpg(e.mstat.season_box_p, 0.05) < 0 || dcmpg(e.mstat.ljung_box_p, 0.05) < 0) {
                 ctx.seasonal = true;
                 swap = true;

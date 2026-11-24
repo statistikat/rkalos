@@ -2,6 +2,7 @@
 
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/outlier_scoring.hpp"
+#include "kalos/calendar_generation.hpp"
 #include "kalos/tramo_seats_bridge.hpp"
 
 #include <algorithm>
@@ -42,7 +43,7 @@ Grid component_grid(const std::vector<Row>& wk) {
 
 // Both series and deterministic effects are monthly throughout the bridge envelope.
 std::vector<Row> merge(const std::vector<double>& original, const std::vector<TramoFitVariable>& variables,
-                       const tramo_seats_model_request& model,
+                       const TramoFittedCalendar& calendar, const tramo_seats_model_request& model,
                        const std::vector<Row>& wk) {
     const auto rows = component_grid(wk);
     const auto& series = rows.front();
@@ -58,6 +59,11 @@ std::vector<Row> merge(const std::vector<double>& original, const std::vector<Tr
                                            first - static_cast<std::int64_t>(nb)};
     const std::array<std::size_t, 3> lengths{n, nf, nb};
     const std::array<std::size_t, 3> offsets{nb, nb + n, 0};
+    const auto first_ext = first - static_cast<std::int64_t>(nb);
+    const int first_month = static_cast<int>((first_ext % 12 + 12) % 12) + 1;
+    const calendar_domain extended{static_cast<int>((first_ext - (first_month - 1)) / 12), first_month,
+                                   12, static_cast<int>(n + nf + nb)};
+    auto seasonal = tramo_stock_calendar_effect(calendar, extended);
     std::vector<double> trend(n + nf + nb), irregular(trend.size());
     for (const auto& var : variables) {
         const bool ls = var.type == TramoOutlierKind::Ls;
@@ -68,6 +74,7 @@ std::vector<Row> merge(const std::vector<double>& original, const std::vector<Tr
         for (std::size_t i = 0; i < column.size(); ++i) target[i] += column[i] * var.coefficient;
     }
     if (model.log) {
+        for (double& x : seasonal) x = detail::fdlibm_exp(x);
         for (double& x : trend) x = detail::fdlibm_exp(x);
         for (double& x : irregular) x = detail::fdlibm_exp(x);
     }
@@ -80,11 +87,20 @@ std::vector<Row> merge(const std::vector<double>& original, const std::vector<Tr
                 require(!row || row->values.empty(), "nonempty WK component outside its series domain");
                 continue;
             }
-            require(row && row->values.size() == lengths[s], "incomplete WK domain");
             const int month = static_cast<int>((starts[s] % 12 + 12) % 12) + 1;
-            require(row->start_month == month && row->start_year == (starts[s] - (month - 1)) / 12,
-                    "misaligned WK component");
-            output.push_back(*row);
+            const auto year = (starts[s] - (month - 1)) / 12;
+            if (row) {
+                require(row->values.size() == lengths[s], "incomplete WK domain");
+                require(row->start_month == month && row->start_year == year, "misaligned WK component");
+                output.push_back(*row);
+            } else {
+                // TwoStepsDecomposition combines the deterministic seasonal effect
+                // with an absent stochastic component using the operation's identity.
+                require(components[t] == Component::seasonal && !rows[t][0] && !rows[t][1] && !rows[t][2],
+                        "incomplete WK domain");
+                output.push_back({components[t], kinds[s], year, month,
+                                  std::vector<double>(lengths[s], model.log ? 1.0 : 0.0)});
+            }
             auto& values = output.back().values;
             if (components[t] == Component::series && kinds[s] == Info::value) {
                 values = original;
@@ -95,10 +111,12 @@ std::vector<Row> merge(const std::vector<double>& original, const std::vector<Tr
                 switch (components[t]) {
                 case Component::trend: values[j] = combine(trend[i], values[j]); break;
                 case Component::irregular: values[j] = combine(irregular[i], values[j]); break;
+                case Component::seasonal: values[j] = combine(seasonal[i], values[j]); break;
                 case Component::series:
+                    values[j] = combine(combine(combine(trend[i], seasonal[i]), irregular[i]), values[j]); break;
                 case Component::seasonally_adjusted:
                     values[j] = combine(combine(trend[i], irregular[i]), values[j]); break;
-                default: break;  // the qualified fit has no seasonal/calendar regressors
+                default: break;
                 }
             }
         }
@@ -107,11 +125,12 @@ std::vector<Row> merge(const std::vector<double>& original, const std::vector<Tr
 }
 
 tramo_seats_pipeline_result extract_and_merge(const std::vector<double>& original,
-        const std::vector<TramoFitVariable>& variables, const tramo_seats_model_request& model) {
+        const std::vector<TramoFitVariable>& variables, const TramoFittedCalendar& calendar,
+        const tramo_seats_model_request& model) {
     tramo_seats_pipeline_result result;
     result.extraction = seats_extract_wk(model);
     if (result.extraction.fact("status") == "ok")
-        result.finals = merge(original, variables, model, result.extraction.final_components());
+        result.finals = merge(original, variables, calendar, model, result.extraction.final_components());
     return result;
 }
 
@@ -119,7 +138,7 @@ tramo_seats_pipeline_result extract_and_merge(const std::vector<double>& origina
 
 std::vector<seats_component_series> merge_tramo_seats_components(
         const TramoFitResult& fit, const std::vector<seats_component_series>& wk_final) {
-    return merge(fit.builder.interpolated, fit.variables, make_tramo_seats_model(fit), wk_final);
+    return merge(fit.builder.interpolated, fit.variables, fit.calendar, make_tramo_seats_model(fit), wk_final);
 }
 
 tramo_seats_pipeline_result run_tramo_seats_pipeline(const TramoFitResult& fit,
@@ -127,7 +146,7 @@ tramo_seats_pipeline_result run_tramo_seats_pipeline(const TramoFitResult& fit,
     auto model = make_tramo_seats_model(fit);
     model.backcast_count = backcast_count;
     model.forecast_count = forecast_count;
-    return extract_and_merge(fit.builder.interpolated, fit.variables, model);
+    return extract_and_merge(fit.builder.interpolated, fit.variables, fit.calendar, model);
 }
 
 tramo_seats_rsa0_result run_tramo_seats_rsa0(const std::vector<double>& series, int start_year,
@@ -137,7 +156,7 @@ tramo_seats_rsa0_result run_tramo_seats_rsa0(const std::vector<double>& series, 
     auto& model = result.preprocessing.model;
     model.backcast_count = backcast_count;
     model.forecast_count = forecast_count;
-    result.decomposition = extract_and_merge(series, {}, model);
+    result.decomposition = extract_and_merge(series, {}, {}, model);
     return result;
 }
 

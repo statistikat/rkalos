@@ -46,6 +46,10 @@ struct TramoFitResult;
 // including AO, LS and stock TC effects and the lognormal back-transformation.
 tramo_tr0_forecast_errors_result tramo_tr1_forecast_errors(const TramoFitResult& fit, int months);
 
+// Original-series errors conditional on a fitted monthly SARIMA model, including
+// estimated stock calendar effects and registered outliers.
+tramo_tr0_forecast_errors_result tramo_selected_forecast_errors(const TramoFitResult& fit, int months);
+
 // Public original-series errors for monthly, automatically identified TR3 models.
 tramo_tr0_forecast_errors_result tramo_tr3_forecast_errors(const TramoFitResult& fit, int months);
 

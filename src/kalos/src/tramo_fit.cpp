@@ -22,6 +22,7 @@
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/detail/ssq_deviances.hpp"
 #include "kalos/outlier_scoring.hpp"
+#include "kalos/calendar_generation.hpp"
 #include "mlj_engine.hpp"
 
 #include <kalos/tramo_arma_selection.hpp>
@@ -129,9 +130,11 @@ struct OutlierScanSelection {
 };
 
 std::optional<OutlierScanSelection> run_scan(const TramoFitSpec& spec, const tramo_build_result& built,
-                                             bool log, const TramoOrders& o, bool mean, double critical_value) {
+                                             bool log, const TramoOrders& o, bool mean, double critical_value,
+                                             const std::vector<std::vector<double>>& calendar_columns = {}) {
     TramoOutlierScanRequest request{};
     request.y = built.interpolated;
+    request.calendar_regressors = calendar_columns;
     request.frequency = built.annual_frequency;
     request.mean = mean;
     request.log = log;
@@ -191,6 +194,8 @@ struct EstimationEntry {
     TramoOrders orders;
     bool mean;
     std::vector<DetectedOutlier> variables;
+    TramoStockCalendar calendar{};
+    std::vector<std::vector<double>> calendar_columns{};
 };
 
 struct FittedOutlierEffects {
@@ -201,6 +206,8 @@ struct FittedOutlierEffects {
     std::vector<double> corrected_response;
     TramoFinalEstimatorRunResult fit;
     std::vector<TramoFitVariable> variables;
+    TramoFittedCalendar calendar{};
+    std::vector<std::vector<double>> calendar_columns{};
 };
 
 TramoTestStatistics fitted_test_statistics(const FittedOutlierEffects& effects) {
@@ -280,7 +287,7 @@ FittedOutlierEffects fit_estimation(const TramoFitSpec& spec, const std::vector<
     options.pass = pass;
     options.ami = spec.using_auto_model;
     options.outliers = spec.outliers_used;
-    std::vector<std::vector<double>> columns;
+    auto columns = entry.calendar_columns;
     std::vector<std::string> names;
     for (const auto& var : entry.variables) {
         names.push_back(var.name);
@@ -303,8 +310,13 @@ FittedOutlierEffects fit_estimation(const TramoFitSpec& spec, const std::vector<
         for (std::size_t i = 0; i < y.size(); ++i) effects.corrected_response[i] -= total[i];
     }
     if (estimate.cl_state != 0) {
-        for (std::size_t i = 0; i < columns.size(); ++i) {
-            const auto& var = entry.variables[i];
+        const auto ncalendar = entry.calendar_columns.size();
+        effects.calendar.selection = entry.calendar;
+        effects.calendar_columns = entry.calendar_columns;
+        for (std::size_t i = 0; i < ncalendar; ++i)
+            effects.calendar.coefficients.push_back(estimate.cl_coefs.at(i + entry.mean));
+        for (std::size_t i = ncalendar; i < columns.size(); ++i) {
+            const auto& var = entry.variables[i - ncalendar];
             effects.variables.push_back({var.name, static_cast<TramoOutlierKind>(var.type), var.position,
                 estimate.cl_coefs.at(i + entry.mean), std::move(columns[i])});
         }
@@ -354,7 +366,7 @@ std::optional<FittedOutlierEffects> fit_reference(const TramoFitSpec& spec, cons
     if (spec.outliers_used) {
         const double cv = spec.critical_value == 0.0 ? tramo_critical_value(built.estimation_length)
                                                     : spec.critical_value;
-        auto selection = run_scan(spec, built, log, entry.orders, entry.mean, cv);
+        auto selection = run_scan(spec, built, log, entry.orders, entry.mean, cv, entry.calendar_columns);
         if (!selection) return std::nullopt;
         entry.variables = std::move(selection->variables);
     }
@@ -367,9 +379,30 @@ std::optional<FittedOutlierEffects> fit_reference(const TramoFitSpec& spec, cons
         test.test_mean = tramo_ami_check_mu(spec.using_auto_model, spec.mean_is_test);
         test.mean_threshold = 1.96;
         test.statistics = fitted_test_statistics(fitted);
+        const auto& calendar = entry.calendar;
+        int position = entry.mean;
+        if (calendar.trading_days != TramoTradingDays::None) {
+            test.auto_trading_days = true;
+            test.trading_days_position = position;
+            test.trading_days_dimension = calendar.trading_days == TramoTradingDays::WorkingDays ? 1 : 6;
+            position += test.trading_days_dimension;
+        }
+        if (calendar.leap_year) {
+            test.auto_length_of_period = true;
+            test.length_of_period_position = position++;
+        }
+        if (calendar.easter) {
+            test.auto_easter = true;
+            test.easter_position = position;
+        }
         const auto decision = run_tramo_regression_tests(test);
         if (!decision.estimation_cleared) return fitted;
         entry.mean = decision.mean;
+        if (decision.removed_trading_days) entry.calendar.trading_days = TramoTradingDays::None;
+        if (decision.removed_length_of_period) entry.calendar.leap_year = false;
+        if (decision.removed_easter) entry.calendar.easter = false;
+        entry.calendar_columns = tramo_stock_calendar_columns(entry.calendar,
+            {built.domain_year, built.domain_position + 1, 12, built.estimation_length});
     }
 }
 
@@ -416,62 +449,78 @@ struct IdentifiedCandidate {
     bool changed;
 };
 
-// The first automatic candidate (pass=1, round=1), before the refStats
-// decision. Both the reference and the new design come from the data.
-std::optional<IdentifiedCandidate> fit_first_candidate(const TramoFitSpec& spec, const tramo_build_result& built,
-        bool log, bool seasonal, const FittedOutlierEffects& reference) {
-    const auto& original = reference.orders;
+struct AutomaticRound {
+    int pass = 1;
+    int round = 1;
+    double pcr;
+    double cv;
+    bool identify = true;
+};
+
+AutomaticRound initial_automatic_round(const TramoFitSpec& spec, int observations) {
+    const double cv = spec.outliers_used && spec.critical_value == 0.0
+        ? tramo_critical_value(observations) : spec.critical_value;
+    return {1, 1, spec.pcr, cv, true};
+}
+
+std::optional<IdentifiedCandidate> fit_automatic_candidate(const TramoFitSpec& spec, const tramo_build_result& built,
+        bool log, bool seasonal, const FittedOutlierEffects& working, const AutomaticRound& round) {
+    const auto& original = working.orders;
+    const bool identify = round.identify && !(round.round == 2 && working.variables.empty());
     TramoFitSeamInputs design;
     design.entry_orders = original;
-    design.entry_mean = reference.mean;
-    design.entry_variables = reference.variables;
-    design.entry_outliers = reference.names;
-    if (original.d < 2 || original.bd >= 1) {
-        const bool raw = reference.names.empty();
-        if (!raw && reference.corrected_response.empty()) return std::nullopt;
-        const auto d = difference_orders(spec, raw ? built.interpolated : reference.corrected_response,
-                                         raw && log, original, reference.mean, true, seasonal, built.estimation_length);
+    design.entry_mean = working.mean;
+    design.entry_variables = working.variables;
+    design.entry_outliers = working.names;
+    if (identify && (original.d < 2 || original.bd < 1)) {
+        const bool raw = working.names.empty();
+        if (!raw && working.corrected_response.empty()) return std::nullopt;
+        const auto d = difference_orders(spec, raw ? built.interpolated : working.corrected_response,
+                                         raw && log, original, working.mean, round.round == 1, seasonal, built.estimation_length);
         design.entry_orders = {d.spec_p, d.spec_d, d.spec_q, d.spec_bp, d.spec_bd, d.spec_bq};
         design.entry_mean = d.mean;
-        if (d.spec_d + built.annual_frequency * d.spec_bd != original.d + built.annual_frequency * original.bd) {
+        if (round.pass == 1 && d.spec_d + built.annual_frequency * d.spec_bd != original.d + built.annual_frequency * original.bd) {
             design.entry_variables.clear();
             design.entry_outliers.clear();
         }
     }
-    TramoArmaSelectionRequest arma;
-    arma.residuals = arma_residuals(built, log, design, spec.delta_tc);
-    arma.nobs = built.estimation_length;
-    const auto selected = select_orders(std::move(arma), spec, design.entry_orders, seasonal);
-    EstimationEntry entry{{selected.spec_p, selected.spec_d, selected.spec_q,
-                           selected.spec_bp, selected.spec_bd, selected.spec_bq}, design.entry_mean, {}};
-    bool changed = !orders_equal(entry.orders, original) || entry.mean != reference.mean;
+    EstimationEntry entry{design.entry_orders, design.entry_mean, {}};
+    if (identify) {
+        TramoArmaSelectionRequest arma;
+        arma.residuals = arma_residuals(built, log, design, spec.delta_tc);
+        arma.nobs = built.estimation_length;
+        const auto selected = select_orders(std::move(arma), spec, design.entry_orders, seasonal);
+        entry.orders = {selected.spec_p, selected.spec_d, selected.spec_q, selected.spec_bp, selected.spec_bd, selected.spec_bq};
+        if (round.pass >= 3 && entry.orders.p + entry.orders.q + entry.orders.bp + entry.orders.bq == 0)
+            entry.orders.q = 1;
+    }
+    bool changed = !orders_equal(entry.orders, original) || entry.mean != working.mean;
     if (spec.outliers_used) {
-        const double cv = spec.critical_value == 0.0 ? tramo_critical_value(built.estimation_length)
-                                                    : spec.critical_value;
-        auto scan = run_scan(spec, built, log, entry.orders, entry.mean, cv);
+        auto scan = run_scan(spec, built, log, entry.orders, entry.mean, round.cv);
         if (!scan) return std::nullopt;
         changed = changed || scan->outcome == TramoKernelStageResult::changed;
         entry.variables = std::move(scan->variables);
     }
     const auto y = differenced_response(built.interpolated, log, built.annual_frequency, 0, 0);
-    auto fitted = fit_estimation(spec, y, entry, 1);
+    auto fitted = fit_estimation(spec, y, entry, round.pass);
     if (!fitted.fit.returned || fitted.fit.cl_state == 0) return std::nullopt;
     return IdentifiedCandidate{std::move(fitted), changed};
 }
 
-TramoRefStatsGateResult compare_first_candidate(const TramoFitSpec& spec, int n, bool seasonal,
-                                              const FittedOutlierEffects& reference, const IdentifiedCandidate& candidate) {
+TramoRefStatsGateResult compare_automatic_candidate(const TramoFitSpec& spec, int n, bool seasonal,
+                                              const FittedOutlierEffects& reference, const IdentifiedCandidate& candidate,
+                                              const AutomaticRound& round) {
     const auto& model = candidate.effects;
     const auto current = tramo_model_statistics(model_statistics_input(model, spec.annual_frequency, n));
     const auto previous = tramo_model_statistics(model_statistics_input(reference, spec.annual_frequency, n));
     require(current.built && previous.built, "initial candidate comparison statistics unavailable");
     TramoRefStatsGateRequest request;
-    request.pass = 1;
-    request.round = 1;
-    request.pcr = spec.pcr;
+    request.pass = round.pass;
+    request.round = round.round;
+    request.pcr = round.pcr;
     request.changed = !candidate.changed; // the kernel passes pass2(!changed, model)
     request.seasonal = seasonal;
-    request.curva = spec.outliers_used && spec.critical_value == 0.0 ? tramo_critical_value(n) : spec.critical_value;
+    request.curva = round.cv;
     request.reduce_va = spec.reduce_va;
     request.outliers_detection = spec.outliers_used;
     request.orders = model.orders;
@@ -500,6 +549,7 @@ TramoFitFinalRecord project_fitted_record(const FittedOutlierEffects& effects,
     r.parameters = effects.parameters;
     r.outlier_names = effects.names;
     r.variables = effects.variables;
+    r.calendar = effects.calendar;
     r.coefficients = fit.cl_coefs;
     r.nx = static_cast<int>(r.coefficients.size());
     r.dim = fit.cl_dim;
@@ -511,7 +561,7 @@ TramoFitFinalRecord project_fitted_record(const FittedOutlierEffects& effects,
     const auto level = differenced_response(observations, log, frequency, 0, 0);
     r.differenced_response = differenced_response(level, false, frequency, o.d, o.bd);
     require(static_cast<int>(r.differenced_response.size()) == r.dim &&
-            r.nx == static_cast<int>(r.variables.size()) + r.mean, "invalid fitted model dimensions");
+            r.nx == static_cast<int>(r.variables.size() + r.calendar.coefficients.size()) + r.mean, "invalid fitted model dimensions");
 
     // RegArimaUtility.fullResiduals subtracts each fitted regressor on the
     // level scale, differences once, and removes the drift on that domain.
@@ -519,6 +569,9 @@ TramoFitFinalRecord project_fitted_record(const FittedOutlierEffects& effects,
         r.full_residuals = fit.cl_residuals;
     } else {
         auto corrected = level;
+        for (std::size_t j = 0; j < effects.calendar_columns.size(); ++j)
+            for (std::size_t i = 0; i < level.size(); ++i)
+                corrected[i] += -r.calendar.coefficients[j] * effects.calendar_columns[j][i];
         for (const auto& variable : r.variables)
             for (std::size_t i = 0; i < level.size(); ++i)
                 corrected[i] += -variable.coefficient * variable.column[i];
@@ -611,6 +664,7 @@ void assemble_fitted_result(TramoFitResult& result, const TramoFitFinalRecord& f
     result.orders = fin.orders;
     result.parameters = fin.parameters;
     result.variables = fin.variables;
+    result.calendar = fin.calendar;
     for (auto& variable : result.variables)
         if (variable.type == TramoOutlierKind::Tc) variable.tc_rate = tc_rate;
     result.regression_coefficients = fin.coefficients;
@@ -725,8 +779,11 @@ BatteryState controller_state(const FittedOutlierEffects& model, const std::vect
     auto panel = tramo_model_comparison_panel(model_statistics_input(model, 12, y.size()));
     require(panel.has_value(), "controller model statistics unavailable");
     state.mstat = *panel;
-    std::vector<std::vector<double>> columns;
+    auto columns = model.calendar_columns;
     auto linearized = y;
+    for (std::size_t j = 0; j < columns.size(); ++j)
+        for (std::size_t i = 0; i < y.size(); ++i)
+            linearized[i] += -model.calendar.coefficients[j] * columns[j][i];
     for (const auto& var : model.variables) {
         columns.push_back(var.column);
         // RegArimaEstimation.linearizedSeries skips the mean coefficient
@@ -740,6 +797,77 @@ BatteryState controller_state(const FittedOutlierEffects& model, const std::vect
 }
 
 }  // namespace
+
+TramoFitResult refit_tramo_selected_model(const std::vector<double>& series, int start_year, int start_month,
+    const TramoOrders& orders, bool log, bool mean, const TramoStockCalendar& calendar,
+    const std::vector<std::pair<int, TramoOutlierKind>>& outliers) {
+    require(series.size() >= 24 && series.size() <= static_cast<std::size_t>(std::numeric_limits<int>::max()),
+            "selected monthly fit requires at least two years of observations");
+    require(std::all_of(series.begin(), series.end(), [log](double x) {
+        return std::isfinite(x) && (!log || x > 0);
+    }), "invalid observation for selected transformation");
+    for (int order : {orders.p, orders.q, orders.bp, orders.bq, orders.d, orders.bd})
+        require(order >= 0 && order < static_cast<int>(series.size()), "invalid selected ARIMA order");
+    require(start_year >= 1 && start_year <= 9999 && start_month >= 1 && start_month <= 12,
+            "invalid monthly calendar for selected model");
+    const auto n = static_cast<long long>(series.size());
+    auto calendar_columns = tramo_stock_calendar_columns(calendar,
+        {start_year, start_month, 12, static_cast<int>(n)});
+    require(n - orders.d - 12LL * orders.bd > orders.p + static_cast<long long>(orders.q) +
+            orders.bp + orders.bq + mean + static_cast<long long>(calendar_columns.size()) +
+            static_cast<long long>(outliers.size()),
+            "selected model has insufficient observations");
+    tramo_build_request build;
+    build.values = series;
+    build.start_year = start_year;
+    build.start_month = start_month;
+    build.transform_function = log ? tramo_transform_function::log : tramo_transform_function::none;
+    build.arima.d = orders.d;
+    build.arima.bd = orders.bd;
+    build.arima.phi.resize(orders.p);
+    build.arima.theta.resize(orders.q);
+    build.arima.bphi.resize(orders.bp);
+    build.arima.btheta.resize(orders.bq);
+    build.mean.used = build.mean.trend_constant = mean;
+    TramoFitResult result;
+    result.builder = build_tramo_model(build);
+    result.transformation.log_transform = log;
+    EstimationEntry entry{orders, mean, {}, calendar, std::move(calendar_columns)};
+    for (const auto& [position, kind] : outliers) {
+        require(position >= 0 && position < static_cast<int>(series.size()), "selected outlier is outside the series");
+        require(kind == TramoOutlierKind::Ao || kind == TramoOutlierKind::Ls || kind == TramoOutlierKind::Tc,
+                "selected monthly fit supports AO, LS and TC outliers");
+        auto type = static_cast<OutlierType>(kind);
+        entry.variables.push_back({type, position, monthly_outlier_name(type, position, start_year, start_month)});
+    }
+    std::stable_sort(entry.variables.begin(), entry.variables.end(),
+        [](const auto& l, const auto& r) { return l.position < r.position; });
+    TramoFitSpec spec;
+    spec.using_auto_model = false;
+    const auto fitted = fit_estimation(spec, differenced_response(series, log, 12, 0, 0), entry, 0);
+    require(fitted.fit.returned && fitted.fit.cl_state != 0, "selected model estimation failed");
+    assemble_fitted_result(result, project_fitted_record(fitted, series, log, 12), spec.delta_tc);
+    result.final_model_computed = true;
+    return result;
+}
+
+TramoFitResult estimate_tramo_trfull_reference(const std::vector<double>& series, int start_year, int start_month) {
+    TramoFitResult result;
+    const auto spec = prepare_monthly_template(series, start_year, start_month, "TRfull", result);
+    const bool log = result.transformation.log_transform;
+    const bool seasonal = result.transformation.seasonal;
+    const auto initial = tramo_full_initial_calendar(series, start_year, start_month, log, seasonal);
+    TramoStockCalendar calendar{initial.comparison.selected, initial.keep_leap_year, initial.keep_easter};
+    EstimationEntry entry{{0, 1, 1, 0, seasonal ? 1 : 0, seasonal ? 1 : 0}, initial.keep_mean, {}, calendar,
+        tramo_stock_calendar_columns(calendar, {start_year, start_month, 12, result.builder.estimation_length})};
+    const auto y = differenced_response(series, log, 12, 0, 0);
+    const auto fitted = fit_reference(spec, result.builder, log, y, std::move(entry));
+    require(fitted.has_value(), "TRfull reference estimation failed");
+    assemble_fitted_result(result, project_fitted_record(*fitted, series, log, 12), spec.delta_tc);
+    result.initial_regression_checked = true;
+    result.reference_model_computed = true;
+    return result;
+}
 
 TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_year, int start_month) {
     TramoFitResult result;
@@ -772,16 +900,31 @@ TramoFitResult estimate_tramo_tr3(const std::vector<double>& series, int start_y
     const auto initial_test = initial_mean_test(spec, y, initial, built.mean);
     auto reference = fit_reference(spec, built, transform.log_transform, y, {initial, initial_test.mean, {}});
     require(reference.has_value(), "TR3 initial reference estimation unavailable");
-    auto candidate = fit_first_candidate(spec, built, transform.log_transform, transform.seasonal, *reference);
-    require(candidate.has_value(), "TR3 first automatic candidate unavailable");
-    const auto gate = compare_first_candidate(spec, y.size(), transform.seasonal, *reference, *candidate);
-    require(gate.accepted, "TR3 reference comparison requires another identification round");
-    auto fit = gate.reverted ? std::move(*reference) : std::move(candidate->effects);
+    auto round = initial_automatic_round(spec, built.estimation_length);
+    auto fit = *reference;
+    while (true) {
+        auto candidate = fit_automatic_candidate(spec, built, transform.log_transform, transform.seasonal, fit, round);
+        require(candidate.has_value(), "TR3 automatic candidate unavailable");
+        if (round.pass > 3) {
+            fit = std::move(candidate->effects);
+            break;
+        }
+        const auto gate = compare_automatic_candidate(spec, y.size(), transform.seasonal, *reference, *candidate, round);
+        if (!gate.reverted) *reference = std::move(candidate->effects);
+        fit = *reference;
+        round = {gate.pass, gate.round, gate.pcr, gate.curva, gate.need_auto_modelling};
+        if (gate.accepted) break;
+        if (gate.last_solution) {
+            fit.orders = gate.orders_after;
+            fit.variables.clear();
+            fit.names.clear();
+            fit.corrected_response.clear();
+        }
+    }
     std::vector<std::optional<FittedOutlierEffects>> trials;
     const auto estimate = [&](const TramoOrders& orders, bool mean) -> std::optional<BatteryState> {
         trials.emplace_back();
-        const double cv = tramo_critical_value(y.size());
-        auto scan = run_scan(spec, built, transform.log_transform, orders, mean, cv);
+        auto scan = run_scan(spec, built, transform.log_transform, orders, mean, round.cv);
         require(scan.has_value(), "TR3 controller candidate requires an unsupported outlier design");
         EstimationEntry next{orders, mean, std::move(scan->variables)};
         auto options = spec;
@@ -796,7 +939,9 @@ TramoFitResult estimate_tramo_tr3(const std::vector<double>& series, int start_y
     int score = transform.seasonality.to_int;
     for (bool restart : {false, true}) {
         if (restart) {
-            auto reconsidered = fit_first_candidate(spec, built, transform.log_transform, seasonal, fit);
+            round.pass = 1;
+            round.identify = true;
+            auto reconsidered = fit_automatic_candidate(spec, built, transform.log_transform, seasonal, fit, round);
             require(reconsidered.has_value(), "TR3 seasonality restart estimation failed");
             fit = std::move(reconsidered->effects);
         }
@@ -1047,8 +1192,9 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
         if (seam.kind == TramoKernelSeamKind::pass2_gate && first_gate) {
             first_gate = false;
             if (result.reference_model_computed && reference_effects) {
-                auto candidate = fit_first_candidate(spec, built, result.transformation.log_transform,
-                                                     result.transformation.seasonal, *reference_effects);
+                const auto round = initial_automatic_round(spec, built.estimation_length);
+                auto candidate = fit_automatic_candidate(spec, built, result.transformation.log_transform,
+                                                     result.transformation.seasonal, *reference_effects, round);
                 if (candidate) {
                     const auto& physical = candidate->effects;
                     require(orders_equal(physical.orders, seam.arima_orders) && effects &&
@@ -1057,8 +1203,8 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
                                        seam.parameters.begin(), seam.parameters.end(), bit_equal),
                             "independent first automatic orders or parameters disagree");
                     check_round_statistics(physical, seam.stats, built.annual_frequency, built.estimation_length, s);
-                    const auto gate = compare_first_candidate(spec, built.estimation_length,
-                                                              result.transformation.seasonal, *reference_effects, *candidate);
+                    const auto gate = compare_automatic_candidate(spec, built.estimation_length,
+                                                              result.transformation.seasonal, *reference_effects, *candidate, round);
                     const auto& witness = result.kernel.decisions.at(s);
                     require(witness.kind == TramoKernelSeamKind::pass2_gate && gate.reverted == witness.reverted &&
                             gate.accepted == witness.accepted && gate.pass == witness.pass_after &&
