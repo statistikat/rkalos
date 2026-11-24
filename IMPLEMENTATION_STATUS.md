@@ -4,6 +4,50 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Core re-pin: Complex.cart-normalized factorizer chain (2026-11-24)
+
+The core pin moved `b4f2e1d1f5eeac4b819a0a2a7a615aa3732f9a19` to
+`a7d4b12a7b7f7e1aa335d4e2bcd849b52df10e5a` (lock schema 2; verified 206
+core, 112 fixture and 410 evidence files; the kalos manifest carries 207
+core entries, of which the two license texts are excluded for the R kind
+and the generated `include/kalos/revision.hpp` is added). The vendored
+churn is two core headers — `include/kalos/detail/seats_ucarima_model.hpp`
+(29+/24−) and `include/kalos/detail/ucarima_engine.hpp` (41+/31−), whose
+complex-arithmetic mirrors now route through the `Complex.cart` singletons
+(kalos `970a857`) — plus `revision.hpp`, the two lock files and the
+evidence directory `fixtures/native/seats-wk-factorizer-tiers/`: the new
+capture `muller-adversarial-x86_64.txt` and updated `README.md` and
+`reference.json`.
+
+Cart-singleton behaviour context: the upstream mirrors now reproduce the
+`api.math.Complex` singleton normalization in which `cart(-2.0, -0.0)`
+answers `NEG_TWO` `(-2.0, +0.0)`; raw components used to leak `-0.0` into
+the robust tier's `SymmetricMullerNewtonSolver`, where the first
+`initialize()` quotient is exactly that value and the normalized sign of
+its zero imaginary part decides the square-root branch of the parabola
+root. The two M6 factorizer fuzz-corpus filters (indices 144 and 304) hit
+this sensitivity upstream — before the fix they diverged into the solver
+iteration guard — and are frozen as the adversarial evidence
+`muller-adversarial-x86_64.txt` (kalos `c1d7f36`), pinning the SEATS
+WK/Muller robust-tier fidelity on adversarial filters inside the vendored
+fixture tree. The upstream gates (94/94 CTests, full-corpus JVM
+differential bit-exact) guarantee the vendored replay is unchanged, and
+no rkalos expectation, fixture or tolerance moved with this re-pin.
+
+The full Java-free suite (66 `test-native-*` files plus
+`test-package-boundary.R`, 67 files, no rjd3/rJava) passed
+**309,932/309,932** assertions in the serial lane and
+**309,936/309,936** in the two-worker OpenMP lane. Per-file counts are
+identical to the same-lane `b4f2e1d` baselines (verified file by file,
+zero diffs); the serial-vs-OpenMP delta is the pre-existing
+OpenMP-conditional blocks in `test-native-parallel.R` (37/35) and
+`test-native-tramo-information.R` (1,574/1,580). Both lanes passed the
+isolated `--native` Java-free smoke test with byte-identical logs. The
+two fresh lanes built from the rebuilt `0.1.0.9026` source tarball report
+the pinned provider `OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING
+SkylakeX SINGLE_THREADED` and core revision `a7d4b12…`, and the CI
+provider fetch now pins `ref: a7d4b12a7b7f7e1aa335d4e2bcd849b52df10e5a`.
+
 ## Family M6 full source verification — rkalos leg (2026-11-24)
 
 The rkalos `eb64ba3` (core `b4f2e1d`) full source check replicated the

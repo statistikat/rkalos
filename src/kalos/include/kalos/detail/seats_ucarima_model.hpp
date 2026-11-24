@@ -147,8 +147,10 @@ inline std::string coeffs_row(const vd& c) {
 
 // ---------------------------------------------------------------------------
 // Complex helpers the engine does not need (ComplexType component ops).
+// Complex.plus(Complex) ends in cart too (Complex.txt @18), so c_add applies
+// the same singleton normalization as every other arithmetic mirror.
 // ---------------------------------------------------------------------------
-inline cplx c_add(cplx a, cplx b) { return {a.re + b.re, a.im + b.im}; }
+inline cplx c_add(cplx a, cplx b) { return c_cart(a.re + b.re, a.im + b.im); }
 inline cplx c_real(double x) { return {x, 0.0}; }
 
 // Support.sign(p, r) (jdplus matrices.Support, pinned bytecode):
@@ -160,22 +162,23 @@ inline double sign_like(double p, double r) {
   return (p < 0.0) ? -p : p;
 }
 
-// ComplexMath.sqrt(x + iy) (ComplexMath.txt @1045-1090). Branch tests are
-// dcmpl: NaN r falls THROUGH to the re test (no ZERO), NaN re takes the
-// re > 0 branch; the im-flip is dcmpg (NaN skips it). The re <= 0 branch
-// ends in cart((0.5*im)/t, t) -- REAL part first is (0.5*im)/t (bytecode
-// @71-81; an earlier decode had cart(t, ...) and produced non-square-roots
-// -- corrected 2026-11-21).
+// ComplexMath.sqrt(x + iy) (ComplexMath.txt @1045-1090): m = ComplexType.abs;
+// m > 0 or NaN fails the dcmpl ifle and returns Complex.ZERO; re > 0 takes the
+// direct arm (dcmpl ifle, so a NaN re -- unreachable once m > 0 -- takes the
+// re <= 0 arm); the im-flip is dcmpg (NaN skips it). Both arms end in
+// Complex.cart, and the re <= 0 arm carts ((0.5*im)/t, t) -- REAL part first
+// is (0.5*im)/t (bytecode @71-81; an earlier decode had cart(t, ...) and
+// produced non-square-roots -- corrected 2026-11-21).
 inline cplx c_sqrt(cplx z) {
   double r = c_abs(z);
-  if (r <= 0.0) return {0.0, 0.0};
-  if (!(z.re <= 0.0)) {  // dcmpl ifle: NaN re lands here
+  if (!(r > 0.0)) return c_cart(0.0, 0.0);  // dcmpl ifle: NaN m -> ZERO
+  if (z.re > 0.0) {
     double t = std::sqrt(0.5 * (r + z.re));
-    return {t, (0.5 * z.im) / t};
+    return c_cart(t, (0.5 * z.im) / t);
   }
   double t = std::sqrt(0.5 * (r - z.re));
   if (z.im < 0.0) t = -t;  // dcmpg ifge
-  return {(0.5 * z.im) / t, t};
+  return c_cart((0.5 * z.im) / t, t);
 }
 
 // JVM exceptions modelled for control flow (caught exactly where the mirrored
@@ -1518,19 +1521,21 @@ struct Ev1 {
 
 // ---------------------------------------------------------------------------
 // jdplus Complex.div(Complex) (Complex.txt @1145-1280, the scaled division;
-// the engine only needed inv() and div(double)). Branch is dcmpl: NaN on
-// either |part| takes the |re| >= |im| path, matching the iflt jump test.
+// the engine only needed inv() and div(double)). Branch is dcmpl iflt: NaN on
+// either |part| pushes -1 and takes the |re| < |im| arm; the result ends in
+// Complex.cart.
 // ---------------------------------------------------------------------------
 inline cplx c_div(cplx x, cplx d) {
   double re = d.re, im = d.im;
-  if (!lt_g(std::fabs(re), std::fabs(im))) {
+  if (!lt_l(std::fabs(re), std::fabs(im))) {  // dcmpl iflt: NaN parts take the
+                                              // |re| < |im| arm
     double r = im / re;
     double k = 1.0 / (re + im * r);
-    return {k * (x.re + x.im * r), k * (x.im - x.re * r)};
+    return c_cart(k * (x.re + x.im * r), k * (x.im - x.re * r));
   }
   double r = re / im;
   double k = 1.0 / (re * r + im);
-  return {k * (x.re * r + x.im), k * (x.im * r - x.re)};
+  return c_cart(k * (x.re * r + x.im), k * (x.im * r - x.re));
 }
 
 // BackFilter.normalize() (BackFilter.txt @251-279): v == 0 or v == 1 return
@@ -2055,18 +2060,18 @@ struct MullerSolver {
   }
 
   // computeA2(q, f2, f0, f1) = q * ((f2 + q*f0) - (1 + q)*f1), component
-  // order transcribed from @1316-1423.
+  // order transcribed from @1316-1423; the static helpers all end cart (@180).
   static cplx compute_a2(cplx q, cplx f2v, cplx f0v, cplx f1v) {
     double t1r = f2v.re + (q.re * f0v.re - q.im * f0v.im);
     double t1i = f2v.im + (q.re * f0v.im + q.im * f0v.re);
     double t2r = (1.0 + q.re) * f1v.re - q.im * f1v.im;
     double t2i = (1.0 + q.re) * f1v.im + q.im * f1v.re;
     double dr = t1r - t2r, di = t1i - t2i;
-    return {q.re * dr - q.im * di, q.re * di + q.im * dr};
+    return c_cart(q.re * dr - q.im * di, q.re * di + q.im * dr);
   }
 
   // computeB2(f2, f1, q, f0) = d21 + q * (q * d01 + 2 * d21),
-  // d21 = f2 - f1, d01 = f0 - f1 (@1423-1538).
+  // d21 = f2 - f1, d01 = f0 - f1 (@1423-1538, cart @198).
   static cplx compute_b2(cplx f2v, cplx f1v, cplx q, cplx f0v) {
     double d21r = f2v.re - f1v.re, d21i = f2v.im - f1v.im;
     double qr = q.re, qi = q.im;
@@ -2074,20 +2079,20 @@ struct MullerSolver {
     double wi = qr * (f0v.im - f1v.im) + qi * (f0v.re - f1v.re);
     double ur = wr + 2.0 * d21r, ui = wi + 2.0 * d21i;
     double zr = qr * ur - qi * ui, zi = qr * ui + qi * ur;
-    return {d21r + zr, d21i + zi};
+    return c_cart(d21r + zr, d21i + zi);
   }
 
-  static cplx compute_c2(cplx q, cplx f2v) {  // (1 + q) * f2 (@1538-1575)
+  static cplx compute_c2(cplx q, cplx f2v) {  // (1 + q) * f2 (@1538-1575, cart @54)
     double qr = 1.0 + q.re, qi = q.im;
-    return {qr * f2v.re - qi * f2v.im, qr * f2v.im + qi * f2v.re};
+    return c_cart(qr * f2v.re - qi * f2v.im, qr * f2v.im + qi * f2v.re);
   }
 
-  static cplx compute_discr(cplx b, cplx a, cplx c) {  // b^2 - 4ac (@1575-1646)
+  static cplx compute_discr(cplx b, cplx a, cplx c) {  // b^2 - 4ac (@1575-1646, cart @114)
     double br2 = b.re * b.re - b.im * b.im;
     double bi2 = b.re * b.im + b.im * b.re;
     double ar = a.re * c.re - a.im * c.im;
     double ai = a.re * c.im + a.im * c.re;
-    return {br2 - 4.0 * ar, bi2 - 4.0 * ai};
+    return c_cart(br2 - 4.0 * ar, bi2 - 4.0 * ai);
   }
 
   // muller() (@697): the JVM keeps nine Ref locals (slot numbers below):

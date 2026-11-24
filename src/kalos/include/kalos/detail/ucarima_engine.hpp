@@ -55,20 +55,47 @@ struct cplx {
   double re = 0.0, im = 0.0;
 };
 
-inline cplx c_conj(cplx a) { return {a.re, -a.im}; }
-inline cplx c_neg(cplx a) { return {-a.re, -a.im}; }
-inline cplx c_minus(cplx a, cplx b) { return {a.re - b.re, a.im - b.im}; }
+// Complex.cart(double, double) (api.math.Complex, @0-77): the singleton
+// returns I/ZERO/NEG_I/ONE/NEG_ONE/NEG_TWO are component-identical to
+// new Complex(re, im) EXCEPT for the sign of +-0.0 (cart(-2.0, -0.0) is
+// NEG_TWO = (-2.0, +0.0)). Every JVM arithmetic method ends with cart
+// (conj @9, minus @18, plus @18, times(C) @38, times(D) @30, negate @10,
+// div(C) @133, div(D) @20, inv @100), so the arithmetic mirrors below all
+// route their result through c_cart; the +-0.0 sign is observable in the
+// solver loops (fuzz cases 144/304: initialize()'s first q2 = cart(-2, -0)
+// hits the NEG_TWO branch and the +0.0 imaginary part flips
+// root_of_parabola's |vm|>|vp| choice).
+inline cplx c_cart(double re, double im) {  // the @0-77 decision tree
+  if (re == 0.0) {
+    if (im == 1.0) return {0.0, 1.0};
+    if (im == 0.0) return {0.0, 0.0};
+    if (im == -1.0) return {0.0, -1.0};
+  } else if (im == 0.0) {
+    if (re == 1.0) return {1.0, 0.0};
+    if (re == -1.0) return {-1.0, 0.0};
+    if (re == -2.0) return {-2.0, 0.0};
+  }
+  return {re, im};
+}
+inline cplx c_cart(double re) { return c_cart(re, 0.0); }
+
+inline cplx c_conj(cplx a) { return c_cart(a.re, -a.im); }        // conj @0-9
+inline cplx c_neg(cplx a) { return c_cart(-a.re, -a.im); }        // negate @0-10
+inline cplx c_minus(cplx a, cplx b) { return c_cart(a.re - b.re, a.im - b.im); }
 inline cplx c_times(cplx a, cplx b) {
-  return {a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re};
+  return c_cart(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
 }
-inline cplx c_scale(cplx a, double s) {
+inline cplx c_scale(cplx a, double s) {  // Complex.times(double) @395: v == 1
+                                         // returns this, v == 0 (dcmpl, so also
+                                         // -0.0) the ZERO singleton, else cart
   if (s == 1.0) return a;
-  if (s == 0.0) return {0.0, 0.0};
-  return {a.re * s, a.im * s};
+  if (s == 0.0) return c_cart(0.0, 0.0);
+  return c_cart(a.re * s, a.im * s);
 }
-inline cplx c_div_d(cplx a, double s) {
+inline cplx c_div_d(cplx a, double s) {  // Complex.div(double) @508: v == 1
+                                         // returns this, else cart
   if (s == 1.0) return a;
-  return {a.re / s, a.im / s};
+  return c_cart(a.re / s, a.im / s);
 }
 inline double c_absq(cplx a) { return a.re * a.re + a.im * a.im; }
 inline double c_abs(double re, double im) {  // ComplexType.abs
@@ -92,15 +119,16 @@ inline double c_abs(cplx a) { return c_abs(a.re, a.im); }
 // include/kalos/detail/fdlibm.hpp).
 inline double c_arg(cplx a) { return kalos::detail::glibc_atan2(a.im, a.re); }
 
-inline cplx c_inv(cplx a) {  // Complex.inv(): branches on |re| >= |im|
-  if (!lt_g(std::fabs(a.re), std::fabs(a.im))) {
+inline cplx c_inv(cplx a) {  // Complex.inv @527: dcmpl iflt on |re| vs |im|
+                             // (NaN parts take the |re| < |im| arm), ends cart
+  if (!lt_l(std::fabs(a.re), std::fabs(a.im))) {
     double r = a.im / a.re;
     double d = 1.0 / (a.re + r * a.im);
-    return {d, d * (-(a.im / a.re))};
+    return c_cart(d, d * (-(a.im / a.re)));
   }
   double r = a.re / a.im;
   double d = 1.0 / (a.im + r * a.re);
-  return {d * (a.re / a.im), -d};
+  return c_cart(d * (a.re / a.im), -d);
 }
 
 // ---------------------------------------------------------------------------
@@ -337,24 +365,6 @@ struct jvm_decompose_abort {
 };
 
 constexpr double kFeEps = 1.1102230246251565E-16;  // Constants.getEpsilon()
-
-inline cplx c_cart(double re, double im) {  // Complex.cart: every singleton branch
-                                     // (I/ZERO/NEG_I/ONE/NEG_ONE/NEG_TWO) is
-                                     // value-identical to new Complex(re, im)
-                                     // except ZERO, which normalizes +-0.0 to
-                                     // +0.0 - the only observable difference
-  if (re == 0.0) {
-    if (im == 1.0) return {0.0, 1.0};
-    if (im == 0.0) return {0.0, 0.0};
-    if (im == -1.0) return {0.0, -1.0};
-  } else if (im == 0.0) {
-    if (re == 1.0) return {1.0, 0.0};
-    if (re == -1.0) return {-1.0, 0.0};
-    if (re == -2.0) return {-2.0, 0.0};
-  }
-  return {re, im};
-}
-inline cplx c_cart(double re) { return c_cart(re, 0.0); }
 
 struct fe_rot {
   double c = 1.0, s = 0.0;

@@ -15,6 +15,7 @@
   "captures": {
     "wk": "de4410d4edd8275311ef2d7ec1ac875fa6a3a9fb92e005955a64adfd7b4e45b3",
     "factorize-calls": "69e7dba8918fd4f00b9dc0dcfc59b84712ae7ce54d3c6c0e43803a65c9de450a",
-    "robust-stages": "3647826a5b00410b27f21e86dd987d5e75a985e793d77b96dea03fc82aff55bf"
+    "robust-stages": "3647826a5b00410b27f21e86dd987d5e75a985e793d77b96dea03fc82aff55bf",
+    "muller-adversarial": "4e3c2d4aff8e914fdbd28b4b8659b62b97bd3c393cd3573e66e1855d71f389ad"
   }
 }
