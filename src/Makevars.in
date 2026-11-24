@@ -21,6 +21,7 @@ OBJECTS = RcppExports.o \
   kalos/src/tramo_fit.o \
   kalos/src/tramo_kernel_rounds.o \
   kalos/src/tramo_outlier_rounds.o \
+  kalos/src/combined_seasonality.o \
   kalos/src/calendar_generation.o \
   kalos/src/tramo_calendar_f_test.o \
   kalos/src/tramo_differencing_battery.o \

@@ -13,12 +13,12 @@
 namespace kalos {
 namespace {
 // The pinned X13Kernel.updateSpec forcing (item 22c M3c contract): a non-log
-// model runs X-11 additively; a log model keeps LogAdditive and
-// PseudoAdditive and becomes Multiplicative for anything else.
+// model runs X-11 additively unless PseudoAdditive was explicitly requested.
+// A log model keeps LogAdditive and otherwise defaults to Multiplicative.
 X11DecompositionMode forceMode(bool log, X11DecompositionMode mode) {
+    if(mode==X11DecompositionMode::pseudo_additive) return mode;
     if(!log) return X11DecompositionMode::additive;
-    if(mode==X11DecompositionMode::log_additive
-        ||mode==X11DecompositionMode::pseudo_additive) return mode;
+    if(mode==X11DecompositionMode::log_additive) return mode;
     return X11DecompositionMode::multiplicative;
 }
 // The pinned X11Kernel results-builder stage of the LogAdditive run

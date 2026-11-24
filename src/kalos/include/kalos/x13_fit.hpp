@@ -111,8 +111,8 @@ struct X13FitResult {
 };
 // The restricted fixed-model X-13 fit. Unsupported-domain requests (see
 // the scope header) return the explicit status; the pinned mode forcing
-// (non-log -> additive; log -> multiplicative unless log_additive or
-// pseudo_additive) is applied to the requested mode and echoed.
+// (pseudo_additive is preserved; otherwise non-log -> additive and log
+// -> multiplicative unless log_additive) is applied to the requested mode and echoed.
 X13FitResult x13_fit(const X13FitRequest& request);
 } // namespace kalos
 #endif

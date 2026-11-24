@@ -4,6 +4,14 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Combined SI seasonality core checkpoint (2026-11-24)
+
+Kalos `35287e3ae6e83d839edfa500fd671d210fb9b38d` adds the public
+combined SI verdict and its stable, moving and rank-based statistics.
+The checkpoint also preserves the explicit pseudo-additive mode on a
+non-log fixed X-13 fit. The R package links the standalone diagnostics unit
+on both platforms; its generated source and evidence pass offline verification.
+
 ## M5 ordinary stock TRfull and RSAfull in R (2026-11-24)
 
 Version `0.1.0.9021` adds `native_tramo_preprocess(series, "TRfull")`
