@@ -124,7 +124,6 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
   }
   f <- frequency
   start <- c(first_year, start_period)
-  ordinal <- as.double(first_year) * f + start_period - 1
   backcast <- calendar_int(backcast, "backcast")
   forecast <- calendar_int(forecast, "forecast")
   y <- as.numeric(series)
@@ -140,6 +139,13 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
     rg$tsig,calendar,easter,trading_days,user_variables,seasonal,sigma,lower_sigma,
     upper_sigma,msr_policy,mode,as.integer(backcast),as.integer(forecast))
   result$sigma_provenance<-provenance
+  result <- date_estimated_x13_result(result, series, start, f)
+  structure(result, class = "persephone_native_x13_automatic_fit")
+}
+
+date_estimated_x13_result <- function(result, series, start, f) {
+  y <- as.numeric(series)
+  ordinal <- as.double(start[1L]) * f + start[2L] - 1L
   extended_ordinal <- ordinal - result$effective_backcast
   extended_length <- length(y) + result$effective_backcast + result$effective_forecast
   ext_start <- if (result$effective_backcast > 0L)
@@ -187,5 +193,5 @@ native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,reg
     else "the provenance echo is complete; the pinned fail-closed matrix refuses the request"
   }
   result$fitted<-identical(result$status,"available")
-  structure(result,class="persephone_native_x13_automatic_fit")
+  result
 }

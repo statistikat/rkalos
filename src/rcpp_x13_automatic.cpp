@@ -16,6 +16,12 @@
 extern "C" int openblas_get_num_threads(void);
 extern "C" void openblas_set_num_threads(int);
 namespace {
+struct ScopedSingleBlas {
+    const int previous = openblas_get_num_threads();
+    ScopedSingleBlas() { openblas_set_num_threads(1); }
+    ~ScopedSingleBlas() { openblas_set_num_threads(previous); }
+};
+
 // The REQUIRED sigma policy arrives as NULL (unset — the fit then answers the
 // pinned fail-closed status, never a default) or the policy name string.
 std::optional<kalos::X11SigmaPolicy> sigma_policy(SEXP value) {
@@ -271,6 +277,92 @@ Rcpp::List decision_record(const kalos::AutoDecisionRecord& entry) {
         Rcpp::_["refine"]=refine,Rcpp::_["pass2"]=pass2,Rcpp::_["unitroots"]=unitroots,
         Rcpp::_["matest"]=matest,Rcpp::_["meanrule"]=meanrule,Rcpp::_["cascade"]=cascade);
 }
+
+Rcpp::List wrap_estimated_x13(Rcpp::List out, const kalos::X13AutomaticFitResult& result,
+        const Rcpp::CharacterVector& seasonal, const std::string& msr_name, const std::string& record_scope) {
+    out["status"]=result.status;
+    out["effective_backcast"] = result.fit.backcast;
+    out["effective_forecast"] = result.fit.forecast;
+    out["mode_requested"]=kalos_x11_rcpp::mode_name(result.fit.mode_requested);
+    if(!result.chain.empty()) { // the pinned fail-closed matrix refuses before any state
+        Rcpp::List chain;
+        for(const auto& entry : result.chain)chain.push_back(decision_record(entry));
+        out["chain"]=chain;
+    }
+    if(!result.fit.preadjustment.status.empty()) { // past the fail-closed guards
+        out["mode_effective"]=kalos_x11_rcpp::mode_name(result.fit.mode_effective);
+        out["sigma_set"]=result.fit.sigma_set;
+        out["sigma"]=Rcpp::wrap(std::string(kalos_x11_rcpp::policy_name(result.fit.sigma)));
+        out["lower_sigma"]=result.fit.lower_sigma;
+        out["upper_sigma"]=result.fit.upper_sigma;
+        out["preadjustment"]=kalos_x13_rcpp::preadjustment_list(result.fit.preadjustment,result.fit.log);
+    }
+    if(!result.fit.selection.status.empty()) { // the run over out, same record shape
+        const int f = result.fit.frequency;
+        const int extended_period = ((result.fit.first_period - 1 - result.fit.backcast) % f + f) % f + 1;
+        out["selection"]=kalos_x11_rcpp::selection_result(result.fit.selection,
+            kalos_x11_rcpp::policy_name(result.fit.sigma),msr_name,
+            kalos_x11_rcpp::mode_name(result.fit.mode_effective),
+            record_scope + "_selection_run",result.fit.lower_sigma,result.fit.upper_sigma,
+            f,extended_period,result.fit.trend_length,
+            result.fit.backcast,result.fit.forecast,
+            seasonal);
+    }
+    if(result.status=="available") { // the final description and the tables
+        Rcpp::List block;
+        for(const auto& coefficients : result.coefficients)
+            block.push_back(kalos_x13_rcpp::reals_out(coefficients));
+        block.attr("names")=Rcpp::CharacterVector({"ar","ma","sar","sma"});
+        std::size_t n_coefficients=0;
+        for(const auto& coefficients : result.coefficients)
+            n_coefficients+=coefficients.size();
+        const R_xlen_t nvars=static_cast<R_xlen_t>(result.variables.size());
+        Rcpp::CharacterVector var_names(nvars),var_types(nvars),var_effects(nvars);
+        Rcpp::IntegerVector var_types_index(nvars),var_positions(nvars);
+        Rcpp::NumericVector var_coefficients(nvars);
+        Rcpp::List columns(nvars);
+        for(std::size_t i=0;i<result.variables.size();++i) {
+            const auto& variable=result.variables[i];
+            const R_xlen_t k=static_cast<R_xlen_t>(i);
+            var_names[k]=variable.name;
+            var_types_index[k]=static_cast<int>(variable.type);
+            var_types[k]=outlier_type_name(variable.type);
+            var_effects[k]=variable.regeffect;
+            var_positions[k]=static_cast<int>(variable.position)+1; // 1-based
+            var_coefficients[k]=variable.coefficient;
+            columns[k]=kalos_x13_rcpp::reals_out(variable.column);
+        }
+        out["model"]=Rcpp::List::create(Rcpp::_["log"]=result.log,Rcpp::_["mean"]=result.mean,
+            Rcpp::_["p"]=result.p,Rcpp::_["d"]=result.d,Rcpp::_["q"]=result.q,
+            Rcpp::_["bp"]=result.bp,Rcpp::_["bd"]=result.bd,Rcpp::_["bq"]=result.bq,
+            Rcpp::_["coefficients"]=block,
+            Rcpp::_["n_coefficients"]=static_cast<int>(n_coefficients),
+            Rcpp::_["variables"]=Rcpp::List::create(Rcpp::_["name"]=var_names,
+                Rcpp::_["type_index"]=var_types_index,Rcpp::_["type"]=var_types,
+                Rcpp::_["regeffect"]=var_effects,Rcpp::_["position"]=var_positions,
+                Rcpp::_["coefficient"]=var_coefficients,Rcpp::_["columns"]=columns),
+            Rcpp::_["estimation_status"]=result.estimation_status,
+            Rcpp::_["log_likelihood"]=result.log_likelihood,Rcpp::_["aicc"]=result.aicc,
+            Rcpp::_["effective_observations"]=static_cast<double>(result.effective_observations));
+        out["results"]=Rcpp::List::create(
+            Rcpp::_["d10"]=kalos_x13_rcpp::reals_out(result.fit.d10),
+            Rcpp::_["d11"]=kalos_x13_rcpp::reals_out(result.fit.d11),
+            Rcpp::_["d12"]=kalos_x13_rcpp::reals_out(result.fit.d12),
+            Rcpp::_["d13"]=kalos_x13_rcpp::reals_out(result.fit.d13),
+            Rcpp::_["c17"]=kalos_x13_rcpp::reals_out(result.fit.c17),
+            Rcpp::_["note"]=result.fit.mode_effective==kalos::X11DecompositionMode::log_additive
+                ? "the X11Results tables as finals consumed them (log-additive "
+                    "results-builder stage, Ratio bias default)"
+                : "the X11Results tables as finals consumed them (raw step tables)");
+        out["finals"]=Rcpp::List::create(Rcpp::_["schema_version"]=1,
+            Rcpp::_["type"]="x13_finals",Rcpp::_["scope"]=record_scope + "_finals",
+            Rcpp::_["tables"]=kalos_x13_rcpp::finals_list(result.fit.finals));
+        out["finalSA"]=kalos_x13_rcpp::reals_out(result.fit.finalSA);
+        out["finalTrend"]=kalos_x13_rcpp::reals_out(result.fit.finalTrend);
+        out["finalIrregular"]=kalos_x13_rcpp::reals_out(result.fit.finalIrregular);
+    }
+    return out;
+}
 }
 // [[Rcpp::export(name = ".native_x13_fit_automatic")]]
 Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period,
@@ -407,91 +499,39 @@ Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period
                 Rcpp::_["msr_policy"]=msr_name,Rcpp::_["mode"]=mode,
                 Rcpp::_["backcast"]=request.backcast,Rcpp::_["forecast"]=request.forecast)),
         Rcpp::_["scope"]="automatic_spec_x13_fit_only",Rcpp::_["backend"]="native");
-    const int blas_previous=openblas_get_num_threads();
-    struct BlasRestore { int previous; ~BlasRestore() { openblas_set_num_threads(previous); } }
-        blas_restore{blas_previous};
-    openblas_set_num_threads(1);
+    const ScopedSingleBlas worker;
     const auto result=kalos::x13_automatic_fit(request);
-    out["status"]=result.status;
-    out["effective_backcast"] = result.fit.backcast;
-    out["effective_forecast"] = result.fit.forecast;
-    out["mode_requested"]=kalos_x11_rcpp::mode_name(result.fit.mode_requested);
-    if(!result.chain.empty()) { // the pinned fail-closed matrix refuses before any state
-        Rcpp::List chain;
-        for(const auto& entry : result.chain)chain.push_back(decision_record(entry));
-        out["chain"]=chain;
+    return wrap_estimated_x13(out, result, Rcpp::CharacterVector(seasonal), msr_name, "automatic_fit");
+}
+
+// [[Rcpp::export(name = ".native_x13_estimated_fit", rng = false)]]
+Rcpp::List native_x13_estimated_fit(const std::vector<double>& observations, int year, int month,
+                                    const std::string& preset) {
+    const ScopedSingleBlas worker;
+    kalos::X13AutomaticFitResult result;
+    if (preset == "RSA0") result = kalos::x13_estimated_rsa0(observations, year, month);
+    else if (preset == "RSA1") result = kalos::x13_estimated_rsa1(observations, year, month);
+    else if (preset == "RSA2c") result = kalos::x13_estimated_rsa2c(observations, year, month);
+    else Rcpp::stop("Unsupported stock X-13 template.");
+    Rcpp::List out = Rcpp::List::create(Rcpp::_["schema_version"] = 1,
+        Rcpp::_["type"] = "x13_estimated_fit", Rcpp::_["scope"] = "stock_estimated_x13_fit",
+        Rcpp::_["template"] = preset, Rcpp::_["backend"] = "native");
+    if (result.stock_likelihood) {
+        const auto& likelihood = *result.stock_likelihood;
+        out["likelihood"] = Rcpp::List::create(Rcpp::_["effective"] = static_cast<double>(result.effective_observations),
+            Rcpp::_["estimated"] = static_cast<double>(likelihood.estimated_parameters),
+            Rcpp::_["log_likelihood"] = result.log_likelihood, Rcpp::_["ssq"] = likelihood.residual_ssq);
+        out["residuals"] = Rcpp::List::create(Rcpp::_["tsres"] = likelihood.full_residuals);
     }
-    if(!result.fit.preadjustment.status.empty()) { // past the fail-closed guards
-        out["mode_effective"]=kalos_x11_rcpp::mode_name(result.fit.mode_effective);
-        out["sigma_set"]=result.fit.sigma_set;
-        out["sigma"]=Rcpp::wrap(std::string(kalos_x11_rcpp::policy_name(result.fit.sigma)));
-        out["lower_sigma"]=result.fit.lower_sigma;
-        out["upper_sigma"]=result.fit.upper_sigma;
-        out["preadjustment"]=kalos_x13_rcpp::preadjustment_list(result.fit.preadjustment,result.fit.log);
+    auto product = wrap_estimated_x13(out, result, Rcpp::CharacterVector(12, "msr"), "jdplus", "estimated_fit");
+    if (result.status == "available" && result.stock_calendar) {
+        const auto& calendar = *result.stock_calendar;
+        Rcpp::NumericVector coefficients = Rcpp::wrap(calendar.coefficients);
+        coefficients.attr("names") = calendar.names;
+        Rcpp::List model = product["model"];
+        model["calendar"] = Rcpp::List::create(Rcpp::_["working_days"] = calendar.selection.working_days,
+            Rcpp::_["easter_duration"] = calendar.selection.easter_duration, Rcpp::_["coefficients"] = coefficients);
+        product["model"] = model;
     }
-    if(!result.fit.selection.status.empty()) { // the run over out, same record shape
-        const int f = result.fit.frequency;
-        const int extended_period = ((result.fit.first_period - 1 - result.fit.backcast) % f + f) % f + 1;
-        out["selection"]=kalos_x11_rcpp::selection_result(result.fit.selection,
-            kalos_x11_rcpp::policy_name(result.fit.sigma),msr_name,
-            kalos_x11_rcpp::mode_name(result.fit.mode_effective),
-            "automatic_fit_selection_run",result.fit.lower_sigma,result.fit.upper_sigma,
-            f,extended_period,result.fit.trend_length,
-            result.fit.backcast,result.fit.forecast,
-            Rcpp::CharacterVector(seasonal));
-    }
-    if(result.status=="available") { // the final description and the tables
-        Rcpp::List block;
-        for(const auto& coefficients : result.coefficients)
-            block.push_back(kalos_x13_rcpp::reals_out(coefficients));
-        block.attr("names")=Rcpp::CharacterVector({"ar","ma","sar","sma"});
-        std::size_t n_coefficients=0;
-        for(const auto& coefficients : result.coefficients)
-            n_coefficients+=coefficients.size();
-        const R_xlen_t nvars=static_cast<R_xlen_t>(result.variables.size());
-        Rcpp::CharacterVector var_names(nvars),var_types(nvars),var_effects(nvars);
-        Rcpp::IntegerVector var_types_index(nvars),var_positions(nvars);
-        Rcpp::NumericVector var_coefficients(nvars);
-        Rcpp::List columns(nvars);
-        for(std::size_t i=0;i<result.variables.size();++i) {
-            const auto& variable=result.variables[i];
-            const R_xlen_t k=static_cast<R_xlen_t>(i);
-            var_names[k]=variable.name;
-            var_types_index[k]=static_cast<int>(variable.type);
-            var_types[k]=outlier_type_name(variable.type);
-            var_effects[k]=variable.regeffect;
-            var_positions[k]=static_cast<int>(variable.position)+1; // 1-based
-            var_coefficients[k]=variable.coefficient;
-            columns[k]=kalos_x13_rcpp::reals_out(variable.column);
-        }
-        out["model"]=Rcpp::List::create(Rcpp::_["log"]=result.log,Rcpp::_["mean"]=result.mean,
-            Rcpp::_["p"]=result.p,Rcpp::_["d"]=result.d,Rcpp::_["q"]=result.q,
-            Rcpp::_["bp"]=result.bp,Rcpp::_["bd"]=result.bd,Rcpp::_["bq"]=result.bq,
-            Rcpp::_["coefficients"]=block,
-            Rcpp::_["n_coefficients"]=static_cast<int>(n_coefficients),
-            Rcpp::_["variables"]=Rcpp::List::create(Rcpp::_["name"]=var_names,
-                Rcpp::_["type_index"]=var_types_index,Rcpp::_["type"]=var_types,
-                Rcpp::_["regeffect"]=var_effects,Rcpp::_["position"]=var_positions,
-                Rcpp::_["coefficient"]=var_coefficients,Rcpp::_["columns"]=columns),
-            Rcpp::_["estimation_status"]=result.estimation_status,
-            Rcpp::_["log_likelihood"]=result.log_likelihood,Rcpp::_["aicc"]=result.aicc,
-            Rcpp::_["effective_observations"]=static_cast<double>(result.effective_observations));
-        out["results"]=Rcpp::List::create(
-            Rcpp::_["d10"]=kalos_x13_rcpp::reals_out(result.fit.d10),
-            Rcpp::_["d11"]=kalos_x13_rcpp::reals_out(result.fit.d11),
-            Rcpp::_["d12"]=kalos_x13_rcpp::reals_out(result.fit.d12),
-            Rcpp::_["d13"]=kalos_x13_rcpp::reals_out(result.fit.d13),
-            Rcpp::_["c17"]=kalos_x13_rcpp::reals_out(result.fit.c17),
-            Rcpp::_["note"]=result.fit.mode_effective==kalos::X11DecompositionMode::log_additive
-                ? "the X11Results tables as finals consumed them (log-additive "
-                    "results-builder stage, Ratio bias default)"
-                : "the X11Results tables as finals consumed them (raw step tables)");
-        out["finals"]=Rcpp::List::create(Rcpp::_["schema_version"]=1,
-            Rcpp::_["type"]="x13_finals",Rcpp::_["scope"]="automatic_fit_finals",
-            Rcpp::_["tables"]=kalos_x13_rcpp::finals_list(result.fit.finals));
-        out["finalSA"]=kalos_x13_rcpp::reals_out(result.fit.finalSA);
-        out["finalTrend"]=kalos_x13_rcpp::reals_out(result.fit.finalTrend);
-        out["finalIrregular"]=kalos_x13_rcpp::reals_out(result.fit.finalIrregular);
-    }
-    return out;
+    return product;
 }

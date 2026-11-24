@@ -1183,6 +1183,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// native_x13_estimated_fit
+Rcpp::List native_x13_estimated_fit(const std::vector<double>& observations, int year, int month, const std::string& preset);
+RcppExport SEXP _rkalos_native_x13_estimated_fit(SEXP observationsSEXP, SEXP yearSEXP, SEXP monthSEXP, SEXP presetSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type observations(observationsSEXP);
+    Rcpp::traits::input_parameter< int >::type year(yearSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type preset(presetSEXP);
+    rcpp_result_gen = Rcpp::wrap(native_x13_estimated_fit(observations, year, month, preset));
+    return rcpp_result_gen;
+END_RCPP
+}
 // native_x13_fit
 Rcpp::List native_x13_fit(SEXP values, SEXP variables_list, SEXP log, SEXP frequency, SEXP start_period, SEXP seasonal, SEXP trend_length, SEXP sigma, SEXP lower_sigma, SEXP upper_sigma, SEXP msr_policy, SEXP mode, SEXP backcast, SEXP forecast);
 RcppExport SEXP _rkalos_native_x13_fit(SEXP valuesSEXP, SEXP variables_listSEXP, SEXP logSEXP, SEXP frequencySEXP, SEXP start_periodSEXP, SEXP seasonalSEXP, SEXP trend_lengthSEXP, SEXP sigmaSEXP, SEXP lower_sigmaSEXP, SEXP upper_sigmaSEXP, SEXP msr_policySEXP, SEXP modeSEXP, SEXP backcastSEXP, SEXP forecastSEXP) {
@@ -1281,6 +1294,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rkalos_native_x13_preadjust", (DL_FUNC) &_rkalos_native_x13_preadjust, 3},
     {"_rkalos_native_x13_restore", (DL_FUNC) &_rkalos_native_x13_restore, 7},
     {"_rkalos_native_x13_fit_automatic", (DL_FUNC) &_rkalos_native_x13_fit_automatic, 49},
+    {"_rkalos_native_x13_estimated_fit", (DL_FUNC) &_rkalos_native_x13_estimated_fit, 4},
     {"_rkalos_native_x13_fit", (DL_FUNC) &_rkalos_native_x13_fit, 14},
     {NULL, NULL, 0}
 };

@@ -4,6 +4,21 @@ Updated **2026-11-24**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Stock estimated X-13 fits in R (2026-11-24)
+
+Version `0.1.0.9023` exposes `native_x13_estimated_fit()` for monthly
+RSA0, RSA1 and RSA2c. The fitted record includes the estimated airline
+coefficients, detected outliers, likelihood, dated innovations, observed
+components and twelve monthly point forecasts. RSA2c also reports its
+selected calendar effects and their named coefficients.
+
+All nine reference fits passed **671/671** assertions in both the serial
+and two-worker OpenMP builds. The model parameters, likelihoods and 891
+innovations matched exactly. The 126 dated X-11 rows met the existing
+`1e-8` scaled comparison. Both builds also passed the existing fixed
+X-13 (645), automatic X-13 (1,213), horizon (668), and combined
+seasonality (82) checks and their isolated Java-free smoke tests.
+
 ## Stock estimated X-13 RSA2c core checkpoint (2026-11-24)
 
 Kalos `a32dce69296148d22421c1157272ec4fa08451ca` extends stock

@@ -289,6 +289,10 @@
     .Call(`_rkalos_native_x13_fit_automatic`, values, frequency, start_period, first_year, aicc_log_correction, max_d, max_bd, ub1, ub2, cancel, differencing_precision, models_count, max_p, max_q, max_bp, max_bq, balanced, mixed, accept_white_noise, arma_eps, outliers_used, otypes, span, outlier_max_round, outlier_max_outliers, tcrate, precision, mean_precision, va, reduce_va, ljung_box_limit, check_mu, accept_airline, ur_limit, mean_test_initial, mean_test_final, tsig, calendar, easter, trading_days, user_variables, seasonal, sigma, lower_sigma, upper_sigma, msr_policy, mode, backcast, forecast)
 }
 
+.native_x13_estimated_fit <- function(observations, year, month, preset) {
+    .Call(`_rkalos_native_x13_estimated_fit`, observations, year, month, preset)
+}
+
 .native_x13_fit <- function(values, variables_list, log, frequency, start_period, seasonal, trend_length, sigma, lower_sigma, upper_sigma, msr_policy, mode, backcast, forecast) {
     .Call(`_rkalos_native_x13_fit`, values, variables_list, log, frequency, start_period, seasonal, trend_length, sigma, lower_sigma, upper_sigma, msr_policy, mode, backcast, forecast)
 }
