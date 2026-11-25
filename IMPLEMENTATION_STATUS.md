@@ -4,6 +4,15 @@ Updated **2026-11-25**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## Scratch evidence disposition (2026-11-25)
+
+The maintainer's post-milestone cleanup (workspace commit `d0173f5`) removed
+the `tmp_opencode/` scratch that earlier entries cite by path (lane libraries,
+run logs, the td-ftest classification dossier, M4/M5-era notes). Those entries
+stand as written history; every number their artifacts carried is restated in
+the entry bodies and in the pinned evidence under `inst/tinytest/fixtures` and
+`inst/tinytest`. No entry is amended in place.
+
 ## Reference-scale input for the residual trading-day attach (2026-11-25)
 
 Version `0.1.0.9029` switches the product-route trading-day attach (the
