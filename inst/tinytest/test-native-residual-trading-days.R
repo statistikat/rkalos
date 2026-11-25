@@ -9,15 +9,31 @@
 # i domains and observations — the inputs are bit-defined, so all four public
 # names are compared as raw binary64 words, the convention of the native pin
 # tests. The oracle was captured under the bridge flag profile (capture-domain
-# note). (2) The PRODUCT fit routes surface diagnostics[["td.ftest.sa"]] /
-# diagnostics[["td.ftest.i"]] computed from the fit's OWN finalSA /
-# finalIrregular series: their component series are products of qualified but
+# note). The primitive's input convention is unchanged by the attach's
+# reference-parity switch below: it tests exactly the series it is handed
+# (the oracle panel's own inputs are on the working scale, so its log-template
+# cases are frozen working-scale series). (2) The PRODUCT fit routes surface
+# diagnostics[["td.ftest.sa"]] / diagnostics[["td.ftest.i"]] from the fit's
+# components on the MODEL'S WORKING (ESTIMATION) SCALE — the input convention
+# of the JVM's GenericSaTests, the machine behind the reference field
+# (Persephone's M7 root cause, dossier
+# tmp_opencode/m7-c-persephone/td-ftest-classification-2026-11-24.md: the F
+# statistic is linear-scale invariant but NOT log-invariant, and the live
+# diagnostics.td-* fields test the working-scale components). The X-13 routes
+# therefore feed log(finalSA/finalIrregular) when the fit's preadjustment log
+# flag is set — additive fits stay on the delivered levels, where the two
+# conventions are the identical doubles — and the SEATS route feeds the
+# initial decomposition's working-scale Value rows (GenericSaTests reads
+# exactly those fields). Their component series are products of qualified but
 # tolerance-qualified compositions (estimation decisions, filters and
 # extraction chains pinned at bands, not bit-frozen like this fixture's
 # inputs), so NO fixture-bit claim is made for product-fit scalars — the route
 # wiring is pinned identical (bit-identical doubles) to applying the primitive
-# to that same fit's own component series, plus finiteness and consistency.
-# The pinned capture option is flast = 0: -all and -last share one fit.
+# to the same independent re-execution of the route's selection, plus
+# finiteness, consistency, and reference-parity pins against the dossier's
+# MEASURED live JVM values (measurements from the classified root cause, not
+# fixtures; the rkalos suite is Java-free). The pinned capture option is
+# flast = 0: -all and -last share one fit.
 source("helpers/fixtures.R", local = TRUE)
 local({
   # (1) The bit-exact primitive replay: all 24 cases, all four names.
@@ -73,19 +89,41 @@ local({
 })
 local({
   # (2) Product-route wiring: the attached pair equals the primitive applied
-  # to the SAME fit's own component series, bit for bit. Bit-exactness of the
+  # to the components the route selects under the reference convention —
+  # log(finalSA/finalIrregular) for X-13 fits whose preadjustment log flag is
+  # set, the delivered (already working-scale) levels for additive X-13 fits,
+  # the initial decomposition's Value rows for SEATS. Bit-exactness of the
   # scalars against the fixture is NOT claimed here: the product composition
   # inputs (the fitted decomposition) are tolerance-qualified, not the
-  # bit-frozen series this fixture embeds — only the wiring is pinned.
+  # bit-frozen series this fixture embeds — only the wiring is pinned,
+  # against this test's own independent re-execution of the selection.
   primitive <- getFromNamespace('native_residual_trading_days_tests', 'rkalos')
   air <- AirPassengers
-  check_route <- function(fit, label) {
+  initial_pick <- function(fit, component) {
+    rows <- fit$initial[fit$initial$information == 'Value' &
+                          fit$initial$component == component, , drop = FALSE]
+    stopifnot(nrow(rows) == 1L)
+    list(values = rows$values[[1L]], start = c(rows$start_year[1L], rows$start_month[1L]))
+  }
+  check_route <- function(fit, label, scale) {
     expect_identical(names(fit$diagnostics), c('combined_seasonality', 'td.ftest.sa', 'td.ftest.i'),
       info = paste(label, 'fields attached'))
-    start <- as.integer(stats::start(fit$finalSA))
-    expect_identical(start, as.integer(stats::start(air)), info = paste(label, 'component domain'))
-    expected <- primitive(as.numeric(fit$finalSA), as.numeric(fit$finalIrregular),
-                          start[1L], start[2L])
+    if (scale == 'initial') {
+      sa <- initial_pick(fit, 'SeasonallyAdjusted')
+      ir <- initial_pick(fit, 'Irregular')
+      expect_identical(sa$start, ir$start, info = paste(label, 'shared initial domain start'))
+      start <- sa$start
+      components <- list(sa = sa$values, irregular = ir$values)
+    } else {
+      start <- as.integer(stats::start(fit$finalSA))
+      components <- if (scale == 'log')
+        list(sa = log(as.numeric(fit$finalSA)), irregular = log(as.numeric(fit$finalIrregular)))
+      else list(sa = as.numeric(fit$finalSA), irregular = as.numeric(fit$finalIrregular))
+    }
+    expect_identical(as.integer(start), as.integer(stats::start(air)),
+      info = paste(label, 'component domain'))
+    expected <- primitive(components$sa, components$irregular,
+                          as.integer(start[1L]), as.integer(start[2L]))
     for (pair in list(c('td.ftest.sa', 'td-sa-all'), c('td.ftest.i', 'td-i-all'))) {
       attached <- fit$diagnostics[[pair[1L]]]
       reference <- expected[[pair[2L]]]
@@ -98,13 +136,82 @@ local({
   }
   x13 <- rkalos::native_x13_estimated_fit(air, 'RSA0')
   expect_identical(x13$status, 'available')
-  check_route(x13, 'x13_estimated_rsa0')
+  expect_false(isTRUE(x13$preadjustment$log))
+  check_route(x13, 'x13_estimated_rsa0', 'levels')  # additive: the selection is unchanged
   full <- rkalos::native_tramoseats_fit(air, 'RSAfull')
   expect_identical(full$status, 'ok')
-  check_route(full, 'tramoseats_rsafull')
+  check_route(full, 'tramoseats_rsafull', 'initial')
   restricted <- rkalos::native_x13_fit(air, seasonal = rep('s3x5', 12L), trend_length = 13L)
   expect_identical(restricted$status, 'available')
-  check_route(restricted, 'x13_restricted')
+  expect_false(isTRUE(restricted$preadjustment$log))
+  check_route(restricted, 'x13_restricted', 'levels')
+  # The log-transform half of the attach convention, restricted route: with
+  # the fit's preadjustment log flag set the attach tests log(finalSA /
+  # finalIrregular) — the delivered levels are the back-transformed
+  # working-scale components, so this check pins the transform-aware selection
+  # bit for bit on both names.
+  restricted_log <- rkalos::native_x13_fit(air, log = TRUE, seasonal = rep('s3x5', 12L),
+                                           trend_length = 13L)
+  expect_identical(restricted_log$status, 'available')
+  expect_true(isTRUE(restricted_log$preadjustment$log))
+  check_route(restricted_log, 'x13_restricted_log', 'log')
+  # The automatic route on the dossier's RSA3 request — the template the
+  # product's default maps to, effective mode multiplicative (the request is
+  # the pinned auto-decode table Persephone's native backend sends: transform
+  # aicc -2, the pinned automodel/AMI/regression module states, AO-LS-TC
+  # outlier detection, sigma legacy 1.5-2.5, no horizons).
+  rsa3 <- rkalos::native_x13_fit_automatic(series = air,
+    transform = list(aicc = -2),
+    automodel = list(max_d = 2L, max_bd = 1L, ub1 = 1 / 1.0309278350515465,
+      ub2 = 1 / 1.1363636363636365, cancel = 0.1, precision = 1e-7, models_count = 5L,
+      max_p = 2L, max_q = 2L, max_bp = 1L, max_bq = 1L, balanced = FALSE, mixed = TRUE,
+      accept_white_noise = FALSE, eps = 1e-7),
+    outliers = list(used = TRUE, types = c('AO', 'LS', 'TC'), span = NULL,
+      max_round = 30L, max_outliers = 30L, tcrate = 0.7),
+    ami = list(precision = 1e-7, mean_precision = 1e-5, va = 0, reduce_va = 0.14286,
+      ljung_box_limit = 0.95, check_mu = TRUE, accept_airline = FALSE, ur_limit = 0.95),
+    regression = list(mean_test_initial = 1.96, mean_test_final = 1, tsig = 1),
+    lower_sigma = 1.5, upper_sigma = 2.5, msr_policy = 'jdplus', mode = 'additive',
+    backcast = 0L, forecast = 0L)
+  expect_identical(rsa3$status, 'available')
+  expect_identical(rsa3$mode_effective, 'multiplicative')
+  expect_true(isTRUE(rsa3$preadjustment$log))
+  check_route(rsa3, 'x13_automatic_rsa3', 'log')
+  # Reference-parity pins against the live JVM values MEASURED by the
+  # classified root cause (dossier tmp_opencode/m7-c-persephone/
+  # td-ftest-classification-2026-11-24.md, rjd3 3.9.0 / JDK 21 captures):
+  # these are measurements from that classification, not fixtures — the
+  # rkalos suite stays Java-free, so no live run happens here; the native
+  # fits reproduce them within the documented input tolerance. X-13: the
+  # tolerance-qualified automatic-rsa3 components landed at rel 1e-12 on
+  # capture; 1e-6 (scaled) already covers the documented amplification with
+  # orders to spare. SEATS: the initial rows are tolerance-BANDED series
+  # (~1e-11 against the live stochastic block) that the test amplifies
+  # ~1000-fold into F (~1e-8) — the dossier's BY-CONSTRUCTION tolerance
+  # 2e-8 * (1 + |ref|) against the measured rel 3.05e-08 (sa) / 6.6e-10 (i)
+  # is the tested expectation, stated here rather than a false bit claim.
+  within <- function(attached, value, label, tol = 1e-6)
+    expect_true(abs(attached$value - value) <= tol * (1 + abs(value)),
+                info = paste(label, 'reference parity with the dossier-measured live value'))
+  within(rsa3$diagnostics$td.ftest.sa, 2.91929946792, 'x13_automatic_rsa3 td-sa-all')
+  within(rsa3$diagnostics$td.ftest.i, 2.61868801941, 'x13_automatic_rsa3 td-i-all')
+  expect_true(abs(rsa3$diagnostics$td.ftest.sa$pvalue - 0.0103902093362) <=
+                1e-6 * (1 + 0.0103902093362),
+              info = 'x13_automatic_rsa3 pvalue parity with the dossier-measured live value')
+  within(full$diagnostics$td.ftest.sa, 1.57867658409, 'tramoseats_rsafull td-sa-all', tol = 2e-8)
+  within(full$diagnostics$td.ftest.i, 1.93578513503, 'tramoseats_rsafull td-i-all', tol = 2e-8)
+  # Non-vacuity controls: replaying the superseded convention (delivered
+  # levels on the log fits, final merged rows for SEATS — the 5e1ddca attach)
+  # lands 2.19e-01 / 5.75e-01 away from the live values, far outside every
+  # tolerance above; the parity pins therefore discriminate.
+  stale_rsa3 <- primitive(as.numeric(rsa3$finalSA), as.numeric(rsa3$finalIrregular),
+                          1949L, 1L)
+  expect_true(abs(stale_rsa3[['td-sa-all']]$value - 2.91929946792) > 0.1,
+              info = 'the superseded levels selection fails the rsa3 parity pin')
+  stale_full <- primitive(as.numeric(full$finalSA), as.numeric(full$finalIrregular),
+                          1949L, 1L)
+  expect_true(abs(stale_full[['td-sa-all']]$value - 1.57867658409) > 0.1,
+              info = 'the superseded merged selection fails the rsafull parity pin')
   # The refusal half: a non-available status never carries the surface. The
   # documented 21-I calendar deferral stays provenance-only (the same golden
   # request shape test-native-x13-automatic-diagnostics.R drives).
@@ -145,6 +252,11 @@ local({
   zero <- stats::ts(rep(0, 96), start = c(1990, 1), frequency = 12)
   expect_identical(attach(list(a = 1), zero, zero, c(1990L, 1L)), list(a = 1),
     info = 'declined components leave the diagnostics untouched')
+  # The working-scale guard: a log-flagged attach on components without
+  # positive values has no working-scale image — log() turns them non-finite,
+  # the primitive declines, the fields stay absent (same fail-soft line).
+  expect_identical(attach(list(a = 1), zero, zero, c(1990L, 1L), log = TRUE), list(a = 1),
+    info = 'log-flagged attach on non-positive components omits the fields')
   short <- stats::ts(as.numeric(AirPassengers)[1:8], start = c(1949, 1), frequency = 12)
   expect_identical(attach(list(a = 1), short, short, c(1949L, 1L)), list(a = 1),
     info = 'components inside the degrees-of-freedom guard omit the fields')

@@ -196,8 +196,14 @@ date_estimated_x13_result <- function(result, series, start, f) {
     # Public residual trading-day F-tests (M7 cutover): computed from this
     # fit's own finalSA/finalIrregular on the shared observed domain start
     # (the automatic and estimated routes both land here on their success
-    # path; refusals keep the provenance echo and never carry the surface).
-    result$diagnostics <- .attach_td_tests(result$diagnostics, result$finalSA, result$finalIrregular, start)
+    # path; refusals keep the provenance echo and never carry the surface) —
+    # on the reference working scale: the fit's preadjustment log flag (the
+    # delivered envelope's preadjustment$log) makes the attach log() the
+    # components for log fits (the automatic transform decision lands on log
+    # for multiplicative fits) and leaves additive fits on the delivered
+    # levels (no-op).
+    result$diagnostics <- .attach_td_tests(result$diagnostics, result$finalSA, result$finalIrregular, start,
+                                           isTRUE(result$preadjustment$log))
     result$series <- observed_ts(y)
   } else {
     result$records_only<-if(grepl("^failed:",result$status))

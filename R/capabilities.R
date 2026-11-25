@@ -45,17 +45,19 @@ capabilities <- function() {
                 # Public residual trading-day F-tests (M7 cutover): the four
                 # JVM dashboard scalars, served by the pure primitive and
                 # surfaced on every product fit route that carries both
-                # components on the success path (all four do: X-13
-                # finalSA/finalIrregular, SEATS merged SeasonallyAdjusted/
-                # Irregular Value rows; a route without one of them would
-                # omit the fields, never fabricate them).
+                # components on the success path (all four do), with the
+                # reference machine's INPUT convention (Persephone's M7 root
+                # cause: GenericSaTests tests the components on the model's
+                # working scale; the primitive itself stays scale-free — it
+                # tests exactly what it is handed). A route without both
+                # components omits the fields, never fabricates them.
                 td_tests = list(fields = c("td.ftest.sa", "td.ftest.i"),
                   shape = "list(value, pvalue) (rjd3-side resolution target of diagnostics.td-sa-all / td-i-all)",
                   names = c("td-sa-all", "td-sa-last", "td-i-all", "td-i-last"),
                   flast = "pinned capture option flast = 0: -all and -last share one fit, bit-identical",
                   routes = c("native_x13_fit", "native_x13_fit_automatic", "native_x13_estimated_fit", "native_tramoseats_fit"),
-                  computed_from = "the fit's own SA and irregular component series on their published observed domain (both components longer than the core's eight-observation degrees-of-freedom guard and testable by the pinned machine; a route without them, with a shorter component, or with a component the core declines to fit, omits the fields)",
-                  bit_claims = "primitive bit-exact vs the 24-case double-JVM oracle on its bit-frozen component series (the oracle capture domain is the bridge flag profile); product-fit scalars wiring-exact with tolerance-qualified component inputs",
+                  computed_from = "the components on the model's working (estimation) scale, transform-aware — the JVM GenericSaTests input the live diagnostics.td-* fields test (reference parity): the X-13 routes feed their decorated finalSA/finalIrregular through log() when the fit's preadjustment log flag is set (additive fits stay on the delivered levels, a no-op), the SEATS routes feed the initial decomposition's SeasonallyAdjusted/Irregular Value rows published by the bridge (both components longer than the core's eight-observation degrees-of-freedom guard and testable by the pinned machine; a route without them, with a shorter component, or with a component the core declines to fit, omits the fields)",
+                  bit_claims = "primitive bit-exact vs the 24-case double-JVM oracle on its bit-frozen component series (the oracle capture domain is the bridge flag profile); product-fit scalars wiring-exact with tolerance-qualified component inputs (SEATS initial rows additionally tolerance-banded, amplified ~1e-11 to ~1e-8 in F by the test)",
                   entry_point = "native_residual_trading_days_tests"),
                 seats_approximation = list(mode = "legacy", frequency = 12L,
                   families = c("airline seasonal MA replacement", "mean-free (2,1,0)(1,1,0) seasonal AR-to-MA refit")),

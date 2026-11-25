@@ -13,15 +13,21 @@ pinned JointTest evaluates the concentrated likelihood as
 probability. The pinned capture option is \code{flast = 0}: the whole
 component is tested, so the \code{-all} and \code{-last} names of a component
 share one fit and agree bit for bit. The product fit routes surface this test
-as \code{diagnostics[["td.ftest.sa"]]} / \code{diagnostics[["td.ftest.i"]]}.
-Bit-exactness layering: the primitive is bit-exact against the 24-case
-double-JVM oracle for the oracle's own bit-frozen component series
+as \code{diagnostics[["td.ftest.sa"]]} / \code{diagnostics[["td.ftest.i"]]}
+from the components on the model's working (estimation) scale, transform-aware
+— the input convention of the JVM's GenericSaTests, whose live
+\code{diagnostics.td-*} fields these mirror: the X-13 routes apply \code{log}
+to the decorated final SA/irregular when the fit's preadjustment log flag is
+set (additive fits stay on the delivered levels), and the SEATS routes feed
+the initial decomposition's working-scale Value rows. Bit-exactness layering:
+the primitive is bit-exact against the 24-case double-JVM oracle for the
+oracle's own bit-frozen component series
 (fixtures/native/residual-trading-days/public-x86_64.txt, pinned by
 \code{test-native-residual-trading-days.R}); component series composed by a
 product fit are tolerance-qualified, so a product fit's scalars are
-wiring-exact (identical to applying this primitive to the fit's own
-components) rather than fixture-bit-exact. The oracle was captured under the
-bridge flag profile.
+wiring-exact (identical to applying this primitive to the components the
+route selects) rather than fixture-bit-exact. The oracle was captured under
+the bridge flag profile.
 }
 \usage{
 native_residual_trading_days_tests(sa, irregular, start_year, start_month)

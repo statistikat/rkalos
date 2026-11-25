@@ -1,8 +1,101 @@
 # rkalos implementation status
 
-Updated **2026-11-24**. Persephone uses the independent rkalos package.
+Updated **2026-11-25**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
+
+## Reference-scale input for the residual trading-day attach (2026-11-25)
+
+Version `0.1.0.9029` switches the product-route trading-day attach (the
+`.attach_td_tests()` surfacing of `0.1.0.9028`) onto the reference
+machine's input representation, following Persephone's M7 root cause
+(dossier `../tmp_opencode/m7-c-persephone/td-ftest-classification-2026-11-
+24.md`). The reference field feeds the SAME machine the primitive is
+bit-exact against — `TradingDaysTest.maTest(data, false)`: TD7 contrasts
+with no mean column, ARIMA (0,1,1)[12], the pinned `JointTest` `F(6, n−7)`,
+`flast = 0` — but `GenericSaTests` tests the components as the SA machine
+holds them, on the model's WORKING (estimation) scale: X-13 through
+`x11.getD11()/getD13()` fitted to the observed domain, TRAMO-SEATS through
+`seats.getInitialComponents()` (the `lsa`/`lirr` fields). The statistic is
+linear-scale invariant but not log-invariant, so the delivered-levels input
+of `0.1.0.9028` agreed exactly only where no transform was involved (x13
+rsa0 rel 3.9e-09; tramo additive rel 0) and diverged materially on log
+templates (x13 rsa3 21.9%, tramo rsafull 57.5% — the default-template
+decision-package metric move that triggered the classification).
+
+The routes now hand the primitive that input. The X-13 routes
+(`native_x13_fit`; automatic and estimated through
+`date_estimated_x13_result`) pass the delivered envelope's
+`preadjustment$log` witness as the attach's new `log` argument: when set,
+the attach applies `log()` to the decorated `finalSA`/`finalIrregular`
+before the call — the delivered levels of a log fit are the back-transformed
+working-scale components, so `log()` recovers the reference input (the
+dossier's probes reproduced the live field at rel 0.00e+00 on both names),
+and additive fits keep the identical delivered-levels doubles. The SEATS
+route selects the bridge's `initial` block
+`SeasonallyAdjusted`/`Irregular` `Value` rows with their stamped domain
+start — the exact field pair `TramoSeatsDiagnostics` hands `lsa`/`lirr` —
+for every template. The pure primitive is unchanged: levels in, levels
+tested, bit-exact against the 24-case double-JVM oracle on its bit-frozen
+series (the panel's log-template cases are themselves working-scale
+captures), so both conventions remain available and the UNIT test half is
+untouched. Field names, the success-path-only surfacing and the fail-soft
+omission semantics are unchanged — absent, short or declined components,
+and now also a log-flagged attach over components without positive values
+(no working-scale image; the primitive declines the non-finite logs), omit
+the fields; never a fabricated number, never a failed fit.
+`capabilities()$td_tests` `computed_from`/`bit_claims` and
+`native_residual_trading_days_tests.Rd` document the convention (working
+scale, transform-aware — reference parity with the `GenericSaTests` input);
+the vendored core is untouched (pin `20e6063`, provider line as before).
+
+The measurement layering is stated, not smoothed: the SEATS initial rows
+are tolerance-BANDED series (~1e-11 against the live stochastic block) and
+the machine amplifies them ~1000-fold into F, so live parity for the new
+`rsafull` scalars is rel 3.05e-08 (`sa`) / 6.6e-10 (`i`) — within the
+test-side tolerance `2e-8 * (1 + |ref|)` BY CONSTRUCTION, not bit-exact —
+while the X-13 log fits reproduce the live pair at ~1e-12. The switch
+re-unifies the attach with the oracle panel's input convention: all four
+SEATS templates now replay their frozen oracle scalars BIT-exactly (`sa`
+and `i`, `value` and `pvalue`: 2.46174217905 / 3.32904271158 /
+3.32331307208 / 1.57867653594; the superseded convention sat at
+2.46174217905 — the one additive agreement — / 4.54743486525 /
+4.53969400956 / 0.670177248376), the estimated `RSA1` log fit moves
+3.72687880285 → 2.84065258582, now within 9.3e-09 of its frozen
+`x13_rsa1_air` (was rel 3.1e-01, the dossier's levels-vs-log F pair), and
+the estimated `RSA2c` moves 0.635279025031 → 0.350754302465 with no parity
+claim made: its frozen `x13_rsa2c_air` capture (bridge flag profile) is a
+different decomposition whose components drift from this route by up to
+0.10 log units, ~0.5 away under either convention.
+
+`test-native-residual-trading-days.R` (326 → 354 assertions in both lanes;
+the unit half bit-exact and untouched): the wiring half now pins
+`attach == primitive(replayed route selection)` bit for bit — delivered
+levels for the additive fits (unchanged convention), `log(components)` for
+the log fits (a restricted `log = TRUE` request and the dossier's automatic
+`rsa3` request, mode multiplicative, log witness pinned), and the
+initial-row selection for SEATS — plus reference-parity pins CLEARLY
+LABELLED as measurements of the classified root cause (the suite stays
+Java-free; no live run happens here): automatic-rsa3 live `td-sa-all`
+2.91929946792 / p 0.0103902093362 / `td-i-all` 2.61868801941 at scaled
+1e-6 (1e-12 at capture), `rsafull` live 1.57867658409 / 1.93578513503 at
+the documented `2e-8 * (1 + |ref|)` amplification tolerance, and
+non-vacuity controls pin the superseded convention outside every tolerance
+(2.19e-01 / 5.75e-01 away). The omission half gains the log-flag decline
+guard. No other test file enumerated td values (grepped).
+
+The full Java-free suite (69 files, no rjd3/rJava) passed
+**310,308/310,308** assertions in the serial lane and
+**310,312/310,312** in the two-worker OpenMP lane — each exactly its
+`0.1.0.9028` baseline (310,280 / 310,284) plus the 28 new wiring
+assertions, with per-file diffs of exactly one line per lane
+(`test-native-residual-trading-days.R` (326,326,0) → (354,354,0)) and the
+other 68 files' counts byte-identical to the baseline logs. Both lanes
+passed the isolated `--native` Java-free smoke with logs BYTE-IDENTICAL to
+the `20e6063` verify logs, and report version `0.1.0.9029` on core
+revision `20e6063…` with the pinned provider
+`OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX
+SINGLE_THREADED`.
 
 ## Residual trading-day F-tests and the 20e6063 re-pin (2026-11-24)
 

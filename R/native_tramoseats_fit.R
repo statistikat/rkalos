@@ -42,13 +42,22 @@ native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, bac
       attributes(value) <- list(tsp = stats::tsp(series), class = "ts")
       result[[key]] <- value
     }
-    # Public residual trading-day F-tests (M7 cutover): computed from this
-    # fit's own SEATS SeasonallyAdjusted/Irregular merged Value rows (the
-    # finalSA/finalIrregular stamped above) on the observed domain the
-    # bridge published; the merged table carries every component, so all
-    # four templates supply both fields on the success path.
-    result$diagnostics <- .attach_td_tests(result$diagnostics, result$finalSA, result$finalIrregular,
-                                           domain$start)
+    # Public residual trading-day F-tests (M7 cutover): reference-parity input
+    # selection (Persephone's M7 root cause) — the JVM's GenericSaTests feeds
+    # the SEATS INITIAL (stochastic) decomposition on the model's working
+    # scale, and the bridge publishes exactly that block: the initial
+    # SeasonallyAdjusted/Irregular Value rows with their stamped domain start
+    # replace the final merged rows for every template. The two blocks coincide
+    # for additive fits (transform.fun None); for multiplicative fits the
+    # initial rows carry the estimation-scale series the reference machine
+    # tests. Missing rows or disagreeing starts are a decline: the attach then
+    # omits the fields, never fabricates a component.
+    initial_sa <- .seats_initial_td_components(result$initial, "SeasonallyAdjusted")
+    initial_irregular <- .seats_initial_td_components(result$initial, "Irregular")
+    if (!is.null(initial_sa) && !is.null(initial_irregular) &&
+        identical(initial_sa$start, initial_irregular$start))
+      result$diagnostics <- .attach_td_tests(result$diagnostics, initial_sa$values,
+                                             initial_irregular$values, initial_sa$start)
   }
   class(result) <- c("native_tramoseats_fit", "list")
   result

@@ -72,8 +72,11 @@ native_x13_fit <- function(series,variables=list(),log=FALSE,seasonal,trend_leng
       result[[name]]<-stats::ts(result[[name]],start=start,frequency=f)
     # Public residual trading-day F-tests (M7 cutover): computed from this
     # fit's own finalSA/finalIrregular on their published observed domain —
-    # the dating the wrapper just stamped (ts calendar, else year 1).
-    result$diagnostics<-.attach_td_tests(result$diagnostics,result$finalSA,result$finalIrregular,start)
+    # the dating the wrapper just stamped (ts calendar, else year 1) — on the
+    # reference working scale: the fit's preadjustment log flag (the delivered
+    # envelope's preadjustment$log) makes the attach log() the components for
+    # log fits and leaves additive fits on the delivered levels (no-op).
+    result$diagnostics<-.attach_td_tests(result$diagnostics,result$finalSA,result$finalIrregular,start,isTRUE(result$preadjustment$log))
   } else {
     result$records_only<-"the provenance echo is complete; the pinned stage refuses any run before that"
   }
