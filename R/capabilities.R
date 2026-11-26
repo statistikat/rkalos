@@ -1,6 +1,19 @@
 # Capabilities refer to the bundled, qualified surface, not planned features.
 # The legacy fit field describes unrestricted fitting. Use restricted_fit
 # and automatic_fit for qualified X-13 routes and tramo_seats_fit for RSA0.
+#' Inspect available analyses and input requirements
+#'
+#' Find the seasonal-adjustment methods, templates, and diagnostics supported
+#' by this installation.
+#'
+#' @return A named list. The entries \code{restricted_fit},
+#'   \code{automatic_fit}, \code{estimated_x13_fit},
+#'   \code{tramo_preprocessing}, and \code{tramo_seats_fit} describe the
+#'   supported inputs and outputs for the corresponding fit functions.
+#'   \code{primitives} lists the individual numerical operations. The
+#'   top-level \code{fit} flag refers to unrestricted fitting.
+#' @examples
+#' capabilities()$tramo_seats_fit$templates
 capabilities <- function() {
     list(backend = "native", schema_version = 2L,
                 status = "unimplemented", fit = FALSE,
@@ -136,6 +149,15 @@ capabilities <- function() {
                 reason = "Unrestricted fitting is unavailable. Qualified methods are described by restricted_fit, automatic_fit and tramo_seats_fit.")
 }
 
+#' Inspect version and numerical library information
+#'
+#' Report the build, numerical libraries, and thread settings of the current
+#' rkalos and R installation.
+#'
+#' @return A named list with the embedded Kalos version and revision, the
+#'   numerical provider and BLAS integer width, and \code{parallel} information.
+#'   The \code{R}, \code{BLAS}, and \code{LAPACK} entries describe the running
+#'   R session.
 core_version <- function() {
   result <- .native_core_version()
   result$parallel <- .native_parallel_info()

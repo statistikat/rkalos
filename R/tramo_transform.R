@@ -1,3 +1,34 @@
+#' Inspect TRAMO outlier and transformation decisions
+#'
+#' Get the outlier threshold for a series length, assess monthly seasonality,
+#' or compare a log transformation with a model fitted in levels.
+#'
+#' @param observations Number of observations, as a nonnegative integer.
+#' @param series Complete finite univariate monthly \code{ts} with at least
+#'   24 observations.
+#' @param log_preference Additive adjustment to the log-model criterion.
+#'   Smaller values favor the log model.
+#' @param precision Positive numerical tolerance for the log/level comparison.
+#' @param mean Logical mean flag of the input specification. The comparison
+#'   itself uses mean correction.
+#' @param detect_seasonality Whether to run the seasonality tests before the
+#'   transformation comparison.
+#' @param spec_seasonality Logical seasonal flag in the input specification,
+#'   used when seasonality detection is disabled.
+#' @param robust Logical flag. Use \code{FALSE}. Robust correction for
+#'   outliers before the comparison is unavailable.
+#' @return \code{tramo_critical_value()} returns the numeric outlier
+#'   threshold. \code{tramo_seasonality()} returns a verdict, an integer score
+#'   (\code{to_int}), Qs and Friedman tests, and the dated centered first
+#'   differences. \code{tramo_transform_decision()} returns the criteria
+#'   for the two models when available, the adjustment, the resulting
+#'   \code{log_transform} flag, and any seasonality report. A log comparison
+#'   is unavailable if any observation is nonpositive.
+#' @examples
+#' tramo_critical_value(length(AirPassengers))
+#' tramo_seasonality(AirPassengers)$verdict
+#' tramo_transform_decision(AirPassengers, log(0.95), 1e-5)$log_transform
+#' @rdname tramo_transform_decision
 tramo_critical_value <- function(observations) {
   if (!is.null(dim(observations))) stop("observations must be scalar.", call. = FALSE)
   .native_tramo_critical_value(native_horizon(observations, "observations"))
@@ -18,11 +49,13 @@ tramo_date_differences <- function(report, series) {
   report
 }
 
+#' @rdname tramo_transform_decision
 tramo_seasonality <- function(series) {
   report <- .native_tramo_seasonality(tramo_monthly_values(series))
   tramo_date_differences(report, series)
 }
 
+#' @rdname tramo_transform_decision
 tramo_transform_decision <- function(series, log_preference, precision, mean = TRUE,
                                      detect_seasonality = TRUE, spec_seasonality = TRUE,
                                      robust = FALSE) {

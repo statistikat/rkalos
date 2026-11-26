@@ -95,7 +95,17 @@ observations. The fitted preprocessing model supplies the ordinary
 difference count `d + bd` and its mean flag. Each test is reported
 independently, or as absent when the stationary sample is too short.
 
-Install OpenBLAS with CBLAS and LAPACKE (qualification version 0.3.34). Set `KALOS_OPENBLAS_ROOT` to its prefix before building and installing the source archive. For custom or static providers, set `KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler and linker flags including dependencies.
+Install 32-bit-integer (LP64) OpenBLAS with CBLAS and LAPACKE. On macOS,
+`brew install openblas` provides both interfaces. The source installer looks
+for the `openblas` module via `pkg-config`, then tries Homebrew on macOS and
+the compiler's default paths.
+
+Set `KALOS_OPENBLAS_ROOT` to select a specific installation, such as the
+OpenBLAS 0.3.34 build used for qualification. For a custom layout, set
+`KALOS_OPENBLAS_CPPFLAGS` and `KALOS_OPENBLAS_LINK` to the full compiler
+and linker flags, including dependencies. These flags take precedence over
+the root. Both overrides take precedence over discovery.
+
 C++17 and Rcpp are required. Configure probes optional OpenMP with R's actual
 compiler; failed probes select serial execution. `KALOS_NUM_THREADS` takes
 precedence over the legacy `PERSEPHONE_NUM_THREADS` alias. The automatic X-13 fit temporarily sets the process-wide OpenBLAS thread count to one and restores its previous value on return.

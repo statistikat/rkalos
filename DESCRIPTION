@@ -26,3 +26,5 @@ SystemRequirements: C++17, OpenMP (optional), OpenBLAS C API (cblas.h and
     lapacke.h with linkable CBLAS/LAPACKE symbols; KALOS_OPENBLAS_ROOT points
     at a non-standard installation)
 Suggests: tinytest, jsonlite
+Roxygen: list(roclets = "rd")
+Config/roxygen2/version: 8.1.1

@@ -24,6 +24,119 @@
 # and the ARIMA route stay outside. The completed fit reports combined SI
 # seasonality; capabilities() reports the
 # restricted_fit scope for callers to gate on.
+#' Seasonally adjust a monthly series with a custom X-13 specification
+#'
+#' \code{native_x13_fit()} adjusts for supplied regression effects and
+#' applies X-11 decomposition with specified filters.
+#' \code{native_x13_fit_automatic()} selects the transformation, outliers,
+#' and seasonal ARIMA model, then estimates the effects and applies X-11
+#' with automatic seasonal and Henderson filter selection.
+#'
+#' @param series Complete finite univariate monthly \code{ts} or numeric
+#'   vector in observation order.
+#' @param variables List of fixed regression effects. Each element has
+#'   \code{class}, \code{effect}, numeric \code{coefficient}, and
+#'   \code{columns}, a list with one observed-length numeric vector per
+#'   coefficient. Classes are \code{"outlier"}, \code{"days_related"},
+#'   \code{"moving_holiday"}, and \code{"user"}. The effect assigns the
+#'   variable to \code{"trend"}, \code{"seasonal"}, \code{"irregular"},
+#'   \code{"seasonally_adjusted"}, \code{"series"}, or \code{"calendar_effect"}.
+#'   Use \code{"undefined"} to leave the assignment unspecified.
+#' @param log Whether to use logs for preadjustment. Requires positive data.
+#' @param seasonal Fixed seasonal filter names, one for each of the 12
+#'   calendar months, chosen from \code{"stable"}, \code{"s3x1"},
+#'   \code{"s3x3"}, \code{"s3x5"}, \code{"s3x9"}, and \code{"s3x15"}.
+#'   If named, use \code{"1"} through \code{"12"}.
+#' @param trend_length Odd Henderson filter length of at least five.
+#' @param sigma Extreme-value weighting rule, \code{"legacy"} or
+#'   \code{"accurate"}. \code{NULL} uses \code{"legacy"}.
+#' @param lower_sigma,upper_sigma Lower and upper sigma cutoffs for
+#'   downweighting unusually large irregular values.
+#' @param msr_policy Policy for reconsidering the moving seasonality ratio
+#'   on a shorter span, \code{"jdplus"} or \code{"x11_five_year_cap"}. Applies
+#'   when seasonal filter selection uses the moving seasonality ratio.
+#' @param mode Requested X-11 decomposition mode, one of \code{"additive"},
+#'   \code{"multiplicative"}, \code{"log_additive"}, and
+#'   \code{"pseudo_additive"}.
+#' @param backcast,forecast Extension counts before and after the data.
+#'   \code{native_x13_fit()} requires zero. For the automatic fit, positive
+#'   counts denote months and negative counts denote years.
+#' @param frequency,start_period,first_year Calendar frequency (12) and
+#'   first month (1–12) and year. For a numeric vector, supply
+#'   \code{frequency} and \code{start_period}, and supply \code{first_year}
+#'   for the automatic fit. The fixed fit dates a vector from year 1.
+#'   For a \code{ts}, these can be read from the series. Explicit calendar
+#'   arguments for the automatic fit must agree with its calendar.
+#' @param transform Named list with \code{aicc}, the adjustment to the
+#'   log-model AICc for the log-versus-level comparison.
+#' @param automodel Named list controlling the ARIMA order search.
+#'   See Details for required entries.
+#' @param outliers Named list controlling automatic outlier detection.
+#'   See Details for required entries.
+#' @param ami Named list controlling estimation, model checks, and
+#'   outlier thresholds. See Details for required entries.
+#' @param regression Named list with \code{mean_test_initial} and
+#'   \code{mean_test_final} (initial and final mean-test cutoffs, with
+#'   zero disabling the corresponding test), and \code{tsig} (the
+#'   significance cutoff used to check final ARMA terms).
+#' @param calendar,easter,trading_days,user_variables Logical switches
+#'   for automatic detection of those effects. Use \code{FALSE}.
+#' @details
+#' For \code{native_x13_fit_automatic()}, supply the following named
+#' controls in addition to \code{transform} and \code{regression}.
+#'
+#' \describe{
+#'   \item{\code{automodel}}{\code{max_d} and \code{max_bd} cap regular
+#'     and seasonal differencing. \code{ub1} and \code{ub2} are unit-root
+#'     cutoffs and \code{cancel} is the cancellation tolerance.
+#'     \code{precision} controls estimation in the differencing search.
+#'     \code{models_count} sets the number of ARMA candidates to retain.
+#'     \code{max_p}, \code{max_q}, \code{max_bp}, and \code{max_bq}
+#'     cap regular AR, regular MA, seasonal AR, and seasonal MA orders.
+#'     \code{balanced}, \code{mixed}, and \code{accept_white_noise} are
+#'     logical switches for the search. \code{eps} is the estimation
+#'     tolerance for ARMA selection.}
+#'   \item{\code{outliers}}{\code{used} switches detection on.
+#'     \code{types} is the character vector of candidate outliers
+#'     (\code{"AO"}, \code{"LS"}, \code{"TC"}, \code{"SO"}), and may be
+#'     omitted when detection is off. Use \code{span = NULL} or
+#'     \code{c(1L, length(series))} for the full span.
+#'     \code{max_round} and \code{max_outliers} limit the search.
+#'     \code{tcrate} is the decay rate for temporary changes.}
+#'   \item{\code{ami}}{\code{precision} and \code{mean_precision}
+#'     control estimation and the mean check, respectively.
+#'     \code{va} sets the outlier critical value (zero derives it from the
+#'     sample size) and \code{reduce_va} controls threshold reduction.
+#'     \code{ljung_box_limit} is the model-check cutoff.
+#'     \code{check_mu} and \code{accept_airline} are logical flags for
+#'     checking the mean and accepting an airline model.
+#'     \code{ur_limit} is a near-unit-root cutoff.}
+#' }
+#' @return A named list. Check \code{status} or \code{fitted} before
+#'   using component values. Successful fits (\code{status = "available"})
+#'   give \code{finalSA}, \code{finalTrend}, and \code{finalIrregular}
+#'   on the observed calendar. \code{preadjustment}, \code{selection},
+#'   \code{results}, and \code{finals} contain the preadjusted, filter,
+#'   and decomposition results. \code{diagnostics$combined_seasonality}
+#'   contains the combined seasonality verdict and its tests when available.
+#'   Residual trading-day tests appear as \code{td.ftest.sa} and
+#'   \code{td.ftest.i} in \code{diagnostics} when they can be computed.
+#'
+#'   Automatic fits also report the model, decisions, and residuals.
+#'   For a requested extension, \code{preadjustment$tables$a1a} and
+#'   \code{a1b} are forecasts and backcasts of the original series.
+#'   \code{finals$tables} holds dated extensions of the adjusted series
+#'   (\code{d11}), trend (\code{d12}), combined adjustment factor
+#'   (\code{d16}), and calendar effects (\code{d18}), with suffix \code{a}
+#'   for forecasts and \code{b} for backcasts. Zero-length extensions
+#'   omit their tables. When available, \code{series_forecast_stdev}
+#'   reports standard errors of the original-series forecasts.
+#' @seealso \code{\link{native_x13_estimated_fit}}, \code{\link{capabilities}}
+#' @examples
+#' fit <- native_x13_fit(AirPassengers, seasonal = rep("s3x3", 12),
+#'   trend_length = 13L)
+#' fit$status
+#' head(fit$finalSA)
 native_x13_fit <- function(series,variables=list(),log=FALSE,seasonal,trend_length,
     sigma=NULL,msr_policy="jdplus",frequency=NULL,start_period=NULL,lower_sigma=1.5,
     upper_sigma=2.5,mode="additive",backcast=0,forecast=0) {

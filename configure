@@ -6,6 +6,7 @@ set -eu
 if test -z "${R_HOME:-}"; then R_HOME=$(R RHOME); fi
 r_command="${R_HOME}/bin/R"
 if test -x "${r_command}.exe"; then r_command="${r_command}.exe"; fi
+platform=$(uname -s)
 probe_dir=".rkalos-openmp-$$"
 mkdir "$probe_dir"
 trap 'rm -rf "$probe_dir"' EXIT HUP INT QUIT TERM
@@ -45,28 +46,6 @@ fi
 # installation with include/ and lib/ (static libopenblas.a preferred). There
 # is deliberately no fallback to the old F77 shims: silently swapping the
 # LAPACK surface re-forks the numerics from the qualified core.
-capi_cppflags=${KALOS_OPENBLAS_CPPFLAGS-}
-capi_link=${KALOS_OPENBLAS_LINK-}
-if test -z "$capi_cppflags" && test -z "$capi_link" && test -n "${KALOS_OPENBLAS_ROOT-}"; then
-    capi_cppflags="-isystem ${KALOS_OPENBLAS_ROOT}/include"
-    case "$(uname -s)" in
-        Darwin) shared=libopenblas.dylib ;;
-        *) shared=libopenblas.so ;;
-    esac
-    if test -f "${KALOS_OPENBLAS_ROOT}/lib/$shared" && test "$(uname -s)" = Darwin; then
-        capi_link="-L${KALOS_OPENBLAS_ROOT}/lib -lopenblas"
-    elif test -f "${KALOS_OPENBLAS_ROOT}/lib/libopenblas.a"; then
-        capi_link="${KALOS_OPENBLAS_ROOT}/lib/libopenblas.a $("$r_command" CMD config FLIBS) -lpthread -lm"
-    else
-        capi_link="-L${KALOS_OPENBLAS_ROOT}/lib -lopenblas"
-    fi
-elif test -z "$capi_link"; then
-    capi_link="-lopenblas"
-fi
-# ELF only: keep the shared object self-contained so statically linked LAPACK
-# routines cannot be interposed by a different libblas/liblapack already loaded
-# into the R process (the qualified core measures the pinned kernels).
-local_bind='-Wl,--exclude-libs,ALL -Wl,-Bsymbolic'
 cat > "$probe_dir/capi.cpp" <<'EOF'
 #include <cblas.h>
 #include <lapacke.h>
@@ -80,40 +59,105 @@ extern "C" void rkalos_capi_probe(int* output) {
     *output = (info == 0 && rank == 2 && x[0] == 4. && openblas_get_config() != nullptr);
 }
 EOF
-capi_ok=0
-for local_bind_try in "$local_bind" ''; do
-    cat > "$probe_dir/Makevars" <<EOF
+
+openblas_from_root() {
+    openblas_root=$1
+    capi_cppflags="-isystem \"${openblas_root}/include\""
+    if test "$platform" = Darwin && test -f "$openblas_root/lib/libopenblas.dylib"; then
+        capi_link="\"$openblas_root/lib/libopenblas.dylib\""
+    elif test -f "$openblas_root/lib/libopenblas.a"; then
+        flibs=$("$r_command" CMD config FLIBS) || return 1
+        capi_link="\"$openblas_root/lib/libopenblas.a\" $flibs -lpthread -lm"
+    else
+        capi_link="-L\"$openblas_root/lib\" -lopenblas"
+    fi
+}
+
+probe_openblas() {
+    provider=$1
+    printf '\nOpenBLAS candidate: %s\n' "$provider" >> config.log
+    set -- ''
+    # On ELF, bind statically linked LAPACK symbols within the package.
+    if test "$platform" != Darwin; then
+        set -- '-Wl,--exclude-libs,ALL -Wl,-Bsymbolic' ''
+    fi
+    for local_bind in "$@"; do
+        cat > "$probe_dir/Makevars" <<EOF
 CXX_STD = CXX17
 PKG_CPPFLAGS = $capi_cppflags
 PKG_CXXFLAGS = -ffp-contract=off $openmp_flags
-PKG_LIBS = $openmp_flags $capi_link $local_bind_try
+PKG_LIBS = $openmp_flags $capi_link $local_bind
 EOF
-    if (cd "$probe_dir" && "$r_command" CMD SHLIB --preclean -o "capi$extension" capi.cpp &&
-        "$r_command" --vanilla --slave -e 'dyn.load(paste0("capi", .Platform$dynlib.ext)); stopifnot(.C("rkalos_capi_probe", integer(1))[[1]] == 1L)') >> config.log 2>&1; then
-        local_bind="$local_bind_try"
-        capi_ok=1
-        break
+        if (cd "$probe_dir" && "$r_command" CMD SHLIB --preclean -o "capi$extension" capi.cpp &&
+            "$r_command" --vanilla --slave -e 'dyn.load(paste0("capi", .Platform$dynlib.ext)); stopifnot(.C("rkalos_capi_probe", integer(1))[[1]] == 1L)') >> config.log 2>&1; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+find_openblas() {
+    capi_cppflags=${KALOS_OPENBLAS_CPPFLAGS-}
+    capi_link=${KALOS_OPENBLAS_LINK-}
+    if test -n "$capi_cppflags" || test -n "$capi_link"; then
+        capi_link=${capi_link:--lopenblas}
+        probe_openblas 'KALOS_OPENBLAS_CPPFLAGS/KALOS_OPENBLAS_LINK'
+        return
     fi
-done
-if test "$capi_ok" -ne 1; then
+    if test -n "${KALOS_OPENBLAS_ROOT-}"; then
+        openblas_from_root "$KALOS_OPENBLAS_ROOT" &&
+            probe_openblas "KALOS_OPENBLAS_ROOT ($KALOS_OPENBLAS_ROOT)"
+        return
+    fi
+
+    pkg_config=${PKG_CONFIG:-pkg-config}
+    if capi_cppflags=$("$pkg_config" --cflags openblas 2>> config.log) &&
+        capi_link=$("$pkg_config" --libs openblas 2>> config.log) &&
+        probe_openblas 'pkg-config'; then
+        return 0
+    fi
+    if test "$platform" = Darwin; then
+        for brew in "$(command -v brew || :)" /opt/homebrew/bin/brew /usr/local/bin/brew; do
+            if test -x "$brew" &&
+                prefix=$(HOMEBREW_NO_AUTO_UPDATE=1 "$brew" --prefix --installed openblas 2>> config.log) &&
+                test -n "$prefix" &&
+                openblas_from_root "$prefix" &&
+                probe_openblas "Homebrew ($prefix)"; then
+                return 0
+            fi
+        done
+    fi
+    capi_cppflags=''
+    capi_link='-lopenblas'
+    probe_openblas 'system defaults'
+}
+
+if ! find_openblas; then
     echo 'rkalos: the OpenBLAS C API (cblas.h/lapacke.h with a linkable' \
          'CBLAS/LAPACKE) required by the vendored core provider is not' \
          'available to this compiler. Install it, or point KALOS_OPENBLAS_ROOT' \
          '(or KALOS_OPENBLAS_CPPFLAGS/KALOS_OPENBLAS_LINK) at an OpenBLAS' \
          'installation; see config.log.' >&2
+    if test "$platform" = Darwin; then
+        echo "rkalos: With Homebrew, install the provider with 'brew install openblas'." >&2
+    fi
     exit 1
 fi
+printf 'rkalos: OpenBLAS C API check passed using %s.\n' "$provider"
 if test -n "$local_bind"; then
-    echo 'rkalos: OpenBLAS C API check passed; shared object bound to its own' \
+    echo 'rkalos: Shared object bound to its own' \
          'LAPACK symbols (no in-process interposition).'
 fi
-sed -e "s|@OPENMP_FLAGS@|$openmp_flags|g" \
-    -e "s|@KALOS_OPENBLAS_CPPFLAGS@|$capi_cppflags|g" \
-    -e "s|@KALOS_OPENBLAS_LINK@|$capi_link|g" \
-    -e "s|@KALOS_LOCAL_BIND@|$local_bind|g" \
-    src/Makevars.in > src/Makevars
-sed -e "s|@OPENMP_FLAGS@|$openmp_flags|g" \
-    -e "s|@KALOS_OPENBLAS_CPPFLAGS@|$capi_cppflags|g" \
-    -e "s|@KALOS_OPENBLAS_LINK@|$capi_link|g" \
-    -e "s|@KALOS_LOCAL_BIND@|$local_bind|g" \
-    src/Makevars.win.in > src/Makevars.win
+
+escape_sed_replacement() {
+    printf '%s' "$1" | sed 's/[\\&|]/\\&/g'
+}
+capi_cppflags=$(escape_sed_replacement "$capi_cppflags")
+capi_link=$(escape_sed_replacement "$capi_link")
+for makevars in src/Makevars src/Makevars.win; do
+    sed -e "s|@OPENMP_FLAGS@|$openmp_flags|g" \
+        -e "s|@KALOS_OPENBLAS_CPPFLAGS@|$capi_cppflags|g" \
+        -e "s|@KALOS_OPENBLAS_LINK@|$capi_link|g" \
+        -e "s|@KALOS_LOCAL_BIND@|$local_bind|g" \
+        "$makevars.in" > "$makevars"
+done

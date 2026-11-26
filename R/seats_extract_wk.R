@@ -1,3 +1,42 @@
+#' Extract SEATS components from a supplied SARIMA model
+#'
+#' Use Wiener–Kolmogorov signal extraction to estimate the trend, seasonal,
+#' and irregular components of a monthly series. Supply the model
+#' coefficients and innovation variance.
+#'
+#' @param series Complete finite univariate monthly \code{ts} in original units.
+#' @param innovation_variance Positive innovation variance on the model scale.
+#' @param d,bd Regular and seasonal differencing orders.
+#' @param phi,theta,bphi,btheta Regular AR, regular MA, seasonal AR, and
+#'   seasonal MA coefficients, respectively, in increasing lag order.
+#'   AR terms are subtracted and MA terms added in their lag polynomials.
+#' @param log Whether the model uses the logarithm of \code{series}.
+#'   A log model requires positive observations.
+#' @param mean_correction Whether the differenced model includes a mean.
+#' @param forecast,backcast Numbers of months to extend after and before
+#'   the data. Negative counts denote years. Zero requests no extension.
+#' @param approximation Approximation policy for a model that cannot be
+#'   decomposed as supplied. Use \code{"none"} or \code{"legacy"}.
+#' @param method Component estimator. Use \code{"burman"}.
+#' @param bias Use \code{"legacy"} for the SEATS bias correction or
+#'   \code{"none"} to omit it.
+#' @param xl Cutoff used to detect model parameters close to a unit root.
+#' @param epsphi,rmod,smod,smod_pi Seasonal tolerance and root modulus
+#'   boundaries for trend, seasonal, and seasonal frequency pi,
+#'   respectively. These control how model roots are assigned to components.
+#' @details With \code{approximation = "legacy"}, supported alternatives
+#' include replacing the seasonal MA factor in monthly models with orders
+#' (0,1,q)(0,1,Q), where q is at most one, and refitting a seasonal MA
+#' factor for mean-free (2,1,0)(1,1,0) models. An unsupported approximation
+#' can prevent decomposition.
+#' @return A list with \code{status} and the \code{initial} and \code{final}
+#'   component tables. Each table has one row per component and information
+#'   type (value, forecast, backcast, or corresponding standard deviation).
+#'   It gives a start year and month and a \code{values} list column
+#'   containing dated monthly series or empty vectors. Unavailable
+#'   components are omitted. Some decomposition failures return an error
+#'   status with empty tables. Invalid requests raise an error.
+#' @seealso \code{\link{seats_from_tramo}}, \code{\link{native_tramoseats_fit}}
 seats_extract_wk <- function(series, innovation_variance, d = 0L, bd = 0L,
     phi = numeric(), theta = numeric(), bphi = numeric(), btheta = numeric(),
     log = FALSE, mean_correction = TRUE, forecast = -2L, backcast = 0L,

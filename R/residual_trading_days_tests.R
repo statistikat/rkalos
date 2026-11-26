@@ -40,6 +40,30 @@
     stop(name, " must be a whole number in the native range.", call. = FALSE)
   as.integer(value)
 }
+#' Test for residual trading-day effects
+#'
+#' Test whether day-of-week composition explains variation remaining in the
+#' seasonally adjusted and irregular components. Each component is tested
+#' separately using six trading-day contrasts and ARIMA(0,1,1) errors, with
+#' no mean term.
+#'
+#' @param sa,irregular Finite numeric vectors of monthly seasonally adjusted
+#'   and irregular values on the desired analysis scale, in chronological
+#'   order. Both series must contain more than eight observations.
+#' @param start_year Year of the first observation, from 1 to 9999. The two
+#'   series start in the same month.
+#' @param start_month Month of the first observation, from 1 to 12.
+#' @return A named list of tests. Each test contains the F statistic
+#'   (\code{value}) and its upper-tail p-value (\code{pvalue}). The reference
+#'   distribution has 6 and \eqn{n - 8} degrees of freedom for a component
+#'   of length \eqn{n}. The \code{td-sa-all} and \code{td-i-all} entries
+#'   use the full supplied spans. \code{td-sa-last} and \code{td-i-last}
+#'   duplicate those results. Invalid inputs or a component that cannot
+#'   support the test raise an error.
+#' @examples
+#' fit <- native_x13_estimated_fit(AirPassengers)
+#' tests <- native_residual_trading_days_tests(fit$finalSA, fit$finalIrregular, 1949, 1)
+#' tests[["td-sa-all"]]
 native_residual_trading_days_tests <- function(sa, irregular, start_year, start_month) {
   finite_vector <- function(value, name) {
     if (!is.numeric(value) || is.complex(value) || !length(value) || any(!is.finite(as.numeric(value))))
