@@ -1,8 +1,66 @@
 # rkalos implementation status
 
-Updated **2026-11-25**. Persephone uses the independent rkalos package.
+Updated **2026-11-26**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
+
+## The 7c3eefd re-pin: fixed-coefficient LM in the core, zero expectation movement (2026-11-26)
+
+Version `0.1.0.9030` re-pins the vendored core `20e6063dea6f97d2957a7a3057313812c6f5d2f0` →
+`7c3eefd9652fa13d53e798f14bb8e2fe8fe4828a` (lock schema 2; verified 208 core,
+112 fixture and 416 evidence files — evidence up from 410). The vendored
+revision is the kalos ledger tip carrying the M10 slice, the pinning
+convention of `e2138a3` and `20e6063` before it (the change itself lands in
+the core commit `a1e62ec`; its ledger commit ships the identical vendored
+tree, so the tip is what `sync-core.py` exports and `revision.hpp` records).
+M10 widens the pinned sum-of-squares Levenberg-Marquardt solver to accept
+per-entry fixed coefficient blocks through `detail::SsqFixedSeam`, a defaulted
+parameter of `minimize_ssq_levmar` (kalos `IMPLEMENTATION_STATUS.md`, M10
+entry). Vendored churn is exactly
+`include/kalos/detail/ssq_levmar.hpp`, `src/ssq_levmar.cpp`,
+`include/kalos/estimation_control.hpp`, `src/estimation_control.cpp`,
+`src/kalos/CMakeLists.txt` (the `test_ssq_fixed_seam` registration and the
+`test_estimation_control` evidence-dir definition, inert for the R
+source build), the generated `revision.hpp`, the two lock files, and the six
+manifest-listed `inst/tinytest/fixtures/native/lm-fixed-block/` evidence
+files (four pinned mixed requests, `pins.txt`, `SHA256SUMS.csv`) that feed
+kalos's own CTests and no R test. No R-side file is touched: the rkalos glue
+never selects the LM solver and its in-core consumers zero-fill their fixed
+masks, so every product route keeps the null-seam path — byte-for-byte the
+pre-change machine by the upstream qualification — and the expectation
+movement forced in pykalos is by design movement here: **zero**.
+
+The CI provider fetch now pins `ref: 7c3eefd9652fa13d53e798f14bb8e2fe8fe4828a`.
+
+Both lanes were re-measured from a fresh tarball into fresh lane libraries,
+the serial lane via the documented `Makevars-serial` override through
+`R_MAKEVARS_USER` (0 `-fopenmp` compile lines, like the baseline; the OMP
+lane 133). The full Java-free suite (69 files, no rjd3/rJava) passed
+**310,308/310,308** assertions in the serial lane and
+**310,312/310,312** in the two-worker OpenMP lane — every per-file table row
+identical to the `20e6063` baseline logs (table texts byte-identical, 0
+differing files per lane; totals exactly the recorded `0.1.0.9029` figures).
+Both lanes passed the isolated `--native` Java-free smoke with logs
+BYTE-IDENTICAL to the `20e6063` verify logs, and report version
+`0.1.0.9030` on core revision `7c3eefd…` with the pinned provider
+`OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX
+SINGLE_THREADED` and the per-lane parallel fields unchanged.
+
+Belt-braces witness outside the suites (the suites themselves already certify
+this): the estimated-route `RSA1` product fit and the automatic `RSA3`
+request were re-run on both new lanes and on the retained
+`0.1.0.9029`/`20e6063` lane build; all delivered-component binary dumps
+(final SA, trend, irregular, D11, D13, tsres; automatic SA and irregular)
+are `cmp`-identical across all three, the likelihood fields
+`244.69648645086414` / ssq `0.17660260497368421` and the ARMA coefficients
+are bit-equal to the `x13-estimated-templates` fixture hex pins of the
+`rsa1 air` case, and the td fields match the recorded values: estimated
+`RSA1` `td.ftest.sa` 2.8406525858195382 (p 0.012278267499684494) — rel 6.9e-09
+to the frozen `x13_rsa1_air` oracle 2.8406526123323372, inside the documented
+9.3e-09 — and automatic `RSA3` 2.919299467916046 / p 0.01039020933615779 /
+`td.ftest.i` 2.6186880194091335, inside every live-parity pin of
+`test-native-residual-trading-days.R`. `capabilities()` surfaced the same
+byte-identical document (same names, templates, td-test claims).
 
 ## Scratch evidence disposition (2026-11-25)
 

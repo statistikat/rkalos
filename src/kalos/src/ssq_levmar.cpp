@@ -306,6 +306,177 @@ SsqParamValidation SarimaSsqDomain::validate(std::vector<double>& x) const {
     return changed ? SsqParamValidation::Changed : SsqParamValidation::Valid;
 }
 
+// ---------------------------------------------------------------------------
+// SsqFixedSeam — pinned SarimaFixedMapping transcription (21-D.2 eligibility
+// widening, M9-H qualified).
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Pinned SarimaMapping.checkStability(DoubleSeq): trailing-zero trim, the
+// |c| < 1 single-coefficient case, the two-coefficient quadratic branch on
+// the reciprocal roots and the FilterUtility.checkStability root scan. At
+// limit 1 this is operation-for-operation what the qualified gls-mapping
+// domain already runs through the FilterUtility.checkRoots transcription
+// (check_roots): the same reciprocal-modulus comparisons, the same trim and
+// the same NaN fall-through directions.
+bool fixed_check_stability(const double* c, std::size_t length) {
+    return check_roots(c, length, 1.0);
+}
+
+// Pinned SarimaFixedMapping.stabilize(DataBlock, start, size, limit) for a
+// fully free block: the single-coefficient ±limit pull / inversion and the
+// root-inverting multi-coefficient reconstruction (stabilize(Polynomial,
+// limit): a root reciprocal inside 1 ± 0.01 is rescaled to exactly the limit,
+// any reciprocal modulus above one is inverted; fromComplexRoots with the
+// constant-term normalization, the same z-roots recurrence the qualified
+// SarimaMapping2 stabilize_block transcribes).
+bool fixed_stabilize(double* c, std::size_t length, double limit) {
+    if (length == 0) return false;
+    if (fixed_check_stability(c, length)) return false;
+    if (length == 1) {
+        const double v = c[0];
+        const double a = std::abs(v);
+        if (limit < 1.0 && !(std::abs(a - 1.0) > 0.01)) { // pinned dcmpg ifgt: NaN escapes
+            c[0] = v > 0.0 ? limit : -limit;              // pinned dcmpl ifle: NaN/negative → -limit
+            return true;
+        }
+        if (a > 1.0) { // pinned dcmpl ifle: NaN escapes
+            c[0] = 1.0 / v;
+            return true;
+        }
+        return false;
+    }
+    std::vector<double> polynomial(length + 1, 0.0);
+    polynomial[0] = 1.0;
+    for (std::size_t i = 0; i < length; ++i) polynomial[i + 1] = c[i];
+    const auto found = polynomial_roots(polynomial);
+    std::vector<std::complex<double>> roots;
+    roots.reserve(found.size());
+    for (const auto& root : found) roots.emplace_back(root.real, root.imag);
+    bool changed = false;
+    for (auto& root : roots) {
+        const double inv_abs = 1.0 / std::abs(root);
+        if (limit < 1.0 && !(std::abs(inv_abs - 1.0) > 0.01)) { // pinned dcmpg ifgt: NaN escapes
+            root *= (inv_abs / limit);                           // pinned Complex.times(invAbs / limit)
+            changed = true;
+        } else if (inv_abs > 1.0) { // pinned dcmpl ifle: NaN escapes
+            root = pinned_inverse(root);
+            changed = true;
+        }
+    }
+    if (!changed) return false;
+    std::vector<std::complex<double>> z(roots.size() + 1, {0.0, 0.0});
+    z[0] = {1.0, 0.0};
+    for (std::size_t i = 0; i < roots.size(); ++i) {
+        z[i + 1] = z[i];
+        for (std::size_t j = i; j >= 1; --j) z[j] = z[j - 1] - z[j] * roots[i];
+        z[0] = z[0] * (-roots[i]);
+    }
+    for (std::size_t i = 0; i < length; ++i) c[i] = z[i + 1].real() / z[0].real();
+    return true;
+}
+
+// Pinned SarimaFixedMapping.fstabilize(DataBlock, start, size): a block that
+// carries fixed entries is stabilized slot by slot without ever moving them
+// — the working copy zeros the other free slots, seeds the slot with 0.2 and
+// flips its sign through ×(−1.25) until the block passes checkStability (at
+// most 10 flips per slot). The pinned per-slot round counter throws
+// FunctionException("Invalid mapping") past 20 rounds; the caller maps that
+// to Invalid (the pinned iterateQR catch feeds it to the damping tail).
+bool fixed_fstabilize(std::vector<double>& full, const std::vector<std::uint8_t>& fixed,
+    std::size_t start, std::size_t size, bool& invalid) {
+    if (fixed_check_stability(full.data() + start, size)) return false;
+    std::vector<double> tmp(size, 0.0);
+    int rounds = 0;
+    for (std::size_t j = 0; j < size; ++j) {
+        if (fixed[start + j] == 0) {
+            std::copy_n(full.begin() + static_cast<std::ptrdiff_t>(start),
+                static_cast<std::ptrdiff_t>(size), tmp.begin());
+            for (std::size_t k = 0; k < size; ++k) {
+                if (fixed[start + k] == 0) tmp[k] = 0.0;
+            }
+            tmp[j] = 0.2;
+            for (int flip = 0; flip < 10; ++flip) {
+                if (fixed_check_stability(tmp.data(), size)) {
+                    std::copy_n(tmp.begin(), static_cast<std::ptrdiff_t>(size),
+                        full.begin() + static_cast<std::ptrdiff_t>(start));
+                    return true;
+                }
+                tmp[j] *= -1.25;
+            }
+        }
+        if (++rounds > 20) {
+            invalid = true;
+            return false;
+        }
+    }
+    return false;
+}
+
+} // namespace
+
+SsqFixedSeam::SsqFixedSeam(const SarimaSsqDomain& domain, std::vector<std::uint8_t> fixed,
+    std::vector<double> pinned_values)
+    : fixed_(std::move(fixed)), pinned_values_(std::move(pinned_values)) {
+    if (fixed_.size() != domain.dim() || pinned_values_.size() != domain.dim()) {
+        throw std::invalid_argument("ssq fixed seam: state length mismatch");
+    }
+    for (std::size_t b = 0; b < 4; ++b) {
+        sizes_[b] = domain.sizes()[b];
+        offsets_[b + 1] = offsets_[b] + sizes_[b];
+    }
+    for (std::size_t j = 0; j < fixed_.size(); ++j) {
+        if (fixed_[j] == 0) free_.push_back(j);
+    }
+}
+
+std::vector<double> SsqFixedSeam::expand(const std::vector<double>& reduced) const {
+    std::vector<double> full = pinned_values_; // pinned parameters.clone()
+    for (std::size_t i = 0; i < free_.size(); ++i) {
+        full[free_[i]] = i < reduced.size() ? reduced[i]
+                                            : std::numeric_limits<double>::quiet_NaN();
+    }
+    return full;
+}
+
+bool SsqFixedSeam::check_boundaries(const std::vector<double>& full) const {
+    if (full.size() != fixed_.size()) return false;
+    for (std::size_t b = 0; b < 4; ++b) {
+        if (sizes_[b] > 0 &&
+            !check_roots(full.data() + offsets_[b], sizes_[b], 1.0)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+SsqParamValidation SsqFixedSeam::validate(std::vector<double>& full) const {
+    if (full.size() != fixed_.size()) return SsqParamValidation::Invalid;
+    if (check_boundaries(full)) return SsqParamValidation::Valid;
+    bool changed = false;
+    for (std::size_t b = 0; b < 4; ++b) {
+        if (sizes_[b] == 0) continue;
+        const std::size_t start = offsets_[b];
+        const std::size_t size = sizes_[b];
+        bool fully_free = true;
+        for (std::size_t j = start; j < start + size; ++j) {
+            if (fixed_[j] != 0) {
+                fully_free = false;
+                break;
+            }
+        }
+        if (fully_free) {
+            changed |= fixed_stabilize(full.data() + start, size, 0.99);
+        } else {
+            bool invalid = false;
+            changed |= fixed_fstabilize(full, fixed_, start, size, invalid);
+            if (invalid) return SsqParamValidation::Invalid; // pinned FunctionException
+        }
+    }
+    return changed ? SsqParamValidation::Changed : SsqParamValidation::Valid;
+}
+
 namespace {
 
 struct Derivatives {
@@ -318,11 +489,17 @@ struct Derivatives {
 // per-coordinate checkepsilon deflation, then err(j, eps) in pinned order.
 // The degenerate columns (eps == 0, so err returns the current vector and the
 // division 0/0 produces NaN) are flagged: the pinned machine pushes NaN into
-// the QR, loses the rank there and takes the rejection path.
+// the QR, loses the rank there and takes the rejection path. With a seam the
+// gradient lives on the reduced free coordinates (the pinned
+// SarimaFixedMapping presents getDim() = free to the minimizer): the probe
+// steps the full vector at the free slot, the boundary probe delegates to
+// the seam (SarimaMapping.checkBoundaries on the spliced full vector) and
+// the epsilon reads the full coordinate through fullIndex.
 Derivatives numerical_derivatives(const SsqVectorFunction& fn, const std::vector<double>& x,
-    const std::vector<double>& ecur, const Interrupt& interrupt) {
+    const std::vector<double>& ecur, const Interrupt& interrupt,
+    const SsqFixedSeam* seam) {
     const SarimaSsqDomain& domain = fn.domain();
-    const std::size_t dim = domain.dim();
+    const std::size_t dim = seam != nullptr ? seam->dim() : domain.dim();
     const std::size_t nE = ecur.size();
     Derivatives out;
     out.de.assign(dim, {});
@@ -332,22 +509,26 @@ Derivatives numerical_derivatives(const SsqVectorFunction& fn, const std::vector
     std::vector<std::optional<SsqPoint>> plus(dim);
     for (std::size_t j = 0; j < dim; ++j) {
         if (interrupt) interrupt();
-        epsilon[j] = domain.epsilon(x, j);
+        const std::size_t slot = seam != nullptr ? seam->free()[j] : j;
+        epsilon[j] = domain.epsilon(x, slot);
         if (epsilon[j] == 0.0) continue;
         // Pinned checkepsilon: keep the forward step when its point is
         // inside; else deflate by halves (at most g_nsteps), then negate,
         // deflate by halves again and give up with eps = 0.
         std::vector<double> probe = x;
-        const double x0 = probe[j];
+        const double x0 = probe[slot];
         const double original = epsilon[j];
-        probe[j] += original;
-        if (domain.check_boundaries(probe)) continue;
+        probe[slot] += original;
+        if (seam != nullptr ? seam->check_boundaries(probe) : domain.check_boundaries(probe)) {
+            continue;
+        }
         double eps = original;
         bool inside = false;
         for (int steps = 1; steps <= kEpsilonDeflations; ++steps) {
             eps /= 2.0;
-            probe[j] = x0 + eps;
-            inside = domain.check_boundaries(probe);
+            probe[slot] = x0 + eps;
+            inside = seam != nullptr ? seam->check_boundaries(probe)
+                                     : domain.check_boundaries(probe);
             if (inside) break;
         }
         if (inside) {
@@ -355,16 +536,17 @@ Derivatives numerical_derivatives(const SsqVectorFunction& fn, const std::vector
             continue;
         }
         eps = -original;
-        probe[j] = x0 + eps;
-        if (domain.check_boundaries(probe)) {
+        probe[slot] = x0 + eps;
+        if (seam != nullptr ? seam->check_boundaries(probe) : domain.check_boundaries(probe)) {
             epsilon[j] = eps;
             continue;
         }
         inside = false;
         for (int steps = 1; steps <= kEpsilonDeflations; ++steps) {
             eps /= 2.0;
-            probe[j] = x0 + eps;
-            inside = domain.check_boundaries(probe);
+            probe[slot] = x0 + eps;
+            inside = seam != nullptr ? seam->check_boundaries(probe)
+                                     : domain.check_boundaries(probe);
             if (inside) break;
         }
         epsilon[j] = inside ? eps : 0.0;
@@ -375,7 +557,7 @@ Derivatives numerical_derivatives(const SsqVectorFunction& fn, const std::vector
             continue;
         }
         std::vector<double> probe = x;
-        probe[j] += epsilon[j];
+        probe[seam != nullptr ? seam->free()[j] : j] += epsilon[j];
         plus[j] = fn.ssq_evaluate(probe); // pinned err: failures give ecur
         const std::vector<double>& ep =
             plus[j] && !plus[j]->e.empty() ? plus[j]->e : ecur;
@@ -406,10 +588,15 @@ struct LmState {
     long long nu = 4;
 };
 
-// Pinned iterateQR body; returns whether the outer loop continues.
-bool iterate_qr(LmState& s, double eps3, const Interrupt& interrupt) {
+// Pinned iterateQR body; returns whether the outer loop continues. With a
+// seam the stacked system, the step and the guards run on the reduced free
+// coordinates (pinned getDim), the candidate is stabilized through the pinned
+// SarimaFixedMapping.validate and every fixed entry keeps its pinned value
+// (never written by the step, the stabilizers or the probes).
+bool iterate_qr(LmState& s, double eps3, const Interrupt& interrupt,
+    const SsqFixedSeam* seam) {
     const SarimaSsqDomain& domain = s.fn->domain();
-    const std::size_t dim = domain.dim();
+    const std::size_t dim = seam != nullptr ? seam->dim() : domain.dim();
     if (!std::isfinite(s.objective)) {
         s.stop = 7;
         return false;
@@ -421,7 +608,7 @@ bool iterate_qr(LmState& s, double eps3, const Interrupt& interrupt) {
     const std::size_t nE = s.e.size();
     Derivatives derivs;
     try {
-        derivs = numerical_derivatives(*s.fn, s.x, s.e, interrupt);
+        derivs = numerical_derivatives(*s.fn, s.x, s.e, interrupt, seam);
     } catch (const std::exception&) {
         if (interrupt) interrupt(); // rethrows an interruption unchanged
         return false;              // pinned catch (Exception) -> return false
@@ -489,7 +676,12 @@ bool iterate_qr(LmState& s, double eps3, const Interrupt& interrupt) {
                 return false;
             }
             double xSsq = 0.0;
-            for (const double value : s.x) xSsq += value * value;
+            if (seam != nullptr) {
+                // Pinned currentPoint.getParameters() is the reduced vector.
+                for (const std::size_t idx : seam->free()) xSsq += s.x[idx] * s.x[idx];
+            } else {
+                for (const double value : s.x) xSsq += value * value;
+            }
             if (!(stepSsq > kParameterPrecision * (xSsq + kParameterPrecision))) {
                 s.stop = 2;
                 return false;
@@ -499,8 +691,11 @@ bool iterate_qr(LmState& s, double eps3, const Interrupt& interrupt) {
                 return false;
             }
             std::vector<double> candidate = s.x;
-            for (std::size_t j = 0; j < dim; ++j) candidate[j] += step[j];
-            const auto validation = domain.validate(candidate);
+            for (std::size_t j = 0; j < dim; ++j) {
+                candidate[seam != nullptr ? seam->free()[j] : j] += step[j];
+            }
+            const auto validation =
+                seam != nullptr ? seam->validate(candidate) : domain.validate(candidate);
             std::optional<SsqPoint> point;
             if (validation != SsqParamValidation::Invalid) {
                 point = s.fn->ssq_evaluate(candidate); // pinned evaluate after validate
@@ -564,8 +759,13 @@ bool iterate_qr(LmState& s, double eps3, const Interrupt& interrupt) {
 } // namespace
 
 SsqLmResult minimize_ssq_levmar(const SsqVectorFunction& fn, std::vector<double> start,
-    double fn_precision, const Interrupt& interrupt) {
+    double fn_precision, const Interrupt& interrupt, const SsqFixedSeam* fixed_seam) {
     const double eps3 = fn_precision;
+    if (fixed_seam != nullptr) {
+        // Pinned RegArmaSsqFunction sees fullParameters(start): the fixed
+        // clone with the reduced start spliced into the free slots.
+        start = fixed_seam->expand(start);
+    }
     auto point = fn.ssq_evaluate(start);
     if (!point) {
         throw std::runtime_error(
@@ -587,7 +787,7 @@ SsqLmResult minimize_ssq_levmar(const SsqVectorFunction& fn, std::vector<double>
         const int iter_before = iterations;
         iterations = iter_before + 1;
         if (iter_before >= kMaxIter) break;
-        if (!iterate_qr(s, eps3, interrupt)) break;
+        if (!iterate_qr(s, eps3, interrupt, fixed_seam)) break;
     }
     SsqLmResult result;
     result.parameters = std::move(s.x);

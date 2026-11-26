@@ -411,11 +411,16 @@ PassOutcome run_pass_pinned_lm(const SarimaEstimationRequest& request,
     const std::array<std::vector<double>, 4>& physical, double precision,
     const Interrupt& interrupt) {
     PassOutcome outcome;
+    // Eligibility gate (21-D.2, widened per the M9-H qualification): fully
+    // free blocks run the pinned machine directly; partially fixed blocks are
+    // handed to the SAME pinned LM machine over the reduced free-coordinate
+    // seam (detail::SsqFixedSeam, the pinned SarimaFixedMapping semantics) —
+    // the mapping the pinned JVM itself builds for fixed coefficients.
+    bool has_fixed = false;
     for (const auto& block : request.blocks) {
         if (std::any_of(block.fixed.begin(), block.fixed.end(),
                 [](const std::uint8_t flag) { return flag != 0; })) {
-            throw std::invalid_argument(
-                "the pinned sum-of-squares solver is only qualified for fully free blocks");
+            has_fixed = true;
         }
     }
     const std::size_t p = request.blocks[0].initial.size();
@@ -423,7 +428,20 @@ PassOutcome run_pass_pinned_lm(const SarimaEstimationRequest& request,
     const std::size_t bp = request.blocks[2].initial.size();
     const std::size_t bq = request.blocks[3].initial.size();
     const PinnedSsqProvider provider(request, p, bp, q, bq, interrupt);
-    const auto jvm = flip_ar(physical); // blockwise JVM sign convention
+    auto jvm = flip_ar(physical); // blockwise JVM sign convention
+    if (has_fixed) {
+        // Fixed slots carry the request's pinned values, not the starting
+        // fill (pinned SarimaFixedMapping.parameters; the Zero/Default fill
+        // above overwrites every entry, fixed included).
+        for (std::size_t b = 0; b < 4; ++b) {
+            for (std::size_t j = 0; j < request.blocks[b].fixed.size(); ++j) {
+                if (request.blocks[b].fixed[j] != 0) {
+                    jvm[b][j] = (b == 0 || b == 2) ? -request.blocks[b].initial[j]
+                                                   : request.blocks[b].initial[j];
+                }
+            }
+        }
+    }
     std::vector<double> start;          // JVM block order [phi, bphi, theta, btheta]
     start.insert(start.end(), jvm[0].begin(), jvm[0].end());
     start.insert(start.end(), jvm[2].begin(), jvm[2].end());
@@ -437,7 +455,32 @@ PassOutcome run_pass_pinned_lm(const SarimaEstimationRequest& request,
     };
     detail::SsqLmResult lm;
     try {
-        lm = detail::minimize_ssq_levmar(provider, std::move(start), precision, checked);
+        if (has_fixed) {
+            // Reduced coordinates in the same JVM order as start: mask slots
+            // [phi, bphi, theta, btheta] from blocks [ar, sar, ma, sma].
+            const std::size_t dim = p + bp + q + bq;
+            std::vector<std::uint8_t> mask(dim, 0);
+            std::vector<double> pinned(dim, 0.0);
+            std::size_t off = 0;
+            for (const int b : {0, 2, 1, 3}) {
+                const std::size_t size = jvm[b].size();
+                for (std::size_t j = 0; j < size; ++j) {
+                    mask[off + j] = request.blocks[b].fixed[j];
+                    pinned[off + j] = jvm[b][j];
+                }
+                off += size;
+            }
+            std::vector<double> reduced;
+            for (std::size_t j = 0; j < dim; ++j) {
+                if (mask[j] == 0) reduced.push_back(start[j]);
+            }
+            const detail::SsqFixedSeam seam(
+                provider.domain(), std::move(mask), std::move(pinned));
+            lm = detail::minimize_ssq_levmar(
+                provider, std::move(reduced), precision, checked, &seam);
+        } else {
+            lm = detail::minimize_ssq_levmar(provider, std::move(start), precision, checked);
+        }
     } catch (const std::runtime_error&) {
         if (interrupted) std::rethrow_exception(interrupted);
         outcome.optimizer_status = "start_not_evaluable"; // pinned Evaluation throws

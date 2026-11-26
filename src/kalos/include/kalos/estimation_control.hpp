@@ -26,9 +26,11 @@ enum class EstimationStartingPoint { Zero, Default, HannanRissanen, Multiple };
 // Solver seam (item 21-D.2): the qualified Kalos BFGS over the mapped −ll
 // objective (the 21-A/B/C corpus), or the transcribed pinned sum-of-squares
 // Levenberg-Marquardt machine of RegArmaSsqFunction (detail/ssq_levmar.hpp)
-// over the physical JVM-convention coordinates of the request surface. Only
-// the differencing decision (item 21-D) selects the pinned machine; it
-// requires fully free coefficient blocks.
+// over the physical JVM-convention coordinates of the request surface. Fully
+// free coefficient blocks run the machine directly; blocks with fixed entries
+// run the same machine over the reduced free-coordinate seam (the pinned
+// SarimaFixedMapping, detail::SsqFixedSeam) — the eligibility the M9-H
+// qualification measured (tmp_opencode/m9-perf/lmext, 2026-11-25).
 enum class EstimationSolver { Bfgs, PinnedLevenbergMarquardt };
 
 // Pinned RegSarimaComputer control fields, kept as required request data:

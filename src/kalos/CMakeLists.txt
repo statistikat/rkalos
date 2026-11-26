@@ -225,6 +225,7 @@ if(KALOS_BUILD_TESTS)
     test_seats_extract_wk
     test_seats_linear_filters
     test_special_functions
+    test_ssq_fixed_seam
     test_state_space
     test_tramo_arma
     test_tramo_differencing
@@ -343,6 +344,10 @@ if(KALOS_BUILD_TESTS)
         KALOS_RSA0_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-x86_64.txt"
         KALOS_RSA0_ERRORS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-forecast-errors-x86_64.txt"
         KALOS_RSA0_RESIDUALS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-residuals-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_estimation_control")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_LM_FIXED_BLOCK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/lm-fixed-block")
     endif()
     if(test_name STREQUAL "test_x13_estimated_calendar")
       add_test(NAME test_x13_rsa2c_scale COMMAND ${test_name}

@@ -21,7 +21,9 @@
 
 #include "kalos/numerics.hpp"
 
+#include <array>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -92,6 +94,55 @@ public:
     virtual const SarimaSsqDomain& domain() const = 0;
 };
 
+// Reduced-coordinate seam for fixed ARMA coefficients (item 21-D.2
+// eligibility widening, M9-H qualified). Transcribes the pinned jdplus 3.9.0
+// SarimaFixedMapping bytecode — the mapping the pinned RegSarimaModel builds
+// whenever parameters are fixed (RegSarimaModel → optimize →
+// RegArmaProcessor.compute over RegArmaSsqFunction), i.e. the machine the
+// pinned JVM itself runs LM on with fixed coefficients:
+//   getDim = parametersCount - fixed; coordinates handed to the minimizer are
+//   the free JVM entries; every boundary probe, epsilon and evaluation sees
+//   fullParameters(x): the pinned fixed values with the free entries spliced
+//   into the non-fixed slots (fixed entries are never stepped, perturbed or
+//   stabilized); epsilon delegates through fullIndex (the SarimaMapping
+//   monitor's ±STEP·max(1,|x|) toward zero, identical to the SarimaSsqDomain
+//   epsilon); checkBoundaries is the monitor SarimaMapping.checkBoundaries
+//   (FilterUtility.checkStability per block at limit 1 — the same check the
+//   qualified gls-mapping domain uses); validate = checkBoundaries else, per
+//   SarimaOrders block, the private stabilize(..., 0.99) for a fully free
+//   block and the private fstabilize for a block containing fixed entries.
+// The pinned fstabilize escape throws FunctionException("Invalid mapping");
+// the pinned iterateQR catch (Exception) feeds that to the damping tail, so
+// the seam reports SsqParamValidation::Invalid, which the transcription
+// feeds to the same tail.
+class SsqFixedSeam {
+public:
+    // fixed/pinned_values are full-dim (domain.dim()) in JVM coordinate order
+    // [phi, bphi, theta, btheta]; pinned_values is read at the fixed slots.
+    SsqFixedSeam(const SarimaSsqDomain& domain, std::vector<std::uint8_t> fixed,
+        std::vector<double> pinned_values);
+
+    std::size_t dim() const { return free_.size(); }
+    const std::vector<std::size_t>& free() const { return free_; }
+    std::size_t full_dim() const { return fixed_.size(); }
+
+    // Pinned fullParameters: the fixed clone with the reduced vector spliced.
+    std::vector<double> expand(const std::vector<double>& reduced) const;
+
+    // Monitor SarimaMapping.checkBoundaries over the full vector.
+    bool check_boundaries(const std::vector<double>& full) const;
+    // Pinned SarimaFixedMapping.validate over the full vector (fixed slots
+    // carry their pinned values); stabilizes free entries in place.
+    SsqParamValidation validate(std::vector<double>& full) const;
+
+private:
+    std::vector<std::uint8_t> fixed_;
+    std::vector<double> pinned_values_;
+    std::vector<std::size_t> free_;
+    std::array<std::size_t, 4> sizes_{};
+    std::array<std::size_t, 5> offsets_{};
+};
+
 struct SsqLmResult {
     std::vector<double> parameters; // landing coordinates
     std::vector<double> e;          // landing residual vector
@@ -109,9 +160,13 @@ struct SsqLmResult {
 // given function. fn_precision is the pinned builder functionPrecision (eps3);
 // eps1, eps2, tau, maxIter keep the pinned defaults. A provider that fails at
 // the start point throws std::runtime_error (the pinned Evaluation throws
-// before the minimizer runs).
+// before the minimizer runs). With a fixed_seam, start carries the reduced
+// free coordinates and the whole loop runs on the pinned SarimaFixedMapping
+// semantics (SsqFixedSeam); a null seam is the fully-free machine,
+// byte-identical to the pre-seam code path.
 SsqLmResult minimize_ssq_levmar(const SsqVectorFunction& fn, std::vector<double> start,
-    double fn_precision, const Interrupt& interrupt = {});
+    double fn_precision, const Interrupt& interrupt = {},
+    const SsqFixedSeam* fixed_seam = nullptr);
 
 } // namespace kalos::detail
 

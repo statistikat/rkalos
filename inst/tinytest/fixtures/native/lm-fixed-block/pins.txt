@@ -1,0 +1,24 @@
+# Pinned JVM destinations for the fixed-coefficient mixed_factors corpus of
+# the 21-D.2 eligibility widening (pinned sum-of-squares solver on partially
+# fixed blocks). The four .req records are the replay inputs of the M9-H
+# qualification lane (copied byte-exact); the destination columns are the
+# jdplus 3.9.0 x13 and tramo captures of the benchmark matrix, transcribed
+# from the qualification report
+# tmp_opencode/m9-perf/lmext/LMBLOCK-QUALIFICATION-2026-11-25.md section 4
+# (pins file timing/prepared/expected.json, JVM runs under _dexp/_dlog
+# disabled). adjustedll = log_likelihood + jacobian, the benchmark
+# convention; the budgets the test applies are the qualification budgets:
+# adjustedll 2e-8 * (1 + |pin|), coefficients 1e-4 * (1 + |pin|).
+# evals_lm: LM-ON evaluations of the estimate pass, run-to-run constant over
+# the 3-rep x 2-round qualification replays (fixtured per the report; the
+# BFGS-route comparison in the test asserts the strict inequality on top).
+# Coefficient columns are the Kalos block order of the non-empty blocks
+# [ar, ma, seasonal_ma]; the seasonal_ar block is empty for all four cases
+# and the regular-MA slot (0.2) and the fixed design coefficient (0.2) are
+# the pinned slots whose bit-exactness the landing contract asserts.
+# Columns (tab-separated):
+# case	req	jacobian	adjustedll_x13	adjustedll_tramo	coef_ar_x13	coef_ma_x13	coef_sma_x13	coef_ar_tramo	coef_ma_tramo	coef_sma_tramo	evals_lm	status_lm
+12-mixed_factors-complete-log	12-mixed_factors-complete-log.req	-307.20992807386733	-179.97472918373211	-179.97472918373984	0.48043394035225623	0.20000000000000001	0.28466688464899603	0.48043383444514015	0.20000000000000001	0.28466664972088029	15	converged
+12-mixed_factors-complete-none	12-mixed_factors-complete-none.req	0	127.23519889013522	127.23519889012748	0.48043394035225623	0.20000000000000001	0.28466688464899603	0.48043383444514015	0.20000000000000001	0.28466664972088029	15	converged
+12-mixed_factors-gaps-log	12-mixed_factors-gaps-log.req	-296.46649896833537	-175.40293179497053	-175.40293179496939	0.45111004393970039	0.20000000000000001	0.23300311614815403	0.45111007005637022	0.20000000000000001	0.23300317327308689	16	converged
+12-mixed_factors-gaps-none	12-mixed_factors-gaps-none.req	0	121.06356717336469	121.06356717336553	0.45111004393970039	0.20000000000000001	0.23300311414752942	0.45111005847345642	0.20000000000000001	0.23300315071263125	16	converged
