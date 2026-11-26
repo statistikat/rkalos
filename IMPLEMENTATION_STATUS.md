@@ -62,6 +62,34 @@ to the frozen `x13_rsa1_air` oracle 2.8406526123323372, inside the documented
 `test-native-residual-trading-days.R`. `capabilities()` surfaced the same
 byte-identical document (same names, templates, td-test claims).
 
+**Post-merge build-surface re-certification (2026-11-26).** The maintainer's
+help-files commit `3d1d5e6` (roxygen `man/`, R docstrings, DESCRIPTION Roxygen
+lines, restructured `configure`) merged into the re-pin at merge commit
+`186e612`. The merge touches nothing under `src/` — `git diff 132b769 186e612
+-- src` is empty — but `configure` derives the link flags, so both lanes were
+re-measured from a fresh `186e612` clone and tarball into fresh lane libraries.
+The reworked detection prints `OpenBLAS C API check passed using
+KALOS_OPENBLAS_ROOT (…)` plus a separate `Shared object bound to its own…`
+line and marks `OpenBLAS candidate: KALOS_OPENBLAS_ROOT (…)` in the probe log
+(`config.log`); the new pkg-config candidate is never consulted because the
+pinned root short-circuits ahead of it — a documented detection-path relabel.
+The generated `src/Makevars` differs from the pre-merge capture only by shell
+quotes around the two provider paths; quote-normalized, the 133-line g++
+compile/link install streams are byte-identical to the pre-merge lane logs
+(`-ffp-contract=off`, static `libopenblas.a`, `--exclude-libs,ALL -Bsymbolic`,
+FLIBS sequence and `-fopenmp` line counts 0/133 all preserved). Both lanes
+probe version `0.1.0.9030` on core `7c3eefd…` with unchanged provider and
+parallel fields (logs byte-identical apart from the lane-path line), pass the
+isolated `--native` smoke with logs byte-identical to the baseline verifies
+above, and pass the full suite **310,308/310,308** (serial) and
+**310,312/310,312** (OpenMP) with whole logs byte-identical to the recorded
+baseline logs (lane path aside) and 0 differing files per lane in
+`compare-suites.py`. The help database built cleanly at install; a courtesy
+`tools::checkRd` over the 28 Rd files the merge brings flags 10 same-kind
+"non-ASCII contents without declared encoding" notes (en dashes in prose)
+across 6 files — cosmetic, non-blocking under the declared `Encoding: UTF-8`.
+No numerical-surface movement anywhere.
+
 ## Scratch evidence disposition (2026-11-25)
 
 The maintainer's post-milestone cleanup (workspace commit `d0173f5`) removed
