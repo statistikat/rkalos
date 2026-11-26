@@ -1,3 +1,58 @@
+#' Seasonally adjust a monthly series with TRAMO–SEATS
+#'
+#' Fit a TRAMO model to the observations, use SEATS to separate trend,
+#' seasonal, and irregular variation, and restore estimated deterministic
+#' effects to the appropriate components.
+#'
+#' @param series Complete finite univariate monthly \code{ts}. \code{RSA0}
+#'   requires enough observations to fit the airline model. \code{RSA1},
+#'   \code{RSA3}, and \code{RSAfull} require at least 24.
+#' @param template \code{"RSA0"}, \code{"RSA1"}, \code{"RSA3"}, or
+#'   \code{"RSAfull"}, also accepting \code{"TR0"}, \code{"TR1"},
+#'   \code{"TR3"}, and \code{"TRfull"}, respectively. Matching is
+#'   case-insensitive.
+#' @param forecast,backcast Numbers of months to extend after and before
+#'   the series. Negative counts denote years, so \code{forecast = -2L}
+#'   requests 24 forecast months. Use zero for no extension.
+#' @details
+#' \code{RSA0} fits the airline model to levels. \code{RSA1} also selects
+#' the transformation and outliers. \code{RSA3} additionally selects the
+#' model orders, and \code{RSAfull} also considers trading-day, leap-year,
+#' and Easter effects. Decomposition is additive for level fits and
+#' multiplicative for log fits.
+#'
+#' The combined test for seasonality in the seasonal-irregular series is
+#' in \code{diagnostics$combined_seasonality}. Its summary is
+#' \code{"Present"}, \code{"ProbablyNone"}, or \code{"None"} when at least
+#' three years are available. Residual trading-day results, when available,
+#' are in \code{diagnostics[["td.ftest.sa"]]} and
+#' \code{diagnostics[["td.ftest.i"]]}.
+#' @return An object of class \code{native_tramoseats_fit}. A successful
+#'   fit has \code{status = "ok"} and returns \code{finalSA},
+#'   \code{finalTrend}, \code{finalSeasonal}, and \code{finalIrregular}
+#'   as monthly series on the input calendar. \code{initial} and \code{final}
+#'   contain dated SEATS component values, extensions, and standard
+#'   deviations. \code{merged} contains the final component values and
+#'   extensions on the original scale.
+#'
+#'   \code{model} and \code{likelihood} describe the fitted model.
+#'   \code{model_changed}, when returned, indicates whether SEATS adjusted
+#'   the model before decomposition. \code{residuals} contains dated
+#'   innovations (\code{tsres}), their standard error (\code{ser}), the
+#'   24-lag Ljung–Box test (\code{lb}), and the Doornik–Hansen normality
+#'   test (\code{doornikhansen}). The tests report \code{value},
+#'   \code{pvalue}, and \code{df} when available. If
+#'   \code{series_forecast_stdev_status} is \code{"available"},
+#'   \code{series_forecast_stdev} gives dated standard errors for forecasts
+#'   of the original series. A zero forecast horizon reports
+#'   \code{"no_requested_predictions"}. \code{RSAfull} also returns selected calendar
+#'   terms in \code{model$calendar}, and their observed and future effects
+#'   in \code{calendar_effect} and \code{calendar_effect_forecast}.
+#' @seealso \code{\link{native_tramo_preprocess}}, \code{\link{seats_from_tramo}}
+#' @examples
+#' fit <- native_tramoseats_fit(AirPassengers, forecast = 12)
+#' fit$status
+#' head(fit$finalSA)
 native_tramoseats_fit <- function(series, template = "RSA0", forecast = -2L, backcast = 0L) {
   templates <- c(RSA0 = "RSA0", TR0 = "RSA0", RSA1 = "RSA1", TR1 = "RSA1", RSA3 = "RSA3", TR3 = "RSA3",
                  RSAFULL = "RSAfull", TRFULL = "RSAfull")

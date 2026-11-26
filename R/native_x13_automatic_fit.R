@@ -67,6 +67,7 @@
   names(out)<-names(shape)
   out
 }
+#' @rdname native_x13_fit
 native_x13_fit_automatic <- function(series,transform,automodel,outliers,ami,regression,
     sigma=NULL,lower_sigma=1.5,upper_sigma=2.5,msr_policy="jdplus",mode="additive",
     backcast=0,forecast=0,frequency=NULL,start_period=NULL,first_year=NULL,
