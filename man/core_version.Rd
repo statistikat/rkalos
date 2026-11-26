@@ -8,9 +8,13 @@ core_version()
 }
 \value{
 A named list with the embedded Kalos version and revision, the
-  numerical provider and BLAS integer width, and \code{parallel} information.
-  The \code{R}, \code{BLAS}, and \code{LAPACK} entries describe the running
-  R session.
+  numerical provider and BLAS integer width, the build state of the
+  vendored SLICOT SB03MD stationary-initialization solver
+  (\code{slicot_stationary_initialization}; \code{TRUE} when the closure
+  is part of this build and state orders of 8 and above solve through
+  SB03MD, \code{FALSE} in the QR-everywhere build), and \code{parallel}
+  information. The \code{R}, \code{BLAS}, and \code{LAPACK} entries
+  describe the running R session.
 }
 \description{
 Report the build, numerical libraries, and thread settings of the current

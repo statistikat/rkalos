@@ -149,15 +149,85 @@ if test -n "$local_bind"; then
          'LAPACK symbols (no in-process interposition).'
 fi
 
+# Stationary-initialization solver seam (M10 adoption of the core's vendored
+# SLICOT track, kalos de09063): the eight Fortran members in
+# src/kalos/vendor/slicot/ solve the discrete Lyapunov equation through SB03MD
+# for state order >= 8 (the pivoted-QR route stays bit-identical below it).
+# This mirrors the core's KALOS_WITH_SLICOT build option: ON compiles the
+# closure with -ffp-contract=off plus the core's per-source warning
+# suppressions and defines KALOS_WITH_SLICOT for every translation unit
+# (kalos uses a PRIVATE define on the library; this package is one shared
+# object, so the define must cover all objects that link it). There is no
+# runtime fallback inside the core: with the closure absent, stationary_
+# initialization keeps the QR route for EVERY state order. The probe mirrors
+# the OpenMP probe above: the real FC from 'R CMD config FC', the exact vendor
+# compile flags, a compile/link/dyn.load/run cycle over the real vendored
+# sources with the final PKG_LIBS (OpenBLAS provider first, FLIBS after), and
+# a dyn.load(now=TRUE) that binds every external reference of the objects.
+# A toolchain without a usable Fortran lane (an MSVC-flavoured R is the known
+# case; the core likewise defaults the option OFF on MSVC) falls back to the
+# QR-everywhere build with a loud message below.
+slicot_fflags='-ffp-contract=off -Wno-compare-reals -Wno-do-subscript -Wno-function-elimination -Wno-maybe-uninitialized -Wno-unused-dummy-argument'
+slicot_objects='kalos/vendor/slicot/MB01RD.o kalos/vendor/slicot/SB03MD.o kalos/vendor/slicot/SB03MV.o kalos/vendor/slicot/SB03MW.o kalos/vendor/slicot/SB03MX.o kalos/vendor/slicot/SB03MY.o kalos/vendor/slicot/SB04PX.o kalos/vendor/slicot/select.o'
+slicot_define=''
+slicot_enabled=false
+printf '\nSLICOT seam probe\n' >> config.log
+if slicot_fc=$("$r_command" CMD config FC 2>> config.log) && test -n "$slicot_fc" &&
+    test -d src/kalos/vendor/slicot; then
+    printf 'SLICOT Fortran candidate: FC=%s\n' "$slicot_fc" >> config.log
+    mkdir -p "$probe_dir/slicot"
+    cp src/kalos/vendor/slicot/MB01RD.f src/kalos/vendor/slicot/SB03MD.f \
+       src/kalos/vendor/slicot/SB03MV.f src/kalos/vendor/slicot/SB03MW.f \
+       src/kalos/vendor/slicot/SB03MX.f src/kalos/vendor/slicot/SB03MY.f \
+       src/kalos/vendor/slicot/SB04PX.f src/kalos/vendor/slicot/select.f \
+       "$probe_dir/slicot/"
+    cat > "$probe_dir/slicot/probe.f" <<'EOF'
+      subroutine rkalos_slicot_probe(order)
+      integer order
+      order = 8
+      end
+EOF
+    cat > "$probe_dir/slicot/Makevars" <<EOF
+FC = $slicot_fc
+PKG_FFLAGS = $slicot_fflags
+PKG_LIBS = $openmp_flags $capi_link $local_bind
+OBJECTS = MB01RD.o SB03MD.o SB03MV.o SB03MW.o SB03MX.o SB03MY.o SB04PX.o select.o probe.o
+EOF
+    if (cd "$probe_dir/slicot" &&
+        "$r_command" CMD SHLIB --preclean -o "slicot$extension" &&
+        "$r_command" --vanilla --slave -e 'dyn.load(paste0("slicot", .Platform$dynlib.ext), now = TRUE); stopifnot(.C("rkalos_slicot_probe_", order = 0L)$order == 8L)') >> config.log 2>&1; then
+        slicot_define='-DKALOS_WITH_SLICOT'
+        slicot_enabled=true
+    fi
+fi
+if test "$slicot_enabled" = true; then
+    echo 'rkalos: vendored SLICOT SB03MD closure enabled: stationary' \
+         'initialization uses SB03MD for state order >= 8 (QR route below).'
+else
+    echo 'rkalos: WARNING: Fortran (R CMD config FC) cannot compile and link' \
+         'the vendored SLICOT SB03MD closure with this toolchain (see' \
+         'config.log). Building WITHOUT it: stationary initialization uses' \
+         'the pivoted-QR route for ALL state orders (the core option' \
+         'KALOS_WITH_SLICOT=OFF build; numerically qualified upstream).' >&2
+    slicot_fflags=''
+    slicot_objects=''
+fi
+
 escape_sed_replacement() {
     printf '%s' "$1" | sed 's/[\\&|]/\\&/g'
 }
 capi_cppflags=$(escape_sed_replacement "$capi_cppflags")
 capi_link=$(escape_sed_replacement "$capi_link")
+slicot_fflags=$(escape_sed_replacement "$slicot_fflags")
+slicot_objects=$(escape_sed_replacement "$slicot_objects")
+slicot_define=$(escape_sed_replacement "$slicot_define")
 for makevars in src/Makevars src/Makevars.win; do
     sed -e "s|@OPENMP_FLAGS@|$openmp_flags|g" \
         -e "s|@KALOS_OPENBLAS_CPPFLAGS@|$capi_cppflags|g" \
         -e "s|@KALOS_OPENBLAS_LINK@|$capi_link|g" \
         -e "s|@KALOS_LOCAL_BIND@|$local_bind|g" \
+        -e "s|@KALOS_SLICOT_FFLAGS@|$slicot_fflags|g" \
+        -e "s|@KALOS_SLICOT_OBJECTS@|$slicot_objects|g" \
+        -e "s|@KALOS_SLICOT_DEFINE@|$slicot_define|g" \
         "$makevars.in" > "$makevars"
 done

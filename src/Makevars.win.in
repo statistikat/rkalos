@@ -1,5 +1,5 @@
 CXX_STD = CXX17
-PKG_CPPFLAGS = -Ikalos/include @KALOS_OPENBLAS_CPPFLAGS@
+PKG_CPPFLAGS = -Ikalos/include @KALOS_OPENBLAS_CPPFLAGS@ @KALOS_SLICOT_DEFINE@
 PKG_CXXFLAGS = -ffp-contract=off @OPENMP_FLAGS@
 PKG_LIBS = @OPENMP_FLAGS@ @KALOS_OPENBLAS_LINK@ @KALOS_LOCAL_BIND@
 OBJECTS = RcppExports.o \
@@ -134,6 +134,16 @@ OBJECTS = RcppExports.o \
   kalos/src/arima_forecasts.o \
   kalos/src/hostlineage.o \
   kalos/src/hostlineage_tables.o
+
+# Vendored SLICOT SB03MD closure (M10 seam, kalos de09063): configure appends
+# the eight Fortran members when R's FC compiles and links them (mirrors the
+# core's KALOS_WITH_SLICOT build option). In the QR-everywhere fallback the
+# object list, PKG_FFLAGS, and the KALOS_WITH_SLICOT define above are all
+# empty; the sources are never compiled. The flag set (numerics parity with
+# the C++ lane plus the core's empirically minimal warning suppressions, the
+# files themselves byte-identical to SLICOT) comes from configure.
+PKG_FFLAGS = @KALOS_SLICOT_FFLAGS@
+OBJECTS += @KALOS_SLICOT_OBJECTS@
 
 # Every wrapper and vendored translation unit must agree on core structure layouts.
 all: $(SHLIB)

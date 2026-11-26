@@ -82,6 +82,118 @@ DenseMatrix symmetric_solution(const DenseMatrix& coefficients, std::size_t colu
     return result;
 }
 
+#ifdef KALOS_WITH_SLICOT
+extern "C" {
+// SLICOT SB03MD from the vendored closure (SLICOT-Reference @ 5eeb845d,
+// BSD-3-Clause; provenance, license and the closure/symbol argument in
+// vendor/slicot/UPSTREAM.md). For DICO='D' it solves
+// op(A) X op(A)' - X + SCALE*C = 0, so with TRANA='T' and C=-R the returned X
+// satisfies X/SCALE - A'(X/SCALE)A = R; for symmetric R the unique symmetric
+// solution of that transposed equation is also the solution of
+// P - T P T' = R (verified by the preserved residual check against the
+// original equation). gfortran passes hidden string lengths.
+void sb03md_(const char* dico, const char* job, const char* fact, const char* transa,
+             const int* n, double* a, const int* lda, double* u, const int* ldu,
+             double* c, const int* ldc, double* scale, double* sep, double* ferr,
+             double* wr, double* wi, int* iwork, double* dwork, const int* ldwork,
+             int* info, size_t l_dico, size_t l_job, size_t l_fact, size_t l_transa);
+}
+
+struct SlicotSolve {
+    DenseMatrix solution{1, 1}; // Symmetrized X / SCALE (the true solution).
+    int info = -999;
+    double scale = 0.0;
+};
+
+// Optimal workspace size for JOB='B' at state order m (LDWORK=-1 query,
+// floored at the documented lower bound).
+std::size_t slicot_workspace(std::size_t m) {
+    const int n = static_cast<int>(m);
+    DenseMatrix a(m, m), u(m, m), c(m, m);
+    for (std::size_t j = 0; j < m; ++j) u(j, j) = 1;
+    std::vector<int> iwork(m * m + 1, 0);
+    std::vector<double> wr(m), wi(m), dwork(1, 0.0);
+    int ldwork = -1, info = 0;
+    double scale = 0, sep = 0, ferr = 0;
+    sb03md_("D", "B", "N", "T", &n, a.values().data(), &n, u.values().data(), &n,
+            c.values().data(), &n, &scale, &sep, &ferr, wr.data(), wi.data(),
+            iwork.data(), dwork.data(), &ldwork, &info, 1, 1, 1, 1);
+    if (info != 0) throw std::runtime_error("SB03MD workspace query failed with INFO=" + std::to_string(info));
+    const std::size_t lower_bound = 2 * m * m + 2 * m + 16;
+    return std::max(lower_bound, static_cast<std::size_t>(std::max(1.0, dwork[0])));
+}
+
+// One solve of Y - T Y T' = right_hand_side. `factored` reuses the Schur
+// pair (A, U) produced by the previous call (FACT='F'); otherwise the
+// transition matrix is factored here (FACT='N') and (A, U) are written out
+// for the next call. JOB='B' also computes SEP/FERR; those estimates are
+// informational only and deliberately not retained: the certificate measure
+// remains the Cholesky reciprocal_condition computed by the caller.
+SlicotSolve slicot_solve(const DenseMatrix& t_or_schur, const DenseMatrix& u_in,
+                         const DenseMatrix& right_hand_side, bool factored,
+                         std::vector<double>& dwork, DenseMatrix* schur_out,
+                         DenseMatrix* transformation_out) {
+    const std::size_t m = t_or_schur.rows();
+    const int n = static_cast<int>(m);
+    SlicotSolve out;
+    DenseMatrix a(t_or_schur), u(u_in), c(m, m);
+    for (std::size_t i = 0; i < m * m; ++i) c.values()[i] = -right_hand_side.values()[i];
+    std::vector<int> iwork(m * m + 1, 0);
+    std::vector<double> wr(m), wi(m);
+    int ldwork = static_cast<int>(dwork.size());
+    double sep = 0, ferr = 0;
+    sb03md_("D", "B", factored ? "F" : "N", "T", &n, a.values().data(), &n,
+            u.values().data(), &n, c.values().data(), &n, &out.scale, &sep, &ferr,
+            wr.data(), wi.data(), iwork.data(), dwork.data(), &ldwork, &out.info,
+            1, 1, 1, 1);
+    // Explicit status mapping; no silent fallback and no flattened status.
+    if (out.info == n + 1) {
+        // Almost-reciprocal eigenvalue products: the Lyapunov operator is
+        // numerically singular. SLICOT continues on perturbed values; that
+        // solution is NOT accepted. Maps onto the existing singular/rank-
+        // deficient rejection of the QR route (std::invalid_argument), with
+        // the SB03MD cause kept visible in the message.
+        throw std::invalid_argument(
+            "stationary initialization is singular or numerically rank deficient; "
+            "diffuse initialization is unsupported (SB03MD INFO=N+1: almost-reciprocal "
+            "eigenvalue products; the perturbed-value solution is not accepted)");
+    }
+    if (out.info != 0) {
+        // QR algorithm failure (INFO=1..N) or rejected arguments (INFO<0):
+        // hard numerical failure, surfaced, never retried on the QR path.
+        throw std::runtime_error("stationary initialization SB03MD failure: INFO=" +
+                                 std::to_string(out.info));
+    }
+    if (!std::isfinite(out.scale) || out.scale <= 0 || out.scale > 1) {
+        // The documented overflow guard returns 0 < SCALE <= 1; anything else
+        // (including the undocumented SCALE=0) is an explicit failure.
+        throw std::runtime_error("stationary initialization SB03MD returned an unusable SCALE=" +
+                                 std::to_string(out.scale));
+    }
+    out.solution = DenseMatrix(m, m);
+    for (std::size_t j = 0; j < m; ++j) {
+        for (std::size_t i = 0; i <= j; ++i) {
+            const long double value = (static_cast<long double>(c(i, j)) + c(j, i)) / 2 / out.scale;
+            out.solution(i, j) = out.solution(j, i) = finite(value);
+        }
+    }
+    if (schur_out) *schur_out = std::move(a);
+    if (transformation_out) *transformation_out = std::move(u);
+    return out;
+}
+
+// Size gate for the SLICOT route (M9 measurement dossier,
+// tmp_opencode/m9-perf/): the microbench (SLICOT-scoping-2026-11-25.md)
+// measured speedups of 2.9-140x over the Kronecker-QR route at state order
+// m >= 8 and 0.8-2x (timer noise) below it; the seam qualification
+// (seam/SEAM-QUALIFICATION-2026-11-25.md) measured per-init division by 11-12
+// and -26..-36% end-to-end at m = 14 against ~0/+microseconds at m <= 4 (the
+// workspace query + opaque Fortran call costs ~1 us/evaluation there). The
+// gain window therefore starts at order 8; below it the QR route is retained
+// bit-identically.
+constexpr std::size_t slicot_minimum_state_order = 8;
+#endif // KALOS_WITH_SLICOT
+
 double lyapunov_residual(const DenseMatrix& transition, const DenseMatrix& p,
                          const DenseMatrix& rhs) {
     const auto propagated = sandwich(transition, p);
@@ -116,7 +228,6 @@ StationaryInitialization stationary_initialization(const StationaryStateSpace& m
                                                     const Interrupt& interrupt) {
     validate(model, interrupt);
     const auto m = model.transition.rows();
-    const auto dimension = m * m;
     DenseMatrix process(m, m);
     for (std::size_t j = 0; j < m; ++j) {
         checkpoint(interrupt);
@@ -128,29 +239,62 @@ StationaryInitialization stationary_initialization(const StationaryStateSpace& m
             process(i, j) = process(j, i) = finite(value);
         }
     }
-    DenseMatrix system(dimension, dimension), rhs(dimension, 2), identity(m, m);
-    for (std::size_t j = 0; j < m; ++j) {
+    DenseMatrix covariance(m, m), certificate(m, m), identity(m, m);
+#ifdef KALOS_WITH_SLICOT
+    if (m >= slicot_minimum_state_order) {
+        // Two SB03MD calls, JOB='B': the covariance equation factors T
+        // (FACT='N') and the certificate equation reuses the Schur (FACT='F').
+        // Interruption checkpoints sit before, between and after the opaque
+        // Fortran calls (no checks are possible inside them); a cancellation
+        // between the calls discards the Schur pair with the stack frame, so a
+        // later call re-factors from the transition matrix (no stale reuse).
+        for (std::size_t j = 0; j < m; ++j) identity(j, j) = 1;
+        const auto workspace = slicot_workspace(m);
+        std::vector<double> dwork(workspace, 0.0);
+        DenseMatrix unitary(m, m);
+        for (std::size_t j = 0; j < m; ++j) unitary(j, j) = 1;
         checkpoint(interrupt);
-        identity(j, j) = 1;
-        for (std::size_t i = 0; i < m; ++i) {
-            const auto row = i + m * j;
-            rhs(row, 0) = process(i, j);
-            rhs(row, 1) = i == j ? 1 : 0;
-            for (std::size_t l = 0; l < m; ++l) {
-                for (std::size_t k = 0; k < m; ++k) {
-                    const auto column = k + m * l;
-                    system(row, column) = finite(static_cast<long double>(row == column ? 1 : 0) -
-                        static_cast<long double>(model.transition(i, k)) * model.transition(j, l));
+        DenseMatrix schur(m, m), schur_transformation(m, m);
+        auto covariance_solve = slicot_solve(model.transition, unitary, process, false, dwork,
+                                             &schur, &schur_transformation);
+        checkpoint(interrupt);
+        const auto certificate_solve = slicot_solve(schur, schur_transformation, identity, true,
+                                                    dwork, nullptr, nullptr);
+        checkpoint(interrupt);
+        covariance = std::move(covariance_solve.solution);
+        certificate = std::move(certificate_solve.solution);
+    } else
+#endif // KALOS_WITH_SLICOT
+    {
+        // The pivoted-QR route: the m^2 x m^2 Kronecker assembly with the
+        // two-RHS solve, verbatim in operation order (statements, checkpoints
+        // and exception texts as in the pre-seam core). With
+        // KALOS_WITH_SLICOT=OFF this is the only route, for every state order.
+        const auto dimension = m * m;
+        DenseMatrix system(dimension, dimension), rhs(dimension, 2);
+        for (std::size_t j = 0; j < m; ++j) {
+            checkpoint(interrupt);
+            identity(j, j) = 1;
+            for (std::size_t i = 0; i < m; ++i) {
+                const auto row = i + m * j;
+                rhs(row, 0) = process(i, j);
+                rhs(row, 1) = i == j ? 1 : 0;
+                for (std::size_t l = 0; l < m; ++l) {
+                    for (std::size_t k = 0; k < m; ++k) {
+                        const auto column = k + m * l;
+                        system(row, column) = finite(static_cast<long double>(row == column ? 1 : 0) -
+                            static_cast<long double>(model.transition(i, k)) * model.transition(j, l));
+                    }
                 }
             }
         }
+        const auto solved = qr_least_squares(system, rhs, rank_tolerance, interrupt);
+        if (solved.rank != static_cast<int>(dimension)) {
+            throw std::invalid_argument("stationary initialization is singular or numerically rank deficient; diffuse initialization is unsupported");
+        }
+        covariance = symmetric_solution(solved.coefficients, 0, m);
+        certificate = symmetric_solution(solved.coefficients, 1, m);
     }
-    const auto solved = qr_least_squares(system, rhs, rank_tolerance, interrupt);
-    if (solved.rank != static_cast<int>(dimension)) {
-        throw std::invalid_argument("stationary initialization is singular or numerically rank deficient; diffuse initialization is unsupported");
-    }
-    auto covariance = symmetric_solution(solved.coefficients, 0, m);
-    const auto certificate = symmetric_solution(solved.coefficients, 1, m);
     const double error = std::max(lyapunov_residual(model.transition, covariance, process),
                                   lyapunov_residual(model.transition, certificate, identity));
     if (!std::isfinite(error) || error > residual_tolerance) {

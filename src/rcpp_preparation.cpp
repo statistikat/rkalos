@@ -114,7 +114,17 @@ Rcpp::List native_likelihood_adjustment(Rcpp::NumericVector values, bool logarit
 
 // [[Rcpp::export(name = ".native_core_version")]]
 Rcpp::List native_core_version() {
+    // Build state of the vendored SLICOT SB03MD seam, mirroring the core's
+    // KALOS_WITH_SLICOT option (configure's Fortran probe): true when the
+    // closure is compiled into this shared object (stationary initialization
+    // uses SB03MD for state order >= 8), false in the QR-everywhere build.
+#ifdef KALOS_WITH_SLICOT
+    const bool slicot_stationary_initialization = true;
+#else
+    const bool slicot_stationary_initialization = false;
+#endif
     return Rcpp::List::create(Rcpp::_["version"]=kalos::version,Rcpp::_["commit"]=kalos::core_revision,
         Rcpp::_["provider"]=kalos::lapack::provider_name(),Rcpp::_["provider_version"]=kalos::lapack::provider_version(),
-        Rcpp::_["blas_integer_bits"]=32L,Rcpp::_["cpp_standard"]=17L);
+        Rcpp::_["blas_integer_bits"]=32L,Rcpp::_["cpp_standard"]=17L,
+        Rcpp::_["slicot_stationary_initialization"]=slicot_stationary_initialization);
 }

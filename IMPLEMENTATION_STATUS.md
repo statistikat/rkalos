@@ -4,6 +4,117 @@ Updated **2026-11-26**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## The ec17543 re-pin: vendored SLICOT SB03MD stationary initialization on the R route (2026-11-26)
+
+Version `0.1.0.9031` re-pins the vendored core `7c3eefd9652fa13d53e798f14bb8e2fe8fe4828a` →
+`ec175430643caa293e5db24ad3f2ca62e3afc44d` (lock schema 2; verified 218 core,
+112 fixture and 416 evidence files — the core count up by exactly the ten new
+`src/kalos/vendor/slicot/` files, fixtures and evidence unmoved). The pin is
+the kalos ledger tip again, the `e2138a3`/`20e6063`/`7c3eefd` convention: the
+change itself lands in core commit `de09063`, and its ledger commit ships the
+identical vendored tree. This is the slice the upstream M11 entry lists as the
+next downstream obligation ("`rkalos` must wire the eight vendored sources
+(plus the libgfortran link line) into its `src/Makevars`"): with this pin the
+R route inherits `stationary_initialization`'s discrete-Lyapunov solve through
+SLICOT `SB03MD` (DICO='D', JOB='B') for state orders **m ≥ 8**, with the
+pivoted-QR/Kronecker route kept bit-identical below the gate.
+
+Vendored churn is exactly `src/kalos/src/state_space.cpp` (the seam and its
+gate), `src/kalos/CMakeLists.txt` (the `KALOS_WITH_SLICOT` option — inert for
+the R source build, which never runs CMake), the generated `revision.hpp`,
+the two lock files, and the new `src/kalos/vendor/slicot/` tree: eight Fortran
+members (`SB03MD`, `SB03MV`, `SB03MW`, `SB03MX`, `SB03MY`, `SB04PX`,
+`MB01RD`, `select`) plus `UPSTREAM.md` and `MANIFEST.json`, `diff -r`-identical
+to the upstream tree and never edited by the build; the MANIFEST's eight
+sha256 pins were re-verified after export. `sync-core.py` needed **no**
+extension — the ten files are manifest-listed `core`-section entries and the
+R-kind exclusion set is license-only, so the existing export shipped them
+into `src/kalos/vendor/slicot/` directly; the export verify line moved
+`208 → 218` core files and nothing else.
+
+Build wiring mirrors the core option's semantics. `configure` grows a
+Fortran probe in the established OpenMP/OpenBLAS probe style: the real `FC`
+from `R CMD config FC` (never assumed), then the eight **real** vendored
+sources compiled with the exact candidate flag set and linked into a shared
+object with the final `PKG_LIBS`, `dyn.load(now = TRUE)` (binding every
+external reference) and a Fortran call round-trip. ON — this host, both lanes
+— adds `PKG_FFLAGS = -ffp-contract=off -Wno-compare-reals -Wno-do-subscript
+-Wno-function-elimination -Wno-maybe-uninitialized -Wno-unused-dummy-argument`
+(the core's numerics pin plus its empirically minimal suppression list, the
+files staying byte-identical to SLICOT), `-DKALOS_WITH_SLICOT` in
+`PKG_CPPFLAGS` (kalos ships the define PRIVATE on the library; this package
+is one shared object, so the define covers every object that links it), and
+eight vendor objects on `OBJECTS`. Their BLAS/LAPACK references resolve from
+the pinned static archive that already precedes FLIBS in `PKG_LIBS`: the nm
+audit over the eight members' object files shows 28 external references, 7
+closure-internal and exactly the **21** BLAS/LAPACK entry points upstream
+verified, every one T-defined in the pinned OpenBLAS 0.3.34 `libopenblas.a`.
+The fallback mirrors `KALOS_WITH_SLICOT=OFF`: no Fortran objects, no flags,
+no define — QR everywhere — with the loud line `rkalos: WARNING: Fortran
+(R CMD config FC) cannot compile and link the vendored SLICOT SB03MD closure
+with this toolchain (see config.log). Building WITHOUT it: stationary
+initialization uses the pivoted-QR route for ALL state orders (the core
+option KALOS_WITH_SLICOT=OFF build; numerically qualified upstream).` on the
+configure stream, the OpenMP serial-fallback precedent. The fallback branch
+was exercised on scratch by overriding `R CMD config FC` to a missing
+compiler through `R_MAKEVARS_USER`: the warning printed and the generated
+`Makevars` carried empty flag/object/define slots. The build
+state is visible at runtime through `core_version()`, mirroring
+`parallel$compiled`: the new `slicot_stationary_initialization` field is
+`TRUE` in both lanes here.
+
+Install-stream deltas against the certified 9030 lane logs, per lane: `g++`
+lines 133 → 133 with the 132 C++ compiles byte-identical modulo the single
+documented addition ` -DKALOS_WITH_SLICOT`, and the link line gaining exactly
+the eight `kalos/vendor/slicot/*.o` tokens; eight new `gfortran` compiles, all
+with `-ffp-contract=off`; `-fopenmp` line counts unchanged (0 serial / 133
+OMP); the link's FLIBS tokens unchanged (`-lgfortran` ×1, `-lquadmath` ×1) —
+no new link flag and no new `DT_NEEDED` entry: `libgfortran.so.5` was already
+required via the static provider's FLIBS, matching upstream's "libgfortran is
+the only added runtime dependency (already implicit)". The installed shared
+objects define all eight closure routines (`T sb03md_` …) and gained a single
+new undefined symbol, `vsnprintf@GLIBC_2.2.5` (a libgfortran helper resolved
+from libc) — no BLAS/LAPACK symbol left unresolved. The CI provider fetch now
+pins `ref: ec175430643caa293e5db24ad3f2ca62e3afc44d`.
+
+Qualification from a fresh clone and tarball into fresh lane libraries
+(`tmp_opencode/m10-s2`): both lanes probe `0.1.0.9031` on core `ec17543…`
+with the pinned provider `OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY
+USE_LOCKING SkylakeX SINGLE_THREADED`, per-lane parallel fields unchanged,
+and `slicot_stationary_initialization = TRUE`. The isolated `--native`
+Java-free smoke (49 assertions) passed in both lanes with transcripts
+**byte-identical** to the recorded m8 and m10-merge verify logs — the new
+probe field legitimately exists but never prints there, so the baselines
+needed no patch and no diff line exists. The full Java-free tinytest corpus
+(69 files) passed **310,308/310,308** serial and **310,312/310,312** OMP,
+per-file tables byte-identical to both the m10-merge and m8 baseline logs
+(0 differing files per lane; table regions `diff`-clean). The
+fit-matrix qualification (`verify-arma-fits.R --no-timing`, harness +
+oracle-host-pin overlay active, frozen oracle JAR hashes live-checked,
+thread-pinned) ran once per lane against the **installed** lane libraries
+(harness installed-package mode — the same `rkalos.so` the suites exercised):
+64 cases + 4 persistent controls, direct fits 144, **1,517 checks / 0
+failures, PASS in both lanes**, maxima `coefficient 4.87284416e-07 /
+regression 8.96036656e-09 / objective 1.10276233e-11 / density
+1.12549969e-11` — digit-for-digit the R-boundary dossier's ON-state values in
+both lanes, with the coefficient and regression maxima strictly below the
+recorded QR (flag-OFF) levels (−2.3e-13 / −4.2e-14) exactly as the dossier
+predicted, every class inside its budget. Reproducing the ON-column maxima —
+which differ from the OFF-column maxima in the seventh significant digit —
+is itself the witness that these builds take the SB03MD route at the m ≥ 8
+geometries.
+
+The upstream M11 entry records the one adjudicated test accommodation shipped
+with the core change: at `tests/test_ssq_fixed_seam.cpp` `fixed-ar-nearlimit`
+the m = 14 route drift moves the reference-BFGS run off its knife-edge
+(converged → stalled, 4.27e-9 ll lower, pinned-LM landing bit-identical, every
+budget still binding) — maintainer-ratified 2026-11-26; see kalos
+`IMPLEMENTATION_STATUS.md`, M11 entry. Hosted lanes inherit the platform
+obligations upstream states: the Windows rtools lane builds with gfortran (the
+ON path), MSVC-flavoured builds take the documented QR-everywhere fallback
+until the COFF mixed-ABI lane is qualified, and macOS hosts inherit the
+libgfortran runtime requirement.
+
 ## The 7c3eefd re-pin: fixed-coefficient LM in the core, zero expectation movement (2026-11-26)
 
 Version `0.1.0.9030` re-pins the vendored core `20e6063dea6f97d2957a7a3057313812c6f5d2f0` →

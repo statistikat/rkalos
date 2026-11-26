@@ -5,6 +5,21 @@ option(KALOS_BUILD_TESTS "Build standalone tests" ON)
 option(KALOS_SANITIZERS "Enable address and undefined behavior sanitizers" OFF)
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(KalosOpenBLAS REQUIRED)
+# Stationary-initialization solver seam (M10 adoption of the M9 SLICOT track):
+# the vendored SB03MD closure in vendor/slicot/ is a real core capability for
+# state order >= 8 (gate in src/state_space.cpp). This option is a BUILD-TIME
+# exclusion, not a runtime fallback: with -DKALOS_WITH_SLICOT=OFF the library
+# builds with no Fortran component at all and stationary_initialization keeps
+# the pivoted-QR route for every state order. The default is ON wherever the
+# mixed gfortran ABI is qualified (the GNU/Clang families); the MSVC C++
+# toolchain defaults to OFF because linking gfortran objects through the COFF
+# mixed ABI is unqualified (tmp_opencode/m9-perf/seam/SEAM-QUALIFICATION-2026-11-25.md §8).
+if(MSVC)
+  set(KALOS_SLICOT_DEFAULT OFF)
+else()
+  set(KALOS_SLICOT_DEFAULT ON)
+endif()
+option(KALOS_WITH_SLICOT "Build the vendored SLICOT SB03MD closure (stationary initialization for state order >= 8; requires a Fortran compiler)" ${KALOS_SLICOT_DEFAULT})
 # A committed binding snapshot supplies its own exact revision header.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/kalos/revision.hpp")
   file(READ "${CMAKE_CURRENT_SOURCE_DIR}/include/kalos/revision.hpp" KALOS_REVISION_HEADER)
@@ -135,6 +150,52 @@ target_include_directories(kalos PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
   $<INSTALL_INTERFACE:include>)
 target_link_libraries(kalos PUBLIC Kalos::OpenBLAS)
+if(KALOS_WITH_SLICOT)
+  # Vendored SLICOT SB03MD closure: vendor/slicot/UPSTREAM.md carries the
+  # provenance (5eeb845d, BSD-3-Clause), the closure derivation, and the
+  # external-symbol argument (every BLAS/LAPACK reference exists in the pinned
+  # provider). The subset builds from source, so the final link resolves its
+  # BLAS/LAPACK against the same Kalos::OpenBLAS provider as the C++ lane —
+  # no external SLICOT library and no second BLAS in the build.
+  if(MSVC)
+    message(FATAL_ERROR "KALOS_WITH_SLICOT=ON requires a GNU/Clang C++ toolchain (the gfortran COFF mixed ABI is unqualified); configure with -DKALOS_WITH_SLICOT=OFF")
+  endif()
+  enable_language(Fortran)
+  target_sources(kalos PRIVATE
+    vendor/slicot/MB01RD.f
+    vendor/slicot/SB03MD.f
+    vendor/slicot/SB03MV.f
+    vendor/slicot/SB03MW.f
+    vendor/slicot/SB03MX.f
+    vendor/slicot/SB03MY.f
+    vendor/slicot/SB04PX.f
+    vendor/slicot/select.f)
+  # Numerics parity: -ffp-contract=off (PUBLIC above) applies to the Fortran
+  # lane too; gfortran would contract by default, matching the C++ rationale.
+  # Warning discipline: the vendored files stay byte-identical to upstream, so
+  # the five legacy patterns that the core's -Wall -Wextra -Wpedantic lane flags
+  # (real/complex literal comparisons, historic DO-loop subscripts, the
+  # impure-function notes of -Wfunction-elimination, optimizer-spurious
+  # maybe-uninitialized, and SLICOT uniform-interface unused dummy arguments)
+  # are suppressed per source file — nothing else is silenced. Verified
+  # warning-clean at -O3 and -O0 with exactly this flag set.
+  set_source_files_properties(
+    vendor/slicot/MB01RD.f vendor/slicot/SB03MD.f vendor/slicot/SB03MV.f
+    vendor/slicot/SB03MW.f vendor/slicot/SB03MX.f vendor/slicot/SB03MY.f
+    vendor/slicot/SB04PX.f vendor/slicot/select.f
+    PROPERTIES COMPILE_OPTIONS
+    "-Wno-compare-reals;-Wno-do-subscript;-Wno-function-elimination;-Wno-maybe-uninitialized;-Wno-unused-dummy-argument")
+  # The seam is internal to the core (the public StationaryInitialization
+  # layout is unchanged), so the define is PRIVATE: library TUs only.
+  target_compile_definitions(kalos PRIVATE KALOS_WITH_SLICOT)
+  # Final consumer links (tests, bindings) need the gfortran runtime with the
+  # vendored objects: GPL-3 with the GCC Runtime Library Exception,
+  # distributable in linked binaries (see vendor/slicot/UPSTREAM.md).
+  target_link_libraries(kalos PUBLIC ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
+  message(STATUS "KALOS_WITH_SLICOT=ON: stationary initialization uses the vendored SLICOT SB03MD closure for state order >= 8")
+else()
+  message(STATUS "KALOS_WITH_SLICOT=OFF: stationary initialization uses the pivoted-QR route for all state orders (no Fortran component in the build)")
+endif()
 set(KALOS_WITH_OPENMP OFF)
 if(KALOS_OPENMP)
   find_package(OpenMP COMPONENTS CXX)

@@ -1,9 +1,9 @@
 {
   "schema_version": 2,
   "repository": "https://github.com/statistikat/kalos",
-  "commit": "7c3eefd9652fa13d53e798f14bb8e2fe8fe4828a",
+  "commit": "ec175430643caa293e5db24ad3f2ca62e3afc44d",
   "version": "0.1.0",
-  "source_manifest_sha256": "dbe38cc2d63848b0bf67a4a70d004ceb584e417d7a621d779122087991eed125",
+  "source_manifest_sha256": "94d11d4810f6e62e781bbca177ff06150ee83e55a37f21ed601f117791d8c77c",
   "generated_files": [
     "include/kalos/revision.hpp"
   ],
@@ -12,7 +12,7 @@
       "directory": "src/kalos",
       "section": "core",
       "files": {
-        "CMakeLists.txt": "8eb24fee187eb5171e263b1de72e66e218d0394bc3dee10a2cfcf6f1b86114f0",
+        "CMakeLists.txt": "4c4da7b502418ccb27034c3f3d4457deffa603dcafe5c6a578b573f67a7e7369",
         "backends/openblas.cpp": "a0d604e0a5997fc08d08a8923d7efb23d120bda863aaee812d3fe1044a1770e0",
         "cmake/FindKalosOpenBLAS.cmake": "6b6ec5f7c98f3f3e6f505d4bab69329bae6e6e4310a7d525db7699071e4bec73",
         "cmake/kalosConfig.cmake.in": "988ab7fd16970096c2b66b251550d3869ffc10202d8dd9e3677efb22d415ad4a",
@@ -74,7 +74,7 @@
         "include/kalos/regression_likelihood.hpp": "70d602b0d7eefae7edfddcfaa404d2a38e29d94ca88dab24b6204a7a3f61ad55",
         "include/kalos/regression_variable_tests.hpp": "a816f8ec79a8183c899703c0b61e5e1955149271be38599d63ca15a6daecf63b",
         "include/kalos/residual_trading_days_tests.hpp": "ec016d750ea9a44c5fac96d20e94e12f7b35117cc8a2c0d6deb9c8cd65df3229",
-        "include/kalos/revision.hpp": "4f431225d5c3d50d0188adb02b287518e4b2ee8319cb7d1e416039fe5f10c038",
+        "include/kalos/revision.hpp": "1129071d72dc9980c51bc37518b6092e0cd7665504552e34fb734d9ea960e674",
         "include/kalos/seats_extract_wk.hpp": "e3aca67a4c135b0a979e4d040815b0b08d77d9c3e4b88a8d96cc6108390d3190",
         "include/kalos/sparse_history.hpp": "4a0a34d5f653e6d314fbf2bf72a323c3d72297c18ea39cc3c6f73c98bab13e79",
         "include/kalos/state_space.hpp": "13aa70201814f68da74e82b8b75db8102d51d61ce076b87dd8aa6c1323cd3a5a",
@@ -170,7 +170,7 @@
         "src/special_functions.cpp": "4e35751a1f965ae055e5953ef18c71cb5ea98447e87aad2fc941f40a94b3b540",
         "src/ssq_deviances.cpp": "b217bc495f03a8170d19c36ecff370e83ca56b390ac0ec722fb4db49e3382e1c",
         "src/ssq_levmar.cpp": "5cfe2e18100611ef8a26e8a7fe2e62350e31ac07517ce85dff89e25c37c3cbe2",
-        "src/state_space.cpp": "1bceb3f83f1918f28e38f5b33a6d6f79647165d12bbf31eb94706ac2a994a987",
+        "src/state_space.cpp": "9c45d26c98a8c9b28877e2a198240d49730ef697fa35e77da742f7d127ecd1d4",
         "src/tramo_airline_forecast.hpp": "e81447f3dfd6b993335d781285b3f70fad9f50c0ff187d97209f02540a0c8b4f",
         "src/tramo_arma_selection.cpp": "f63c003a36c8127aec8943bfb325db2cf4a648036f47cc03f8e9bdb63c037a5a",
         "src/tramo_calendar_f_test.cpp": "bea86015e1038f919c026d5856a855363f9af89321b4294407b321511ed11c09",
@@ -219,7 +219,17 @@
         "src/x13_fit.cpp": "fd40d984883a158f79f46f350e5535ae71188a9ad7c0b804a6d4180e82860376",
         "tools/gen_hostlineage_tables.py": "50039a42e0c15d964fb2ec41fb9f54b9999864cd2299e8db2230e874513e239a",
         "tools/hostlineage-glibc-sha256.json": "483ac610bcd8ceeb1176ead5865d73ac1fd9135d019afd49b2ac92b489528b5c",
-        "tools/verify_hostlineage.cpp": "b3747a24db503a00231d34db59ea7f095f70cf6fb31a7bea76806aedd22c3d9b"
+        "tools/verify_hostlineage.cpp": "b3747a24db503a00231d34db59ea7f095f70cf6fb31a7bea76806aedd22c3d9b",
+        "vendor/slicot/MANIFEST.json": "2648d4fa2ee994acd755c04193000d770d09cb5b2e970832c9f9cd5a5b05ff94",
+        "vendor/slicot/MB01RD.f": "31d341f3f08edadd3a2b98e387bab2612bf829835ddbd04227a9ae6e2134a48a",
+        "vendor/slicot/SB03MD.f": "ec56d7ab0490594d9b24953112fa0bae05f9bd9d6714300e7ae7c4f289b4de7d",
+        "vendor/slicot/SB03MV.f": "f994e6891bfc06db2f8f96ef7bd3561480696a1a7aeb825e01e5c59a086e14b0",
+        "vendor/slicot/SB03MW.f": "999bb08233a4c0b30543e3c92c8007b4adfe7d1bf426942a64c2e80e442f845f",
+        "vendor/slicot/SB03MX.f": "d79c30608e7a30e52d2bd07b968b1bcb8ebcb8141b328bbc71d7b40aef3cb14b",
+        "vendor/slicot/SB03MY.f": "a34cab17a3aca6495b947f6c2d60a10bc52b2392be4f247f382bd255ac79007a",
+        "vendor/slicot/SB04PX.f": "de926061ab31a2f6c396c2ed98db7bf26feb6199bee1b7c620fec4b7da9e0e68",
+        "vendor/slicot/UPSTREAM.md": "80ab18ef1ab593f42bb8b7601a49fbe8352d0452c6a16435714fea34b80127d8",
+        "vendor/slicot/select.f": "f2df2247dc6a2f48ca159efa99097316323f02dd0744640a7cc0c2461dab890d"
       }
     },
     {
