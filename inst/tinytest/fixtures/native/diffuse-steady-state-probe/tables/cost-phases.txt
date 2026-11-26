@@ -1,0 +1,133 @@
+== phase=eval load_before=2.87 3.12 3.97 9/5820 1265066
+EVAL real-airline-noreg n=144 median_ms=9.138739
+EVAL real-airline-x n=144 median_ms=8.551532
+EVAL real-airline-gaps-x n=144 median_ms=8.134995
+EVAL real-airline-redundant-x n=144 median_ms=8.526129
+EVAL real-airline-zerocol-x n=144 median_ms=8.442554
+EVAL syn-airline12 n=156 median_ms=9.299657
+EVAL syn-stat-arma21 n=240 median_ms=0.221753
+EVAL syn-stat-sarma11 n=240 median_ms=27.015336
+EVAL syn-airline4 n=96 median_ms=1.390768
+EVAL syn-mixed4 n=96 median_ms=1.220037
+EVAL nearur-airline n=144 median_ms=8.595426
+EVAL nearni-airline n=144 median_ms=8.500959
+EVAL d2-arma12 n=144 median_ms=0.366713
+EVAL slow-seasonal n=156 median_ms=9.265613
+EVAL leadgap-airline-x n=144 median_ms=8.573603
+== phase=eval load_after=2.87 3.12 3.97 6/5831 1265127
+== phase=init load_before=2.87 3.12 3.97 4/5831 1265128
+INIT real-airline-noreg median_ms=0.417222
+INIT real-airline-x median_ms=0.405271
+INIT real-airline-gaps-x median_ms=0.398705
+INIT real-airline-redundant-x median_ms=0.394993
+INIT real-airline-zerocol-x median_ms=0.405090
+INIT syn-airline12 median_ms=0.391541
+INIT syn-stat-arma21 median_ms=0.006653
+INIT syn-stat-sarma11 median_ms=0.273863
+INIT syn-airline4 median_ms=0.132268
+INIT syn-mixed4 median_ms=0.058786
+INIT nearur-airline median_ms=0.411584
+INIT nearni-airline median_ms=0.397754
+INIT d2-arma12 median_ms=0.011359
+INIT slow-seasonal median_ms=0.394725
+INIT leadgap-airline-x median_ms=0.400239
+== phase=init load_after=2.87 3.12 3.97 6/5831 1265134
+== phase=reg load_before=2.87 3.12 3.97 6/5831 1265135
+REG real-airline-x n=144 median_ms=8.918721
+REG real-airline-gaps-x n=144 median_ms=8.754199
+REG real-airline-redundant-x n=144 median_ms=9.421048
+REG real-airline-zerocol-x n=144 median_ms=9.071138
+REG leadgap-airline-x n=144 median_ms=8.860318
+== phase=reg load_after=2.87 3.12 3.97 12/5830 1265203
+== phase=nsweep load_before=2.87 3.12 3.97 13/5830 1265204
+NSWEEP real-airline-noreg n=24 median_ms=2.369097
+NSWEEP real-airline-noreg n=48 median_ms=3.477468
+NSWEEP real-airline-noreg n=96 median_ms=6.017169
+NSWEEP real-airline-noreg n=120 median_ms=7.638168
+NSWEEP real-airline-noreg n=144 median_ms=8.674803
+NSWEEP real-airline-x n=24 median_ms=2.215331
+NSWEEP real-airline-x n=48 median_ms=3.446490
+NSWEEP real-airline-x n=96 median_ms=5.933573
+NSWEEP real-airline-x n=120 median_ms=7.229719
+NSWEEP real-airline-x n=144 median_ms=8.742284
+NSWEEP real-airline-gaps-x n=24 median_ms=2.294227
+NSWEEP real-airline-gaps-x n=48 median_ms=3.368338
+NSWEEP real-airline-gaps-x n=96 median_ms=5.887957
+NSWEEP real-airline-gaps-x n=120 median_ms=7.130546
+NSWEEP real-airline-gaps-x n=144 median_ms=8.474322
+NSWEEP real-airline-redundant-x n=24 median_ms=2.189099
+NSWEEP real-airline-redundant-x n=48 median_ms=3.476964
+NSWEEP real-airline-redundant-x n=96 median_ms=6.069206
+NSWEEP real-airline-redundant-x n=120 median_ms=7.160511
+NSWEEP real-airline-redundant-x n=144 median_ms=9.512968
+NSWEEP real-airline-zerocol-x n=24 median_ms=2.272349
+NSWEEP real-airline-zerocol-x n=48 median_ms=3.672642
+NSWEEP real-airline-zerocol-x n=96 median_ms=5.962476
+NSWEEP real-airline-zerocol-x n=120 median_ms=7.329145
+NSWEEP real-airline-zerocol-x n=144 median_ms=8.917696
+NSWEEP syn-airline12 n=24 median_ms=2.270729
+NSWEEP syn-airline12 n=48 median_ms=3.581770
+NSWEEP syn-airline12 n=96 median_ms=5.765377
+NSWEEP syn-airline12 n=120 median_ms=7.306745
+NSWEEP syn-airline12 n=144 median_ms=8.673699
+NSWEEP syn-stat-arma21 n=24 median_ms=0.030822
+NSWEEP syn-stat-arma21 n=48 median_ms=0.050525
+NSWEEP syn-stat-arma21 n=96 median_ms=0.095186
+NSWEEP syn-stat-arma21 n=120 median_ms=0.114534
+NSWEEP syn-stat-arma21 n=144 median_ms=0.141178
+NSWEEP syn-stat-arma21 n=240 median_ms=0.232406
+NSWEEP syn-stat-sarma11 n=24 median_ms=3.180347
+NSWEEP syn-stat-sarma11 n=48 median_ms=8.677323
+NSWEEP syn-stat-sarma11 n=96 median_ms=11.295878
+NSWEEP syn-stat-sarma11 n=120 median_ms=13.876807
+NSWEEP syn-stat-sarma11 n=144 median_ms=16.856793
+NSWEEP syn-stat-sarma11 n=240 median_ms=27.511147
+NSWEEP syn-airline4 n=24 median_ms=0.523797
+NSWEEP syn-airline4 n=48 median_ms=0.782795
+NSWEEP syn-airline4 n=96 median_ms=1.377460
+NSWEEP syn-mixed4 n=24 median_ms=0.377693
+NSWEEP syn-mixed4 n=48 median_ms=0.632928
+NSWEEP syn-mixed4 n=96 median_ms=1.213232
+NSWEEP nearur-airline n=24 median_ms=2.390016
+NSWEEP nearur-airline n=48 median_ms=3.519303
+NSWEEP nearur-airline n=96 median_ms=5.909947
+NSWEEP nearur-airline n=120 median_ms=7.375930
+NSWEEP nearur-airline n=144 median_ms=8.848232
+NSWEEP nearni-airline n=24 median_ms=2.242289
+NSWEEP nearni-airline n=48 median_ms=3.475526
+NSWEEP nearni-airline n=96 median_ms=5.911728
+NSWEEP nearni-airline n=120 median_ms=7.356370
+NSWEEP nearni-airline n=144 median_ms=8.767369
+NSWEEP d2-arma12 n=24 median_ms=0.094814
+NSWEEP d2-arma12 n=48 median_ms=0.204140
+NSWEEP d2-arma12 n=96 median_ms=0.286446
+NSWEEP d2-arma12 n=120 median_ms=0.329376
+NSWEEP d2-arma12 n=144 median_ms=0.366445
+NSWEEP slow-seasonal n=24 median_ms=2.314089
+NSWEEP slow-seasonal n=48 median_ms=3.466403
+NSWEEP slow-seasonal n=96 median_ms=6.008765
+NSWEEP slow-seasonal n=120 median_ms=7.274135
+NSWEEP slow-seasonal n=144 median_ms=8.712324
+NSWEEP leadgap-airline-x n=24 median_ms=2.201392
+NSWEEP leadgap-airline-x n=48 median_ms=3.467546
+NSWEEP leadgap-airline-x n=96 median_ms=5.960887
+NSWEEP leadgap-airline-x n=120 median_ms=7.164575
+NSWEEP leadgap-airline-x n=144 median_ms=8.398226
+== phase=nsweep load_after=3.44 3.23 4.00 4/5815 1265387
+== phase=tail load_before=3.44 3.23 4.00 4/5815 1265388
+TAIL real-airline-noreg n=144 tstar=143 tail=1 fbar=1.0000013537056527 tail_us=2.499 perstep_us=2.4990
+TAIL real-airline-x n=144 tstar=143 tail=1 fbar=1.0000013537056527 tail_us=2.483 perstep_us=2.4830
+TAIL real-airline-gaps-x n=144 tstar=142 tail=2 fbar=1.0000013764783831 tail_us=2.514 perstep_us=1.2570
+TAIL real-airline-redundant-x n=144 tstar=143 tail=1 fbar=1.0000013537056527 tail_us=2.461 perstep_us=2.4610
+TAIL real-airline-zerocol-x n=144 tstar=143 tail=1 fbar=1.0000013537056527 tail_us=2.478 perstep_us=2.4780
+TAIL syn-airline12 n=156 tstar=155 tail=1 fbar=1.0000004094954054 tail_us=2.593 perstep_us=2.5930
+TAIL syn-stat-arma21 n=240 tstar=17 tail=223 fbar=1 tail_us=9.382 perstep_us=0.0421
+TAIL syn-stat-sarma11 n=240 tstar=108 tail=132 fbar=1 tail_us=79.959 perstep_us=0.6058
+TAIL syn-airline4 n=96 tstar=95 tail=1 fbar=1.0000000000400355 tail_us=0.575 perstep_us=0.5750
+TAIL syn-mixed4 n=96 tstar=89 tail=7 fbar=1.0000000000000022 tail_us=3.462 perstep_us=0.4946
+TAIL nearur-airline n=144 tstar=143 tail=1 fbar=1.0000013145048434 tail_us=2.669 perstep_us=2.6690
+TAIL nearni-airline n=144 tstar=143 tail=1 fbar=1.0469937888113297 tail_us=2.476 perstep_us=2.4760
+TAIL d2-arma12 n=144 tstar=25 tail=119 fbar=1 tail_us=9.976 perstep_us=0.0838
+TAIL slow-seasonal n=156 tstar=153 tail=3 fbar=1.0822545138507842 tail_us=7.441 perstep_us=2.4803
+TAIL leadgap-airline-x n=144 tstar=143 tail=1 fbar=1.0000013538772796 tail_us=2.464 perstep_us=2.4640
+== phase=tail load_after=3.44 3.23 4.00 6/5809 1265397

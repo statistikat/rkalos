@@ -270,6 +270,45 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
     if (finite_factor && (!stable_history || finite_factor->dimension() != m)) {
         throw std::logic_error("finite factor disagrees with the canonical state dimension");
     }
+    // Item-29 design D4 (design dossier docs/item29-diffuse-filter-probe-
+    // 2026-11-26.md §4 E2, §6 D4): after the diffuse pivots are exhausted, a
+    // canonical zero-observation-variance SARIMA filter carries the k history
+    // coordinates of its finite covariance as a certified-zero block; the
+    // post-pivot recursion may run on the r-wide stationary factor while the
+    // state keeps the observed-history ring (the m-wide state bookkeeping
+    // below is exact and cheap). Eligibility is the canonical SARIMA route —
+    // exact-history certificate, stable history propagation, square-root
+    // finite factor, a nonzero history block, and zero observation variance
+    // (the P^+Z = 0 nullity is a zero-variance identity; generic h > 0 models
+    // and the generic diffuse_innovations entry keep the full path, route 0).
+    // Route states: -1 ineligible, 0 awaiting pivot exhaustion, 1 nullity
+    // certified (armed: the pivot-exhaust predict still runs full-m, then the
+    // rounding-level history block is certified and the factor compressed),
+    // 2 reduced r-wide recursion, 3 certificate rejected (full path kept).
+    // Nothing ever switches on a weak direction and nothing falls back
+    // silently: the route, its step count and its residual land in
+    // DiffuseNumerics.
+    const bool d4_eligible = history != nullptr && stable_history != nullptr &&
+                             finite_factor != nullptr && initial_rank > 0 &&
+                             model.observation_variance == 0;
+    int d4_state = d4_eligible ? 0 : -1;
+    std::size_t d4_certified_steps = 0, d4_route = 0;
+    double d4_certificate_residual = 0;
+    const std::size_t d4_r = m - initial_rank;
+    std::vector<double> d4_observation;                        // stationary Z block (r)
+    std::unique_ptr<DenseMatrix> d4_transition, d4_noise;      // r-blocks, built at the switch
+    // Trim stages of the qualification dossier (tmp_opencode/item29-d4b/
+    // D4B-TRIM-QUALIFICATION-2026-11-26.md, exactness cases E1/E3/E4):
+    // d4_pz keeps the r-wide projected loading directly (case E4),
+    // d4_state_scratch backs the block-structured state advance (case E1),
+    // and d4_block_state records the fail-closed companion-shape witness
+    // verified once at the switch — the E1 fast path is a bit-identical
+    // statement of product(model.transition, state) only under that shape.
+    // The measured-zero stages 3/4 (witness silence in the window, r-long
+    // state adds) are NOT shipped: the ring/frame/rank witnesses run at every
+    // step and the state-add loop keeps its m-long form.
+    std::vector<double> d4_pz, d4_state_scratch, d4_gain_r;
+    bool d4_block_state = false;
     const auto process = gram(model.noise_loading);
     const auto initial_finite = p;
     const auto initial_diffuse = gram(basis);
@@ -306,9 +345,27 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
         long double predicted = mean;
         for (std::size_t i = 0; i < m; ++i) predicted += static_cast<long double>(model.observation[i]) * state[i];
         predictions[t] = checked(predicted);
-        auto pz = std::vector<double>(m, 0);
+        // Case E4: the reduced route keeps the r-wide projected loading
+        // (d4_pz) without the m-wide zero padding; every full-path branch
+        // below assigns the m-wide vector in full, as before.
+        std::vector<double> pz;
         long double finite_f = model.observation_variance;
-        if (finite_factor) {
+        if (d4_state == 2) {
+            // Reduced observation on the certified r-wide factor: every
+            // dropped term multiplies a certified-zero history row, so the
+            // loading sum is the full-path sum with its certified-zero tail
+            // terms omitted in place. pz is padded with exact zeros, keeping
+            // the m-wide gain, state and gain-history sums in their original
+            // term order (zeros appended at the certified positions).
+            auto projected = finite_factor->observation(d4_observation, model.observation_variance, interrupt);
+            // Case E4: the r-wide loading moves out directly; the gain
+            // division below reads it (case E3), so the m-wide zero
+            // padding and its copy — which only re-created exact +0
+            // entries at the certified positions — are not computed.
+            d4_pz = std::move(projected.pz);
+            finite_f = projected.variance;
+            ++d4_certified_steps;
+        } else if (finite_factor) {
             auto projected = finite_factor->observation(model.observation, model.observation_variance, interrupt);
             pz = std::move(projected.pz);
             finite_f = projected.variance;
@@ -365,6 +422,27 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
                 if (history) ++exact_pivot_count;
                 last_diffuse = t + 1;
                 update_kind[t] = 1;
+                if (d4_state == 0 && basis.columns == 0) {
+                    // Pivot exhaustion: certify the P^+Z = 0 nullity on the
+                    // just-updated factor — the induction premise of the
+                    // certified-zero history block. On rejection the full-m
+                    // path runs to the end (route 3); nothing changes.
+                    double relative = 0;
+                    const bool nullity = finite_factor->certify_observation_nullity(model.observation, relative);
+                    if (relative > d4_certificate_residual) d4_certificate_residual = relative;
+                    // The induction re-pins the history block through every
+                    // observation update: a step without an observation
+                    // leaves the process noise loaded on the history
+                    // coordinates unpinned, so the window must be fully
+                    // observed (qualification finding: the monitor census on
+                    // real-airline-gaps-x reaches 0.83 relative after a gap
+                    // inside the window versus 4e-16 with none).
+                    bool window_observed = true;
+                    for (std::size_t s = t + 1; s < n; ++s) {
+                        if (series.missing[s]) { window_observed = false; break; }
+                    }
+                    d4_state = (nullity && window_observed) ? 1 : 3;
+                }
             } else {
                 if (finite_variances[t] == 0) throw std::invalid_argument("finite observations require positive innovation variance; deterministic likelihood is unsupported");
                 const double residual = checked(innovation / std::sqrt(finite_variances[t]));
@@ -374,14 +452,38 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
                 finite_logs += std::log(static_cast<long double>(finite_variances[t]));
                 standardized.values[t] = residual;
                 standardized.missing[t] = 0;
+                if (d4_state == 2) {
+                    // Case E3: divide the r-wide loading directly; the
+                    // certified-zero gain tail is written as the exact +0.0
+                    // the padded division produced (checked(+0/F) == +0 for
+                    // F > 0), so the m-wide gain buffer — read by the state
+                    // update and the regression whitening lane — keeps its
+                    // bit content.
+                    for (std::size_t i = 0; i < d4_r; ++i) gain[i] = checked(d4_pz[i] / finite_variances[t]);
+                    for (std::size_t i = d4_r; i < m; ++i) gain[i] = 0;
+                } else
                 for (std::size_t i = 0; i < m; ++i) gain[i] = checked(pz[i] / finite_variances[t]);
-                if (finite_factor) finite_factor->update(gain, model.observation, model.observation_variance, interrupt);
+                if (d4_state == 2) {
+                    // Joseph compression on the reduced factor: the history
+                    // gain entries are the padded exact zeros, so restricting
+                    // to r stationary entries drops only certified-zero terms.
+                    // Case E3 (buffer reuse): the persistent r-wide copy
+                    // holds the same entries the per-step temporary did
+                    // (same bit content, same call), no per-step allocation.
+                    for (std::size_t i = 0; i < d4_r; ++i) d4_gain_r[i] = gain[i];
+                    finite_factor->update(d4_gain_r, d4_observation, model.observation_variance, interrupt);
+                } else if (finite_factor) finite_factor->update(gain, model.observation, model.observation_variance, interrupt);
                 else p = joseph(p, gain, model.observation, model.observation_variance);
                 ++finite_count;
                 if (exact_zero) ++exact_zero_count;
                 update_kind[t] = 2;
             }
             if (save_gains) std::copy(gain.begin(), gain.end(), observation_gains.begin() + static_cast<std::ptrdiff_t>(m * t));
+            // Case E3b: the state additions stay m-long in every route. The
+            // r-long form (dossier stage-4 probe) measured zero gain and
+            // would leave a sign-of-zero residual on a -0.0 coordinate; the
+            // m-long loop is bit-identical to the full path BY CONSTRUCTION
+            // for O(m) long-double FMAs.
             for (std::size_t i = 0; i < m; ++i) state[i] = checked(static_cast<long double>(state[i]) + static_cast<long double>(gain[i]) * innovation);
             observation_null_certified = true;
             if (stable_history) stable_history->observe(static_cast<std::uint64_t>(t) + 1, interrupt);
@@ -396,8 +498,83 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
         if (t + 1 < n) {
             if (history) history->advance();
             observation_null_certified = observation_null_certified && scalar_transition;
-            state = product(model.transition, state);
-            if (finite_factor) finite_factor->predict(model.transition, model.noise_loading, interrupt);
+            if (d4_state == 2 && d4_block_state) {
+                // Case E1 (block-structured state advance): bit-identical to
+                // product(model.transition, state) under the companion-shape
+                // witness verified at the switch. Stationary rows of the
+                // canonical companion carry exact zeros on the history
+                // columns, and adding an exact ±0 term never changes a long
+                // double accumulator (it starts +0; +0+(±0)=+0; a nonzero
+                // value is unchanged by ±0), so their m-term sums equal the
+                // r-term sums entry by entry. The pivot row keeps the full
+                // m-term accumulation in the original ascending order — this
+                // is the observed-history ring entry, a genuine m-wide
+                // quantity. The shift rows have a single 1.0 coefficient:
+                // exact copies.
+                for (std::size_t i = 0; i < d4_r; ++i) {
+                    long double value = 0;
+                    for (std::size_t j = 0; j < d4_r; ++j)
+                        value += static_cast<long double>((*d4_transition)(i, j)) * state[j];
+                    d4_state_scratch[i] = checked(value);
+                }
+                {
+                    long double value = 0;
+                    for (std::size_t j = 0; j < m; ++j)
+                        value += static_cast<long double>(model.transition(d4_r, j)) * state[j];
+                    d4_state_scratch[d4_r] = checked(value);
+                }
+                for (std::size_t i = d4_r + 1; i < m; ++i) d4_state_scratch[i] = state[i - 1];
+                state.swap(d4_state_scratch);
+            } else {
+                state = product(model.transition, state);
+            }
+            if (d4_state == 2) {
+                finite_factor->predict(*d4_transition, *d4_noise, interrupt);
+            } else if (d4_state == 1) {
+                // Pivot-exhaust step: this predict still runs full-m. The last
+                // unidentified diffuse coordinate leaves the state with the
+                // shift, so EVERY history row of the PREDICTED factor is a
+                // rounding residual of a mathematically zero row; certify that
+                // block, then compress the stationary rows once. On rejection
+                // the full-m path continues (route 3).
+                finite_factor->predict(model.transition, model.noise_loading, interrupt);
+                double relative = 0;
+                const bool block = finite_factor->certify_history_block(d4_r, relative, interrupt);
+                if (relative > d4_certificate_residual) d4_certificate_residual = relative;
+                if (block) {
+                    d4_observation.assign(model.observation.begin(),
+                                          model.observation.begin() + static_cast<std::ptrdiff_t>(d4_r));
+                    d4_transition = std::make_unique<DenseMatrix>(d4_r, d4_r);
+                    d4_noise = std::make_unique<DenseMatrix>(d4_r, 1);
+                    for (std::size_t j = 0; j < d4_r; ++j) {
+                        for (std::size_t i = 0; i < d4_r; ++i) (*d4_transition)(i, j) = model.transition(i, j);
+                        (*d4_noise)(j, 0) = model.noise_loading(j, 0);
+                    }
+                    finite_factor->compress_to_stationary_block(d4_r, interrupt);
+                    // Case E1 premise (fail-closed): the case-E1 state
+                    // advance is used only under the canonical companion
+                    // shape of model.transition — stationary rows exactly
+                    // zero on the history columns, shift rows a single 1.0
+                    // coefficient; the pivot row is summed m-wide either
+                    // way. Checked once per fit; a shape failure simply
+                    // keeps the general product() (the route and every
+                    // output are untouched either way).
+                    bool companion = true;
+                    for (std::size_t i = 0; i < d4_r && companion; ++i)
+                        for (std::size_t j = d4_r; j < m; ++j)
+                            if (model.transition(i, j) != 0) { companion = false; break; }
+                    for (std::size_t i = d4_r + 1; i < m && companion; ++i)
+                        for (std::size_t j = 0; j < m; ++j)
+                            if (model.transition(i, j) != (j + 1 == i ? 1.0 : 0.0)) { companion = false; break; }
+                    d4_block_state = companion;
+                    d4_state_scratch.assign(m, 0);
+                    d4_gain_r.assign(d4_r, 0);
+                    d4_state = 2;
+                } else {
+                    d4_state = 3;
+                }
+            }
+            else if (finite_factor) finite_factor->predict(model.transition, model.noise_loading, interrupt);
             else {
                 p = sandwich(model.transition, p);
                 for (std::size_t i = 0; i < p.values().size(); ++i) p.values()[i] = checked(static_cast<long double>(p.values()[i]) + process.values()[i]);
@@ -412,7 +589,19 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
             }
         }
     }
-    if (finite_factor) p = finite_factor->covariance(interrupt);
+    if (d4_state == 2) {
+        // Reassemble the m-wide output covariance from the certified block
+        // structure blockdiag(P_r, 0): the history block of the full path
+        // holds the same zeros at rounding level (certified above), so the
+        // reduced block plus exact zeros is the same named quantity within
+        // the certificate residual.
+        const auto reduced_covariance = finite_factor->covariance(interrupt);
+        DenseMatrix full(m, m);
+        for (std::size_t j = 0; j < d4_r; ++j)
+            for (std::size_t i = 0; i < d4_r; ++i) full(i, j) = reduced_covariance(i, j);
+        p = std::move(full);
+    } else if (finite_factor) p = finite_factor->covariance(interrupt);
+    d4_route = d4_state == 2 ? 2 : d4_state == 3 ? 3 : d4_state < 0 ? 0 : 1;
     const double sum_squares = checked(squares), sum_finite_logs = checked(finite_logs), sum_diffuse_logs = checked(diffuse_logs);
     const double unavailable = std::numeric_limits<double>::quiet_NaN();
     double fixed_loglik = unavailable, profiled_variance = unavailable, profiled_loglik = unavailable;
@@ -460,7 +649,11 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
              finite_factor != nullptr,
              finite_factor ? finite_factor->compression_count() : 0,
              finite_factor ? finite_factor->clipped_negative_count() : 0,
-             finite_factor ? finite_factor->initialization_residual() : 0},
+             finite_factor ? finite_factor->initialization_residual() : 0,
+             d4_route, d4_certified_steps, d4_certificate_residual,
+             finite_factor ? finite_factor->post_pivot_rebuild_count() : 0,
+             finite_factor ? finite_factor->post_pivot_rebuild_residual() : 0
+             },
             std::move(observation_gains)};
 }
 

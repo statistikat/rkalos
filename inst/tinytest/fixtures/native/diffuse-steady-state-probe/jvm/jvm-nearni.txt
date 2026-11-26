@@ -1,0 +1,11 @@
+CASE jvm-nearni n=131 nx=0 nmissing=0 orders=(0,1,1)(0,1,1) arma=AR = 1.00000; MA = 1.00000 + 0.980000 B + 0.950000 B^12 + 0.931000 B^13; var =1.0 innovvar=1.0000000000000000
+TIMING acf-build-ns=5159732 acf-values-ns=30374 acf-dim=14
+TIMING eval=0 prepare-ns=69248 apply-ns=524015 apply-calls=1 det-ns=1096 other-ns=1616546 total-ns=2210905
+TIMING eval=1 prepare-ns=12916 apply-ns=198696 apply-calls=1 det-ns=432 other-ns=56060 total-ns=268104
+TIMING eval=2 prepare-ns=18497 apply-ns=202132 apply-calls=1 det-ns=338 other-ns=98192 total-ns=319159
+TIMING eval=3 prepare-ns=7204 apply-ns=186750 apply-calls=1 det-ns=322 other-ns=29148 total-ns=223424
+TIMING eval=4 prepare-ns=6512 apply-ns=176001 apply-calls=1 det-ns=325 other-ns=28115 total-ns=210953
+MACHINE dim=14 steadyPos=130 n=131 h0=3.7296609999999997 C0=1.8644499999999997 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.93099999999999990 1.8623800000000000 0.93099999999999990 0.0000000000000000 
+LL ssq=3.6207441565054603 ldet=25.899004427705144 loglik=36.2174625872
+TIMING eval=5 prepare-ns=6370 apply-ns=182260 apply-calls=1 det-ns=320 other-ns=23419 total-ns=212369
+FULLCOMPUTER ll=36.2174625872 ssq=3.6207441565054603 nobs=131

@@ -1,0 +1,11 @@
+CASE jvm-d2 n=142 nx=0 nmissing=0 orders=(0,2,1)(0,0,0) arma=AR = 1.00000; MA = 1.00000 - 0.500000 B; var =1.0 innovvar=1.0000000000000000
+TIMING acf-build-ns=18989090 acf-values-ns=150448 acf-dim=2
+TIMING eval=0 prepare-ns=43449 apply-ns=517752 apply-calls=1 det-ns=1670 other-ns=2677277 total-ns=3240148
+TIMING eval=1 prepare-ns=16263 apply-ns=112492 apply-calls=1 det-ns=655 other-ns=42886 total-ns=172296
+TIMING eval=2 prepare-ns=7532 apply-ns=74388 apply-calls=1 det-ns=336 other-ns=54398 total-ns=136654
+TIMING eval=3 prepare-ns=6670 apply-ns=88685 apply-calls=1 det-ns=377 other-ns=30617 total-ns=126349
+TIMING eval=4 prepare-ns=6382 apply-ns=66580 apply-calls=1 det-ns=371 other-ns=40577 total-ns=113910
+MACHINE dim=2 steadyPos=49 n=142 h0=1.2500000000000000 C0=-0.50000000000000000 0.0000000000000000 
+LL ssq=139.60201255240537 ldet=0.28768207245178080 loglik=-200.4238797436
+TIMING eval=5 prepare-ns=6459 apply-ns=61222 apply-calls=1 det-ns=329 other-ns=42226 total-ns=110236
+FULLCOMPUTER ll=-200.4238797436 ssq=139.60201255240537 nobs=142

@@ -1,0 +1,12 @@
+DETERM-OK jvm-airline4.txt 4 deterministic lines
+DETERM-OK jvm-airline-gaps-x.txt 10 deterministic lines
+DETERM-OK jvm-airline-noreg.txt 4 deterministic lines
+DETERM-OK jvm-airline-x.txt 8 deterministic lines
+DETERM-OK jvm-d2.txt 4 deterministic lines
+DETERM-OK jvm-mixed4.txt 4 deterministic lines
+DETERM-OK jvm-nearni.txt 4 deterministic lines
+DETERM-OK jvm-nearur.txt 4 deterministic lines
+DETERM-OK jvm-slow.txt 4 deterministic lines
+DETERM-OK jvm-stat-arma21n.txt 4 deterministic lines
+DETERM-OK jvm-stat-arma21.txt 4 deterministic lines
+DETERM-OK jvm-stat-sarma11.txt 4 deterministic lines

@@ -1,0 +1,11 @@
+CASE jvm-stat-arma21n n=240 nx=0 nmissing=0 orders=(2,0,1)(0,0,0) arma=AR = 1.00000 - 0.600000 B + 0.250000 B^2; MA = 1.00000 - 0.400000 B; var =1.0 innovvar=1.0000000000000000
+TIMING acf-build-ns=3400228 acf-values-ns=4439005 acf-dim=2
+TIMING eval=0 prepare-ns=38828 apply-ns=432429 apply-calls=1 det-ns=1094 other-ns=1745314 total-ns=2217665
+TIMING eval=1 prepare-ns=14777 apply-ns=128930 apply-calls=1 det-ns=745 other-ns=88186 total-ns=232638
+TIMING eval=2 prepare-ns=7171 apply-ns=118278 apply-calls=1 det-ns=483 other-ns=48966 total-ns=174898
+TIMING eval=3 prepare-ns=6465 apply-ns=101375 apply-calls=1 det-ns=315 other-ns=42267 total-ns=150422
+TIMING eval=4 prepare-ns=6360 apply-ns=95892 apply-calls=1 det-ns=285 other-ns=42596 total-ns=145133
+MACHINE dim=2 steadyPos=37 n=240 h0=1.0755370755370757 C0=0.19625779625779630 -0.15112959112959115 
+LL ssq=1588.4169259666944 ldet=0.11902770642227711 loglik=-567.3872696435
+TIMING eval=5 prepare-ns=12561 apply-ns=83077 apply-calls=1 det-ns=316 other-ns=49472 total-ns=145426
+FULLCOMPUTER ll=-567.3872696435 ssq=1588.4169259666944 nobs=240

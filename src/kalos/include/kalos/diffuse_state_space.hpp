@@ -43,6 +43,31 @@ struct DiffuseNumerics {
     std::size_t finite_factor_compressions;
     std::size_t finite_factor_clipped_eigenvalues;
     double finite_factor_initialization_residual;
+    // Item-29 design D4 route state (docs/item29-diffuse-filter-probe-
+    // 2026-11-26.md §6; qualification dossiers tmp_opencode/item29-d4/ and
+    // tmp_opencode/item29-d4b/, 2026-11-26). The reduced post-pivot
+    // recursion and the full-m recursion are both exact; the selection is
+    // never silent. post_pivot_route:
+    //   0 = not eligible (generic diffuse entry, h > 0, or k = 0);
+    //   1 = eligible, full-m path kept (diffuse pivots exhausted at the last
+    //       observation so no reduced step was possible, or the nullity
+    //       certificate passed but no switch window opened);
+    //   2 = certified post-pivot history block: the reduced r-wide recursion
+    //       ran for post_pivot_certified_steps observation steps;
+    //   3 = eligible, certificate or fully-observed-window guard REJECTED at
+    //       its window — the full-m path ran to the end and every value is
+    //       the full-path value bit-for-bit.
+    // post_pivot_certificate_residual is the larger of the two certificate
+    // relatives (P^+Z nullity at the last pivot; rounding-level history
+    // block after the pivot-exhaust predict), each against the house
+    // 512*eps*m band. post_pivot_rebuilds counts stationary-block
+    // compressions (one per evaluation on route 2) and
+    // post_pivot_rebuild_residual their scaled reconstruction residual.
+    std::size_t post_pivot_route = 0;
+    std::size_t post_pivot_certified_steps = 0;
+    double post_pivot_certificate_residual = 0;
+    std::size_t post_pivot_rebuilds = 0;
+    double post_pivot_rebuild_residual = 0;
 };
 
 struct DiffuseLikelihood {

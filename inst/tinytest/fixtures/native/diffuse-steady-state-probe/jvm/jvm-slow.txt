@@ -1,0 +1,11 @@
+CASE jvm-slow n=143 nx=0 nmissing=0 orders=(0,1,1)(0,1,1) arma=AR = 1.00000; MA = 1.00000 - 0.200000 B + 0.999000 B^12 - 0.199800 B^13; var =1.0 innovvar=1.0000000000000000
+TIMING acf-build-ns=5082709 acf-values-ns=27364 acf-dim=14
+TIMING eval=0 prepare-ns=27994 apply-ns=531286 apply-calls=1 det-ns=1070 other-ns=1514921 total-ns=2075271
+TIMING eval=1 prepare-ns=13447 apply-ns=269251 apply-calls=1 det-ns=460 other-ns=63069 total-ns=346227
+TIMING eval=2 prepare-ns=7086 apply-ns=246058 apply-calls=1 det-ns=358 other-ns=28784 total-ns=282286
+TIMING eval=3 prepare-ns=6465 apply-ns=197227 apply-calls=1 det-ns=291 other-ns=61815 total-ns=265798
+TIMING eval=4 prepare-ns=6093 apply-ns=186813 apply-calls=1 det-ns=307 other-ns=29444 total-ns=222657
+MACHINE dim=14 steadyPos=142 n=143 h0=2.0779210400000000 C0=-0.39960020000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 -0.19980000000000000 1.0389600000000000 -0.19980000000000000 0.0000000000000000 
+LL ssq=151.32464223626680 ldet=30.597432184780480 loglik=-222.2525999231
+TIMING eval=5 prepare-ns=6165 apply-ns=186285 apply-calls=1 det-ns=293 other-ns=34147 total-ns=226890
+FULLCOMPUTER ll=-222.2525999231 ssq=151.32464223626680 nobs=143

@@ -26,8 +26,13 @@ local({
       expect_true(abs(fit$final$value - independent$value) <= 2e-7, info = case$id)
       expected <- arma_fit_density(case, blocks)
       expect_true(abs(fit$final$value - expected$value) <= 2e-8 * (1 + abs(expected$value)), info = case$id)
-      expect_equal(unname(fit$final$likelihood$regression_coefficients), expected$beta, tolerance = 2e-8, info = case$id)
-      expect_equal(fit$final$likelihood$profiled_variance, expected$variance, tolerance = 2e-8, info = case$id)
+      # 2026-11-26 maintainer ruling (kalos M12, item 29 D4): the certified
+      # post-pivot diffuse filter may move pinned-LM destinations by <=3.135e-08
+      # and the BFGS estimate route by <=4.35e-12 (delta-ll <=1.28e-12), so
+      # these self-consistency pins move 2e-8 -> 1e-7. Measured here at core
+      # 6fee68c (64 cases x 2 starts, both lanes): 3.34e-14 / 5.18e-16.
+      expect_equal(unname(fit$final$likelihood$regression_coefficients), expected$beta, tolerance = 1e-7, info = case$id)
+      expect_equal(fit$final$likelihood$profiled_variance, expected$variance, tolerance = 1e-7, info = case$id)
       expect_identical(fit$final$value, evaluate(context, fit$coordinates)$value, info = case$id)
       fixed <- !is.na(unlist(case$specification, use.names = FALSE))
       expect_identical(unlist(blocks, use.names = FALSE)[fixed], unlist(case$specification, use.names = FALSE)[fixed])

@@ -1,0 +1,16 @@
+id,freq,d,seasonal_d,ar,ma,sar,sma,series,x,missing,xcols
+real-airline-noreg,12,1,1,,-0.45,,-0.55,series/real-airline-y.csv,,,
+real-airline-x,12,1,1,,-0.45,,-0.55,series/real-airline-y.csv,x/real-x.csv,,1
+real-airline-gaps-x,12,1,1,,-0.45,,-0.55,series/real-airline-gaps.csv,x/real-gaps-x.csv,,1
+real-airline-redundant-x,12,1,1,,-0.45,,-0.55,series/real-airline-y.csv,x/redundant2.csv,,2
+real-airline-zerocol-x,12,1,1,,-0.45,,-0.55,series/real-airline-y.csv,x/zerocol2.csv,,2
+syn-airline12,12,1,1,,-0.45,,-0.55,series/syn-airline12.csv,,,
+syn-stat-arma21,12,0,0,0.6:-0.25,-0.4,,,series/syn-stat-arma21.csv,,,
+syn-stat-sarma11,12,0,0,0.5,-0.3,0.25,-0.2,series/syn-stat-sarma.csv,,,
+syn-airline4,4,1,1,,-0.35,,-0.6,series/syn-airline4.csv,,,
+syn-mixed4,4,1,1,,,0.3,-0.5,series/syn-mixed4.csv,,,
+nearur-airline,12,1,1,0.995,-0.4,,-0.55,series/real-airline-y.csv,,,
+nearni-airline,12,1,1,,0.98,,0.95,series/real-airline-y.csv,,,
+d2-arma12,12,2,0,,-0.5,,,series/syn-d2.csv,,,
+slow-seasonal,12,1,1,,-0.2,,0.999,series/syn-slowseasonal.csv,,,
+leadgap-airline-x,12,1,1,,-0.45,,-0.55,series/real-airline-leadgap.csv,x/real-x.csv,,1

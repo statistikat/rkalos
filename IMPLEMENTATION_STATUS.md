@@ -1,8 +1,126 @@
 # rkalos implementation status
 
-Updated **2026-11-26**. Persephone uses the independent rkalos package.
+Updated **2026-11-27**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
+
+## The 6fee68c re-pin: the certified post-pivot diffuse filter, measured drift, empty fixture re-pin (2026-11-27)
+
+Version `0.1.0.9032` re-pins the vendored core `ec175430643caa293e5db24ad3f2ca62e3afc44d` →
+`6fee68c0a8d1fbe6816f26c06d7a00dbba0a5b8c` (lock schema 2; verified 218 core,
+112 fixture and 472 evidence files — evidence up by exactly the 56 new
+`inst/tinytest/fixtures/native/diffuse-steady-state-probe/` files, core and
+fixtures unmoved). The pin is the kalos ledger tip again, the
+`e2138a3`/`20e6063`/`7c3eefd`/`ec17543` convention: the change itself lands in
+core commit `9f8e906`, and its ledger commit ships the identical vendored
+tree. This is the M12/item 29 **D4 slice** — the certified post-pivot diffuse
+filter: the route-2 reduced recursion for eligible complete data, with gapped
+and stationary (k = 0) shapes staying on the exact full path (routes 0/3)
+bit-identically. Unlike the SLICOT seam, D4 changes the filter every product
+fit runs, including the pinned LM route, and the upstream M12 entry states the
+downstream obligation plainly — "the `rkalos` and `pykalos` re-certifications
+must MEASURE real drift against their own pins; byte-identity must NOT be
+assumed", naming the sixteen hex-oracle test files and the backend fixture
+table. This entry is that measurement.
+
+Vendored churn is exactly `src/kalos/include/kalos/diffuse_state_space.hpp`,
+`src/kalos/include/kalos/finite_state_factor.hpp`,
+`src/kalos/src/diffuse_state_space.cpp`,
+`src/kalos/src/finite_state_factor.cpp` (the core translation units of the
+certified tree; the widened struct layout additionally reaches
+`regression_likelihood.cpp` through the header, whose compile and link lines
+are unchanged), the generated `revision.hpp`, the two lock files, and the 56
+new probe-evidence files under
+`inst/tinytest/fixtures/native/diffuse-steady-state-probe/`
+(drivers, cases, goldens, `README.md`: the item 29 frozen corpus shipped as
+`evidence`-section lock entries, inert for the R suite). Nothing removed,
+nothing renamed; `python3 tools/sync-core.py --verify` passes on the exported
+tree before and after every step below.
+
+Measured drift against the repo's own pins, old pins in place, before any
+edit: the full native corpus ran **310,308/310,308** serial and
+**310,312/310,312** OMP with **0** failures and per-file tables **byte-identical
+to the certified 9031 baseline logs (0 differing files per lane)** — all
+sixteen named hex-oracle files included, every bit-exact hex fixture holding.
+The ratified re-pin class (maintainer-adoption datum, kalos M12 §9.4:
+pinned-LM destinations "≤ **3.135e-08** (airline ma; 2.653e-08 mixed
+seasonal_ma, 1.56e-08 mixed ar, 3.1e-09 airline seasonal_ma) against 1e-4
+pinned budgets … the BFGS estimate route moves destinations ≤4.35e-12 with
+dll = 0; all gapped and stationary cases stay byte-identical") **did not have
+to be spent: the fixture re-pin set is empty.** The reason is structural and
+now measured rather than assumed: every bit-exact hex fixture pins JVM-engine
+output (the Java engines run in-lane and are untouched by a native-core
+change), while every native-versus-JVM quantity D4 can move is guarded by a
+budget-style check, measured below. **Regeneration audit: no fixture or
+evidence file was edited or regenerated; the 112 + 472 locked files are
+byte-identical to the ec17543 export and `sync-core.py --verify` is green —
+no regeneration procedure was needed and none was run.**
+
+Two tolerance raises were pre-authorized by the 2026-11-26 maintainer ruling,
+scoped to self-consistency pins only, each shipped with its measured number.
+(i) In `inst/tinytest/test-native-fitted-models.R` the independent-GLS and
+profiled-variance pins move **2e-8 → 1e-7**, with a dated in-test comment
+citing the ruling and the class; measured maxima here at core `6fee68c`
+(64 cases × 2 starts, both lanes bit-identical): **3.34e-14** and **5.18e-16**
+— the raise is margin against the 3.135e-08 pinned-route class on other
+platforms, not a locally binding need; the adjacent 2e-8 value pin stays
+(measured 3.30e-14). (ii) The backend fixture table
+`inst/tinytest/fixtures/backend/field-tolerances.csv` was measured per field
+and **stays byte-identical**: it governs the kalos JVM-replay comparison
+(`validation/reference/verify.R --live`; the file is vendored byte-identical
+from kalos, hash-locked, and referenced inside this package only by the
+integrity manifests), which no native-core change can move — the replay path
+never loads `rkalos`, and its cross-run profile on this host is capture-host
+JVM variance, unrelated to the pin. The native-versus-JVM landing deviations
+D4 does move are governed by the fit matrix's own budgets — untouched — and
+were measured per field over 64 cases × both engines (serial lane):
+
+| field (backend path) | csv atol | native-vs-JVM max (64×2 fits) | governed by | action |
+| --- | ---: | ---: | --- | --- |
+| description/arima/btheta/[1] | 1e-8 | 4.87286502e-07 | fit-matrix assert (1e-4) | none |
+| description/arima/phi/[1] | 1e-8 | 2.15884184e-07 | " | none |
+| description/arima/theta/[1] | 1e-8 | 8.01349490e-08 | " | none |
+| description/arima/bphi/[1] | unregistered | 1.71730212e-08 | " | none |
+| estimation/parameters/val | 1e-9 | store↔description agreement <1e-9 in every fit; landing deviation is the coefficient class above | " | none |
+| estimation/parameters/score | 1e-9 | no native producer; JVM-replay field | JVM replay | none |
+
+The ruling's expectation that `theta` would need 1e-8 → 1e-7 was measured
+away: its 8.01e-08 deviation lives on the fit-matrix comparison (0.08 % of
+its own assert), not on any comparison the fixture table governs — and
+re-baselining a hash-locked JVM-parity fixture on a native deviation would
+have loosened the JVM-parity budget, which the ruling forbids.
+
+Qualification from a fresh clone and tarball into fresh lane libraries
+(`tmp_opencode/m12-rkalos`; clone-local candidate `b79d610`,
+`TRANSPLANT-IDENTICAL fail=0`): both lanes probe `0.1.0.9032` on core
+`6fee68c…` with the pinned provider `OpenBLAS 0.3.34 DYNAMIC_ARCH
+NO_AFFINITY USE_LOCKING SkylakeX SINGLE_THREADED`, per-lane `parallel` fields
+unchanged, `slicot_stationary_initialization = TRUE`. Build surface against
+the certified 9031 lane logs, both lanes: g++ 133 → 133 streams
+quote-normalized identical, gfortran 8 → 8 identical, `-fopenmp` counts
+unchanged (0 serial / 133 OMP), link line identical — D4 moves only code
+inside already-compiled translation units. The full corpus on the final
+(gen-2) trees: **310,308/310,308** serial and **310,312/310,312** OMP, 0
+failures, per-file tables byte-identical to the 9031 baselines (0 differing
+files per lane; the two raised pins relax assertions that pass at 3e-14, so
+no count moves). The isolated `--native` Java-free smoke (49 assertions)
+passed in both lanes with transcripts **byte-identical to the recorded
+m10-merge and m10-s2 verify logs** (which the 9031 entry records as
+byte-identical to the m8 baselines). The fit-matrix qualification
+(`verify-arma-fits.R --no-timing`, harness + oracle-host-pin overlay active,
+frozen oracle JAR hashes live-checked, thread-pinned, installed-lane mode)
+ran once per lane: 64 cases + 4 persistent controls, direct fits 144,
+**1,517 checks / 0 failures, PASS in both lanes**, maxima
+`coefficient 4.87286502e-07 / regression 8.96039670e-09 / objective
+1.10276233e-11 / density 1.12549969e-11` — both lanes digit-for-digit equal;
+against the 9031 lane readings the class maxima moved **+2.086e-13**
+(coefficient) and **+3.01e-15** (regression), inside the adopted ≤4.35e-12
+estimate-route class, with objective and density unchanged digit-for-digit;
+both moved maxima stay **below** the phase-1 recorded levels
+(4.87286739e-07 / 8.96040814e-09) and every class inside its predeclared
+assert (coefficient at 0.49 % of budget): no budget consumed, no
+stop-and-report, no re-pin. The CI provider fetch pins
+`ref: 6fee68c0a8d1fbe6816f26c06d7a00dbba0a5b8c`.
 
 ## The ec17543 re-pin: vendored SLICOT SB03MD stationary initialization on the R route (2026-11-26)
 

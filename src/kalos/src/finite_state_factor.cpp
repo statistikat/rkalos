@@ -254,5 +254,124 @@ DenseMatrix FiniteStateFactor::covariance(const Interrupt& interrupt) const {
     return result;
 }
 
+// Item-29 design D4 helpers (docs/item29-diffuse-filter-probe-2026-11-26.md
+// §6; qualification dossiers tmp_opencode/item29-d4/ and
+// tmp_opencode/item29-d4b/). Every accumulation is long double scratch with a
+// binary64 contract (docs/contracts/extended-precision-range-contract.md); the
+// band is the house 512*eps*dimension residual tolerance used by the diffuse
+// projection checks. The helpers only measure or replace this factor when the
+// caller's premise holds — a rejected certificate changes nothing here, and
+// the caller (the canonical SARIMA filter) records the route observably.
+bool FiniteStateFactor::certify_observation_nullity(const std::vector<double>& z,
+                                                    double& relative_residual) const {
+    // P^+Z = 0 through the factor: with P^+ = C C', ||P^+ z|| <= ||C||_2 ||C'z||,
+    // so a rounding-level relative ||C'z|| / (||z|| ||C||_F) certifies the
+    // nullity premise of the post-pivot induction at every named binary64 step.
+    const auto m = dimension();
+    if (z.size() != m) throw std::invalid_argument("finite state nullity dimensions must agree");
+    for (const auto value : z) if (!std::isfinite(value)) throw std::invalid_argument("finite state nullity coefficients must be finite");
+    std::vector<double> projected(m, 0);
+    for (std::size_t j = 0; j < m; ++j) {
+        long double value = 0;
+        for (std::size_t i = 0; i < m; ++i) value += static_cast<long double>(z[i]) * factor_(i, j);
+        projected[j] = checked(value);
+    }
+    double projected_norm = 0, loading_norm = 0, factor_norm = 0;
+    for (const auto value : projected) projected_norm = checked(kalos::detail::glibc_hypot(projected_norm, value));
+    for (const auto value : z) loading_norm = checked(kalos::detail::glibc_hypot(loading_norm, value));
+    for (const auto value : factor_.values()) factor_norm = checked(kalos::detail::glibc_hypot(factor_norm, value));
+    const long double scale = static_cast<long double>(loading_norm) * factor_norm;
+    relative_residual = scale == 0 ? 0 : checked(projected_norm / scale);
+    return relative_residual <= residual_tolerance * static_cast<double>(m);
+}
+
+bool FiniteStateFactor::certify_history_block(std::size_t stationary_rows,
+                                              double& relative_residual,
+                                              const Interrupt& interrupt) const {
+    // The post-pivot induction claims every factor row at or below index
+    // stationary_rows - 1 is mathematically zero, so its entries must sit at
+    // rounding level relative to the stationary rows. A genuine finite
+    // direction there — however weak — keeps the entrywise maximum above the
+    // band and fails the certificate closed (no weak-direction rank rule: the
+    // premise is structural, not a magnitude decision).
+    const auto m = dimension();
+    if (stationary_rows == 0 || stationary_rows >= m) {
+        relative_residual = 1;
+        return false;
+    }
+    double stationary = 0, history = 0;
+    for (std::size_t j = 0; j < m; ++j) {
+        checkpoint(interrupt);
+        for (std::size_t i = 0; i < m; ++i) {
+            const auto magnitude = std::abs(factor_(i, j));
+            if (i < stationary_rows) { if (magnitude > stationary) stationary = magnitude; }
+            else if (magnitude > history) history = magnitude;
+        }
+    }
+    if (stationary == 0) { relative_residual = history == 0 ? 0 : 1; return history == 0; }
+    relative_residual = checked(history / stationary);
+    return relative_residual <= residual_tolerance * static_cast<double>(m);
+}
+
+void FiniteStateFactor::compress_to_stationary_block(std::size_t stationary_rows,
+                                                     const Interrupt& interrupt) {
+    // The reduced route stores an r x r factor F with F F' equal to the
+    // stationary block M M' of the full factor's Gram (M = the top r rows,
+    // r x m). A Householder QR of the WIDE M would only reproduce the
+    // column Gram M' M conjugated by Q, not the row Gram, so the sweep runs
+    // on the tall transpose: M' = Q R gives M M' = R' R exactly up to the
+    // factorization residual, and F = R' is adopted after the reconstruction
+    // check below compares F F' against the long-double reference block.
+    const auto m = dimension();
+    if (stationary_rows == 0 || stationary_rows >= m) {
+        throw std::invalid_argument("post-pivot stationary block reduction needs a strict history split");
+    }
+    const int rows = static_cast<int>(m), columns = static_cast<int>(stationary_rows);
+    std::vector<double> block(static_cast<std::size_t>(m) * stationary_rows);
+    const auto& factor = factor_.values();
+    for (std::size_t i = 0; i < stationary_rows; ++i) {
+        for (std::size_t j = 0; j < m; ++j) block[j + rows * i] = factor[i + m * j];
+    }
+    std::array<double, max_states> tau;
+    int info = 0;
+    checkpoint(interrupt);
+    const int query_size = -1;
+    double query = 0;
+    lapack::dgeqrf(&rows, &columns, block.data(), &rows, tau.data(), &query, &query_size, &info);
+    checkpoint(interrupt);
+    if (info != 0) throw std::runtime_error("post-pivot stationary block workspace query failed");
+    const auto work_size = workspace_size(query, columns);
+    std::vector<double> work(static_cast<std::size_t>(work_size));
+    const int work_extent = static_cast<int>(work_size);
+    lapack::dgeqrf(&rows, &columns, block.data(), &rows, tau.data(), work.data(), &work_extent, &info);
+    checkpoint(interrupt);
+    if (info != 0) throw std::runtime_error("post-pivot stationary block compression failed");
+    DenseMatrix factor_reduced(stationary_rows, stationary_rows);
+    for (std::size_t a = 0; a < stationary_rows; ++a) {
+        for (std::size_t b = 0; b <= a; ++b) {
+            factor_reduced(a, b) = checked(block[b + rows * a]);
+        }
+    }
+    // Reconstruction residual: F F' must reproduce M M' at the house band;
+    // the reduced factor is adopted only on a passing check.
+    long double error = 0, scale = 0;
+    const auto& reduced = factor_reduced.values();
+    for (std::size_t a = 0; a < stationary_rows; ++a) {
+        for (std::size_t b = 0; b <= a; ++b) {
+            long double previous = 0, current = 0;
+            for (std::size_t k = 0; k < m; ++k) previous += static_cast<long double>(factor[a + m * k]) * factor[b + m * k];
+            for (std::size_t k = 0; k < stationary_rows; ++k) current += static_cast<long double>(reduced[a + stationary_rows * k]) * reduced[b + stationary_rows * k];
+            error = std::max(error, std::abs(previous - current));
+            scale = std::max(scale, std::abs(previous));
+        }
+    }
+    if (error > residual_tolerance * static_cast<long double>(m) * scale) {
+        throw std::runtime_error("post-pivot stationary block reduction failed its reconstruction residual check");
+    }
+    post_pivot_rebuild_residual_ = scale == 0 ? 0 : checked(error / scale);
+    factor_ = std::move(factor_reduced);
+    ++post_pivot_rebuild_count_;
+}
+
 } // namespace detail
 } // namespace kalos

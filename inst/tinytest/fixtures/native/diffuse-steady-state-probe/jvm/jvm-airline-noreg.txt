@@ -1,0 +1,11 @@
+CASE jvm-airline-noreg n=131 nx=0 nmissing=0 orders=(0,1,1)(0,1,1) arma=AR = 1.00000; MA = 1.00000 - 0.450000 B - 0.550000 B^12 + 0.247500 B^13; var =1.0 innovvar=1.0000000000000000
+TIMING acf-build-ns=5446221 acf-values-ns=29034 acf-dim=14
+TIMING eval=0 prepare-ns=34355 apply-ns=527022 apply-calls=1 det-ns=1028 other-ns=1626128 total-ns=2188533
+TIMING eval=1 prepare-ns=16374 apply-ns=189608 apply-calls=1 det-ns=409 other-ns=52537 total-ns=258928
+TIMING eval=2 prepare-ns=6480 apply-ns=204205 apply-calls=1 det-ns=332 other-ns=25893 total-ns=236910
+TIMING eval=3 prepare-ns=6198 apply-ns=195229 apply-calls=1 det-ns=269 other-ns=35458 total-ns=237154
+TIMING eval=4 prepare-ns=6013 apply-ns=168132 apply-calls=1 det-ns=290 other-ns=26181 total-ns=200616
+MACHINE dim=14 steadyPos=130 n=131 h0=1.5662562500000001 C0=-0.58612500000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.0000000000000000 0.24750000000000003 -0.66137500000000000 0.24750000000000003 0.0000000000000000 
+LL ssq=45.070688246187990 ldet=4.5493740778527410 loglik=-118.2694132401
+TIMING eval=5 prepare-ns=6098 apply-ns=162559 apply-calls=1 det-ns=276 other-ns=25809 total-ns=194742
+FULLCOMPUTER ll=-118.2694132401 ssq=45.070688246187990 nobs=131

@@ -1,0 +1,11 @@
+CASE jvm-airline4 n=91 nx=0 nmissing=0 orders=(0,1,1)(0,1,1) arma=AR = 1.00000; MA = 1.00000 - 0.350000 B - 0.600000 B^4 + 0.210000 B^5; var =1.0 innovvar=1.0000000000000000
+TIMING acf-build-ns=5606090 acf-values-ns=26527 acf-dim=6
+TIMING eval=0 prepare-ns=28444 apply-ns=401549 apply-calls=1 det-ns=1024 other-ns=1765121 total-ns=2196138
+TIMING eval=1 prepare-ns=13827 apply-ns=108984 apply-calls=1 det-ns=510 other-ns=34035 total-ns=157356
+TIMING eval=2 prepare-ns=7000 apply-ns=95348 apply-calls=1 det-ns=375 other-ns=29908 total-ns=132631
+TIMING eval=3 prepare-ns=6545 apply-ns=153839 apply-calls=1 det-ns=375 other-ns=23216 total-ns=183975
+TIMING eval=4 prepare-ns=6914 apply-ns=103148 apply-calls=1 det-ns=278 other-ns=25768 total-ns=136108
+MACHINE dim=6 steadyPos=90 n=91 h0=1.5266000000000000 C0=-0.47600000000000000 0.0000000000000000 0.21000000000000000 -0.67350000000000000 0.21000000000000000 0.0000000000000000 
+LL ssq=83.387427267258630 ldet=1.9339157914556182 loglik=-126.1153952052
+TIMING eval=5 prepare-ns=6466 apply-ns=92588 apply-calls=1 det-ns=331 other-ns=25591 total-ns=124976
+FULLCOMPUTER ll=-126.1153952052 ssq=83.387427267258630 nobs=91

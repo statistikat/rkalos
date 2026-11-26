@@ -1,0 +1,11 @@
+CASE jvm-mixed4 n=91 nx=0 nmissing=0 orders=(0,1,0)(1,1,1) arma=AR = 1.00000 - 0.300000 B^4; MA = 1.00000 - 0.500000 B^4; var =1.0 innovvar=1.0000000000000000
+TIMING acf-build-ns=3214011 acf-values-ns=1895031 acf-dim=5
+TIMING eval=0 prepare-ns=40624 apply-ns=366224 apply-calls=1 det-ns=1058 other-ns=1515626 total-ns=1923532
+TIMING eval=1 prepare-ns=19604 apply-ns=109412 apply-calls=1 det-ns=464 other-ns=27530 total-ns=157010
+TIMING eval=2 prepare-ns=9974 apply-ns=100700 apply-calls=1 det-ns=302 other-ns=25047 total-ns=136023
+TIMING eval=3 prepare-ns=9536 apply-ns=69732 apply-calls=1 det-ns=319 other-ns=21572 total-ns=101159
+TIMING eval=4 prepare-ns=9451 apply-ns=71568 apply-calls=1 det-ns=288 other-ns=22592 total-ns=103899
+MACHINE dim=5 steadyPos=90 n=91 h0=1.0439560439560440 C0=0.0000000000000000 0.0000000000000000 0.0000000000000000 -0.18681318681318680 0.0000000000000000 
+LL ssq=88.681391164984390 ldet=0.22781957170988498 loglik=-128.0629870414
+TIMING eval=5 prepare-ns=9448 apply-ns=67478 apply-calls=1 det-ns=300 other-ns=21583 total-ns=98809
+FULLCOMPUTER ll=-128.0629870414 ssq=88.681391164984390 nobs=91
