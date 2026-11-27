@@ -232,6 +232,9 @@ struct X13StockLikelihood {
     std::vector<double> full_residuals; // starts after d + 12*bd observations
     int start_year = 0, start_month = 0; // input domain
     std::vector<double> regression_covariance; // row-major, in fitted model order
+    std::vector<double> coefficients; // the final-likelihood regression coefficients
+    // in the same fitted model order the covariance uses: the mean first when
+    // the description carries it, then the stock calendar, then the outliers.
 };
 
 // Stock estimated RSA2c calendar variables precede the outlier variables in model order.
@@ -312,5 +315,20 @@ struct X13StockForecastErrors {
 // Public original-scale preprocessing forecast uncertainty (y_ef). A nonnegative
 // month count begins immediately after the input. Zero requests an empty result.
 X13StockForecastErrors x13_stock_forecast_errors(const X13AutomaticFitResult& fit, int months);
+
+// Automatic-route y_ef over ANY complete automatic landing (M13-P5): the JVM
+// RegArimaForecasts.calcForecast semantics on the final-model likelihood —
+// the transformed series (regression effects included) filtered by the exact
+// diffuse filter, the fitted-order design columns (the JVM mean-correction
+// constant included as the TrendConstant year counter when the description
+// carries the mean) extended over the forecast horizon, the innovation
+// variance ssq/(effective - estimated) on the model term and the final
+// likelihood covariance UNSCALED on the regression quadratic form. Same
+// answer contract as x13_stock_forecast_errors: months < 0 or a shape
+// violation throws, zero months answers "no_requested_predictions" and a
+// non-certifiable variance answers "covariance_range". Its domain is any
+// available fit whose likelihood surface is complete; the airline-only
+// stock consumer above keeps its pinned route.
+X13StockForecastErrors x13_automatic_forecast_errors(const X13AutomaticFitResult& fit, int months);
 } // namespace kalos
 #endif

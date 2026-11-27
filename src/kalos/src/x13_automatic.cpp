@@ -37,6 +37,7 @@
 
 #include "kalos/detail/x13_effective_mode.hpp"
 #include "kalos/x13_automatic.hpp"
+#include "sarima_forecast_uncertainty.hpp"
 #include "tramo_airline_forecast.hpp"
 
 #include "kalos/detail/fdlibm.hpp"
@@ -1898,7 +1899,7 @@ class AutomaticPipeline {
     for (double& v : diagnostics.unscaled_covariance) v *= scale;
     result_.stock_likelihood = X13StockLikelihood{
         fit->ssq_err, npar, std::move(residuals), request_.first_year, request_.first_period,
-        std::move(diagnostics.unscaled_covariance)};
+        std::move(diagnostics.unscaled_covariance), std::move(fit->b)};
     result_.log_likelihood = fit->log_likelihood;
     return fit->b;
   }
@@ -2413,6 +2414,83 @@ X13StockForecastErrors x13_stock_forecast_errors(const X13AutomaticFitResult& fi
   const double variance = stats.residual_ssq / static_cast<double>(fit.effective_observations - stats.estimated_parameters);
   auto errors = detail::airline_forecast_uncertainty(std::move(response), columns, false, fit.log,
       fit.coefficients[1][0], fit.coefficients[3][0], coefficients, stats.regression_covariance, variance, months);
+  if (!errors) return {"covariance_range", {}};
+  return {"available", std::move(*errors)};
+}
+
+namespace {
+
+// The JVM mean-correction design column (TrendConstantFactory.compute): the
+// step response of 1 / D(B) for the description's own differencing polynomial,
+// zeros before degree D, then value 1 - sum_i D_i * value[t - i]. With
+// d + bd = 1 this is the whole-year counter 0, 1, ... the capture shows; with
+// no differencing it degenerates to the constant one.
+std::vector<double> trend_constant_column(int d, int bd, std::size_t len) {
+  const auto difference = difference_polynomial(d, bd, kAnnualFrequency);
+  const std::size_t degree = difference.size() - 1;
+  std::vector<double> column(len, 0.);
+  for (std::size_t t = degree; t < len; ++t) {
+    double value = 1.;
+    for (std::size_t i = 1; i <= degree; ++i) value -= difference[i] * column[t - i];
+    column[t] = value;
+  }
+  return column;
+}
+
+} // namespace
+
+X13StockForecastErrors x13_automatic_forecast_errors(const X13AutomaticFitResult& fit, int months) {
+  if (fit.status != "available" || !fit.stock_likelihood ||
+      fit.stock_likelihood->full_residuals.size() != fit.effective_observations ||
+      fit.effective_observations <= fit.stock_likelihood->estimated_parameters)
+    throw std::invalid_argument("requires an available X-13 automatic fit with the final-model likelihood surface");
+  if (months < 0) throw std::invalid_argument("invalid X-13 forecast horizon");
+  if (!months) return {"no_requested_predictions", {}};
+  const auto& stats = *fit.stock_likelihood;
+  const auto& observed = fit.fit.preadjustment.a1;
+  if (observed.empty() ||
+      observed.size() != fit.effective_observations + static_cast<std::size_t>(fit.d + 12 * fit.bd))
+    throw std::invalid_argument("invalid X-13 automatic forecast domain");
+  if (observed.size() > static_cast<std::size_t>(std::numeric_limits<int>::max() - months))
+    throw std::length_error("extended X-13 automatic forecast domain exceeds index range");
+  if (fit.coefficients[0].size() != static_cast<std::size_t>(fit.p) ||
+      fit.coefficients[1].size() != static_cast<std::size_t>(fit.q) ||
+      fit.coefficients[2].size() != static_cast<std::size_t>(fit.bp) ||
+      fit.coefficients[3].size() != static_cast<std::size_t>(fit.bq))
+    throw std::invalid_argument("X-13 automatic ARMA blocks mismatch the description");
+  const calendar_domain domain{stats.start_year, stats.start_month, 12,
+      static_cast<int>(observed.size()) + months};
+
+  // The transformed series including every in-sample effect (the JVM regY()
+  // response: no RSA3 variable is flagged preadjustment, so nothing is
+  // removed before the filter).
+  std::vector<double> response = observed;
+  std::vector<std::vector<double>> columns;
+  if (fit.mean) columns.push_back(trend_constant_column(fit.d, fit.bd, response.size() + months));
+  if (fit.stock_calendar) {
+    const auto& calendar = *fit.stock_calendar;
+    auto calendar_columns = x13_rsa2c_calendar_columns(calendar.selection, fit.log, domain);
+    columns.insert(columns.end(), calendar_columns.begin(), calendar_columns.end());
+    if (fit.log && calendar.selection.working_days) {
+      const auto factors = x13_rsa2c_leap_factors(domain, false);
+      for (std::size_t i = 0; i < response.size(); ++i) response[i] *= factors[i];
+    }
+  }
+  if (fit.log) for (auto& value : response) value = detail::fdlibm_log(value);
+  for (const auto& effect : fit.variables) {
+    auto& column = columns.emplace_back(observed.size() + months);
+    fill_outlier_column(effect.type, effect.position, 12, 0.7, column);
+  }
+  const auto p = columns.size();
+  if (stats.coefficients.size() != p || stats.regression_covariance.size() != p * p ||
+      1 + p + static_cast<std::size_t>(fit.p + fit.q + fit.bp + fit.bq) != stats.estimated_parameters)
+    throw std::invalid_argument("invalid X-13 automatic regression surface");
+  const double variance =
+      stats.residual_ssq / static_cast<double>(fit.effective_observations - stats.estimated_parameters);
+  auto errors = detail::sarima_forecast_uncertainty(response, columns,
+      fit.coefficients[0], fit.coefficients[2],
+      fit.coefficients[1], fit.coefficients[3], fit.d, fit.bd,
+      stats.coefficients, stats.regression_covariance, variance, fit.log, months);
   if (!errors) return {"covariance_range", {}};
   return {"available", std::move(*errors)};
 }

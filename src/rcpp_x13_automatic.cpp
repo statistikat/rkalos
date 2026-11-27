@@ -517,6 +517,19 @@ Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period
         product["residuals"]=wrap_monthly_residuals(result.stock_likelihood->full_residuals,
             diagnostic.standard_error,diagnostic.ljung_box,diagnostic.normality);
     }
+    if(result.status=="available" && result.stock_likelihood) {
+        // Public original-scale preprocessing forecast uncertainty (y_ef) on the
+        // automatic route (M13-P5): the estimated entry's series_forecast_stdev
+        // pair mirrored name-for-name, fed by kalos::x13_automatic_forecast_errors
+        // over this fit's own landing horizon. The core entry's domain is an
+        // available fit with the complete final-model surface; outside it the
+        // fields stay ABSENT (never an estimated-on-the-side value), and inside it
+        // the entry's own statuses ("available", "no_requested_predictions",
+        // "covariance_range") pass through verbatim, its shape guards thrown.
+        const auto errors=kalos::x13_automatic_forecast_errors(result, result.fit.forecast);
+        product["series_forecast_stdev_status"]=errors.status;
+        product["series_forecast_stdev"]=errors.standard_errors;
+    }
     return product;
 }
 

@@ -895,7 +895,13 @@ SarimaEstimationResult estimate_sarima_fixed(
         result.status = chain.producing_status;
         result.converged = false;
         result.coefficients = std::move(physical);
-        return result; // log_likelihood stays NaN: no candidate was retained.
+        // No candidate was retained, so there is no likelihood to report. The
+        // field has no default initializer: it must be written explicitly, or
+        // the result carries the last value this storage held (the M13 stale-
+        // likelihood defect: an initial_unavailable chain returned the
+        // process's last-computed log-likelihood from the reused stack slot).
+        result.log_likelihood = unavailable();
+        return result;
     }
     result.coefficients = std::move(chain.best.coefficients);
     result.log_likelihood = chain.best.log_likelihood;
@@ -971,7 +977,10 @@ SarimaEstimationResult optimize_sarima_from(const SarimaEstimationRequest& reque
         result.status = pass.optimizer_status;
         result.converged = false;
         result.coefficients = std::move(physical);
-        return result; // log_likelihood stays NaN: no candidate was retained.
+        // Same explicit missing likelihood as estimate_sarima_fixed: the
+        // field's default is indeterminate and this path retains no candidate.
+        result.log_likelihood = unavailable();
+        return result;
     }
     result.coefficients = std::move(pass.coefficients);
     result.log_likelihood = pass.log_likelihood;

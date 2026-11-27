@@ -124,6 +124,7 @@ OBJECTS = RcppExports.o \
   kalos/src/outlier_scan_engine.o \
   kalos/src/outlier_scoring.o \
   kalos/src/regression_variable_tests.o \
+  kalos/src/sarima_forecast_uncertainty.o \
   kalos/src/sarima_stabilization.o \
   kalos/src/special_functions.o \
   kalos/src/ssq_deviances.o \

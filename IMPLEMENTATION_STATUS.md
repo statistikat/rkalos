@@ -1,8 +1,105 @@
 # rkalos implementation status
 
-Updated **2026-11-27**. Persephone uses the independent rkalos package.
+Updated **2026-11-28**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
+
+## The batched 69f83be re-pin: the stale-likelihood fix and the automatic-route forecast errors, measured at zero movement (2026-11-28)
+
+Version `0.1.0.9033` re-pins the vendored core `6fee68c0a8d1fbe6816f26c06d7a00dbba0a5b8c` →
+`69f83bed575d578467c2d6ce1449d11b854246c0` (lock schema 2; verified 220 core,
+112 fixture and 472 evidence files — core up by exactly the two new
+`src/kalos/src/sarima_forecast_uncertainty.{hpp,cpp}` units, fixtures and
+evidence unmoved). The pin is the kalos ledger tip again, the
+`e2138a3`/`20e6063`/`7c3eefd`/`ec17543`/`6fee68c` convention. It is BATCHED by
+design: one downstream propagation carries the two commits that landed after
+the 9032 pin — `33c6c8a`, the stale-likelihood leak: a no-candidate-retained
+`estimate_sarima_fixed`/`optimize_sarima_from` result now reports the missing
+likelihood explicitly instead of the last value the reused stack slot held
+(the two failure-path returns are the entire diff), and `69f83be`, the
+additive public entry `kalos::x13_automatic_forecast_errors` — the JVM
+`RegArimaForecasts.calcForecast` y_ef surface for complete automatic landings,
+replayed in the core against the nine-case dual-JVM panel at a 1e-12 relative
+tier (144 predictions, measured worst 1.86e-14) — together with the
+`X13StockLikelihood.coefficients` export it rides on. The fix touches only
+failure paths and the feature only adds, so this lane's gate was expectation
+ZERO movement of every certified baseline, and that is what was measured.
+
+Vendored churn is exactly `src/kalos/src/estimation_control.cpp` (the
+stale-likelihood fix), `src/kalos/include/kalos/x13_automatic.hpp` and
+`src/kalos/src/x13_automatic.cpp` (the new entry and the likelihood-field
+export), the new `src/kalos/src/sarima_forecast_uncertainty.{hpp,cpp}` pair
+(the private engine; the `.hpp` is header-only at the R boundary),
+`src/kalos/CMakeLists.txt` (inert for the R source build), the generated
+`revision.hpp` and the two lock files. Nothing removed, nothing renamed;
+`python3 tools/sync-core.py --verify` passes on the exported tree.
+
+The new R surface mirrors the estimated route's forecast-SE pair name-for-name.
+`native_x13_fit_automatic` now places `series_forecast_stdev_status` and
+`series_forecast_stdev` on the envelope where `native_x13_estimated_fit`
+places them (the shared dating decorator already ts-forms the field exactly
+like the stock route's), fed by `kalos::x13_automatic_forecast_errors` over
+the fit's own landing horizon. The core entry's domain is an available fit
+with the complete final-model surface: the pair is gated on exactly that and
+stays ABSENT outside it — never an estimated-on-the-side value — while inside
+it the entry's own statuses (`available`, `no_requested_predictions`,
+`covariance_range`) pass through verbatim and its shape guards throw.
+`src/Makevars.in` and `src/Makevars.win.in` OBJECTS gain the one new core
+unit. `capabilities()` stays byte-unchanged: the automatic_fit module is
+pinned as an ordered `names()` vector by the baseline corpus
+(test-native-x13-automatic.R), an advertise bit was tried, that pin measured
+it as movement, and it was withdrawn — extending that schema is not in this
+lane's authority; the existing roxygen return text for `native_x13_fit`
+("When available, `series_forecast_stdev` reports standard errors of the
+original-series forecasts") already described the field truthfully. The new
+`test-native-x13-forecast-errors.R` (13 assertions, both lanes) pins the RSA3
+AirPassengers (the oracle panel's `stock_rsa3_air` request) y_ef envelope
+words BIT-exact against the recorded core-entry output — a plumbing-fidelity
+claim: the engine-vs-JVM agreement is the core's replay (worst 1.86e-14),
+this pin asserts the boundary delivers those certified words unmodified and
+correctly dated, and cross-checks them against the synced evidence `y_ef_24`
+row at the core's 1e-12 tier (measured here: 1.86e-14, matching the core's
+worst); the serial and OMP recordings are bit-identical. The zero-horizon fit
+answers `no_requested_predictions` with an empty vector, and the documented
+21-I refusal carries neither field.
+
+Qualification from a fresh clone and tarball into fresh lane libraries
+(`tmp_opencode/m13-rkalos`, transplant `TRANSPLANT-IDENTICAL fail=0`): both
+lanes probe `0.1.0.9033` on core `69f83be…` with the pinned provider
+`OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX
+SINGLE_THREADED`, per-lane parallel fields unchanged,
+`slicot_stationary_initialization = TRUE`. Build surface against the certified
+9032 lane logs, both lanes: g++ 133 → 134 with the single addition of the
+`sarima_forecast_uncertainty.cpp` compile, gfortran 8 → 8 identical,
+`-fopenmp` line counts 0 serial and 133 → 134 OMP (the +1 is that same
+compile), link line + exactly the `kalos/src/sarima_forecast_uncertainty.o`
+token — everything else identical. The full corpus: **310,321/310,321** serial
+and **310,325/310,325** OMP, 0 failures; the 69 baseline per-file rows are
+**byte-identical** to the 9032 certified logs in both lanes (0 value-diff,
+0 byte-diff) and the new file's 13/13/0 is reported separately — the totals
+move by exactly the new file, nothing else. The isolated `--native` Java-free
+smoke passed in both lanes with transcripts **byte-identical to the 9032
+certified verify logs**. The fit-matrix qualification
+(`verify-arma-fits.R --no-timing`, harness + oracle-host-pin overlay, frozen
+oracle JAR hashes live-checked, thread-pinned, installed-lane mode) ran once
+per lane — the harness was rebuilt for this lane after the `m9-perf` purge per
+the 9032 entry's recipe (the kalos@69f83be validation tree exported from git
+objects, the six harness-relevant files hash-recorded; host-pin overlay
+regenerated live, JAR hashes still live-checked): 64 cases + 4 persistent
+controls, direct fits 144, **1,517 checks / 0 failures, PASS in both lanes**,
+maxima `coefficient 4.87286502e-07 / regression 8.96039670e-09 / objective
+1.10276233e-11 / density 1.12549969e-11` — every class digit-for-digit at the
+9032 readings, the full transcripts **byte-identical** to the certified 9032
+qual logs: zero movement, no budget consumed, no stop, no re-pin. The CI
+provider fetch pins `ref: 69f83bed575d578467c2d6ce1449d11b854246c0`.
+
+Downstream needs no change: persephone3's `R/forecasts.R`
+`native_automatic_forecasts` already consumes the pair by name — status
+`"available"` gates the `errors$y` arm behind an `effective_forecast` length
+guard, any other status string becomes the recorded reason, absence keeps the
+default "no forecast standard errors" reason — so the automatic route's
+forecast contract completes with this envelope addition. pykalos carries the
+same core propagation separately.
 
 ## The 6fee68c re-pin: the certified post-pivot diffuse filter, measured drift, empty fixture re-pin (2026-11-27)
 
