@@ -2494,4 +2494,21 @@ X13StockForecastErrors x13_automatic_forecast_errors(const X13AutomaticFitResult
   if (!errors) return {"covariance_range", {}};
   return {"available", std::move(*errors)};
 }
+
+X13AutomaticIrregularForecast x13_automatic_irregular_forecast(const X13AutomaticFitResult& fit) {
+  if (fit.status != "available")
+    throw std::invalid_argument("requires an available X-13 automatic fit");
+  // The JVM X13Extractor i_f gate chain (X13Extractor.class lambda$new$28):
+  // finals absent -> null; D12a absent or empty -> null; else the constant.
+  const auto& finals = fit.fit.finals;
+  if (finals.status != "available") return {"unavailable", {}};
+  if (fit.fit.forecast < 0 ||
+      finals.d12a.size() != static_cast<std::size_t>(fit.fit.forecast))
+    throw std::invalid_argument("invalid X-13 automatic irregular-forecast domain");
+  if (finals.d12a.empty()) return {"no_requested_predictions", {}};
+  const bool multiplicative =
+      fit.fit.mode_effective == X11DecompositionMode::multiplicative ||
+      fit.fit.mode_effective == X11DecompositionMode::log_additive;
+  return {"available", std::vector<double>(finals.d12a.size(), multiplicative ? 1. : 0.)};
+}
 }  // namespace kalos

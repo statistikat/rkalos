@@ -136,6 +136,13 @@ A named list. Check \code{status} or \code{fitted} before
   available fit: the published statistics \code{m1} to \code{m11},
   \code{q} and \code{qm2}, the quality grades \code{q_grade} and
   \code{qm2_grade}, and the battery's own \code{status}.
+  \code{irregular_forecast} reports the published irregular-component
+  forecast for an available fit, as the reference publishes it: the
+  constant placeholder over the finals trend-forecast domain, as the
+  pair \code{status} and \code{values} — 1.0 on multiplicative-domain
+  fits (including log fits) and 0.0 on additive and pseudo-additive
+  fits, with the zero-horizon status \code{"no_requested_predictions"}
+  and an empty vector.
 }
 \description{
 \code{native_x13_fit()} adjusts for supplied regression effects and

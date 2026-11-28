@@ -4,6 +4,126 @@ Updated **2026-11-28**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## The batched 1e2e3c8 re-pin: the published X-13 irregular forecast on both X-13 envelopes, measured at zero movement (2026-11-28)
+
+Version `0.1.0.9035` re-pins the vendored core `c3706eac58ac50ac0196a11500926b1ea99b217d` →
+`1e2e3c896ade4f67124f057c0aa5a0fedd4fc734` (lock schema 2; verified 222 core,
+112 fixture and 476 evidence files — core UNMOVED at 222 because the batch is
+the i_f slice alone: the two changed core units `src/kalos/include/kalos/
+x13_automatic.hpp`/`src/kalos/src/x13_automatic.cpp` join the existing
+`x13_automatic.o` translation unit, no new unit, and the export carries
+exactly the two-file `native/x13-automatic-iforecast/` evidence panel into
+`inst/tinytest/fixtures/`; fixtures unmoved). The pin is the kalos ledger tip
+again. The batch is a single commit: `1e2e3c8` publishes the X-13
+irregular-component forecast — `kalos::x13_automatic_irregular_forecast` over
+ANY complete automatic landing, the transcription of the JVM `X13Extractor`'s
+`i_f` product settled by the bytecode dossier (`javap` on
+`X13Extractor.class`, the `lambda$new$28` chain `getFinals`/`getD12a`/`size`/
+`getMode`/`isMultiplicative`, methods #357/#394/#462/#465/#469): i_f is NOT
+model-based, it is the CONSTANT placeholder the extractor manufactures on the
+finals trend-forecast (D12a) domain — 1.0 under the JVM
+`DecompositionMode.isMultiplicative()` predicate (Multiplicative OR
+LogAdditive), +0.0 otherwise (Additive, PseudoAdditive) — with no mean
+correction (the mean-corrected `rsa3_ao` capture answers 1.0), no
+back-transform (the log fit answers `i_f ≡ 1.0` verbatim) and D12a
+contributing its domain only, never its words. The gates mirror the extractor
+one-for-one: finals absent answers `"unavailable"` (defensive natively), a
+zero forecast horizon answers `"no_requested_predictions"`, a non-available
+fit or a finals-domain/horizon disagreement throws. The core replayed it
+against the thirteen-case double-JVM panel with BIT claims for all 144
+published words (12/12 word-exact, `I_F_LINES_BIT_IDENTICAL_12_OF_12`) in 551
+checks. The expectation for this lane was again ZERO movement of every
+certified baseline, and that is what was measured.
+
+Vendored churn is exactly the two changed core units, `src/kalos/CMakeLists.txt`
+(inert for the R source build), the generated `revision.hpp` and the two lock
+files, plus the two new evidence fixtures; nothing removed, nothing renamed;
+`python3 tools/sync-core.py --verify` passes on the exported tree. No
+`Makevars` change: the entry joins an already-listed translation unit.
+
+The new R surface mirrors the entry onto BOTH X-13 envelopes — the automatic
+route (`native_x13_fit_automatic`) and the estimated-template route
+(`native_x13_estimated_fit`) — a domain established from the synced header and
+a live compile check of the vendored headers (the entry takes the full
+`X13AutomaticFitResult`, which is exactly what both routes land), not from
+prose. The forecast answers as the list `irregular_forecast` carrying the two
+members the entry names itself, under those names: `status` — the arms
+`"available"`, `"no_requested_predictions"` and the defensive finals-null
+`"unavailable"` pass through verbatim — and `values`, the reference's constant
+exactly as it publishes it. The entry throws outside the available fit, so
+the surface is gated on the fit's own available status and stays ABSENT
+otherwise (never an estimated-on-the-side value). `capabilities()` stays
+byte-unchanged (the advertise-bit precedent stands); the roxygen return text
+of the two exported wrappers and their two regenerated Rd files carry one
+sentence each on the new field. The new `test-native-x13-iforecast.R`
+(106 assertions, both lanes) pins the two gold envelopes — automatic
+`stock_rsa3_air`, estimated `stock_rsa0_air` — BIT-exact against the core
+entry's output recorded live from the installed 9035 lanes (the serial and OMP
+recordings bit-identical; plumbing fidelity — the engine-vs-JVM claim is the
+core's replay), and asserts the constant semantics HONESTLY by mode, values
+established live and quoted: the log fit (mode_effective `multiplicative`,
+model log TRUE) answers twelve times `3ff0000000000000` = 1.0 verbatim, the
+additive-level gold answers twelve times `0000000000000000` = +0.0 (the byte
+pattern pins the sign — a negative zero would read `8000000000000000`),
+explicit `log_additive` answers 1.0 (the JVM predicate counts LogAdditive),
+explicit `pseudo_additive` answers +0.0 — the JVM `DecompositionMode`
+predicate, unlike the X11 context's `isMultiplicative()`, measured to
+separate at exactly this boundary — and the level arm on the automatic lane
+(log decision suppressed, mode_effective `additive`) answers +0.0. The
+twelve-case cross-check against the synced iforecast evidence rows is
+hex-BIT for every published word (constants, not a tolerance claim), the
+count equals the evidence D12a-domain count and the answered constant follows
+the JVM predicate read off each evidence info line. Both reachable status arms
+are pinned: the zero-horizon `"no_requested_predictions"` with the empty
+vector and the synced battery's null row (`d12a null`, `i_f null`), and the
+`"unavailable"` finals-null arm asserted honestly as the entry's defensive
+half — no boundary-reachable fit produces it (every available landing carries
+its finals), and the boundary is verified never to fabricate it. The refusal
+shape holds: the documented 21-I refusal carries no `irregular_forecast` at
+all.
+
+Qualification from a fresh clone and tarball into fresh lane libraries
+(`tmp_opencode/m15-rkalos`, transplant `TRANSPLANT-IDENTICAL fail=0` over all
+16 M15 paths): both lanes probe `0.1.0.9035` on core `1e2e3c8…` with the
+pinned provider `OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING
+SkylakeX SINGLE_THREADED`, per-lane parallel fields unchanged,
+`slicot_stationary_initialization = TRUE` — the version logs differ from the
+9034 certified ones ONLY in the lane/version/core lines. Build surface against
+the certified 9034 lane artifacts, both lanes: g++ 135 → 135 with the stream
+line-identical (no new translation unit: `x13_automatic.cpp` and
+`rcpp_x13_automatic.cpp` recompile in place under unchanged flags), gfortran
+8 → 8 identical, `-fopenmp` line counts 0 serial and 135 → 135 OMP, and the
+link line is token-identical (zero `.o` delta — the expected empty version of
+the "delta = only expected .o tokens" check). The full corpus: **310,523/
+310,523** serial and **310,527/310,527** OMP, 0 failures; the 71 shared
+per-file rows are **byte-identical** to the 9034 certified logs in both lanes
+(0 value-diff, 0 byte-diff) and the new file's 106/106/0 is reported
+separately — the totals move by exactly the new file (9034's 310,417/310,421
++ 106), nothing else. The isolated `--native` Java-free smoke passed in both
+lanes with transcripts **byte-identical to the 9034 certified verify logs** —
+the new envelope field adds nothing to the probe surface. The fit-matrix
+qualification (`verify-arma-fits.R --no-timing`, harness + oracle-host-pin
+overlay, frozen oracle JAR hashes live-checked, thread-pinned, installed-lane
+mode) ran once per lane — the harness re-exported from git objects at
+`1e2e3c8` per the 9033/9034 entries' recipe, its six harness-relevant files
+hash-IDENTICAL to the 9034-generation record, the harness-local
+`ORACLE_HOST_PIN` seam re-applied to the exported `extended-fixtures.R`
+(only the provenance comment word differs from the m14 harness file), the
+host-pin overlay regenerated live: 64 cases + 4 persistent controls, direct
+fits 144, **1,517 checks / 0 failures, PASS in both lanes**, maxima
+`coefficient 4.87286502e-07 / regression 8.96039670e-09 / objective
+1.10276233e-11 / density 1.12549969e-11` — every class digit-for-digit at the
+9034 readings, the full transcripts **byte-identical** to the certified 9034
+qual logs: zero movement, no budget consumed, no stop, no re-pin. The CI
+provider fetch pins `ref: 1e2e3c896ade4f67124f057c0aa5a0fedd4fc734`.
+
+Downstream: the persephone3 consumer lane follows — the forecast is additive
+on both envelopes under the field name `irregular_forecast` with the entry's
+member names, so consumers read it by name and nothing existing changes; the
+consumer's `i_f`-unavailable honesty-pin retirement is the SEPARATE
+maintainer authorization the core ledger names, and nothing here presumes or
+performs it. pykalos carries the same core propagation separately.
+
 ## The batched c3706ea re-pin: the X-11 diagnostic battery on both X-13 envelopes, measured at zero movement (2026-11-28)
 
 Version `0.1.0.9034` re-pins the vendored core `69f83bed575d578467c2d6ce1449d11b854246c0` →

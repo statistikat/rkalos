@@ -545,6 +545,25 @@ if(KALOS_BUILD_TESTS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
     TIMEOUT 3600)
+  # M14 (slice P5, i_f half): the thirteen-case double-JVM public X-13
+  # irregular-forecast oracle — the model-free X13Extractor placeholder (1.0
+  # under the JVM multiplicative predicate, +0.0 otherwise) on the finals
+  # D12a domain — replayed word-exact through kalos::x13_automatic_irregular_
+  # forecast over the automatic and estimated-template lanes, with the
+  # zero-horizon D12a-empty arm and the non-available-fit guard. The d12a
+  # rows are domain claims only (the measured content drift is quoted in the
+  # test header).
+  add_executable(test_x13_automatic_iforecast tests/test_x13_automatic_iforecast.cpp)
+  target_link_libraries(test_x13_automatic_iforecast PRIVATE kalos::kalos)
+  target_compile_definitions(test_x13_automatic_iforecast PRIVATE
+    KALOS_X13_IFORECAST_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-automatic-iforecast/iforecast-x86_64.txt"
+    KALOS_X13_TEMPLATE_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles")
+  add_test(NAME test_x13_automatic_iforecast
+           COMMAND test_x13_automatic_iforecast)
+  set_tests_properties(test_x13_automatic_iforecast PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
+    TIMEOUT 3600)
 endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

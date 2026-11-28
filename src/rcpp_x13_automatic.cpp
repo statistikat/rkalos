@@ -392,6 +392,30 @@ void attach_x11_mstats(Rcpp::List& product, const kalos::X13FitResult& fit) {
     battery["qm2_grade"]=m.qm2_grade;
     product["x11_mstats"]=battery;
 }
+// The public irregular-component forecast at the R boundary (M15): the
+// transcription of the JVM X13Extractor's i_f product — the CONSTANT placeholder
+// the reference publishes on the finals trend-forecast (D12a) domain — fed by
+// kalos::x13_automatic_irregular_forecast over the landed fit (the live-compile
+// check established that both routes land the full X13AutomaticFitResult the
+// entry takes: the automatic lane and the RSA0/RSA1/RSA2c estimated-templates
+// lane). The forecast answers as the list "irregular_forecast" carrying the two
+// members the core entry names itself, under those names: "status" — "available",
+// "no_requested_predictions" and the defensive finals-null arm "unavailable"
+// pass through verbatim — and "values", the reference's constant as it publishes
+// it: 1.0 on the multiplicative domain (Multiplicative OR LogAdditive, so the
+// log fits answer 1.0 verbatim, never exponentiated) and +0.0 otherwise
+// (Additive, PseudoAdditive), with no model, no mean correction and no
+// back-transform, the d12a domain contributing its shape only, never its words.
+// The entry throws std::invalid_argument on a non-available fit or a finals
+// domain disagreeing with the echoed horizon, so the surface is gated on the
+// fit's own available status and stays ABSENT outside that domain.
+void attach_x13_iforecast(Rcpp::List& product, const kalos::X13AutomaticFitResult& result) {
+    const auto iforecast=kalos::x13_automatic_irregular_forecast(result);
+    Rcpp::List surface;
+    surface["status"]=iforecast.status;
+    surface["values"]=iforecast.values;
+    product["irregular_forecast"]=surface;
+}
 }
 // [[Rcpp::export(name = ".native_x13_fit_automatic")]]
 Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period,
@@ -563,6 +587,13 @@ Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period
         // and trend-regression refusals as their explicit verbatim statuses.
         attach_x11_mstats(product, result.fit);
     }
+    if(result.status=="available") {
+        // The published irregular-component forecast on the automatic route (M15):
+        // the reference's constant placeholder over the finals D12a domain, gated on
+        // the fit's own available status — the core entry throws outside it — and
+        // answering the zero-horizon arm "no_requested_predictions" verbatim.
+        attach_x13_iforecast(product, result);
+    }
     return product;
 }
 
@@ -605,6 +636,12 @@ Rcpp::List native_x13_estimated_fit(const std::vector<double>& observations, int
         // the same pinned Mstatistics publication as the automatic entry, on
         // the same available-status gate the core entry's throw implies.
         attach_x11_mstats(product, result.fit);
+    }
+    if (result.status == "available") {
+        // The published irregular-component forecast on the estimated-template route
+        // (M15): the same constant placeholder as the automatic entry, on the same
+        // available-status gate the core entry's throw implies.
+        attach_x13_iforecast(product, result);
     }
     return product;
 }

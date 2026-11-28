@@ -330,5 +330,27 @@ X13StockForecastErrors x13_stock_forecast_errors(const X13AutomaticFitResult& fi
 // available fit whose likelihood surface is complete; the airline-only
 // stock consumer above keeps its pinned route.
 X13StockForecastErrors x13_automatic_forecast_errors(const X13AutomaticFitResult& fit, int months);
+
+struct X13AutomaticIrregularForecast {
+    std::string status; // "available", "no_requested_predictions" or "unavailable"
+    std::vector<double> values;
+};
+// Public irregular-component forecast (i_f) over ANY complete automatic
+// landing (M14): the transcription of the JVM X13Extractor's i_f product, the
+// constant placeholder the reference publishes on the finals trend-forecast
+// (D12a) domain — 1.0 under the JVM multiplicative-decomposition predicate
+// (DecompositionMode.isMultiplicative(): Multiplicative OR LogAdditive),
+// +0.0 otherwise (Additive, PseudoAdditive). The field uses no model, no mean
+// correction and no back-transform: the live captures show the constant
+// emitted verbatim on the reported scale even for log fits (rsa3_air log=true
+// answers i_f ≡ 1.0, and the mean-corrected rsa3_ao unchanged), with d12a
+// contributing only its domain (start, size), never its words. The gates
+// mirror the extractor one-for-one: finals that are not available answer
+// "unavailable" (the JVM finals-null arm) and a zero forecast horizon (empty
+// d12a) answers "no_requested_predictions". Shape guards as for
+// x13_automatic_forecast_errors: a non-available fit or a finals d12a whose
+// length disagrees with the echoed forecast horizon throw
+// std::invalid_argument.
+X13AutomaticIrregularForecast x13_automatic_irregular_forecast(const X13AutomaticFitResult& fit);
 } // namespace kalos
 #endif
