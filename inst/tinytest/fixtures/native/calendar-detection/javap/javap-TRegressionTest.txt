@@ -1,0 +1,97 @@
+Compiled from "TRegressionTest.java"
+public class jdplus.toolkit.base.core.regsarima.regular.TRegressionTest implements jdplus.toolkit.base.core.regsarima.regular.IRegressionTest {
+  private final double tlow;
+
+  private final double thigh;
+
+  private final int nsig;
+
+  public jdplus.toolkit.base.core.regsarima.regular.TRegressionTest(double, double);
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: dload_1
+       6: putfield      #7                  // Field tlow:D
+       9: aload_0
+      10: dload_3
+      11: putfield      #13                 // Field thigh:D
+      14: aload_0
+      15: iconst_2
+      16: putfield      #16                 // Field nsig:I
+      19: return
+
+  public jdplus.toolkit.base.core.regsarima.regular.TRegressionTest(double);
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: dload_1
+       6: putfield      #7                  // Field tlow:D
+       9: aload_0
+      10: dload_1
+      11: putfield      #13                 // Field thigh:D
+      14: aload_0
+      15: iconst_1
+      16: putfield      #16                 // Field nsig:I
+      19: return
+
+  public boolean accept(jdplus.toolkit.base.core.stats.likelihood.ConcentratedLikelihoodWithMissing, int, int, int);
+    Code:
+       0: aload_1
+       1: iload_2
+       2: ifge          9
+       5: iconst_0
+       6: goto          10
+       9: iload_2
+      10: iload_2
+      11: iflt          18
+      14: iconst_1
+      15: goto          19
+      18: iconst_0
+      19: invokevirtual #20                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.tstats:(IZ)[D
+      22: astore        5
+      24: iconst_0
+      25: istore        6
+      27: iconst_0
+      28: istore        7
+      30: iconst_0
+      31: istore        8
+      33: iload         8
+      35: iload         4
+      37: if_icmpge     87
+      40: aload         5
+      42: iload_3
+      43: iload         8
+      45: iadd
+      46: daload
+      47: invokestatic  #26                 // Method java/lang/Math.abs:(D)D
+      50: dstore        9
+      52: dload         9
+      54: aload_0
+      55: getfield      #13                 // Field thigh:D
+      58: dcmpl
+      59: iflt          68
+      62: iinc          7, 1
+      65: goto          81
+      68: dload         9
+      70: aload_0
+      71: getfield      #7                  // Field tlow:D
+      74: dcmpl
+      75: iflt          81
+      78: iinc          6, 1
+      81: iinc          8, 1
+      84: goto          33
+      87: iload         7
+      89: ifgt          106
+      92: iload         6
+      94: aload_0
+      95: getfield      #16                 // Field nsig:I
+      98: iload         4
+     100: invokestatic  #32                 // Method java/lang/Math.min:(II)I
+     103: if_icmplt     110
+     106: iconst_1
+     107: goto          111
+     110: iconst_0
+     111: ireturn
+}

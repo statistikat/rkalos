@@ -1,0 +1,35 @@
+specinfo td7noe td=TD7 lp=LeapYear test=Remove autoAdjust=true automatic=false easter=Unused/None fn=Auto aicdiff=0.0000000000000000
+evt 1 push 0 regarimadet -
+evt 2 push 1 automatic model identificationdet -
+evt 3 push 2 log-level testdet -
+evt 4 info 3 -det obj AICC on logs=976.527; AICC on levels=1009.34; (AICC-preference)=-2.00000)
+evt 5 pop 2 -det -
+evt 6 push 2 automatic trading days selectiondet -
+evt 7 info 3 -det ATD names=[no td, td7] best=1 ll[0] n=144 eff=131 np=3 ssq=0.17661270639760457 bic2=-3.6241781744096060 bicc=-6.5345628729614190 aicc=987.38457216768920 ll[1] n=144 eff=131 np=9 ssq=0.14684001938106322 bic2=-3.5852782012504703 bicc=-6.4958869376310880 aicc=976.52791164016100
+evt 8 pop 2 -det -
+evt 9 push 2 mean correctiondet -
+evt 10 pop 2 -det -
+evt 11 push 2 outliers selectiondet -
+evt 12 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[28, 0]], va=3.8898377639404154)
+evt 13 pop 2 -det -
+evt 14 push 2 automatic arima selectiondet -
+evt 15 info 3 -det obj jdplus.toolkit.base.core.regsarima.regular.IDifferencingModule$Info@4d5d943d
+evt 16 info 3 -det obj ArmaModule.CInfo(models=[jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@77888435, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@73a1e9a9, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@71d44a3, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@7b98f307, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@4802796d], selection=(0,1)(0,1))
+evt 17 pop 2 -det -
+evt 18 push 2 outliers selectiondet -
+evt 19 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[], va=3.8898377639404154)
+evt 20 pop 2 -det -
+evt 21 push 2 full estimationdet -
+evt 22 pop 2 -det -
+evt 23 pop 1 -det -
+evt 24 pop 0 -det -
+evt 25 push 0 x11det -
+evt 26 pop 0 -det -
+timing td7noe air elapsed_ms=543
+fact td7noe/air log true lopTransform None
+fact td7noe/air serieshead 112.00000000000000 118.00000000000000 132.00000000000000 129.00000000000000 121.00000000000000 135.00000000000000
+fact td7noe/air variables 0
+fact td7noe/air armapars -0.40181342779192770 -0.55687435779025930
+fact td7noe/air orders 0 1 1 0 1 1
+fact td7noe/air ll 244.69648645086414 adjll -490.59777785263503 aicc 987.38453208322280 ssq 0.17660260497368420 npar 3
+fact td7noe/air coefs

@@ -1,0 +1,40 @@
+specinfo td2noe td=TD2 lp=LeapYear test=Remove autoAdjust=true automatic=false easter=Unused/None fn=Auto aicdiff=0.0000000000000000
+evt 1 push 0 regarimadet -
+evt 2 push 1 automatic model identificationdet -
+evt 3 push 2 log-level testdet -
+evt 4 info 3 -det obj AICC on logs=969.057; AICC on levels=1001.37; (AICC-preference)=-2.00000)
+evt 5 pop 2 -det -
+evt 6 push 2 automatic trading days selectiondet -
+evt 7 info 3 -det ATD names=[no td, td2] best=1 ll[0] n=144 eff=131 np=3 ssq=0.17661270639760457 bic2=-3.6241781744096060 bicc=-6.5345628729614190 aicc=987.38457216768920 ll[1] n=144 eff=131 np=4 ssq=0.15124244487410250 bic2=-3.7431102661723070 bicc=-6.6524227175395660 aicc=969.05775476308140
+evt 8 pop 2 -det -
+evt 9 push 2 mean correctiondet -
+evt 10 pop 2 -det -
+evt 11 push 2 outliers selectiondet -
+evt 12 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[28, 0]], va=3.8898377639404154)
+evt 13 pop 2 -det -
+evt 14 push 2 automatic arima selectiondet -
+evt 15 info 3 -det obj jdplus.toolkit.base.core.regsarima.regular.IDifferencingModule$Info@692f203f
+evt 16 info 3 -det obj ArmaModule.CInfo(models=[jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@73a1e9a9, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@71d44a3, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@7b98f307, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@4802796d, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@34123d65], selection=(0,0)(0,1))
+evt 17 pop 2 -det -
+evt 18 push 2 automatic trading days selectiondet -
+evt 19 info 3 -det ATD names=[no td, td2] best=1 ll[0] n=144 eff=131 np=3 ssq=0.20113885858638540 bic2=-3.4881261224855766 bicc=-6.4045266004212245 aicc=1005.2073909697370 ll[1] n=144 eff=131 np=4 ssq=0.16114964131974870 bic2=-3.6756229344964250 bicc=-6.5889734794523020 aicc=977.89859521262200
+evt 20 pop 2 -det -
+evt 21 push 2 outliers selectiondet -
+evt 22 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[28, 0]], va=3.8898377639404154)
+evt 23 pop 2 -det -
+evt 24 push 2 full estimationdet -
+evt 25 pop 2 -det -
+evt 26 pop 1 -det -
+evt 27 pop 0 -det -
+evt 28 push 0 x11det -
+evt 29 pop 0 -det -
+timing td2noe air elapsed_ms=503
+fact td2noe/air log true lopTransform LeapYear
+fact td2noe/air serieshead 112.00000000000000 118.00000000000000 132.00000000000000 129.00000000000000 121.00000000000000 135.00000000000000
+fact td2noe/air variables 2
+var td2noe/air 0 name=td dim=1 core=GenericTradingDaysVariable
+var td2noe/air 1 name=AO (1951-05-01) dim=1 core=AdditiveOutlier
+fact td2noe/air armapars -0.15543564604656068 -0.50943325863704070
+fact td2noe/air orders 0 1 1 0 1 1
+fact td2noe/air ll 265.04292114744100 adjll -470.25134315605794 aicc 950.98268631211590 ssq 0.13043943461425284 npar 5
+fact td2noe/air coefs -0.0029520700551070905 0.10548619242027457

@@ -1,0 +1,65 @@
+specinfo td2lev td=TD2 lp=LeapYear test=Remove autoAdjust=true automatic=false easter=Unused/None fn=None aicdiff=0.0000000000000000
+evt 1 push 0 regarimadet -
+evt 2 push 1 automatic model identificationdet -
+evt 3 push 2 automatic trading days selectiondet -
+evt 4 info 3 -det ATD names=[no td, td2] best=1 ll[0] n=156 eff=143 np=3 ssq=653830.65948735530 bic2=11.412289441152270 bicc=8.4971694506129140 aicc=1623.2415180644985 ll[1] n=156 eff=143 np=5 ssq=120653.43273586690 bic2=9.7842281704743530 bicc=6.8766537212241100 aicc=1384.7683614309126
+evt 5 pop 2 -det -
+evt 6 push 2 mean correctiondet -
+evt 7 pop 2 -det -
+evt 8 push 2 outliers selectiondet -
+evt 9 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[], va=3.906502130802185)
+evt 10 pop 2 -det -
+evt 11 push 2 automatic arima selectiondet -
+evt 12 info 3 -det obj jdplus.toolkit.base.core.regsarima.regular.IDifferencingModule$Info@6aeb35e6
+evt 13 info 3 -det obj ArmaModule.CInfo(models=[jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@35d019a3, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@689604d9, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@18078bef, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@799f10e1, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@4c371370], selection=(2,1)(1,1))
+evt 14 pop 2 -det -
+evt 15 push 2 automatic trading days selectiondet -
+evt 16 info 3 -det ATD names=[no td, td2] best=1 ll[0] n=156 eff=155 np=7 ssq=227961.56267460654 bic2=10.452112923539800 bicc=7.4887365514094410 aicc=1599.5354320921392 ll[1] n=156 eff=155 np=9 ssq=65024.328176752430 bic2=9.3272181644267840 bicc=6.2993974540618740 aicc=1419.5693687442230
+evt 17 pop 2 -det -
+evt 18 push 2 outliers selectiondet -
+evt 19 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[], va=3.906502130802185)
+evt 20 pop 2 -det -
+evt 21 warn 2 -det -
+evt 22 push 2 automatic arima selectiondet -
+evt 23 info 3 -det obj jdplus.toolkit.base.core.regsarima.regular.IDifferencingModule$Info@48f2bd5b
+evt 24 info 3 -det obj ArmaModule.CInfo(models=[jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@a1153bc, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@1aafa419, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@47eaca72, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@55141def, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@55182842], selection=(2,1)(1,1))
+evt 25 pop 2 -det -
+evt 26 push 2 automatic trading days selectiondet -
+evt 27 info 3 -det ATD names=[no td, td2] best=1 ll[0] n=156 eff=155 np=7 ssq=227961.56267460654 bic2=10.452112923539800 bicc=7.4887365514094410 aicc=1599.5354320921392 ll[1] n=156 eff=155 np=9 ssq=65024.328176752430 bic2=9.3272181644267840 bicc=6.2993974540618740 aicc=1419.5693687442230
+evt 28 pop 2 -det -
+evt 29 push 2 outliers selectiondet -
+evt 30 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[146, 0], [131, 2]], va=3.3484192363957845)
+evt 31 pop 2 -det -
+evt 32 warn 2 -det -
+evt 33 push 2 outliers selectiondet -
+evt 34 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[], va=3.906502130802185)
+evt 35 pop 2 -det -
+evt 36 push 2 mean correctiondet -
+evt 37 info 3 -det -
+evt 38 pop 2 -det -
+evt 39 push 2 outliers selectiondet -
+evt 40 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[], va=3.906502130802185)
+evt 41 pop 2 -det -
+evt 42 push 2 mean correctiondet -
+evt 43 pop 2 -det -
+evt 44 push 2 outliers selectiondet -
+evt 45 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[], va=3.906502130802185)
+evt 46 pop 2 -det -
+evt 47 push 2 full estimationdet -
+evt 48 info 3 -det obj (2,0,0)(0,1,1)
+evt 49 pop 2 -det -
+evt 50 pop 1 -det -
+evt 51 pop 0 -det -
+evt 52 push 0 x11det -
+evt 53 pop 0 -det -
+timing td2lev tdeff elapsed_ms=3569
+fact td2lev/tdeff log false lopTransform None
+fact td2lev/tdeff serieshead 439.62590544103200 392.80346383617770 443.32056312127014 435.34197659348877 499.12189257356937 452.70833929336976
+fact td2lev/tdeff variables 3
+var td2lev/tdeff 0 name=const dim=1 core=TrendConstant
+var td2lev/tdeff 1 name=td dim=1 core=GenericTradingDaysVariable
+var td2lev/tdeff 2 name=lp dim=1 core=LengthOfPeriod
+fact td2lev/tdeff armapars 0.89354051847651150 0.56187934886333110 -0.40323906901780890
+fact td2lev/tdeff orders 2 0 0 0 1 1
+fact td2lev/tdeff ll -641.50776931914900 adjll -641.50776931914900 aicc 1297.8390680500627 ssq 61023.926212289740 npar 7
+fact td2lev/tdeff coefs 149.32569206883758 18.572144591868010 49.035374286922530

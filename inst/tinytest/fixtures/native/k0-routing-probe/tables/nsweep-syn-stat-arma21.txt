@@ -1,0 +1,7 @@
+CASE syn-stat-arma21 n=240 d=0 D=0 period=12
+NSWEEP syn-stat-arma21 n=24 lib=0.053941 copy0=0.052251 fac1=0.042660 fac2=0.040515 struct3=0.019359
+NSWEEP syn-stat-arma21 n=48 lib=0.060236 copy0=0.057849 fac1=0.070814 fac2=0.065998 struct3=0.027686
+NSWEEP syn-stat-arma21 n=96 lib=0.109982 copy0=0.105357 fac1=0.129951 fac2=0.118686 struct3=0.044001
+NSWEEP syn-stat-arma21 n=120 lib=0.135403 copy0=0.130000 fac1=0.129281 fac2=0.118612 struct3=0.042960
+NSWEEP syn-stat-arma21 n=144 lib=0.131964 copy0=0.125440 fac1=0.153418 fac2=0.139759 struct3=0.049789
+NSWEEP syn-stat-arma21 n=240 lib=0.217226 copy0=0.204661 fac1=0.243641 fac2=0.226177 struct3=0.077224

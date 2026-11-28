@@ -1,0 +1,7 @@
+CASE syn-stat-sarma11 n=240 d=0 D=0 period=12
+NSWEEP syn-stat-sarma11 n=24 lib=2.946071 copy0=2.783037 fac1=0.647758 fac2=0.647653 struct3=0.351434
+NSWEEP syn-stat-sarma11 n=48 lib=5.636243 copy0=5.260149 fac1=0.967207 fac2=0.964196 struct3=0.419620
+NSWEEP syn-stat-sarma11 n=96 lib=11.208515 copy0=10.798910 fac1=1.624394 fac2=1.757144 struct3=0.574769
+NSWEEP syn-stat-sarma11 n=120 lib=14.466648 copy0=13.349013 fac1=1.948558 fac2=1.942530 struct3=0.626837
+NSWEEP syn-stat-sarma11 n=144 lib=16.731038 copy0=15.705253 fac1=2.455071 fac2=2.326096 struct3=0.746885
+NSWEEP syn-stat-sarma11 n=240 lib=28.268176 copy0=26.264146 fac1=3.648215 fac2=3.606542 struct3=0.974655

@@ -1,0 +1,56 @@
+specinfo td2noadj air n=144
+status available
+chain init r0 curva=3.8898377639404154 pcr=0.94999999999999996 n=144
+chain transformation r0 log_chosen=1 aicc_level=1001.3710352646802 aicc_log=970.91433638040144
+chain atd0 r0 best=1 changed=0 preadjust=0
+chain meantest0 r0 cval=1.96 tstat=-0.1898395172312814 mean_after=0 changed=0
+chain outliers0 r0 cv=3.8898377639404154 changed=1 n_outliers=1 rounds=1
+chain accept0 r0 plbox0=0.68645935400376912 rvr0=0.031478298103532136 rtval0=0.085915745198376345 accepted=1 acc[rtval=0.085915745198376345 rvr=0.031478298103532136 lb_p=0.31354064599623088 accepted=1]
+chain round1.refine r1 p=0 q=0 bp=0 bq=1 d=1 bd=1 mean=1 changed=1 fallback=0
+chain round1.atd r1 best=1 changed=0 preadjust=0
+chain round1.outliers r1 cv=3.8898377639404154 changed=1 n_outliers=1 rounds=1
+chain round1.pass2 r1 filter=1 plbox=0.68645935400376912 plbox0=0.68645935400376912 rvr=0.031685563833276024 rtval=0.22369864941841897 pcr_after=0.97499999999999998 loop_after=2 curva_after=3.8898377639404154 continue_round=1 p2[filter=1 plbox=0.68645935400376912 plbox0=0.68645935400376912 pcr=0.97499999999999998 cont=1]
+chain round1.regtest r1 mean_cutoff=1 changed=0 mean_after=0 removed=[0,0,0] tstats=[-5.48877,3.583,5.0649]
+chain round1.unitroots r1 regular_count=0 seasonal_count=0 regular_fired=0 seasonal_fired=0 regular_margin=nan seasonal_margin=nan p_after=0 d_after=1 bp_after=0 bd_after=1
+chain round1.matest r1 scanned=1 abs_theta_at_1=0.85797386092451544 fired=0 q_after=1 d_after=1 mean_set=0
+chain round1.meanrule r1 rtval0=0.085915745198376345 mean_added=0
+chain round1.cascade r1 status=0
+chain final r0 p=0 q=1 bp=0 bq=1 d=1 bd=1 mean=0 log=1 n_outliers=1 log_likelihood=265.39785832894256 aicc=952.47023130395235
+scan outliers0 pos28 type0 t=4.328593050259852 beyond=1
+scan outliers0 pos61 type0 t=-3.3984393906933801 beyond=0
+ostop outliers0 below_cv
+scan round1.outliers pos28 type0 t=5.4049631889510037 beyond=1
+scan round1.outliers pos61 type0 t=-3.6347588589998576 beyond=0
+ostop round1.outliers below_cv
+eval round1.refine s1/0 p3 q0 bp0 bq0 ll=251.40583691609689 bic=-3.6893960651861768
+eval round1.refine s1/1 p3 q0 bp0 bq1 ll=268.166086507074 bic=-3.908062491588872
+eval round1.refine s1/2 p3 q0 bp1 bq0 ll=268.08466488535004 bic=-3.9068194133946128
+eval round1.refine s1/3 p3 q0 bp1 bq1 ll=269.67040281306566 bic=-3.8938139060070567
+eval round1.refine s2/0 p0 q0 bp0 bq1 ll=264.44065890993664 bic=-3.9628314746066482
+eval round1.refine s2/1 p0 q1 bp0 bq1 ll=265.3978594416493 bic=-3.9402299764404214
+eval round1.refine s2/2 p0 q2 bp0 bq1 ll=266.81375240046782 bic=-3.9246314160926032
+eval round1.refine s2/3 p1 q0 bp0 bq1 ll=265.17996629218334 bic=-3.9369033634714752
+eval round1.refine s2/4 p1 q1 bp0 bq1 ll=268.18359837578009 bic=-3.9455450951050044
+eval round1.refine s2/5 p1 q2 bp0 bq1 ll=268.02303370140237 bic=-3.9058784792885417
+eval round1.refine s2/6 p2 q0 bp0 bq1 ll=265.75193987905618 bic=-3.9084205379031127
+eval round1.refine s2/7 p2 q1 bp0 bq1 ll=268.06972089389058 bic=-3.9065912608532471
+eval round1.refine s2/8 p2 q2 bp0 bq1 ll=268.4933958071199 bic=-3.8758443333971977
+eval round1.refine s3/0 p0 q0 bp0 bq0 ll=248.07477056120456 bic=-3.7501858305283049
+eval round1.refine s3/1 p0 q0 bp0 bq1 ll=264.44065890993664 bic=-3.9628314746066482
+pref round1.refine 0 p0 q0 bp0 bq1 bic=-3.9628314746066482 ll=264.44065890993664
+pref round1.refine 1 p1 q1 bp0 bq1 bic=-3.9455450951050044 ll=268.18359837578009
+pref round1.refine 2 p0 q1 bp0 bq1 bic=-3.9402299764404214 ll=265.3978594416493
+pref round1.refine 3 p1 q0 bp0 bq1 bic=-3.9369033634714752 ll=265.17996629218334
+pref round1.refine 4 p0 q2 bp0 bq1 bic=-3.9246314160926032 ll=266.81375240046782
+step round1.refine cand1 rule0 inc0 moves0
+step round1.refine cand2 rule0 inc0 moves0
+step round1.refine cand3 rule0 inc0 moves0
+step round1.refine cand4 rule0 inc0 moves0
+evt atd0 best=1 names=[no td, td2] ll[0] n=144 eff=131 np=3 ssq=0.17661270639760446 aicc=987.38457216768916 ll[1] n=144 eff=131 np=5 ssq=0.15094086071029122 aicc=970.91499348290449
+evt round1.atd best=1 names=[no td, td2] ll[0] n=144 eff=131 np=3 ssq=0.20113885858638531 aicc=1005.207390969737 ll[1] n=144 eff=131 np=5 ssq=0.16043274891409215 aicc=979.36375864609545
+fact log=1 mean=0 orders 0 1 1 0 1 1
+fact ll=265.39785832894256 aicc=952.47023130395235 eff=131
+landed mean=0 td lp AO (1951-05-01)
+auto_calendar preadjust=0 -0.0029806301914586946 0.046102069126634268
+var AO (1951-05-01) 0.10608932284407567
+fit_status available

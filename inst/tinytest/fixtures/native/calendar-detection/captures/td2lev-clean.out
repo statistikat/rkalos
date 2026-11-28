@@ -1,0 +1,35 @@
+specinfo td2lev td=TD2 lp=LeapYear test=Remove autoAdjust=true automatic=false easter=Unused/None fn=None aicdiff=0.0000000000000000
+evt 1 push 0 regarimadet -
+evt 2 push 1 automatic model identificationdet -
+evt 3 push 2 automatic trading days selectiondet -
+evt 4 info 3 -det ATD names=[no td, td2] best=0 ll[0] n=96 eff=83 np=3 ssq=1.2923395272823871e-26 bic2=-60.709804033185390 bicc=-63.923120775856060 aicc=-5045.8664591094220 ll[1] n=96 eff=83 np=5 ssq=1.3840708759691670e-26 bic2=-60.632756291343700 bicc=-63.748067784927450 aicc=-5043.8337544412900
+evt 5 pop 2 -det -
+evt 6 push 2 mean correctiondet -
+evt 7 pop 2 -det -
+evt 8 push 2 outliers selectiondet -
+evt 9 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[91, 0], [81, 0], [77, 0]], va=3.800743465029901)
+evt 10 pop 2 -det -
+evt 11 push 2 automatic arima selectiondet -
+evt 12 info 3 -det obj jdplus.toolkit.base.core.regsarima.regular.IDifferencingModule$Info@38d8f54a
+evt 13 info 3 -det obj ArmaModule.CInfo(models=[jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@313ac989, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@4562e04d, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@2a65fe7c, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@4135c3b, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@6302bbb1], selection=(0,1)(0,1))
+evt 14 pop 2 -det -
+evt 15 push 2 outliers selectiondet -
+evt 16 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[77, 0], [81, 0], [91, 0]], va=3.800743465029901)
+evt 17 pop 2 -det -
+evt 18 push 2 full estimationdet -
+evt 19 pop 2 -det -
+evt 20 pop 1 -det -
+evt 21 pop 0 -det -
+evt 22 push 0 x11det -
+evt 23 pop 0 -det -
+timing td2lev clean elapsed_ms=365
+fact td2lev/clean log false lopTransform None
+fact td2lev/clean serieshead 53.800000000000000 53.363139720814410 51.650000000000000 53.463139720814410 54.000000000000000 53.300000000000000
+fact td2lev/clean variables 3
+var td2lev/clean 0 name=AO (1996-06-01) dim=1 core=AdditiveOutlier
+var td2lev/clean 1 name=AO (1996-10-01) dim=1 core=AdditiveOutlier
+var td2lev/clean 2 name=AO (1997-08-01) dim=1 core=AdditiveOutlier
+fact td2lev/clean armapars -0.97491778976864420 -0.68776364042714930
+fact td2lev/clean orders 0 1 1 0 1 1
+fact td2lev/clean ll 2555.9041414449100 adjll 2555.9041414449100 aicc -5098.7030197319245 ssq 7.5313928253371200e-27 npar 6
+fact td2lev/clean coefs 3.7135490677269640e-14 -5.1262466096468505e-14 6.0387610322582240e-14

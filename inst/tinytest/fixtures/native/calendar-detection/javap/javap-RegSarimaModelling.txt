@@ -1,0 +1,177 @@
+Compiled from "RegSarimaModelling.java"
+public class jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling {
+  private jdplus.toolkit.base.core.regsarima.regular.ModelDescription description;
+
+  private jdplus.toolkit.base.core.regarima.RegArimaEstimation<jdplus.toolkit.base.core.sarima.SarimaModel> estimation;
+
+  private final jdplus.toolkit.base.api.processing.ProcessingLog log;
+
+  public static jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling of(jdplus.toolkit.base.core.regsarima.regular.ModelDescription);
+    Code:
+       0: new           #1                  // class jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling
+       3: dup
+       4: aload_0
+       5: aconst_null
+       6: invokestatic  #3                  // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.dummy:()Ljdplus/toolkit/base/api/processing/ProcessingLog;
+       9: invokespecial #9                  // Method "<init>":(Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;Ljdplus/toolkit/base/api/processing/ProcessingLog;)V
+      12: areturn
+
+  public static jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling of(jdplus.toolkit.base.core.regsarima.regular.ModelDescription, jdplus.toolkit.base.api.processing.ProcessingLog);
+    Code:
+       0: new           #1                  // class jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling
+       3: dup
+       4: aload_0
+       5: aconst_null
+       6: aload_1
+       7: invokespecial #9                  // Method "<init>":(Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;Ljdplus/toolkit/base/api/processing/ProcessingLog;)V
+      10: areturn
+
+  public static jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling copyOf(jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling);
+    Code:
+       0: new           #1                  // class jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling
+       3: dup
+       4: aload_0
+       5: getfield      #13                 // Field description:Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+       8: invokestatic  #17                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.copyOf:(Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;)Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+      11: aload_0
+      12: getfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      15: invokestatic  #3                  // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.dummy:()Ljdplus/toolkit/base/api/processing/ProcessingLog;
+      18: invokespecial #9                  // Method "<init>":(Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;Ljdplus/toolkit/base/api/processing/ProcessingLog;)V
+      21: areturn
+
+  public void estimate(jdplus.toolkit.base.core.regarima.IRegArimaComputer<jdplus.toolkit.base.core.sarima.SarimaModel>);
+    Code:
+       0: aload_0
+       1: aload_0
+       2: getfield      #13                 // Field description:Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+       5: aload_1
+       6: invokevirtual #27                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.estimate:(Ljdplus/toolkit/base/core/regarima/IRegArimaComputer;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       9: putfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      12: return
+
+  public void estimate(double);
+    Code:
+       0: invokestatic  #31                 // Method jdplus/toolkit/base/core/regsarima/RegSarimaComputer.builder:()Ljdplus/toolkit/base/core/regsarima/RegSarimaComputer$Builder;
+       3: dload_1
+       4: invokevirtual #37                 // Method jdplus/toolkit/base/core/regsarima/RegSarimaComputer$Builder.precision:(D)Ljdplus/toolkit/base/core/regsarima/RegSarimaComputer$Builder;
+       7: getstatic     #43                 // Field jdplus/toolkit/base/core/regsarima/RegSarimaComputer$StartingPoint.HannanRissanen:Ljdplus/toolkit/base/core/regsarima/RegSarimaComputer$StartingPoint;
+      10: invokevirtual #49                 // Method jdplus/toolkit/base/core/regsarima/RegSarimaComputer$Builder.startingPoint:(Ljdplus/toolkit/base/core/regsarima/RegSarimaComputer$StartingPoint;)Ljdplus/toolkit/base/core/regsarima/RegSarimaComputer$Builder;
+      13: invokevirtual #53                 // Method jdplus/toolkit/base/core/regsarima/RegSarimaComputer$Builder.build:()Ljdplus/toolkit/base/core/regsarima/RegSarimaComputer;
+      16: astore_3
+      17: aload_0
+      18: aload_0
+      19: getfield      #13                 // Field description:Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+      22: aload_3
+      23: invokevirtual #27                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.estimate:(Ljdplus/toolkit/base/core/regarima/IRegArimaComputer;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      26: putfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      29: return
+
+  public jdplus.toolkit.base.core.regsarima.regular.RegSarimaModel build();
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field description:Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+       4: aload_0
+       5: getfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       8: aload_0
+       9: getfield      #57                 // Field log:Ljdplus/toolkit/base/api/processing/ProcessingLog;
+      12: invokestatic  #61                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.of:(Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;Ljdplus/toolkit/base/api/processing/ProcessingLog;)Ljdplus/toolkit/base/core/regsarima/regular/RegSarimaModel;
+      15: areturn
+
+  public void clearEstimation();
+    Code:
+       0: aload_0
+       1: aconst_null
+       2: putfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       5: aload_0
+       6: getfield      #13                 // Field description:Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+       9: invokevirtual #67                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.freeArimaParameters:()V
+      12: return
+
+  public boolean needEstimation();
+    Code:
+       0: aload_0
+       1: getfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       4: ifnonnull     11
+       7: iconst_1
+       8: goto          12
+      11: iconst_0
+      12: ireturn
+
+  public void setSpecification(jdplus.toolkit.base.api.arima.SarimaOrders);
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field description:Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+       4: aload_1
+       5: invokevirtual #71                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.setSpecification:(Ljdplus/toolkit/base/api/arima/SarimaOrders;)V
+       8: aload_0
+       9: aconst_null
+      10: putfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      13: return
+
+  public void setDescription(jdplus.toolkit.base.core.regsarima.regular.ModelDescription);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #13                 // Field description:Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+       5: aload_0
+       6: aconst_null
+       7: putfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      10: return
+
+  public void set(jdplus.toolkit.base.core.regsarima.regular.ModelDescription, jdplus.toolkit.base.core.regarima.RegArimaEstimation<jdplus.toolkit.base.core.sarima.SarimaModel>);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #13                 // Field description:Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+       5: aload_0
+       6: aload_2
+       7: putfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      10: return
+
+  public jdplus.toolkit.base.core.regsarima.regular.ModelDescription getDescription();
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field description:Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+       4: areturn
+
+  public jdplus.toolkit.base.core.regarima.RegArimaEstimation<jdplus.toolkit.base.core.sarima.SarimaModel> getEstimation();
+    Code:
+       0: aload_0
+       1: getfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       4: areturn
+
+  public jdplus.toolkit.base.api.processing.ProcessingLog getLog();
+    Code:
+       0: aload_0
+       1: getfield      #57                 // Field log:Ljdplus/toolkit/base/api/processing/ProcessingLog;
+       4: areturn
+
+  private jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling(jdplus.toolkit.base.core.regsarima.regular.ModelDescription, jdplus.toolkit.base.core.regarima.RegArimaEstimation<jdplus.toolkit.base.core.sarima.SarimaModel>, jdplus.toolkit.base.api.processing.ProcessingLog);
+    Code:
+       0: aload_0
+       1: invokespecial #75                 // Method java/lang/Object."<init>":()V
+       4: aload_1
+       5: ifnonnull     18
+       8: new           #79                 // class java/lang/NullPointerException
+      11: dup
+      12: ldc           #81                 // String description is marked non-null but is null
+      14: invokespecial #83                 // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      17: athrow
+      18: aload_3
+      19: ifnonnull     32
+      22: new           #79                 // class java/lang/NullPointerException
+      25: dup
+      26: ldc           #86                 // String log is marked non-null but is null
+      28: invokespecial #83                 // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      31: athrow
+      32: aload_0
+      33: aload_1
+      34: putfield      #13                 // Field description:Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+      37: aload_0
+      38: aload_2
+      39: putfield      #23                 // Field estimation:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      42: aload_0
+      43: aload_3
+      44: putfield      #57                 // Field log:Ljdplus/toolkit/base/api/processing/ProcessingLog;
+      47: return
+}

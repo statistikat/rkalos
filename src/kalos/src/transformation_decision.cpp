@@ -52,22 +52,44 @@ double pinned_adjusted(double log_likelihood, double& jacobian) {
 // enough room to difference), so an escaping exception here is the pinned
 // estimate() throw path and makes the branch unavailable.
 TransformationBranchReport run_branch(SarimaEstimationRequest request, bool log_branch,
-    std::size_t warmup, std::size_t free_count, const Interrupt& interrupt) {
+    std::size_t warmup, std::size_t free_count, const Interrupt& interrupt,
+    const std::vector<double>& log_factors = {}) {
     auto branch = unavailable_branch();
     if (log_branch) {
         // Pinned LogTransformation: log on finite values, others untouched.
-        for (auto& value : request.series.values) {
-            if (std::isfinite(value)) value = detail::fdlibm_log(value);
+        // With a preadjustment (21-I stage 1) the length-of-period factors
+        // multiply the LEVEL data first (the transformData order of the
+        // fork: LengthOfPeriodTransformation, then the log).
+        if (log_factors.empty()) {
+            for (auto& value : request.series.values) {
+                if (std::isfinite(value)) value = detail::fdlibm_log(value);
+            }
+        } else {
+            for (std::size_t i = 0; i < request.series.values.size(); ++i) {
+                if (std::isfinite(request.series.values[i]))
+                    request.series.values[i] = detail::fdlibm_log(
+                        request.series.values[i] * log_factors[i]);
+            }
         }
         // Pinned LogJacobian on the estimation window with no missing
         // positions: sum the transformed values left-to-right over
-        // [warmup, L), skipping non-finite entries, then negate.
+        // [warmup, L), skipping non-finite entries, then negate. The
+        // preadjusted variant adds sum log f (f != 1) over the same window,
+        // in the CEDM-arm order (sum log f) - (sum z).
         double sum = 0.0;
         for (std::size_t i = warmup; i < request.series.values.size(); ++i) {
             const double value = request.series.values[i];
             if (std::isfinite(value)) sum += value;
         }
-        branch.jacobian = -sum;
+        if (log_factors.empty()) {
+            branch.jacobian = -sum;
+        } else {
+            double adjustment = 0.0;
+            for (std::size_t i = warmup; i < log_factors.size(); ++i) {
+                if (log_factors[i] != 1.0) adjustment += detail::fdlibm_log(log_factors[i]);
+            }
+            branch.jacobian = adjustment - sum;
+        }
     }
     try {
         branch.estimation = estimate_sarima_fixed(request, interrupt);
@@ -171,12 +193,53 @@ TransformationDecisionResult decide_transformation(
         for (const auto flag : block.fixed) free_count += flag ? 0 : 1;
     }
 
+    // 21-I stage 1: the calendar-carrying variant. The raw-domain columns
+    // and the length-of-period factors are plain request data; malformed
+    // carriers are rejected, never truncated or padded.
+    const std::size_t n = series.values.size();
+    for (const auto* columns : {&request.level_columns, &request.log_columns}) {
+        for (const auto& column : *columns) {
+            if (column.size() != n ||
+                !std::all_of(column.begin(), column.end(),
+                    [](double value) { return std::isfinite(value); })) {
+                throw std::invalid_argument(
+                    "the log/level decision requests raw-domain regression columns of "
+                    "the response length");
+            }
+        }
+    }
+    if (!request.log_preadjust_factors.empty() &&
+        (request.log_preadjust_factors.size() != n ||
+            !std::all_of(request.log_preadjust_factors.begin(),
+                request.log_preadjust_factors.end(),
+                [](double value) { return std::isfinite(value) && value > 0.; }))) {
+        throw std::invalid_argument(
+            "the log/level decision requests strictly positive finite length-of-period "
+            "factors of the response length");
+    }
+    auto with_columns = [n](SarimaEstimationRequest branch,
+                            const std::vector<std::vector<double>>& columns) {
+        if (columns.empty()) return branch;
+        branch.design.columns = columns.size();
+        branch.design.values.assign(branch.design.columns * n, 0.);
+        branch.design.coefficients.assign(branch.design.columns, 0.);
+        branch.design.fixed.assign(branch.design.columns, 0);
+        for (std::size_t j = 0; j < columns.size(); ++j) {
+            for (std::size_t i = 0; i < n; ++i) {
+                branch.design.values[j * n + i] = columns[j][i];
+            }
+        }
+        return branch;
+    };
+
     // Pinned steps: estimate the level description, copyOf + setLog-
     // Transformation(true) of the same description, estimate the copy. The
     // level estimate's setFreeParameters write-back is invisible here: the
     // pinned Multiple start overwrites every coefficient in both branches.
-    decision.level = run_branch(request.branch, false, warmup, free_count, interrupt);
-    decision.log = run_branch(request.branch, true, warmup, free_count, interrupt);
+    decision.level = run_branch(with_columns(request.branch, request.level_columns),
+        false, warmup, free_count, interrupt);
+    decision.log = run_branch(with_columns(request.branch, request.log_columns),
+        true, warmup, free_count, interrupt, request.log_preadjust_factors);
 
     if (!decision.level.available && !decision.log.available) {
         decision.outcome = "failed";

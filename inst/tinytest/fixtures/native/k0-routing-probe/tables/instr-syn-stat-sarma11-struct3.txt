@@ -1,0 +1,4 @@
+TSC 0.357981 ns/tick
+CASE syn-stat-sarma11 n=240 d=0 D=0 period=12
+SECTIONS arma_ms=0.0023 statinit_ms=0.0000 assembly_ms=0.3037 obs_ms=0.0170 upd_ms=0.1850 pred_ms=0.1602 obs_calls=240 upd_calls=240 pred_calls=239
+INSTRWALL syn-stat-sarma11 route=struct3 median_ms=1.043451

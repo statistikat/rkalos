@@ -1,0 +1,95 @@
+Compiled from "DerivedRegressionTest.java"
+public class jdplus.toolkit.base.core.regarima.DerivedRegressionTest implements jdplus.toolkit.base.core.regsarima.regular.IRegressionTest {
+  private final double tsig;
+
+  private double vcur;
+
+  private double tcur;
+
+  private final boolean ml;
+
+  public jdplus.toolkit.base.core.regarima.DerivedRegressionTest(double, boolean);
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: dload_1
+       6: putfield      #7                  // Field tsig:D
+       9: aload_0
+      10: iload_3
+      11: putfield      #13                 // Field ml:Z
+      14: return
+
+  public double getValue();
+    Code:
+       0: aload_0
+       1: getfield      #17                 // Field vcur:D
+       4: dreturn
+
+  public double getTStat();
+    Code:
+       0: aload_0
+       1: getfield      #20                 // Field tcur:D
+       4: dreturn
+
+  public boolean accept(jdplus.toolkit.base.core.stats.likelihood.ConcentratedLikelihoodWithMissing, int, int, int);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokevirtual #23                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.coefficients:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+       5: iload_3
+       6: iload         4
+       8: invokeinterface #29,  3           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.extract:(II)Ljdplus/toolkit/base/api/data/DoubleSeq;
+      13: invokeinterface #35,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.sum:()D
+      18: dneg
+      19: putfield      #17                 // Field vcur:D
+      22: aload_1
+      23: invokevirtual #39                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.unscaledCovariance:()Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+      26: iload_3
+      27: iload         4
+      29: iload_3
+      30: iload         4
+      32: invokevirtual #43                 // Method jdplus/toolkit/base/core/math/matrices/FastMatrix.extract:(IIII)Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+      35: invokestatic  #48                 // Method jdplus/toolkit/base/core/math/matrices/FastMatrix.of:(Ljdplus/toolkit/base/api/math/matrices/Matrix;)Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+      38: astore        5
+      40: aload_0
+      41: getfield      #13                 // Field ml:Z
+      44: ifeq          54
+      47: aload_1
+      48: invokevirtual #52                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.dim:()I
+      51: goto          60
+      54: aload_1
+      55: invokevirtual #56                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.degreesOfFreedom:()I
+      58: iload_2
+      59: isub
+      60: istore        6
+      62: aload_1
+      63: invokevirtual #59                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.ssq:()D
+      66: dstore        7
+      68: aload         5
+      70: invokevirtual #62                 // Method jdplus/toolkit/base/core/math/matrices/FastMatrix.sum:()D
+      73: dload         7
+      75: dmul
+      76: iload         6
+      78: i2d
+      79: ddiv
+      80: dstore        9
+      82: aload_0
+      83: aload_0
+      84: getfield      #17                 // Field vcur:D
+      87: dload         9
+      89: invokestatic  #63                 // Method java/lang/Math.sqrt:(D)D
+      92: ddiv
+      93: putfield      #20                 // Field tcur:D
+      96: aload_0
+      97: getfield      #20                 // Field tcur:D
+     100: invokestatic  #69                 // Method java/lang/Math.abs:(D)D
+     103: aload_0
+     104: getfield      #7                  // Field tsig:D
+     107: dcmpl
+     108: ifle          115
+     111: iconst_1
+     112: goto          116
+     115: iconst_0
+     116: ireturn
+}

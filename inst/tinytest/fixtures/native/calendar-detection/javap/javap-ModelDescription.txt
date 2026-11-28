@@ -1,0 +1,2067 @@
+Compiled from "ModelDescription.java"
+public final class jdplus.toolkit.base.core.regsarima.regular.ModelDescription implements jdplus.toolkit.base.api.timeseries.HasAnnualFrequency {
+  private final jdplus.toolkit.base.api.timeseries.TsData series;
+
+  private final jdplus.toolkit.base.api.timeseries.TsDomain estimationDomain;
+
+  private double[] interpolatedData;
+
+  private double[] transformedData;
+
+  private double llCorrection;
+
+  private int[] missing;
+
+  private boolean logTransformation;
+
+  private jdplus.toolkit.base.api.timeseries.calendars.LengthOfPeriodType lpTransformation;
+
+  private boolean mean;
+
+  private final java.util.List<jdplus.toolkit.base.api.timeseries.regression.Variable> variables;
+
+  private jdplus.toolkit.base.api.arima.SarimaSpec arima;
+
+  private boolean sortedVariables;
+
+  public static final java.util.Comparator<jdplus.toolkit.base.api.timeseries.regression.Variable> OUTLIER_COMPARATOR;
+
+  private static final java.lang.String EXCLUDED;
+
+  private static final java.lang.String COLLINEAR;
+
+  private static final java.lang.String NOTFOUND;
+
+  private static final java.lang.String ZERO;
+
+  public static jdplus.toolkit.base.core.regsarima.regular.ModelDescription dummyModel();
+    Code:
+       0: new           #1                  // class jdplus/toolkit/base/core/regsarima/regular/ModelDescription
+       3: dup
+       4: invokespecial #3                  // Method "<init>":()V
+       7: areturn
+
+  public static jdplus.toolkit.base.core.regsarima.regular.ModelDescription copyOf(jdplus.toolkit.base.core.regsarima.regular.ModelDescription);
+    Code:
+       0: aload_0
+       1: ifnonnull     14
+       4: new           #7                  // class java/lang/NullPointerException
+       7: dup
+       8: ldc           #9                  // String model is marked non-null but is null
+      10: invokespecial #11                 // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      13: athrow
+      14: aload_0
+      15: aload_0
+      16: getfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      19: invokestatic  #18                 // Method copyOf:(Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+      22: areturn
+
+  public static jdplus.toolkit.base.core.regsarima.regular.ModelDescription copyOf(jdplus.toolkit.base.core.regsarima.regular.ModelDescription, jdplus.toolkit.base.api.timeseries.TsDomain);
+    Code:
+       0: aload_0
+       1: ifnonnull     14
+       4: new           #7                  // class java/lang/NullPointerException
+       7: dup
+       8: ldc           #9                  // String model is marked non-null but is null
+      10: invokespecial #11                 // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      13: athrow
+      14: new           #1                  // class jdplus/toolkit/base/core/regsarima/regular/ModelDescription
+      17: dup
+      18: aload_0
+      19: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      22: aload_1
+      23: invokespecial #26                 // Method "<init>":(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)V
+      26: astore_2
+      27: aload_2
+      28: aload_0
+      29: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      32: putfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      35: aload_2
+      36: aload_0
+      37: getfield      #33                 // Field mean:Z
+      40: putfield      #33                 // Field mean:Z
+      43: aload_2
+      44: aload_0
+      45: getfield      #37                 // Field logTransformation:Z
+      48: putfield      #37                 // Field logTransformation:Z
+      51: aload_2
+      52: aload_0
+      53: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      56: putfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      59: aload_2
+      60: aload_0
+      61: getfield      #44                 // Field interpolatedData:[D
+      64: putfield      #44                 // Field interpolatedData:[D
+      67: aload_2
+      68: aload_0
+      69: getfield      #48                 // Field transformedData:[D
+      72: putfield      #48                 // Field transformedData:[D
+      75: aload_2
+      76: aload_0
+      77: getfield      #51                 // Field missing:[I
+      80: putfield      #51                 // Field missing:[I
+      83: aload_2
+      84: aload_0
+      85: getfield      #55                 // Field llCorrection:D
+      88: putfield      #55                 // Field llCorrection:D
+      91: aload_0
+      92: getfield      #59                 // Field variables:Ljava/util/List;
+      95: aload_2
+      96: getfield      #59                 // Field variables:Ljava/util/List;
+      99: dup
+     100: invokestatic  #63                 // Method java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;
+     103: pop
+     104: invokedynamic #69,  0             // InvokeDynamic #0:accept:(Ljava/util/List;)Ljava/util/function/Consumer;
+     109: invokeinterface #73,  2           // InterfaceMethod java/util/List.forEach:(Ljava/util/function/Consumer;)V
+     114: aload_2
+     115: areturn
+
+  private jdplus.toolkit.base.core.regsarima.regular.ModelDescription();
+    Code:
+       0: aload_0
+       1: invokespecial #79                 // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: getstatic     #82                 // Field jdplus/toolkit/base/api/util/IntList.EMPTY:[I
+       8: putfield      #51                 // Field missing:[I
+      11: aload_0
+      12: getstatic     #87                 // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.None:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      15: putfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      18: aload_0
+      19: new           #92                 // class java/util/ArrayList
+      22: dup
+      23: invokespecial #94                 // Method java/util/ArrayList."<init>":()V
+      26: putfield      #59                 // Field variables:Ljava/util/List;
+      29: aload_0
+      30: invokestatic  #95                 // Method jdplus/toolkit/base/api/arima/SarimaSpec.whiteNoise:()Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      33: putfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      36: aload_0
+      37: aconst_null
+      38: putfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      41: aload_0
+      42: aconst_null
+      43: putfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      46: return
+
+  public jdplus.toolkit.base.core.regsarima.regular.ModelDescription(jdplus.toolkit.base.api.timeseries.TsData, jdplus.toolkit.base.api.timeseries.TsDomain);
+    Code:
+       0: aload_0
+       1: invokespecial #79                 // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: getstatic     #82                 // Field jdplus/toolkit/base/api/util/IntList.EMPTY:[I
+       8: putfield      #51                 // Field missing:[I
+      11: aload_0
+      12: getstatic     #87                 // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.None:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      15: putfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      18: aload_0
+      19: new           #92                 // class java/util/ArrayList
+      22: dup
+      23: invokespecial #94                 // Method java/util/ArrayList."<init>":()V
+      26: putfield      #59                 // Field variables:Ljava/util/List;
+      29: aload_0
+      30: invokestatic  #95                 // Method jdplus/toolkit/base/api/arima/SarimaSpec.whiteNoise:()Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      33: putfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      36: aload_1
+      37: ifnonnull     50
+      40: new           #7                  // class java/lang/NullPointerException
+      43: dup
+      44: ldc           #101                // String series is marked non-null but is null
+      46: invokespecial #11                 // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      49: athrow
+      50: aload_0
+      51: aload_1
+      52: putfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      55: aload_2
+      56: ifnull        173
+      59: aload_2
+      60: aload_1
+      61: invokevirtual #103                // Method jdplus/toolkit/base/api/timeseries/TsData.getDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      64: invokevirtual #109                // Method jdplus/toolkit/base/api/timeseries/TsDomain.intersection:(Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      67: astore_2
+      68: aload_1
+      69: invokevirtual #115                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      72: aload_2
+      73: invokevirtual #119                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getStartPeriod:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      76: invokevirtual #122                // Method jdplus/toolkit/base/api/timeseries/TsPeriod.until:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;)I
+      79: istore_3
+      80: aload_1
+      81: invokevirtual #128                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      84: iconst_0
+      85: iload_3
+      86: invokeinterface #132,  3          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.range:(II)Ljdplus/toolkit/base/api/data/DoubleSeq;
+      91: invokedynamic #138,  0            // InvokeDynamic #1:test:()Ljava/util/function/DoublePredicate;
+      96: invokeinterface #142,  2          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.anyMatch:(Ljava/util/function/DoublePredicate;)Z
+     101: ifeq          114
+     104: new           #146                // class jdplus/toolkit/base/api/timeseries/TsException
+     107: dup
+     108: ldc           #148                // String Missing values outside the estimation domain
+     110: invokespecial #150                // Method jdplus/toolkit/base/api/timeseries/TsException."<init>":(Ljava/lang/String;)V
+     113: athrow
+     114: aload_1
+     115: invokevirtual #115                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+     118: aload_2
+     119: invokevirtual #151                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getEndPeriod:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+     122: invokevirtual #122                // Method jdplus/toolkit/base/api/timeseries/TsPeriod.until:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;)I
+     125: istore        4
+     127: aload_1
+     128: invokevirtual #128                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+     131: iload         4
+     133: aload_1
+     134: invokevirtual #154                // Method jdplus/toolkit/base/api/timeseries/TsData.length:()I
+     137: invokeinterface #132,  3          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.range:(II)Ljdplus/toolkit/base/api/data/DoubleSeq;
+     142: invokedynamic #158,  0            // InvokeDynamic #2:test:()Ljava/util/function/DoublePredicate;
+     147: invokeinterface #142,  2          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.anyMatch:(Ljava/util/function/DoublePredicate;)Z
+     152: ifeq          165
+     155: new           #146                // class jdplus/toolkit/base/api/timeseries/TsException
+     158: dup
+     159: ldc           #148                // String Missing values outside the estimation domain
+     161: invokespecial #150                // Method jdplus/toolkit/base/api/timeseries/TsException."<init>":(Ljava/lang/String;)V
+     164: athrow
+     165: aload_0
+     166: aload_2
+     167: putfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+     170: goto          178
+     173: aload_0
+     174: aconst_null
+     175: putfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+     178: return
+
+  private void sortVariables();
+    Code:
+       0: aload_0
+       1: getfield      #159                // Field sortedVariables:Z
+       4: ifeq          8
+       7: return
+       8: new           #92                 // class java/util/ArrayList
+      11: dup
+      12: invokespecial #94                 // Method java/util/ArrayList."<init>":()V
+      15: astore_1
+      16: aload_0
+      17: getfield      #59                 // Field variables:Ljava/util/List;
+      20: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+      25: invokedynamic #166,  0            // InvokeDynamic #3:test:()Ljava/util/function/Predicate;
+      30: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+      35: aload_1
+      36: invokedynamic #175,  0            // InvokeDynamic #4:accept:(Ljava/util/List;)Ljava/util/function/Consumer;
+      41: invokeinterface #176,  2          // InterfaceMethod java/util/stream/Stream.forEach:(Ljava/util/function/Consumer;)V
+      46: aload_0
+      47: getfield      #59                 // Field variables:Ljava/util/List;
+      50: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+      55: invokedynamic #177,  0            // InvokeDynamic #5:test:()Ljava/util/function/Predicate;
+      60: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+      65: aload_1
+      66: invokedynamic #178,  0            // InvokeDynamic #6:accept:(Ljava/util/List;)Ljava/util/function/Consumer;
+      71: invokeinterface #179,  2          // InterfaceMethod java/util/stream/Stream.forEachOrdered:(Ljava/util/function/Consumer;)V
+      76: aload_0
+      77: getfield      #59                 // Field variables:Ljava/util/List;
+      80: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+      85: invokedynamic #182,  0            // InvokeDynamic #7:test:()Ljava/util/function/Predicate;
+      90: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+      95: aload_1
+      96: invokedynamic #183,  0            // InvokeDynamic #8:accept:(Ljava/util/List;)Ljava/util/function/Consumer;
+     101: invokeinterface #179,  2          // InterfaceMethod java/util/stream/Stream.forEachOrdered:(Ljava/util/function/Consumer;)V
+     106: aload_0
+     107: getfield      #59                 // Field variables:Ljava/util/List;
+     110: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+     115: invokedynamic #184,  0            // InvokeDynamic #9:test:()Ljava/util/function/Predicate;
+     120: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+     125: aload_1
+     126: invokedynamic #185,  0            // InvokeDynamic #10:accept:(Ljava/util/List;)Ljava/util/function/Consumer;
+     131: invokeinterface #179,  2          // InterfaceMethod java/util/stream/Stream.forEachOrdered:(Ljava/util/function/Consumer;)V
+     136: aload_0
+     137: getfield      #59                 // Field variables:Ljava/util/List;
+     140: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+     145: invokedynamic #186,  0            // InvokeDynamic #11:test:()Ljava/util/function/Predicate;
+     150: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+     155: invokedynamic #187,  0            // InvokeDynamic #12:test:()Ljava/util/function/Predicate;
+     160: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+     165: getstatic     #188                // Field OUTLIER_COMPARATOR:Ljava/util/Comparator;
+     168: invokeinterface #192,  2          // InterfaceMethod java/util/stream/Stream.sorted:(Ljava/util/Comparator;)Ljava/util/stream/Stream;
+     173: aload_1
+     174: invokedynamic #196,  0            // InvokeDynamic #13:accept:(Ljava/util/List;)Ljava/util/function/Consumer;
+     179: invokeinterface #179,  2          // InterfaceMethod java/util/stream/Stream.forEachOrdered:(Ljava/util/function/Consumer;)V
+     184: aload_0
+     185: getfield      #59                 // Field variables:Ljava/util/List;
+     188: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+     193: invokedynamic #197,  0            // InvokeDynamic #14:test:()Ljava/util/function/Predicate;
+     198: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+     203: invokedynamic #198,  0            // InvokeDynamic #15:test:()Ljava/util/function/Predicate;
+     208: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+     213: getstatic     #188                // Field OUTLIER_COMPARATOR:Ljava/util/Comparator;
+     216: invokeinterface #192,  2          // InterfaceMethod java/util/stream/Stream.sorted:(Ljava/util/Comparator;)Ljava/util/stream/Stream;
+     221: aload_1
+     222: invokedynamic #199,  0            // InvokeDynamic #16:accept:(Ljava/util/List;)Ljava/util/function/Consumer;
+     227: invokeinterface #179,  2          // InterfaceMethod java/util/stream/Stream.forEachOrdered:(Ljava/util/function/Consumer;)V
+     232: aload_0
+     233: getfield      #59                 // Field variables:Ljava/util/List;
+     236: invokeinterface #200,  1          // InterfaceMethod java/util/List.clear:()V
+     241: aload_0
+     242: getfield      #59                 // Field variables:Ljava/util/List;
+     245: aload_1
+     246: invokeinterface #203,  2          // InterfaceMethod java/util/List.addAll:(Ljava/util/Collection;)Z
+     251: pop
+     252: aload_0
+     253: iconst_1
+     254: putfield      #159                // Field sortedVariables:Z
+     257: return
+
+  private void buildTransformation();
+    Code:
+       0: aload_0
+       1: getfield      #48                 // Field transformedData:[D
+       4: ifnonnull     243
+       7: aload_0
+       8: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      11: invokevirtual #207                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getDifferencingOrder:()I
+      14: istore_1
+      15: aload_0
+      16: getfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      19: ifnonnull     37
+      22: iload_1
+      23: istore        4
+      25: aload_0
+      26: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      29: invokevirtual #154                // Method jdplus/toolkit/base/api/timeseries/TsData.length:()I
+      32: istore        5
+      34: goto          74
+      37: aload_0
+      38: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      41: invokevirtual #115                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      44: aload_0
+      45: getfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      48: invokevirtual #119                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getStartPeriod:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      51: invokevirtual #122                // Method jdplus/toolkit/base/api/timeseries/TsPeriod.until:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;)I
+      54: istore        6
+      56: iload         6
+      58: iload_1
+      59: iadd
+      60: istore        4
+      62: iload         6
+      64: aload_0
+      65: getfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      68: invokevirtual #210                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getLength:()I
+      71: iadd
+      72: istore        5
+      74: new           #213                // class jdplus/toolkit/base/core/data/transformation/LogJacobian
+      77: dup
+      78: iload         4
+      80: iload         5
+      82: aload_0
+      83: getfield      #51                 // Field missing:[I
+      86: invokespecial #215                // Method jdplus/toolkit/base/core/data/transformation/LogJacobian."<init>":(II[I)V
+      89: astore_2
+      90: aload_0
+      91: getfield      #44                 // Field interpolatedData:[D
+      94: ifnonnull     104
+      97: aload_0
+      98: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+     101: goto          118
+     104: aload_0
+     105: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+     108: invokevirtual #115                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+     111: aload_0
+     112: getfield      #44                 // Field interpolatedData:[D
+     115: invokestatic  #218                // Method jdplus/toolkit/base/api/timeseries/TsData.ofInternal:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;[D)Ljdplus/toolkit/base/api/timeseries/TsData;
+     118: astore_3
+     119: aload_0
+     120: getfield      #37                 // Field logTransformation:Z
+     123: ifeq          168
+     126: aload_0
+     127: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+     130: getstatic     #87                 // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.None:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+     133: if_acmpeq     154
+     136: aload_0
+     137: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+     140: invokestatic  #222                // Method jdplus/toolkit/base/core/timeseries/simplets/Transformations.lengthOfPeriod:(Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;)Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+     143: aload_3
+     144: aload_2
+     145: invokeinterface #228,  3          // InterfaceMethod jdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation.transform:(Ljdplus/toolkit/base/api/timeseries/TimeSeriesData;Ljdplus/toolkit/base/core/data/transformation/LogJacobian;)Ljdplus/toolkit/base/api/timeseries/TimeSeriesData;
+     150: checkcast     #104                // class jdplus/toolkit/base/api/timeseries/TsData
+     153: astore_3
+     154: invokestatic  #234                // Method jdplus/toolkit/base/core/timeseries/simplets/Transformations.log:()Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+     157: aload_3
+     158: aload_2
+     159: invokeinterface #228,  3          // InterfaceMethod jdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation.transform:(Ljdplus/toolkit/base/api/timeseries/TimeSeriesData;Ljdplus/toolkit/base/core/data/transformation/LogJacobian;)Ljdplus/toolkit/base/api/timeseries/TimeSeriesData;
+     164: checkcast     #104                // class jdplus/toolkit/base/api/timeseries/TsData
+     167: astore_3
+     168: aload_0
+     169: aload_2
+     170: getfield      #238                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     173: putfield      #55                 // Field llCorrection:D
+     176: aload_0
+     177: invokevirtual #241                // Method hasFixedEffects:()Z
+     180: ifeq          230
+     183: aload_3
+     184: invokevirtual #128                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+     187: invokestatic  #245                // Method jdplus/toolkit/base/core/data/DataBlock.of:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/data/DataBlock;
+     190: astore        6
+     192: aload_3
+     193: invokevirtual #103                // Method jdplus/toolkit/base/api/timeseries/TsData.getDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+     196: astore        7
+     198: aload_0
+     199: getfield      #59                 // Field variables:Ljava/util/List;
+     202: aload         7
+     204: aload         6
+     206: invokedynamic #251,  0            // InvokeDynamic #17:accept:(Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/toolkit/base/core/data/DataBlock;)Ljava/util/function/Consumer;
+     211: invokeinterface #73,  2           // InterfaceMethod java/util/List.forEach:(Ljava/util/function/Consumer;)V
+     216: aload         7
+     218: invokevirtual #119                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getStartPeriod:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+     221: aload         6
+     223: invokevirtual #254                // Method jdplus/toolkit/base/core/data/DataBlock.getStorage:()[D
+     226: invokestatic  #218                // Method jdplus/toolkit/base/api/timeseries/TsData.ofInternal:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;[D)Ljdplus/toolkit/base/api/timeseries/TsData;
+     229: astore_3
+     230: aload_0
+     231: aload_3
+     232: invokevirtual #128                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+     235: invokeinterface #258,  1          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.toArray:()[D
+     240: putfield      #48                 // Field transformedData:[D
+     243: return
+
+  public jdplus.toolkit.base.api.timeseries.TsDomain getEstimationDomain();
+    Code:
+       0: aload_0
+       1: getfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+       4: ifnonnull     17
+       7: aload_0
+       8: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      11: invokevirtual #103                // Method jdplus/toolkit/base/api/timeseries/TsData.getDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      14: goto          21
+      17: aload_0
+      18: getfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      21: areturn
+
+  public int[] getMissingInEstimationDomain();
+    Code:
+       0: aload_0
+       1: getfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+       4: ifnull        15
+       7: aload_0
+       8: getfield      #51                 // Field missing:[I
+      11: arraylength
+      12: ifne          20
+      15: aload_0
+      16: getfield      #51                 // Field missing:[I
+      19: areturn
+      20: aload_0
+      21: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      24: invokevirtual #115                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      27: aload_0
+      28: getfield      #14                 // Field estimationDomain:Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      31: invokevirtual #119                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getStartPeriod:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      34: invokevirtual #122                // Method jdplus/toolkit/base/api/timeseries/TsPeriod.until:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;)I
+      37: istore_1
+      38: iload_1
+      39: ifne          47
+      42: aload_0
+      43: getfield      #51                 // Field missing:[I
+      46: areturn
+      47: aload_0
+      48: getfield      #51                 // Field missing:[I
+      51: invokevirtual #261                // Method "[I".clone:()Ljava/lang/Object;
+      54: checkcast     #262                // class "[I"
+      57: astore_2
+      58: iconst_0
+      59: istore_3
+      60: iload_3
+      61: aload_2
+      62: arraylength
+      63: if_icmpge     79
+      66: aload_2
+      67: iload_3
+      68: dup2
+      69: iaload
+      70: iload_1
+      71: isub
+      72: iastore
+      73: iinc          3, 1
+      76: goto          60
+      79: aload_2
+      80: areturn
+
+  public jdplus.toolkit.base.core.regarima.RegArimaModel<jdplus.toolkit.base.core.sarima.SarimaModel> regarima();
+    Code:
+       0: aload_0
+       1: aconst_null
+       2: invokevirtual #266                // Method regarima:(Ljdplus/toolkit/base/api/processing/ProcessingLog;)Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+       5: areturn
+
+  public jdplus.toolkit.base.core.regarima.RegArimaModel<jdplus.toolkit.base.core.sarima.SarimaModel> regarima(jdplus.toolkit.base.api.processing.ProcessingLog);
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field variables:Ljava/util/List;
+       4: invokedynamic #270,  0            // InvokeDynamic #18:apply:()Ljava/util/function/UnaryOperator;
+       9: invokeinterface #274,  2          // InterfaceMethod java/util/List.replaceAll:(Ljava/util/function/UnaryOperator;)V
+      14: aload_0
+      15: invokevirtual #278                // Method buildTransformation:()V
+      18: aload_0
+      19: invokevirtual #281                // Method sortVariables:()V
+      22: aload_0
+      23: invokevirtual #284                // Method getEstimationDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      26: astore_2
+      27: aload_0
+      28: getfield      #48                 // Field transformedData:[D
+      31: astore_3
+      32: aload_2
+      33: invokevirtual #210                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getLength:()I
+      36: istore        5
+      38: aload_0
+      39: getfield      #51                 // Field missing:[I
+      42: astore        6
+      44: aload_3
+      45: arraylength
+      46: iload         5
+      48: if_icmple     127
+      51: aload_0
+      52: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      55: invokevirtual #115                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      58: aload_2
+      59: invokevirtual #119                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getStartPeriod:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      62: invokevirtual #122                // Method jdplus/toolkit/base/api/timeseries/TsPeriod.until:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;)I
+      65: istore        7
+      67: aload_3
+      68: iload         7
+      70: iload         5
+      72: invokestatic  #287                // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.of:([DII)Ljdplus/toolkit/base/api/data/DoubleSeq;
+      75: astore        4
+      77: aload_0
+      78: getfield      #51                 // Field missing:[I
+      81: arraylength
+      82: ifle          124
+      85: aload_0
+      86: getfield      #51                 // Field missing:[I
+      89: invokevirtual #261                // Method "[I".clone:()Ljava/lang/Object;
+      92: checkcast     #262                // class "[I"
+      95: astore        6
+      97: iconst_0
+      98: istore        8
+     100: iload         8
+     102: aload         6
+     104: arraylength
+     105: if_icmpge     124
+     108: aload         6
+     110: iload         8
+     112: dup2
+     113: iaload
+     114: iload         7
+     116: isub
+     117: iastore
+     118: iinc          8, 1
+     121: goto          100
+     124: goto          133
+     127: aload_3
+     128: invokestatic  #290                // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.of:([D)Ljdplus/toolkit/base/api/data/DoubleSeq;
+     131: astore        4
+     133: invokestatic  #293                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.builder:()Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+     136: aload         4
+     138: invokevirtual #299                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.y:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+     141: aload         6
+     143: invokevirtual #305                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.missing:([I)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+     146: aload_0
+     147: getfield      #33                 // Field mean:Z
+     150: invokevirtual #308                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.meanCorrection:(Z)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+     153: aload_0
+     154: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+     157: invokestatic  #312                // Method jdplus/toolkit/base/core/sarima/SarimaModel.builder:(Ljdplus/toolkit/base/api/arima/SarimaSpec;)Ljdplus/toolkit/base/core/sarima/SarimaModel$Builder;
+     160: invokevirtual #317                // Method jdplus/toolkit/base/core/sarima/SarimaModel$Builder.build:()Ljdplus/toolkit/base/core/sarima/SarimaModel;
+     163: invokevirtual #323                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.arima:(Ljdplus/toolkit/base/core/arima/IArimaModel;)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+     166: astore        7
+     168: new           #92                 // class java/util/ArrayList
+     171: dup
+     172: invokespecial #94                 // Method java/util/ArrayList."<init>":()V
+     175: astore        8
+     177: aload_0
+     178: getfield      #59                 // Field variables:Ljava/util/List;
+     181: invokeinterface #326,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     186: astore        9
+     188: aload         9
+     190: invokeinterface #330,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     195: ifeq          322
+     198: aload         9
+     200: invokeinterface #335,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     205: checkcast     #338                // class jdplus/toolkit/base/api/timeseries/regression/Variable
+     208: astore        10
+     210: aload         10
+     212: invokevirtual #340                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.isPreadjustment:()Z
+     215: ifne          319
+     218: aload_2
+     219: aload_1
+     220: iconst_1
+     221: anewarray     #343                // class jdplus/toolkit/base/api/timeseries/regression/ITsVariable
+     224: dup
+     225: iconst_0
+     226: aload         10
+     228: invokevirtual #345                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+     231: aastore
+     232: invokestatic  #349                // Method jdplus/toolkit/base/core/modelling/regression/Regression.matrix:(Ljdplus/toolkit/base/api/timeseries/TimeSeriesDomain;Ljdplus/toolkit/base/api/processing/ProcessingLog;[Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;)Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+     235: astore        11
+     237: aload         11
+     239: ifnull        251
+     242: aload         11
+     244: dconst_0
+     245: invokevirtual #355                // Method jdplus/toolkit/base/core/math/matrices/FastMatrix.isZero:(D)Z
+     248: ifeq          264
+     251: aload         8
+     253: aload         10
+     255: invokeinterface #361,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     260: pop
+     261: goto          319
+     264: aload         11
+     266: invokevirtual #365                // Method jdplus/toolkit/base/core/math/matrices/FastMatrix.columnsIterator:()Ljdplus/toolkit/base/core/data/DataBlockIterator;
+     269: astore        12
+     271: iconst_0
+     272: istore        13
+     274: aload         12
+     276: invokevirtual #369                // Method jdplus/toolkit/base/core/data/DataBlockIterator.hasNext:()Z
+     279: ifeq          319
+     282: aload         12
+     284: invokevirtual #372                // Method jdplus/toolkit/base/core/data/DataBlockIterator.next:()Ljdplus/toolkit/base/core/data/DataBlock;
+     287: astore        14
+     289: aload         10
+     291: iload         13
+     293: iinc          13, 1
+     296: invokevirtual #375                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCoefficient:(I)Ljdplus/toolkit/base/api/data/Parameter;
+     299: invokevirtual #379                // Method jdplus/toolkit/base/api/data/Parameter.isFree:()Z
+     302: ifeq          316
+     305: aload         7
+     307: aload         14
+     309: invokevirtual #384                // Method jdplus/toolkit/base/core/data/DataBlock.unmodifiable:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+     312: invokevirtual #387                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.addX:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+     315: pop
+     316: goto          274
+     319: goto          188
+     322: aload         8
+     324: invokeinterface #390,  1          // InterfaceMethod java/util/List.isEmpty:()Z
+     329: ifne          348
+     332: aload_0
+     333: getfield      #59                 // Field variables:Ljava/util/List;
+     336: aload         8
+     338: invokedynamic #393,  0            // InvokeDynamic #19:apply:(Ljava/util/List;)Ljava/util/function/UnaryOperator;
+     343: invokeinterface #274,  2          // InterfaceMethod java/util/List.replaceAll:(Ljava/util/function/UnaryOperator;)V
+     348: aload_0
+     349: aload         7
+     351: invokevirtual #396                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.build:()Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+     354: aload_1
+     355: invokevirtual #399                // Method check:(Ljdplus/toolkit/base/core/regarima/RegArimaModel;Ljdplus/toolkit/base/api/processing/ProcessingLog;)Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+     358: areturn
+
+  public jdplus.toolkit.base.core.regarima.RegArimaModel<jdplus.toolkit.base.core.sarima.SarimaModel> check(jdplus.toolkit.base.core.regarima.RegArimaModel<jdplus.toolkit.base.core.sarima.SarimaModel>, jdplus.toolkit.base.api.processing.ProcessingLog);
+    Code:
+       0: aload_1
+       1: invokevirtual #403                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.differencedModel:()Ljdplus/toolkit/base/core/regarima/RegArmaModel;
+       4: invokevirtual #407                // Method jdplus/toolkit/base/core/regarima/RegArmaModel.getX:()Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+       7: astore_3
+       8: new           #413                // class jdplus/toolkit/base/core/math/matrices/decomposition/HouseholderWithPivoting
+      11: dup
+      12: invokespecial #415                // Method jdplus/toolkit/base/core/math/matrices/decomposition/HouseholderWithPivoting."<init>":()V
+      15: astore        4
+      17: aload_1
+      18: invokevirtual #416                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getMissingValuesCount:()I
+      21: istore        5
+      23: aload_1
+      24: invokevirtual #419                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.isMean:()Z
+      27: ifeq          33
+      30: iinc          5, 1
+      33: iload         5
+      35: istore        6
+      37: aload         4
+      39: aload_3
+      40: iload         5
+      42: invokevirtual #422                // Method jdplus/toolkit/base/core/math/matrices/decomposition/HouseholderWithPivoting.decompose:(Ljdplus/toolkit/base/core/math/matrices/FastMatrix;I)Ljdplus/toolkit/base/core/math/matrices/decomposition/QRDecomposition;
+      45: astore        7
+      47: aload         7
+      49: invokevirtual #426                // Method jdplus/toolkit/base/core/math/matrices/decomposition/QRDecomposition.rawR:()Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+      52: ldc2_w        #431                // double 1.0E-12d
+      55: invokestatic  #433                // Method jdplus/toolkit/base/core/math/matrices/UpperTriangularMatrix.rank:(Ljdplus/toolkit/base/core/math/matrices/FastMatrix;D)I
+      58: istore        8
+      60: iload         8
+      62: aload         7
+      64: invokevirtual #439                // Method jdplus/toolkit/base/core/math/matrices/decomposition/QRDecomposition.n:()I
+      67: if_icmpne     72
+      70: aload_1
+      71: areturn
+      72: aload_2
+      73: ifnull        85
+      76: aload_2
+      77: ldc_w         #442                // String collinear model. Some coefficients are set to 0
+      80: invokeinterface #444,  2          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.warning:(Ljava/lang/String;)V
+      85: invokestatic  #293                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.builder:()Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+      88: aload_1
+      89: invokevirtual #449                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getY:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      92: invokevirtual #299                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.y:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+      95: aload_1
+      96: invokevirtual #452                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.missing:()[I
+      99: invokevirtual #305                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.missing:([I)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+     102: aload_1
+     103: invokevirtual #419                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.isMean:()Z
+     106: invokevirtual #308                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.meanCorrection:(Z)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+     109: aload_1
+     110: invokevirtual #455                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.arima:()Ljdplus/toolkit/base/core/arima/IArimaModel;
+     113: invokevirtual #323                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.arima:(Ljdplus/toolkit/base/core/arima/IArimaModel;)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+     116: astore        9
+     118: new           #92                 // class java/util/ArrayList
+     121: dup
+     122: invokespecial #94                 // Method java/util/ArrayList."<init>":()V
+     125: astore        10
+     127: aload         7
+     129: invokevirtual #458                // Method jdplus/toolkit/base/core/math/matrices/decomposition/QRDecomposition.pivot:()[I
+     132: astore        11
+     134: aload         11
+     136: ifnonnull     143
+     139: aconst_null
+     140: goto          148
+     143: aload         11
+     145: arraylength
+     146: newarray       int
+     148: astore        12
+     150: aload         11
+     152: ifnull        182
+     155: iconst_0
+     156: istore        13
+     158: iload         13
+     160: aload         11
+     162: arraylength
+     163: if_icmpge     182
+     166: aload         12
+     168: aload         11
+     170: iload         13
+     172: iaload
+     173: iload         13
+     175: iastore
+     176: iinc          13, 1
+     179: goto          158
+     182: aload_1
+     183: invokevirtual #461                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getX:()Ljava/util/List;
+     186: astore        13
+     188: aload_0
+     189: getfield      #59                 // Field variables:Ljava/util/List;
+     192: invokeinterface #326,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     197: astore        14
+     199: aload         14
+     201: invokeinterface #330,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     206: ifeq          387
+     209: aload         14
+     211: invokeinterface #335,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     216: checkcast     #338                // class jdplus/toolkit/base/api/timeseries/regression/Variable
+     219: astore        15
+     221: aload         15
+     223: invokevirtual #340                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.isPreadjustment:()Z
+     226: ifne          374
+     229: aload         15
+     231: invokevirtual #464                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.dim:()I
+     234: istore        16
+     236: iconst_0
+     237: istore        17
+     239: iload         17
+     241: iload         16
+     243: if_icmpge     358
+     246: aload         15
+     248: iload         17
+     250: invokevirtual #375                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCoefficient:(I)Ljdplus/toolkit/base/api/data/Parameter;
+     253: invokevirtual #379                // Method jdplus/toolkit/base/api/data/Parameter.isFree:()Z
+     256: ifeq          352
+     259: aload         12
+     261: ifnonnull     279
+     264: iload         5
+     266: iload         8
+     268: if_icmplt     275
+     271: iconst_1
+     272: goto          294
+     275: iconst_0
+     276: goto          294
+     279: aload         12
+     281: iload         5
+     283: iaload
+     284: iload         8
+     286: if_icmplt     293
+     289: iconst_1
+     290: goto          294
+     293: iconst_0
+     294: istore        18
+     296: iload         18
+     298: ifeq          328
+     301: aload         15
+     303: invokevirtual #467                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCoefficients:()[Ljdplus/toolkit/base/api/data/Parameter;
+     306: astore        19
+     308: aload         19
+     310: iload         17
+     312: invokestatic  #471                // Method jdplus/toolkit/base/api/data/Parameter.zero:()Ljdplus/toolkit/base/api/data/Parameter;
+     315: aastore
+     316: aload         15
+     318: aload         19
+     320: invokevirtual #475                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.withCoefficients:([Ljdplus/toolkit/base/api/data/Parameter;)Ljdplus/toolkit/base/api/timeseries/regression/Variable;
+     323: astore        15
+     325: goto          349
+     328: aload         9
+     330: aload         13
+     332: iload         5
+     334: iload         6
+     336: isub
+     337: invokeinterface #479,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     342: checkcast     #133                // class jdplus/toolkit/base/api/data/DoubleSeq
+     345: invokevirtual #387                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.addX:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+     348: pop
+     349: iinc          5, 1
+     352: iinc          17, 1
+     355: goto          239
+     358: aload         15
+     360: invokevirtual #340                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.isPreadjustment:()Z
+     363: ifeq          374
+     366: aload         15
+     368: iconst_1
+     369: invokevirtual #483                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.exclude:(Z)Ljdplus/toolkit/base/api/timeseries/regression/Variable;
+     372: astore        15
+     374: aload         10
+     376: aload         15
+     378: invokeinterface #361,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     383: pop
+     384: goto          199
+     387: aload_0
+     388: getfield      #59                 // Field variables:Ljava/util/List;
+     391: invokeinterface #200,  1          // InterfaceMethod java/util/List.clear:()V
+     396: aload_0
+     397: getfield      #59                 // Field variables:Ljava/util/List;
+     400: aload         10
+     402: invokeinterface #203,  2          // InterfaceMethod java/util/List.addAll:(Ljava/util/Collection;)Z
+     407: pop
+     408: aload         9
+     410: invokevirtual #396                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.build:()Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+     413: areturn
+
+  private void invalidateTransformation();
+    Code:
+       0: aload_0
+       1: aconst_null
+       2: putfield      #48                 // Field transformedData:[D
+       5: aload_0
+       6: dconst_0
+       7: putfield      #55                 // Field llCorrection:D
+      10: return
+
+  public jdplus.toolkit.base.api.timeseries.regression.Variable variable(java.lang.String);
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field variables:Ljava/util/List;
+       4: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+       9: aload_1
+      10: invokedynamic #487,  0            // InvokeDynamic #20:test:(Ljava/lang/String;)Ljava/util/function/Predicate;
+      15: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+      20: invokeinterface #490,  1          // InterfaceMethod java/util/stream/Stream.findFirst:()Ljava/util/Optional;
+      25: astore_2
+      26: aload_2
+      27: aconst_null
+      28: invokevirtual #494                // Method java/util/Optional.orElse:(Ljava/lang/Object;)Ljava/lang/Object;
+      31: checkcast     #338                // class jdplus/toolkit/base/api/timeseries/regression/Variable
+      34: areturn
+
+  public jdplus.toolkit.base.api.timeseries.regression.Variable variable(jdplus.toolkit.base.api.timeseries.regression.ITsVariable);
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field variables:Ljava/util/List;
+       4: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+       9: aload_1
+      10: invokedynamic #499,  0            // InvokeDynamic #21:test:(Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;)Ljava/util/function/Predicate;
+      15: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+      20: invokeinterface #490,  1          // InterfaceMethod java/util/stream/Stream.findFirst:()Ljava/util/Optional;
+      25: astore_2
+      26: aload_2
+      27: aconst_null
+      28: invokevirtual #494                // Method java/util/Optional.orElse:(Ljava/lang/Object;)Ljava/lang/Object;
+      31: checkcast     #338                // class jdplus/toolkit/base/api/timeseries/regression/Variable
+      34: areturn
+
+  public boolean remove(java.lang.String);
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field variables:Ljava/util/List;
+       4: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+       9: aload_1
+      10: invokedynamic #502,  0            // InvokeDynamic #22:test:(Ljava/lang/String;)Ljava/util/function/Predicate;
+      15: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+      20: invokeinterface #490,  1          // InterfaceMethod java/util/stream/Stream.findFirst:()Ljava/util/Optional;
+      25: astore_2
+      26: aload_2
+      27: invokevirtual #503                // Method java/util/Optional.isPresent:()Z
+      30: ifeq          49
+      33: aload_0
+      34: getfield      #59                 // Field variables:Ljava/util/List;
+      37: aload_2
+      38: invokevirtual #506                // Method java/util/Optional.orElseThrow:()Ljava/lang/Object;
+      41: invokeinterface #509,  2          // InterfaceMethod java/util/List.remove:(Ljava/lang/Object;)Z
+      46: pop
+      47: iconst_1
+      48: ireturn
+      49: iconst_0
+      50: ireturn
+
+  public boolean remove(jdplus.toolkit.base.api.timeseries.regression.ITsVariable);
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field variables:Ljava/util/List;
+       4: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+       9: aload_1
+      10: invokedynamic #512,  0            // InvokeDynamic #23:test:(Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;)Ljava/util/function/Predicate;
+      15: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+      20: invokeinterface #490,  1          // InterfaceMethod java/util/stream/Stream.findFirst:()Ljava/util/Optional;
+      25: astore_2
+      26: aload_2
+      27: invokevirtual #503                // Method java/util/Optional.isPresent:()Z
+      30: ifeq          49
+      33: aload_0
+      34: getfield      #59                 // Field variables:Ljava/util/List;
+      37: aload_2
+      38: invokevirtual #506                // Method java/util/Optional.orElseThrow:()Ljava/lang/Object;
+      41: invokeinterface #509,  2          // InterfaceMethod java/util/List.remove:(Ljava/lang/Object;)Z
+      46: pop
+      47: iconst_1
+      48: ireturn
+      49: iconst_0
+      50: ireturn
+
+  public jdplus.toolkit.base.api.timeseries.regression.Variable addVariable(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_1
+       1: invokevirtual #513                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getName:()Ljava/lang/String;
+       4: astore_2
+       5: aload_0
+       6: aload_2
+       7: invokevirtual #517                // Method contains:(Ljava/lang/String;)Z
+      10: ifeq          21
+      13: aload_2
+      14: invokestatic  #521                // InterfaceMethod jdplus/toolkit/base/api/timeseries/regression/ITsVariable.nextName:(Ljava/lang/String;)Ljava/lang/String;
+      17: astore_2
+      18: goto          5
+      21: aload_1
+      22: aload_2
+      23: invokevirtual #525                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.rename:(Ljava/lang/String;)Ljdplus/toolkit/base/api/timeseries/regression/Variable;
+      26: astore_3
+      27: aload_0
+      28: getfield      #59                 // Field variables:Ljava/util/List;
+      31: aload_3
+      32: invokeinterface #361,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      37: pop
+      38: aload_0
+      39: iconst_0
+      40: putfield      #159                // Field sortedVariables:Z
+      43: aload_3
+      44: areturn
+
+  public boolean contains(java.lang.String);
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field variables:Ljava/util/List;
+       4: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+       9: aload_1
+      10: invokedynamic #529,  0            // InvokeDynamic #24:test:(Ljava/lang/String;)Ljava/util/function/Predicate;
+      15: invokeinterface #530,  2          // InterfaceMethod java/util/stream/Stream.anyMatch:(Ljava/util/function/Predicate;)Z
+      20: ireturn
+
+  public void setLogTransformation(boolean);
+    Code:
+       0: aload_0
+       1: getfield      #37                 // Field logTransformation:Z
+       4: iload_1
+       5: if_icmpne     9
+       8: return
+       9: aload_0
+      10: iload_1
+      11: putfield      #37                 // Field logTransformation:Z
+      14: aload_0
+      15: invokevirtual #533                // Method invalidateTransformation:()V
+      18: return
+
+  public boolean isLogTransformation();
+    Code:
+       0: aload_0
+       1: getfield      #37                 // Field logTransformation:Z
+       4: ireturn
+
+  public boolean isAdjusted();
+    Code:
+       0: aload_0
+       1: getfield      #37                 // Field logTransformation:Z
+       4: ifeq          21
+       7: aload_0
+       8: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      11: getstatic     #87                 // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.None:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      14: if_acmpeq     21
+      17: iconst_1
+      18: goto          22
+      21: iconst_0
+      22: ireturn
+
+  public jdplus.toolkit.base.api.timeseries.TsData getSeries();
+    Code:
+       0: aload_0
+       1: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+       4: areturn
+
+  public jdplus.toolkit.base.api.timeseries.TsDomain getDomain();
+    Code:
+       0: aload_0
+       1: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+       4: invokevirtual #103                // Method jdplus/toolkit/base/api/timeseries/TsData.getDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+       7: areturn
+
+  public jdplus.toolkit.base.api.timeseries.TsData getTransformedSeries();
+    Code:
+       0: aload_0
+       1: invokevirtual #278                // Method buildTransformation:()V
+       4: aload_0
+       5: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+       8: invokevirtual #115                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      11: aload_0
+      12: getfield      #48                 // Field transformedData:[D
+      15: invokestatic  #218                // Method jdplus/toolkit/base/api/timeseries/TsData.ofInternal:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;[D)Ljdplus/toolkit/base/api/timeseries/TsData;
+      18: areturn
+
+  public jdplus.toolkit.base.api.timeseries.TsData getTransformedSeries(boolean);
+    Code:
+       0: aload_0
+       1: invokevirtual #278                // Method buildTransformation:()V
+       4: iload_1
+       5: ifne          16
+       8: aload_0
+       9: getfield      #51                 // Field missing:[I
+      12: arraylength
+      13: ifne          31
+      16: aload_0
+      17: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      20: invokevirtual #115                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      23: aload_0
+      24: getfield      #48                 // Field transformedData:[D
+      27: invokestatic  #218                // Method jdplus/toolkit/base/api/timeseries/TsData.ofInternal:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;[D)Ljdplus/toolkit/base/api/timeseries/TsData;
+      30: areturn
+      31: aload_0
+      32: getfield      #48                 // Field transformedData:[D
+      35: invokevirtual #536                // Method "[D".clone:()Ljava/lang/Object;
+      38: checkcast     #537                // class "[D"
+      41: astore_2
+      42: iconst_0
+      43: istore_3
+      44: iload_3
+      45: aload_0
+      46: getfield      #51                 // Field missing:[I
+      49: arraylength
+      50: if_icmpge     70
+      53: aload_2
+      54: aload_0
+      55: getfield      #51                 // Field missing:[I
+      58: iload_3
+      59: iaload
+      60: ldc2_w        #540                // double NaNd
+      63: dastore
+      64: iinc          3, 1
+      67: goto          44
+      70: aload_0
+      71: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      74: invokevirtual #115                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      77: aload_2
+      78: invokestatic  #218                // Method jdplus/toolkit/base/api/timeseries/TsData.ofInternal:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;[D)Ljdplus/toolkit/base/api/timeseries/TsData;
+      81: areturn
+
+  public jdplus.toolkit.base.api.timeseries.TsData getInterpolatedSeries();
+    Code:
+       0: aload_0
+       1: getfield      #44                 // Field interpolatedData:[D
+       4: ifnonnull     12
+       7: aload_0
+       8: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      11: areturn
+      12: aload_0
+      13: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      16: invokevirtual #115                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      19: aload_0
+      20: getfield      #44                 // Field interpolatedData:[D
+      23: invokestatic  #218                // Method jdplus/toolkit/base/api/timeseries/TsData.ofInternal:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;[D)Ljdplus/toolkit/base/api/timeseries/TsData;
+      26: areturn
+
+  public jdplus.toolkit.base.api.arima.SarimaSpec getArimaSpec();
+    Code:
+       0: aload_0
+       1: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+       4: areturn
+
+  public void setArimaSpec(jdplus.toolkit.base.api.arima.SarimaSpec);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+       5: aload_0
+       6: getfield      #48                 // Field transformedData:[D
+       9: ifnull        49
+      12: aload_0
+      13: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      16: invokevirtual #542                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getD:()I
+      19: aload_1
+      20: invokevirtual #542                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getD:()I
+      23: if_icmpne     40
+      26: aload_0
+      27: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      30: invokevirtual #545                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getBd:()I
+      33: aload_1
+      34: invokevirtual #545                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getBd:()I
+      37: if_icmpeq     49
+      40: aload_0
+      41: aconst_null
+      42: putfield      #48                 // Field transformedData:[D
+      45: aload_0
+      46: invokevirtual #278                // Method buildTransformation:()V
+      49: return
+
+  public jdplus.toolkit.base.api.arima.SarimaOrders specification();
+    Code:
+       0: aload_0
+       1: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+       4: invokevirtual #548                // Method jdplus/toolkit/base/api/arima/SarimaSpec.orders:()Ljdplus/toolkit/base/api/arima/SarimaOrders;
+       7: areturn
+
+  public jdplus.toolkit.base.core.sarima.SarimaModel arima();
+    Code:
+       0: aload_0
+       1: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+       4: invokestatic  #312                // Method jdplus/toolkit/base/core/sarima/SarimaModel.builder:(Ljdplus/toolkit/base/api/arima/SarimaSpec;)Ljdplus/toolkit/base/core/sarima/SarimaModel$Builder;
+       7: invokevirtual #317                // Method jdplus/toolkit/base/core/sarima/SarimaModel$Builder.build:()Ljdplus/toolkit/base/core/sarima/SarimaModel;
+      10: areturn
+
+  public void setSpecification(jdplus.toolkit.base.api.arima.SarimaOrders);
+    Code:
+       0: aload_0
+       1: getfield      #48                 // Field transformedData:[D
+       4: ifnull        40
+       7: aload_0
+       8: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      11: invokevirtual #542                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getD:()I
+      14: aload_1
+      15: invokevirtual #552                // Method jdplus/toolkit/base/api/arima/SarimaOrders.getD:()I
+      18: if_icmpne     35
+      21: aload_0
+      22: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      25: invokevirtual #545                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getBd:()I
+      28: aload_1
+      29: invokevirtual #555                // Method jdplus/toolkit/base/api/arima/SarimaOrders.getBd:()I
+      32: if_icmpeq     40
+      35: aload_0
+      36: aconst_null
+      37: putfield      #48                 // Field transformedData:[D
+      40: aload_0
+      41: invokestatic  #556                // Method jdplus/toolkit/base/api/arima/SarimaSpec.builder:()Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+      44: aload_1
+      45: invokevirtual #559                // Method jdplus/toolkit/base/api/arima/SarimaOrders.getPeriod:()I
+      48: invokevirtual #562                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.period:(I)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+      51: aload_1
+      52: invokevirtual #552                // Method jdplus/toolkit/base/api/arima/SarimaOrders.getD:()I
+      55: invokevirtual #568                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.d:(I)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+      58: aload_1
+      59: invokevirtual #555                // Method jdplus/toolkit/base/api/arima/SarimaOrders.getBd:()I
+      62: invokevirtual #571                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.bd:(I)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+      65: aload_1
+      66: invokevirtual #574                // Method jdplus/toolkit/base/api/arima/SarimaOrders.getP:()I
+      69: invokevirtual #577                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.p:(I)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+      72: aload_1
+      73: invokevirtual #580                // Method jdplus/toolkit/base/api/arima/SarimaOrders.getQ:()I
+      76: invokevirtual #583                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.q:(I)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+      79: aload_1
+      80: invokevirtual #586                // Method jdplus/toolkit/base/api/arima/SarimaOrders.getBp:()I
+      83: invokevirtual #589                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.bp:(I)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+      86: aload_1
+      87: invokevirtual #592                // Method jdplus/toolkit/base/api/arima/SarimaOrders.getBq:()I
+      90: invokevirtual #595                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.bq:(I)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+      93: invokevirtual #598                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.buildWithoutValidation:()Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      96: putfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      99: aload_0
+     100: invokevirtual #278                // Method buildTransformation:()V
+     103: return
+
+  public void setAirline(boolean);
+    Code:
+       0: aload_0
+       1: invokevirtual #601                // Method getAnnualFrequency:()I
+       4: istore_2
+       5: iload_1
+       6: ifeq          16
+       9: iload_2
+      10: invokestatic  #604                // Method jdplus/toolkit/base/api/arima/SarimaOrders.airline:(I)Ljdplus/toolkit/base/api/arima/SarimaOrders;
+      13: goto          20
+      16: iload_2
+      17: invokestatic  #608                // Method jdplus/toolkit/base/api/arima/SarimaOrders.m011:(I)Ljdplus/toolkit/base/api/arima/SarimaOrders;
+      20: astore_3
+      21: aload_0
+      22: aload_3
+      23: invokevirtual #611                // Method setSpecification:(Ljdplus/toolkit/base/api/arima/SarimaOrders;)V
+      26: return
+
+  public boolean isMean();
+    Code:
+       0: aload_0
+       1: getfield      #33                 // Field mean:Z
+       4: ireturn
+
+  public boolean hasFixedEffects();
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field variables:Ljava/util/List;
+       4: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+       9: invokedynamic #615,  0            // InvokeDynamic #25:test:()Ljava/util/function/Predicate;
+      14: invokeinterface #530,  2          // InterfaceMethod java/util/stream/Stream.anyMatch:(Ljava/util/function/Predicate;)Z
+      19: ireturn
+
+  public java.util.stream.Stream<jdplus.toolkit.base.api.timeseries.regression.Variable> variables();
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field variables:Ljava/util/List;
+       4: invokeinterface #162,  1          // InterfaceMethod java/util/List.stream:()Ljava/util/stream/Stream;
+       9: areturn
+
+  public int countRegressors(java.util.function.Predicate<jdplus.toolkit.base.api.timeseries.regression.Variable>);
+    Code:
+       0: aload_0
+       1: invokevirtual #616                // Method variables:()Ljava/util/stream/Stream;
+       4: aload_1
+       5: invokeinterface #169,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+      10: invokedynamic #618,  0            // InvokeDynamic #26:applyAsInt:()Ljava/util/function/ToIntFunction;
+      15: invokeinterface #622,  2          // InterfaceMethod java/util/stream/Stream.mapToInt:(Ljava/util/function/ToIntFunction;)Ljava/util/stream/IntStream;
+      20: invokeinterface #626,  1          // InterfaceMethod java/util/stream/IntStream.sum:()I
+      25: ireturn
+
+  public void setPreadjustment(jdplus.toolkit.base.api.timeseries.calendars.LengthOfPeriodType);
+    Code:
+       0: aload_0
+       1: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+       4: aload_1
+       5: if_acmpeq     17
+       8: aload_0
+       9: aload_1
+      10: putfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      13: aload_0
+      14: invokevirtual #533                // Method invalidateTransformation:()V
+      17: return
+
+  public jdplus.toolkit.base.api.timeseries.calendars.LengthOfPeriodType getPreadjustment();
+    Code:
+       0: aload_0
+       1: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+       4: areturn
+
+  public void interpolate(jdplus.toolkit.base.core.data.interpolation.DataInterpolator);
+    Code:
+       0: aload_1
+       1: ifnonnull     15
+       4: new           #7                  // class java/lang/NullPointerException
+       7: dup
+       8: ldc_w         #631                // String interpolator is marked non-null but is null
+      11: invokespecial #11                 // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      14: athrow
+      15: aload_0
+      16: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      19: invokevirtual #128                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      22: invokedynamic #633,  0            // InvokeDynamic #27:test:()Ljava/util/function/DoublePredicate;
+      27: invokeinterface #142,  2          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.anyMatch:(Ljava/util/function/DoublePredicate;)Z
+      32: ifeq          100
+      35: new           #83                 // class jdplus/toolkit/base/api/util/IntList
+      38: dup
+      39: invokespecial #634                // Method jdplus/toolkit/base/api/util/IntList."<init>":()V
+      42: astore_2
+      43: aload_0
+      44: aload_1
+      45: aload_0
+      46: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+      49: invokevirtual #128                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      52: aload_2
+      53: invokeinterface #635,  3          // InterfaceMethod jdplus/toolkit/base/core/data/interpolation/DataInterpolator.interpolate:(Ljdplus/toolkit/base/api/data/DoubleSeq;Ljdplus/toolkit/base/api/util/IntList;)[D
+      58: putfield      #44                 // Field interpolatedData:[D
+      61: aload_2
+      62: invokevirtual #641                // Method jdplus/toolkit/base/api/util/IntList.isEmpty:()Z
+      65: ifeq          78
+      68: aload_0
+      69: getstatic     #82                 // Field jdplus/toolkit/base/api/util/IntList.EMPTY:[I
+      72: putfield      #51                 // Field missing:[I
+      75: goto          93
+      78: aload_0
+      79: aload_2
+      80: invokevirtual #642                // Method jdplus/toolkit/base/api/util/IntList.toArray:()[I
+      83: putfield      #51                 // Field missing:[I
+      86: aload_0
+      87: getfield      #51                 // Field missing:[I
+      90: invokestatic  #644                // Method java/util/Arrays.sort:([I)V
+      93: aload_0
+      94: invokevirtual #533                // Method invalidateTransformation:()V
+      97: goto          112
+     100: aload_0
+     101: aconst_null
+     102: putfield      #44                 // Field interpolatedData:[D
+     105: aload_0
+     106: getstatic     #82                 // Field jdplus/toolkit/base/api/util/IntList.EMPTY:[I
+     109: putfield      #51                 // Field missing:[I
+     112: return
+
+  public int[] getMissing();
+    Code:
+       0: aload_0
+       1: getfield      #51                 // Field missing:[I
+       4: areturn
+
+  public void setMean(boolean);
+    Code:
+       0: aload_0
+       1: iload_1
+       2: putfield      #33                 // Field mean:Z
+       5: return
+
+  public boolean removeVariable(java.util.function.Predicate<jdplus.toolkit.base.api.timeseries.regression.Variable>);
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field variables:Ljava/util/List;
+       4: aload_1
+       5: invokedynamic #650,  0            // InvokeDynamic #28:test:()Ljava/util/function/Predicate;
+      10: invokeinterface #651,  2          // InterfaceMethod java/util/function/Predicate.and:(Ljava/util/function/Predicate;)Ljava/util/function/Predicate;
+      15: invokeinterface #657,  2          // InterfaceMethod java/util/List.removeIf:(Ljava/util/function/Predicate;)Z
+      20: ireturn
+
+  public int getAnnualFrequency();
+    Code:
+       0: aload_0
+       1: getfield      #22                 // Field series:Ljdplus/toolkit/base/api/timeseries/TsData;
+       4: invokevirtual #660                // Method jdplus/toolkit/base/api/timeseries/TsData.getAnnualFrequency:()I
+       7: ireturn
+
+  public java.util.List<jdplus.toolkit.base.core.timeseries.simplets.TsDataTransformation> transformations();
+    Code:
+       0: new           #92                 // class java/util/ArrayList
+       3: dup
+       4: invokespecial #94                 // Method java/util/ArrayList."<init>":()V
+       7: astore_1
+       8: aload_0
+       9: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      12: getstatic     #87                 // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.None:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      15: if_acmpeq     30
+      18: aload_1
+      19: aload_0
+      20: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      23: invokestatic  #222                // Method jdplus/toolkit/base/core/timeseries/simplets/Transformations.lengthOfPeriod:(Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;)Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+      26: invokevirtual #661                // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+      29: pop
+      30: aload_0
+      31: getfield      #37                 // Field logTransformation:Z
+      34: ifeq          45
+      37: aload_1
+      38: invokestatic  #234                // Method jdplus/toolkit/base/core/timeseries/simplets/Transformations.log:()Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+      41: invokevirtual #661                // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+      44: pop
+      45: aload_1
+      46: areturn
+
+  public java.util.List<jdplus.toolkit.base.core.timeseries.simplets.TsDataTransformation> backTransformations();
+    Code:
+       0: new           #92                 // class java/util/ArrayList
+       3: dup
+       4: invokespecial #94                 // Method java/util/ArrayList."<init>":()V
+       7: astore_1
+       8: aload_0
+       9: getfield      #37                 // Field logTransformation:Z
+      12: ifeq          23
+      15: aload_1
+      16: invokestatic  #662                // Method jdplus/toolkit/base/core/timeseries/simplets/Transformations.exp:()Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+      19: invokevirtual #661                // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+      22: pop
+      23: aload_0
+      24: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      27: getstatic     #87                 // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.None:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      30: if_acmpeq     50
+      33: aload_1
+      34: aload_0
+      35: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      38: invokestatic  #222                // Method jdplus/toolkit/base/core/timeseries/simplets/Transformations.lengthOfPeriod:(Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;)Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+      41: invokeinterface #665,  1          // InterfaceMethod jdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation.converse:()Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+      46: invokevirtual #661                // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+      49: pop
+      50: aload_1
+      51: areturn
+
+  public java.util.List<jdplus.toolkit.base.core.timeseries.simplets.TsDataTransformation> backTransformations(boolean, boolean);
+    Code:
+       0: new           #92                 // class java/util/ArrayList
+       3: dup
+       4: invokespecial #94                 // Method java/util/ArrayList."<init>":()V
+       7: astore_3
+       8: aload_0
+       9: getfield      #37                 // Field logTransformation:Z
+      12: ifeq          23
+      15: aload_3
+      16: invokestatic  #662                // Method jdplus/toolkit/base/core/timeseries/simplets/Transformations.exp:()Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+      19: invokevirtual #661                // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+      22: pop
+      23: iload_2
+      24: ifeq          54
+      27: aload_0
+      28: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      31: getstatic     #87                 // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.None:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      34: if_acmpeq     54
+      37: aload_3
+      38: aload_0
+      39: getfield      #40                 // Field lpTransformation:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      42: invokestatic  #222                // Method jdplus/toolkit/base/core/timeseries/simplets/Transformations.lengthOfPeriod:(Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;)Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+      45: invokeinterface #665,  1          // InterfaceMethod jdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation.converse:()Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+      50: invokevirtual #661                // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+      53: pop
+      54: aload_3
+      55: areturn
+
+  public int findPosition(jdplus.toolkit.base.api.timeseries.regression.ITsVariable);
+    Code:
+       0: aload_0
+       1: invokevirtual #281                // Method sortVariables:()V
+       4: iconst_0
+       5: istore_2
+       6: iconst_0
+       7: istore_3
+       8: aload_0
+       9: getfield      #59                 // Field variables:Ljava/util/List;
+      12: invokeinterface #326,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+      17: astore        4
+      19: aload         4
+      21: invokeinterface #330,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      26: ifeq          74
+      29: aload         4
+      31: invokeinterface #335,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      36: checkcast     #338                // class jdplus/toolkit/base/api/timeseries/regression/Variable
+      39: astore        5
+      41: aload         5
+      43: invokevirtual #340                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.isPreadjustment:()Z
+      46: ifne          71
+      49: aload         5
+      51: invokevirtual #345                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      54: aload_1
+      55: if_acmpne     63
+      58: iconst_1
+      59: istore_3
+      60: goto          74
+      63: iload_2
+      64: aload         5
+      66: invokevirtual #668                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.freeCoefficientsCount:()I
+      69: iadd
+      70: istore_2
+      71: goto          19
+      74: iload_3
+      75: ifne          80
+      78: iconst_m1
+      79: ireturn
+      80: aload_0
+      81: getfield      #33                 // Field mean:Z
+      84: ifeq          93
+      87: iload_2
+      88: iconst_1
+      89: iadd
+      90: goto          94
+      93: iload_2
+      94: ireturn
+
+  public jdplus.toolkit.base.core.arima.estimation.IArimaMapping<jdplus.toolkit.base.core.sarima.SarimaModel> mapping();
+    Code:
+       0: aload_0
+       1: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+       4: invokevirtual #671                // Method jdplus/toolkit/base/api/arima/SarimaSpec.hasFixedParameters:()Z
+       7: ifeq          282
+      10: aload_0
+      11: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      14: invokevirtual #674                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getP:()I
+      17: aload_0
+      18: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      21: invokevirtual #675                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getBp:()I
+      24: iadd
+      25: aload_0
+      26: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      29: invokevirtual #676                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getQ:()I
+      32: iadd
+      33: aload_0
+      34: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      37: invokevirtual #677                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getBq:()I
+      40: iadd
+      41: istore_1
+      42: iload_1
+      43: newarray       double
+      45: astore_2
+      46: iload_1
+      47: newarray       boolean
+      49: astore_3
+      50: iconst_0
+      51: istore        4
+      53: aload_0
+      54: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      57: invokevirtual #678                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getPhi:()[Ljdplus/toolkit/base/api/data/Parameter;
+      60: astore        5
+      62: iconst_0
+      63: istore        6
+      65: iload         6
+      67: aload         5
+      69: arraylength
+      70: if_icmpge     106
+      73: aload_2
+      74: iload         4
+      76: aload         5
+      78: iload         6
+      80: aaload
+      81: invokevirtual #681                // Method jdplus/toolkit/base/api/data/Parameter.getValue:()D
+      84: dastore
+      85: aload_3
+      86: iload         4
+      88: aload         5
+      90: iload         6
+      92: aaload
+      93: invokevirtual #685                // Method jdplus/toolkit/base/api/data/Parameter.isFixed:()Z
+      96: bastore
+      97: iinc          6, 1
+     100: iinc          4, 1
+     103: goto          65
+     106: aload_0
+     107: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+     110: invokevirtual #688                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getBphi:()[Ljdplus/toolkit/base/api/data/Parameter;
+     113: astore        5
+     115: iconst_0
+     116: istore        6
+     118: iload         6
+     120: aload         5
+     122: arraylength
+     123: if_icmpge     159
+     126: aload_2
+     127: iload         4
+     129: aload         5
+     131: iload         6
+     133: aaload
+     134: invokevirtual #681                // Method jdplus/toolkit/base/api/data/Parameter.getValue:()D
+     137: dastore
+     138: aload_3
+     139: iload         4
+     141: aload         5
+     143: iload         6
+     145: aaload
+     146: invokevirtual #685                // Method jdplus/toolkit/base/api/data/Parameter.isFixed:()Z
+     149: bastore
+     150: iinc          6, 1
+     153: iinc          4, 1
+     156: goto          118
+     159: aload_0
+     160: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+     163: invokevirtual #691                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getTheta:()[Ljdplus/toolkit/base/api/data/Parameter;
+     166: astore        5
+     168: iconst_0
+     169: istore        6
+     171: iload         6
+     173: aload         5
+     175: arraylength
+     176: if_icmpge     212
+     179: aload_2
+     180: iload         4
+     182: aload         5
+     184: iload         6
+     186: aaload
+     187: invokevirtual #681                // Method jdplus/toolkit/base/api/data/Parameter.getValue:()D
+     190: dastore
+     191: aload_3
+     192: iload         4
+     194: aload         5
+     196: iload         6
+     198: aaload
+     199: invokevirtual #685                // Method jdplus/toolkit/base/api/data/Parameter.isFixed:()Z
+     202: bastore
+     203: iinc          6, 1
+     206: iinc          4, 1
+     209: goto          171
+     212: aload_0
+     213: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+     216: invokevirtual #694                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getBtheta:()[Ljdplus/toolkit/base/api/data/Parameter;
+     219: astore        5
+     221: iconst_0
+     222: istore        6
+     224: iload         6
+     226: aload         5
+     228: arraylength
+     229: if_icmpge     265
+     232: aload_2
+     233: iload         4
+     235: aload         5
+     237: iload         6
+     239: aaload
+     240: invokevirtual #681                // Method jdplus/toolkit/base/api/data/Parameter.getValue:()D
+     243: dastore
+     244: aload_3
+     245: iload         4
+     247: aload         5
+     249: iload         6
+     251: aaload
+     252: invokevirtual #685                // Method jdplus/toolkit/base/api/data/Parameter.isFixed:()Z
+     255: bastore
+     256: iinc          6, 1
+     259: iinc          4, 1
+     262: goto          224
+     265: new           #697                // class jdplus/toolkit/base/core/sarima/estimation/SarimaFixedMapping
+     268: dup
+     269: aload_0
+     270: invokevirtual #699                // Method specification:()Ljdplus/toolkit/base/api/arima/SarimaOrders;
+     273: aload_2
+     274: invokestatic  #290                // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.of:([D)Ljdplus/toolkit/base/api/data/DoubleSeq;
+     277: aload_3
+     278: invokespecial #702                // Method jdplus/toolkit/base/core/sarima/estimation/SarimaFixedMapping."<init>":(Ljdplus/toolkit/base/api/arima/SarimaOrders;Ljdplus/toolkit/base/api/data/DoubleSeq;[Z)V
+     281: areturn
+     282: aload_0
+     283: invokevirtual #699                // Method specification:()Ljdplus/toolkit/base/api/arima/SarimaOrders;
+     286: invokestatic  #705                // Method jdplus/toolkit/base/core/sarima/estimation/SarimaMapping2.of:(Ljdplus/toolkit/base/api/arima/SarimaOrders;)Ljdplus/toolkit/base/core/sarima/estimation/SarimaMapping2;
+     289: areturn
+
+  public jdplus.toolkit.base.core.regarima.RegArimaEstimation<jdplus.toolkit.base.core.sarima.SarimaModel> estimate(jdplus.toolkit.base.core.regarima.IRegArimaComputer<jdplus.toolkit.base.core.sarima.SarimaModel>);
+    Code:
+       0: aload_0
+       1: aconst_null
+       2: invokevirtual #266                // Method regarima:(Ljdplus/toolkit/base/api/processing/ProcessingLog;)Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+       5: astore_2
+       6: aload_0
+       7: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      10: invokevirtual #671                // Method jdplus/toolkit/base/api/arima/SarimaSpec.hasFixedParameters:()Z
+      13: ifne          31
+      16: aload_1
+      17: aload_2
+      18: aload_0
+      19: invokevirtual #710                // Method mapping:()Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;
+      22: invokeinterface #714,  3          // InterfaceMethod jdplus/toolkit/base/core/regarima/IRegArimaComputer.process:(Ljdplus/toolkit/base/core/regarima/RegArimaModel;Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      27: astore_3
+      28: goto          43
+      31: aload_1
+      32: aload_2
+      33: aload_0
+      34: invokevirtual #710                // Method mapping:()Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;
+      37: invokeinterface #720,  3          // InterfaceMethod jdplus/toolkit/base/core/regarima/IRegArimaComputer.optimize:(Ljdplus/toolkit/base/core/regarima/RegArimaModel;Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      42: astore_3
+      43: aload_3
+      44: invokevirtual #723                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.getMax:()Ljdplus/toolkit/base/core/stats/likelihood/LogLikelihoodFunction$Point;
+      47: astore        4
+      49: aload         4
+      51: ifnull        63
+      54: aload_0
+      55: aload         4
+      57: invokevirtual #729                // Method jdplus/toolkit/base/core/stats/likelihood/LogLikelihoodFunction$Point.getParameters:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      60: invokevirtual #734                // Method setFreeParameters:(Ljdplus/toolkit/base/api/data/DoubleSeq;)V
+      63: invokestatic  #738                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.builder:()Ljdplus/toolkit/base/core/regarima/RegArimaEstimation$Builder;
+      66: aload_3
+      67: invokevirtual #741                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.getModel:()Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      70: invokevirtual #744                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation$Builder.model:(Ljdplus/toolkit/base/core/regarima/RegArimaModel;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation$Builder;
+      73: aload_3
+      74: invokevirtual #750                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.getConcentratedLikelihood:()Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;
+      77: invokevirtual #754                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation$Builder.concentratedLikelihood:(Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation$Builder;
+      80: aload         4
+      82: invokevirtual #758                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation$Builder.max:(Ljdplus/toolkit/base/core/stats/likelihood/LogLikelihoodFunction$Point;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation$Builder;
+      85: aload_0
+      86: getfield      #55                 // Field llCorrection:D
+      89: invokevirtual #762                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation$Builder.llAdjustment:(D)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation$Builder;
+      92: invokevirtual #766                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation$Builder.build:()Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      95: areturn
+
+  public void freeArimaParameters();
+    Code:
+       0: aload_0
+       1: aload_0
+       2: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+       5: aload_0
+       6: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+       9: invokevirtual #769                // Method jdplus/toolkit/base/api/arima/SarimaSpec.resetParameters:(Ljdplus/toolkit/base/api/arima/SarimaSpec;)Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      12: putfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      15: return
+
+  public void setFreeParameters(jdplus.toolkit.base.api.data.DoubleSeq);
+    Code:
+       0: aload_0
+       1: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+       4: invokevirtual #773                // Method jdplus/toolkit/base/api/arima/SarimaSpec.toBuilder:()Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+       7: astore_2
+       8: aload_1
+       9: invokeinterface #776,  1          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.cursor:()Ljdplus/toolkit/base/api/data/DoubleSeqCursor;
+      14: astore_3
+      15: aload_0
+      16: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      19: invokevirtual #678                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getPhi:()[Ljdplus/toolkit/base/api/data/Parameter;
+      22: astore        4
+      24: iconst_0
+      25: istore        5
+      27: iload         5
+      29: aload         4
+      31: arraylength
+      32: if_icmpge     66
+      35: aload         4
+      37: iload         5
+      39: aaload
+      40: invokevirtual #685                // Method jdplus/toolkit/base/api/data/Parameter.isFixed:()Z
+      43: ifne          60
+      46: aload         4
+      48: iload         5
+      50: aload_3
+      51: invokeinterface #780,  1          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeqCursor.getAndNext:()D
+      56: invokestatic  #785                // Method jdplus/toolkit/base/api/data/Parameter.estimated:(D)Ljdplus/toolkit/base/api/data/Parameter;
+      59: aastore
+      60: iinc          5, 1
+      63: goto          27
+      66: aload_2
+      67: aload         4
+      69: invokevirtual #789                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.phi:([Ljdplus/toolkit/base/api/data/Parameter;)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+      72: pop
+      73: aload_0
+      74: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+      77: invokevirtual #688                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getBphi:()[Ljdplus/toolkit/base/api/data/Parameter;
+      80: astore        4
+      82: iconst_0
+      83: istore        5
+      85: iload         5
+      87: aload         4
+      89: arraylength
+      90: if_icmpge     124
+      93: aload         4
+      95: iload         5
+      97: aaload
+      98: invokevirtual #685                // Method jdplus/toolkit/base/api/data/Parameter.isFixed:()Z
+     101: ifne          118
+     104: aload         4
+     106: iload         5
+     108: aload_3
+     109: invokeinterface #780,  1          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeqCursor.getAndNext:()D
+     114: invokestatic  #785                // Method jdplus/toolkit/base/api/data/Parameter.estimated:(D)Ljdplus/toolkit/base/api/data/Parameter;
+     117: aastore
+     118: iinc          5, 1
+     121: goto          85
+     124: aload_2
+     125: aload         4
+     127: invokevirtual #793                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.bphi:([Ljdplus/toolkit/base/api/data/Parameter;)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+     130: pop
+     131: aload_0
+     132: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+     135: invokevirtual #691                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getTheta:()[Ljdplus/toolkit/base/api/data/Parameter;
+     138: astore        4
+     140: iconst_0
+     141: istore        5
+     143: iload         5
+     145: aload         4
+     147: arraylength
+     148: if_icmpge     182
+     151: aload         4
+     153: iload         5
+     155: aaload
+     156: invokevirtual #685                // Method jdplus/toolkit/base/api/data/Parameter.isFixed:()Z
+     159: ifne          176
+     162: aload         4
+     164: iload         5
+     166: aload_3
+     167: invokeinterface #780,  1          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeqCursor.getAndNext:()D
+     172: invokestatic  #785                // Method jdplus/toolkit/base/api/data/Parameter.estimated:(D)Ljdplus/toolkit/base/api/data/Parameter;
+     175: aastore
+     176: iinc          5, 1
+     179: goto          143
+     182: aload_2
+     183: aload         4
+     185: invokevirtual #796                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.theta:([Ljdplus/toolkit/base/api/data/Parameter;)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+     188: pop
+     189: aload_0
+     190: getfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+     193: invokevirtual #694                // Method jdplus/toolkit/base/api/arima/SarimaSpec.getBtheta:()[Ljdplus/toolkit/base/api/data/Parameter;
+     196: astore        4
+     198: iconst_0
+     199: istore        5
+     201: iload         5
+     203: aload         4
+     205: arraylength
+     206: if_icmpge     240
+     209: aload         4
+     211: iload         5
+     213: aaload
+     214: invokevirtual #685                // Method jdplus/toolkit/base/api/data/Parameter.isFixed:()Z
+     217: ifne          234
+     220: aload         4
+     222: iload         5
+     224: aload_3
+     225: invokeinterface #780,  1          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeqCursor.getAndNext:()D
+     230: invokestatic  #785                // Method jdplus/toolkit/base/api/data/Parameter.estimated:(D)Ljdplus/toolkit/base/api/data/Parameter;
+     233: aastore
+     234: iinc          5, 1
+     237: goto          201
+     240: aload_2
+     241: aload         4
+     243: invokevirtual #799                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.btheta:([Ljdplus/toolkit/base/api/data/Parameter;)Ljdplus/toolkit/base/api/arima/SarimaSpec$Builder;
+     246: pop
+     247: aload_0
+     248: aload_2
+     249: invokevirtual #598                // Method jdplus/toolkit/base/api/arima/SarimaSpec$Builder.buildWithoutValidation:()Ljdplus/toolkit/base/api/arima/SarimaSpec;
+     252: putfield      #29                 // Field arima:Ljdplus/toolkit/base/api/arima/SarimaSpec;
+     255: return
+
+  private static int lambda$static$28(jdplus.toolkit.base.api.timeseries.regression.Variable, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokevirtual #345                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: checkcast     #802                // class jdplus/toolkit/base/api/timeseries/regression/IOutlier
+       7: astore_2
+       8: aload_1
+       9: invokevirtual #345                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      12: checkcast     #802                // class jdplus/toolkit/base/api/timeseries/regression/IOutlier
+      15: astore_3
+      16: aload_2
+      17: invokeinterface #804,  1          // InterfaceMethod jdplus/toolkit/base/api/timeseries/regression/IOutlier.getPosition:()Ljava/time/LocalDateTime;
+      22: aload_3
+      23: invokeinterface #804,  1          // InterfaceMethod jdplus/toolkit/base/api/timeseries/regression/IOutlier.getPosition:()Ljava/time/LocalDateTime;
+      28: invokevirtual #808                // Method java/time/LocalDateTime.compareTo:(Ljava/time/chrono/ChronoLocalDateTime;)I
+      31: ireturn
+
+  private static boolean lambda$removeVariable$27(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #814                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isAutomaticallyIdentified:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$interpolate$26(double);
+    Code:
+       0: dload_0
+       1: invokestatic  #820                // Method java/lang/Double.isNaN:(D)Z
+       4: ireturn
+
+  private static int lambda$countRegressors$25(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokevirtual #345                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: invokeinterface #823,  1          // InterfaceMethod jdplus/toolkit/base/api/timeseries/regression/ITsVariable.dim:()I
+       9: ireturn
+
+  private static boolean lambda$hasFixedEffects$24(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokevirtual #824                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.isFree:()Z
+       4: ifne          11
+       7: iconst_1
+       8: goto          12
+      11: iconst_0
+      12: ireturn
+
+  private static boolean lambda$contains$23(java.lang.String, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_1
+       1: invokevirtual #513                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getName:()Ljava/lang/String;
+       4: aload_0
+       5: invokevirtual #825                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+       8: ireturn
+
+  private static boolean lambda$remove$22(jdplus.toolkit.base.api.timeseries.regression.ITsVariable, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_1
+       1: invokevirtual #345                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: aload_0
+       5: if_acmpne     12
+       8: iconst_1
+       9: goto          13
+      12: iconst_0
+      13: ireturn
+
+  private static boolean lambda$remove$21(java.lang.String, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_1
+       1: invokevirtual #513                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getName:()Ljava/lang/String;
+       4: aload_0
+       5: invokevirtual #825                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+       8: ireturn
+
+  private static boolean lambda$variable$20(jdplus.toolkit.base.api.timeseries.regression.ITsVariable, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_1
+       1: invokevirtual #345                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: aload_0
+       5: if_acmpne     12
+       8: iconst_1
+       9: goto          13
+      12: iconst_0
+      13: ireturn
+
+  private static boolean lambda$variable$19(java.lang.String, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_1
+       1: invokevirtual #513                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getName:()Ljava/lang/String;
+       4: aload_0
+       5: invokevirtual #825                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+       8: ireturn
+
+  private static jdplus.toolkit.base.api.timeseries.regression.Variable lambda$regarima$18(java.util.List, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_1
+       1: aload_0
+       2: aload_1
+       3: invokeinterface #830,  2          // InterfaceMethod java/util/List.contains:(Ljava/lang/Object;)Z
+       8: invokevirtual #483                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.exclude:(Z)Ljdplus/toolkit/base/api/timeseries/regression/Variable;
+      11: areturn
+
+  private static jdplus.toolkit.base.api.timeseries.regression.Variable lambda$regarima$17(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: iconst_0
+       2: invokevirtual #483                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.exclude:(Z)Ljdplus/toolkit/base/api/timeseries/regression/Variable;
+       5: areturn
+
+  private static void lambda$buildTransformation$16(jdplus.toolkit.base.api.timeseries.TsDomain, jdplus.toolkit.base.core.data.DataBlock, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_2
+       1: invokevirtual #824                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.isFree:()Z
+       4: ifne          81
+       7: aload_0
+       8: iconst_1
+       9: anewarray     #343                // class jdplus/toolkit/base/api/timeseries/regression/ITsVariable
+      12: dup
+      13: iconst_0
+      14: aload_2
+      15: invokevirtual #345                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      18: aastore
+      19: invokestatic  #832                // Method jdplus/toolkit/base/core/modelling/regression/Regression.matrix:(Ljdplus/toolkit/base/api/timeseries/TimeSeriesDomain;[Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;)Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+      22: astore_3
+      23: aload_3
+      24: invokevirtual #365                // Method jdplus/toolkit/base/core/math/matrices/FastMatrix.columnsIterator:()Ljdplus/toolkit/base/core/data/DataBlockIterator;
+      27: astore        4
+      29: iconst_0
+      30: istore        5
+      32: aload         4
+      34: invokevirtual #369                // Method jdplus/toolkit/base/core/data/DataBlockIterator.hasNext:()Z
+      37: ifeq          81
+      40: aload         4
+      42: invokevirtual #372                // Method jdplus/toolkit/base/core/data/DataBlockIterator.next:()Ljdplus/toolkit/base/core/data/DataBlock;
+      45: astore        6
+      47: aload_2
+      48: iload         5
+      50: iinc          5, 1
+      53: invokevirtual #375                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCoefficient:(I)Ljdplus/toolkit/base/api/data/Parameter;
+      56: astore        7
+      58: aload         7
+      60: invokevirtual #685                // Method jdplus/toolkit/base/api/data/Parameter.isFixed:()Z
+      63: ifeq          78
+      66: aload_1
+      67: aload         7
+      69: invokevirtual #681                // Method jdplus/toolkit/base/api/data/Parameter.getValue:()D
+      72: dneg
+      73: aload         6
+      75: invokevirtual #835                // Method jdplus/toolkit/base/core/data/DataBlock.addAY:(DLjdplus/toolkit/base/core/data/DataBlock;)V
+      78: goto          32
+      81: return
+
+  private static void lambda$sortVariables$15(java.util.List, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokeinterface #361,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+       7: pop
+       8: return
+
+  private static boolean lambda$sortVariables$14(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #814                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isAutomaticallyIdentified:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$sortVariables$13(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #839                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isOutlier:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static void lambda$sortVariables$12(java.util.List, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokeinterface #361,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+       7: pop
+       8: return
+
+  private static boolean lambda$sortVariables$11(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #814                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isAutomaticallyIdentified:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ifne          11
+       7: iconst_1
+       8: goto          12
+      11: iconst_0
+      12: ireturn
+
+  private static boolean lambda$sortVariables$10(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #839                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isOutlier:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static void lambda$sortVariables$9(java.util.List, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokeinterface #361,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+       7: pop
+       8: return
+
+  private static boolean lambda$sortVariables$8(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #842                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isMovingHoliday:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static void lambda$sortVariables$7(java.util.List, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokeinterface #361,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+       7: pop
+       8: return
+
+  private static boolean lambda$sortVariables$6(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #845                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isDaysRelated:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static void lambda$sortVariables$5(java.util.List, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokeinterface #361,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+       7: pop
+       8: return
+
+  private static boolean lambda$sortVariables$4(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #848                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isUser:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static void lambda$sortVariables$3(java.util.List, jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokeinterface #361,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+       7: pop
+       8: return
+
+  private static boolean lambda$sortVariables$2(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokevirtual #345                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: instanceof    #851                // class jdplus/toolkit/base/api/timeseries/regression/TrendConstant
+       7: ireturn
+
+  private static boolean lambda$new$1(double);
+    Code:
+       0: dload_0
+       1: invokestatic  #853                // Method java/lang/Double.isFinite:(D)Z
+       4: ifne          11
+       7: iconst_1
+       8: goto          12
+      11: iconst_0
+      12: ireturn
+
+  private static boolean lambda$new$0(double);
+    Code:
+       0: dload_0
+       1: invokestatic  #853                // Method java/lang/Double.isFinite:(D)Z
+       4: ifne          11
+       7: iconst_1
+       8: goto          12
+      11: iconst_0
+      12: ireturn
+
+  static {};
+    Code:
+       0: invokedynamic #856,  0            // InvokeDynamic #29:compare:()Ljava/util/Comparator;
+       5: putstatic     #188                // Field OUTLIER_COMPARATOR:Ljava/util/Comparator;
+       8: return
+}

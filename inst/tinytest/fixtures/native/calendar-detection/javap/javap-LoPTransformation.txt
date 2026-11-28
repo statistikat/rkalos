@@ -1,0 +1,648 @@
+Compiled from "LengthOfPeriodTransformation.java"
+class jdplus.toolkit.base.core.timeseries.simplets.LengthOfPeriodTransformation implements jdplus.toolkit.base.core.timeseries.simplets.TsDataTransformation {
+  private final boolean back;
+
+  private final jdplus.toolkit.base.api.timeseries.calendars.LengthOfPeriodType type;
+
+  public jdplus.toolkit.base.core.timeseries.simplets.LengthOfPeriodTransformation(jdplus.toolkit.base.api.timeseries.calendars.LengthOfPeriodType);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iconst_0
+       3: invokespecial #1                  // Method "<init>":(Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;Z)V
+       6: return
+
+  private jdplus.toolkit.base.core.timeseries.simplets.LengthOfPeriodTransformation(jdplus.toolkit.base.api.timeseries.calendars.LengthOfPeriodType, boolean);
+    Code:
+       0: aload_0
+       1: invokespecial #7                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: aload_1
+       6: putfield      #12                 // Field type:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+       9: aload_0
+      10: iload_2
+      11: putfield      #16                 // Field back:Z
+      14: return
+
+  public jdplus.toolkit.base.core.timeseries.simplets.TsDataTransformation converse();
+    Code:
+       0: new           #2                  // class jdplus/toolkit/base/core/timeseries/simplets/LengthOfPeriodTransformation
+       3: dup
+       4: aload_0
+       5: getfield      #12                 // Field type:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+       8: aload_0
+       9: getfield      #16                 // Field back:Z
+      12: ifne          19
+      15: iconst_1
+      16: goto          20
+      19: iconst_0
+      20: invokespecial #1                  // Method "<init>":(Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;Z)V
+      23: areturn
+
+  public jdplus.toolkit.base.api.timeseries.TsData transform(jdplus.toolkit.base.api.timeseries.TsData, jdplus.toolkit.base.core.data.transformation.LogJacobian);
+    Code:
+       0: aload_1
+       1: invokevirtual #20                 // Method jdplus/toolkit/base/api/timeseries/TsData.getTsUnit:()Ljdplus/toolkit/base/api/timeseries/TsUnit;
+       4: getstatic     #26                 // Field jdplus/toolkit/base/api/timeseries/TsUnit.P1Y:Ljdplus/toolkit/base/api/timeseries/TsUnit;
+       7: invokevirtual #32                 // Method jdplus/toolkit/base/api/timeseries/TsUnit.ratioOf:(Ljdplus/toolkit/base/api/timeseries/TsUnit;)I
+      10: istore_3
+      11: aload_0
+      12: getfield      #12                 // Field type:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      15: getstatic     #36                 // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.LengthOfPeriod:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      18: if_acmpne     29
+      21: aload_0
+      22: aload_1
+      23: iload_3
+      24: aload_2
+      25: invokevirtual #41                 // Method length:(Ljdplus/toolkit/base/api/timeseries/TsData;ILjdplus/toolkit/base/core/data/transformation/LogJacobian;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      28: areturn
+      29: aload_0
+      30: aload_1
+      31: iload_3
+      32: aload_2
+      33: invokevirtual #45                 // Method lp:(Ljdplus/toolkit/base/api/timeseries/TsData;ILjdplus/toolkit/base/core/data/transformation/LogJacobian;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      36: areturn
+
+  public double transform(jdplus.toolkit.base.api.timeseries.TsPeriod, double);
+    Code:
+       0: aload_1
+       1: iconst_1
+       2: newarray       double
+       4: dup
+       5: iconst_0
+       6: dload_2
+       7: dastore
+       8: invokestatic  #48                 // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.of:([D)Ljdplus/toolkit/base/api/data/DoubleSeq;
+      11: invokestatic  #54                 // Method jdplus/toolkit/base/api/timeseries/TsData.of:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      14: astore        4
+      16: aload_0
+      17: aload         4
+      19: aconst_null
+      20: invokevirtual #57                 // Method transform:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/core/data/transformation/LogJacobian;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      23: astore        5
+      25: aload         5
+      27: iconst_0
+      28: invokevirtual #61                 // Method jdplus/toolkit/base/api/timeseries/TsData.getValue:(I)D
+      31: dreturn
+
+  private jdplus.toolkit.base.api.timeseries.TsData length(jdplus.toolkit.base.api.timeseries.TsData, int, jdplus.toolkit.base.core.data.transformation.LogJacobian);
+    Code:
+       0: aload_1
+       1: invokevirtual #65                 // Method jdplus/toolkit/base/api/timeseries/TsData.getDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+       4: invokestatic  #69                 // Method jdplus/toolkit/base/api/timeseries/calendars/CalendarUtility.daysCount:(Ljdplus/toolkit/base/api/timeseries/TsDomain;)[I
+       7: astore        4
+       9: ldc2_w        #75                 // double 365.25d
+      12: iload_2
+      13: i2d
+      14: ddiv
+      15: dstore        5
+      17: aload_1
+      18: invokevirtual #77                 // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      21: invokeinterface #81,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.toArray:()[D
+      26: astore        7
+      28: aload_0
+      29: getfield      #16                 // Field back:Z
+      32: ifeq          296
+      35: iconst_0
+      36: istore        8
+      38: iload         8
+      40: aload         4
+      42: arraylength
+      43: if_icmpge     73
+      46: aload         4
+      48: iload         8
+      50: iaload
+      51: i2d
+      52: dload         5
+      54: ddiv
+      55: dstore        9
+      57: aload         7
+      59: iload         8
+      61: dup2
+      62: daload
+      63: dload         9
+      65: dmul
+      66: dastore
+      67: iinc          8, 1
+      70: goto          38
+      73: aload_3
+      74: ifnull        554
+      77: aload_3
+      78: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+      81: ifnonnull     144
+      84: aload_3
+      85: getfield      #91                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.start:I
+      88: istore        8
+      90: iload         8
+      92: aload_3
+      93: getfield      #95                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.end:I
+      96: if_icmpge     141
+      99: aload         7
+     101: iload         8
+     103: daload
+     104: invokestatic  #98                 // Method java/lang/Double.isFinite:(D)Z
+     107: ifeq          135
+     110: aload         4
+     112: iload         8
+     114: iaload
+     115: i2d
+     116: dload         5
+     118: ddiv
+     119: dstore        9
+     121: aload_3
+     122: dup
+     123: getfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     126: dload         9
+     128: invokestatic  #108                // Method java/lang/Math.log:(D)D
+     131: dadd
+     132: putfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     135: iinc          8, 1
+     138: goto          90
+     141: goto          554
+     144: aload_3
+     145: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     148: arraylength
+     149: istore        8
+     151: iconst_0
+     152: istore        9
+     154: aload_3
+     155: getfield      #91                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.start:I
+     158: istore        10
+     160: iload         9
+     162: iload         8
+     164: if_icmpge     185
+     167: aload_3
+     168: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     171: iload         9
+     173: iaload
+     174: iload         10
+     176: if_icmpge     185
+     179: iinc          9, 1
+     182: goto          160
+     185: iload         9
+     187: iload         8
+     189: if_icmpeq     253
+     192: iload         10
+     194: aload_3
+     195: getfield      #95                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.end:I
+     198: if_icmpge     253
+     201: iload         10
+     203: aload_3
+     204: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     207: iload         9
+     209: iaload
+     210: if_icmpne     222
+     213: iinc          10, 1
+     216: iinc          9, 1
+     219: goto          185
+     222: aload         4
+     224: iload         10
+     226: iinc          10, 1
+     229: iaload
+     230: i2d
+     231: dload         5
+     233: ddiv
+     234: dstore        11
+     236: aload_3
+     237: dup
+     238: getfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     241: dload         11
+     243: invokestatic  #108                // Method java/lang/Math.log:(D)D
+     246: dadd
+     247: putfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     250: goto          185
+     253: iload         10
+     255: aload_3
+     256: getfield      #95                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.end:I
+     259: if_icmpge     293
+     262: aload         4
+     264: iload         10
+     266: iinc          10, 1
+     269: iaload
+     270: i2d
+     271: dload         5
+     273: ddiv
+     274: dstore        11
+     276: aload_3
+     277: dup
+     278: getfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     281: dload         11
+     283: invokestatic  #108                // Method java/lang/Math.log:(D)D
+     286: dadd
+     287: putfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     290: goto          253
+     293: goto          554
+     296: iconst_0
+     297: istore        8
+     299: iload         8
+     301: aload         4
+     303: arraylength
+     304: if_icmpge     334
+     307: dload         5
+     309: aload         4
+     311: iload         8
+     313: iaload
+     314: i2d
+     315: ddiv
+     316: dstore        9
+     318: aload         7
+     320: iload         8
+     322: dup2
+     323: daload
+     324: dload         9
+     326: dmul
+     327: dastore
+     328: iinc          8, 1
+     331: goto          299
+     334: aload_3
+     335: ifnull        554
+     338: aload_3
+     339: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     342: ifnonnull     405
+     345: aload_3
+     346: getfield      #91                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.start:I
+     349: istore        8
+     351: iload         8
+     353: aload_3
+     354: getfield      #95                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.end:I
+     357: if_icmpge     402
+     360: aload         7
+     362: iload         8
+     364: daload
+     365: invokestatic  #98                 // Method java/lang/Double.isFinite:(D)Z
+     368: ifeq          396
+     371: dload         5
+     373: aload         4
+     375: iload         8
+     377: iaload
+     378: i2d
+     379: ddiv
+     380: dstore        9
+     382: aload_3
+     383: dup
+     384: getfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     387: dload         9
+     389: invokestatic  #108                // Method java/lang/Math.log:(D)D
+     392: dadd
+     393: putfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     396: iinc          8, 1
+     399: goto          351
+     402: goto          554
+     405: aload_3
+     406: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     409: arraylength
+     410: istore        8
+     412: iconst_0
+     413: istore        9
+     415: aload_3
+     416: getfield      #91                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.start:I
+     419: istore        10
+     421: iload         9
+     423: iload         8
+     425: if_icmpge     446
+     428: aload_3
+     429: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     432: iload         9
+     434: iaload
+     435: iload         10
+     437: if_icmpge     446
+     440: iinc          9, 1
+     443: goto          421
+     446: iload         9
+     448: iload         8
+     450: if_icmpeq     514
+     453: iload         10
+     455: aload_3
+     456: getfield      #95                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.end:I
+     459: if_icmpge     514
+     462: iload         10
+     464: aload_3
+     465: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     468: iload         9
+     470: iaload
+     471: if_icmpne     483
+     474: iinc          10, 1
+     477: iinc          9, 1
+     480: goto          446
+     483: dload         5
+     485: aload         4
+     487: iload         10
+     489: iinc          10, 1
+     492: iaload
+     493: i2d
+     494: ddiv
+     495: dstore        11
+     497: aload_3
+     498: dup
+     499: getfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     502: dload         11
+     504: invokestatic  #108                // Method java/lang/Math.log:(D)D
+     507: dadd
+     508: putfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     511: goto          446
+     514: iload         10
+     516: aload_3
+     517: getfield      #95                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.end:I
+     520: if_icmpge     554
+     523: dload         5
+     525: aload         4
+     527: iload         10
+     529: iinc          10, 1
+     532: iaload
+     533: i2d
+     534: ddiv
+     535: dstore        11
+     537: aload_3
+     538: dup
+     539: getfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     542: dload         11
+     544: invokestatic  #108                // Method java/lang/Math.log:(D)D
+     547: dadd
+     548: putfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     551: goto          514
+     554: aload_1
+     555: invokevirtual #114                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+     558: aload         7
+     560: invokestatic  #118                // Method jdplus/toolkit/base/api/timeseries/TsData.ofInternal:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;[D)Ljdplus/toolkit/base/api/timeseries/TsData;
+     563: areturn
+
+  private jdplus.toolkit.base.api.timeseries.TsData lp(jdplus.toolkit.base.api.timeseries.TsData, int, jdplus.toolkit.base.core.data.transformation.LogJacobian);
+    Code:
+       0: aload_1
+       1: invokevirtual #122                // Method jdplus/toolkit/base/api/timeseries/TsData.hasDefaultEpoch:()Z
+       4: ifne          15
+       7: new           #126                // class java/lang/UnsupportedOperationException
+      10: dup
+      11: invokespecial #128                // Method java/lang/UnsupportedOperationException."<init>":()V
+      14: athrow
+      15: aload_1
+      16: invokevirtual #65                 // Method jdplus/toolkit/base/api/timeseries/TsData.getDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      19: astore        4
+      21: iconst_0
+      22: istore        5
+      24: iload_2
+      25: bipush        12
+      27: if_icmpne     33
+      30: iconst_1
+      31: istore        5
+      33: aload         4
+      35: invokevirtual #129                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getStartPeriod:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      38: astore        6
+      40: aload         6
+      42: invokevirtual #134                // Method jdplus/toolkit/base/api/timeseries/TsPeriod.start:()Ljava/time/LocalDateTime;
+      45: invokevirtual #139                // Method java/time/LocalDateTime.getMonthValue:()I
+      48: iconst_1
+      49: isub
+      50: iload_2
+      51: irem
+      52: istore        7
+      54: iload         5
+      56: iload         7
+      58: isub
+      59: istore        8
+      61: iload         8
+      63: ifge          72
+      66: iload         8
+      68: iload_2
+      69: iadd
+      70: istore        8
+      72: iload         8
+      74: istore        9
+      76: aload         4
+      78: iload         8
+      80: invokevirtual #145                // Method jdplus/toolkit/base/api/timeseries/TsDomain.get:(I)Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      83: invokevirtual #149                // Method jdplus/toolkit/base/api/timeseries/TsPeriod.year:()I
+      86: istore        10
+      88: iload         10
+      90: invokestatic  #152                // Method jdplus/toolkit/base/api/timeseries/calendars/CalendarUtility.isLeap:(I)Z
+      93: ifne          108
+      96: iload         9
+      98: iload_2
+      99: iadd
+     100: istore        9
+     102: iinc          10, 1
+     105: goto          88
+     108: iload_2
+     109: lookupswitch  { // 2
+                     1: 141
+                    12: 136
+               default: 147
+          }
+     136: bipush        28
+     138: goto          154
+     141: sipush        365
+     144: goto          154
+     147: bipush        12
+     149: iload_2
+     150: idiv
+     151: invokestatic  #156                // Method jdplus/toolkit/base/api/timeseries/calendars/CalendarUtility.getCumulatedMonthDays:(I)I
+     154: istore        11
+     156: aload_1
+     157: invokevirtual #77                 // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+     160: invokeinterface #81,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.toArray:()[D
+     165: astore        12
+     167: aload_0
+     168: getfield      #16                 // Field back:Z
+     171: ifeq          342
+     174: iload         11
+     176: iconst_1
+     177: iadd
+     178: i2d
+     179: iload         11
+     181: i2d
+     182: ldc2_w        #160                // double 0.25d
+     185: dadd
+     186: ddiv
+     187: dstore        13
+     189: iload         11
+     191: i2d
+     192: iload         11
+     194: i2d
+     195: ldc2_w        #160                // double 0.25d
+     198: dadd
+     199: ddiv
+     200: dstore        15
+     202: iload         8
+     204: aload         4
+     206: invokevirtual #162                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getLength:()I
+     209: if_icmpge     339
+     212: iload         8
+     214: iload         9
+     216: isub
+     217: iconst_4
+     218: iload_2
+     219: imul
+     220: irem
+     221: ifeq          229
+     224: dload         15
+     226: goto          231
+     229: dload         13
+     231: dstore        17
+     233: aload         12
+     235: iload         8
+     237: dup2
+     238: daload
+     239: dload         17
+     241: dmul
+     242: dastore
+     243: aload_3
+     244: ifnull        330
+     247: iload         8
+     249: aload_3
+     250: getfield      #91                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.start:I
+     253: if_icmplt     330
+     256: iload         8
+     258: aload_3
+     259: getfield      #95                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.end:I
+     262: if_icmpge     330
+     265: aload_3
+     266: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     269: ifnonnull     300
+     272: aload         12
+     274: iload         8
+     276: daload
+     277: invokestatic  #98                 // Method java/lang/Double.isFinite:(D)Z
+     280: ifeq          330
+     283: aload_3
+     284: dup
+     285: getfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     288: dload         17
+     290: invokestatic  #108                // Method java/lang/Math.log:(D)D
+     293: dadd
+     294: putfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     297: goto          330
+     300: aload_3
+     301: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     304: iload         8
+     306: invokestatic  #165                // Method java/util/Arrays.binarySearch:([II)I
+     309: istore        19
+     311: iload         19
+     313: ifge          330
+     316: aload_3
+     317: dup
+     318: getfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     321: dload         17
+     323: invokestatic  #108                // Method java/lang/Math.log:(D)D
+     326: dadd
+     327: putfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     330: iload         8
+     332: iload_2
+     333: iadd
+     334: istore        8
+     336: goto          202
+     339: goto          507
+     342: iload         11
+     344: i2d
+     345: ldc2_w        #160                // double 0.25d
+     348: dadd
+     349: iload         11
+     351: iconst_1
+     352: iadd
+     353: i2d
+     354: ddiv
+     355: dstore        13
+     357: iload         11
+     359: i2d
+     360: ldc2_w        #160                // double 0.25d
+     363: dadd
+     364: iload         11
+     366: i2d
+     367: ddiv
+     368: dstore        15
+     370: iload         8
+     372: aload         4
+     374: invokevirtual #162                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getLength:()I
+     377: if_icmpge     507
+     380: iload         8
+     382: iload         9
+     384: isub
+     385: iconst_4
+     386: iload_2
+     387: imul
+     388: irem
+     389: ifeq          397
+     392: dload         15
+     394: goto          399
+     397: dload         13
+     399: dstore        17
+     401: aload         12
+     403: iload         8
+     405: dup2
+     406: daload
+     407: dload         17
+     409: dmul
+     410: dastore
+     411: aload_3
+     412: ifnull        498
+     415: iload         8
+     417: aload_3
+     418: getfield      #91                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.start:I
+     421: if_icmplt     498
+     424: iload         8
+     426: aload_3
+     427: getfield      #95                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.end:I
+     430: if_icmpge     498
+     433: aload_3
+     434: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     437: ifnonnull     468
+     440: aload         12
+     442: iload         8
+     444: daload
+     445: invokestatic  #98                 // Method java/lang/Double.isFinite:(D)Z
+     448: ifeq          498
+     451: aload_3
+     452: dup
+     453: getfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     456: dload         17
+     458: invokestatic  #108                // Method java/lang/Math.log:(D)D
+     461: dadd
+     462: putfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     465: goto          498
+     468: aload_3
+     469: getfield      #85                 // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.missing:[I
+     472: iload         8
+     474: invokestatic  #165                // Method java/util/Arrays.binarySearch:([II)I
+     477: istore        19
+     479: iload         19
+     481: ifge          498
+     484: aload_3
+     485: dup
+     486: getfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     489: dload         17
+     491: invokestatic  #108                // Method java/lang/Math.log:(D)D
+     494: dadd
+     495: putfield      #104                // Field jdplus/toolkit/base/core/data/transformation/LogJacobian.value:D
+     498: iload         8
+     500: iload_2
+     501: iadd
+     502: istore        8
+     504: goto          370
+     507: aload         6
+     509: aload         12
+     511: invokestatic  #118                // Method jdplus/toolkit/base/api/timeseries/TsData.ofInternal:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;[D)Ljdplus/toolkit/base/api/timeseries/TsData;
+     514: areturn
+
+  public double transform(jdplus.toolkit.base.api.timeseries.TimeSeriesInterval, double);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: checkcast     #135                // class jdplus/toolkit/base/api/timeseries/TsPeriod
+       5: dload_2
+       6: invokevirtual #171                // Method transform:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;D)D
+       9: dreturn
+
+  public jdplus.toolkit.base.api.timeseries.TimeSeriesData transform(jdplus.toolkit.base.api.timeseries.TimeSeriesData, jdplus.toolkit.base.core.data.transformation.LogJacobian);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: checkcast     #21                 // class jdplus/toolkit/base/api/timeseries/TsData
+       5: aload_2
+       6: invokevirtual #57                 // Method transform:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/core/data/transformation/LogJacobian;)Ljdplus/toolkit/base/api/timeseries/TsData;
+       9: areturn
+
+  public jdplus.toolkit.base.core.timeseries.TimeSeriesTransformation converse();
+    Code:
+       0: aload_0
+       1: invokevirtual #174                // Method converse:()Ljdplus/toolkit/base/core/timeseries/simplets/TsDataTransformation;
+       4: areturn
+}

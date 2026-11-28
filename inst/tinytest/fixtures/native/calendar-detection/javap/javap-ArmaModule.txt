@@ -1,0 +1,950 @@
+Compiled from "ArmaModule.java"
+public class jdplus.x13.base.core.x13.regarima.ArmaModule implements jdplus.toolkit.base.core.regsarima.regular.IArmaModule {
+  static final double NO_BIC;
+
+  static final int NMOD;
+
+  private jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic[] estimations;
+
+  private final int nmod;
+
+  private final boolean balanced;
+
+  private final boolean mixed;
+
+  private final boolean wn;
+
+  private final double eps;
+
+  private final int maxP;
+
+  private final int maxQ;
+
+  private final int maxBp;
+
+  private final int maxBq;
+
+  static jdplus.x13.base.core.x13.regarima.ArmaModule$Builder builder();
+    Code:
+       0: new           #1                  // class jdplus/x13/base/core/x13/regarima/ArmaModule$Builder
+       3: dup
+       4: invokespecial #3                  // Method jdplus/x13/base/core/x13/regarima/ArmaModule$Builder."<init>":()V
+       7: areturn
+
+  public jdplus.toolkit.base.api.arima.SarmaOrders process(jdplus.toolkit.base.api.data.DoubleSeq, int, int, int, boolean);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: iload         4
+       6: invokevirtual #7                  // Method select:(Ljdplus/toolkit/base/api/data/DoubleSeq;III)Ljdplus/toolkit/base/api/arima/SarmaOrders;
+       9: areturn
+
+  public jdplus.toolkit.base.api.arima.SarimaOrders process(jdplus.toolkit.base.core.regarima.RegArimaModel<jdplus.toolkit.base.core.sarima.SarimaModel>, boolean);
+    Code:
+       0: aload_1
+       1: invokevirtual #13                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.arima:()Ljdplus/toolkit/base/core/arima/IArimaModel;
+       4: checkcast     #19                 // class jdplus/toolkit/base/core/sarima/SarimaModel
+       7: invokevirtual #21                 // Method jdplus/toolkit/base/core/sarima/SarimaModel.orders:()Ljdplus/toolkit/base/api/arima/SarimaOrders;
+      10: astore_3
+      11: aload_1
+      12: invokestatic  #25                 // Method jdplus/toolkit/base/core/regarima/RegArimaUtility.olsResiduals:(Ljdplus/toolkit/base/core/regarima/RegArimaModel;)Ljdplus/toolkit/base/api/data/DoubleSeq;
+      15: astore        4
+      17: aload_0
+      18: aload         4
+      20: aload_3
+      21: invokevirtual #31                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.getPeriod:()I
+      24: aload_3
+      25: invokevirtual #37                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.getD:()I
+      28: aload_3
+      29: invokevirtual #40                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.getBd:()I
+      32: invokevirtual #7                  // Method select:(Ljdplus/toolkit/base/api/data/DoubleSeq;III)Ljdplus/toolkit/base/api/arima/SarmaOrders;
+      35: astore        5
+      37: aload         5
+      39: ifnonnull     49
+      42: aload_3
+      43: iload_2
+      44: invokevirtual #43                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.setDefault:(Z)V
+      47: aload_3
+      48: areturn
+      49: aload         5
+      51: aload_3
+      52: invokevirtual #37                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.getD:()I
+      55: aload_3
+      56: invokevirtual #40                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.getBd:()I
+      59: invokestatic  #47                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.of:(Ljdplus/toolkit/base/api/arima/SarmaOrders;II)Ljdplus/toolkit/base/api/arima/SarimaOrders;
+      62: astore        6
+      64: aload         6
+      66: areturn
+
+  public jdplus.toolkit.base.core.regsarima.regular.ProcessingResult process(jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling);
+    Code:
+       0: aload_1
+       1: invokevirtual #51                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getLog:()Ljdplus/toolkit/base/api/processing/ProcessingLog;
+       4: astore_2
+       5: aload_2
+       6: ldc           #59                 // String arma selection
+       8: invokeinterface #61,  2           // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.push:(Ljava/lang/String;)V
+      13: aload_1
+      14: invokevirtual #67                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getDescription:()Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+      17: astore_3
+      18: aload_3
+      19: invokevirtual #71                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.specification:()Ljdplus/toolkit/base/api/arima/SarimaOrders;
+      22: astore        4
+      24: aload_3
+      25: invokevirtual #76                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.regarima:()Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      28: invokestatic  #25                 // Method jdplus/toolkit/base/core/regarima/RegArimaUtility.olsResiduals:(Ljdplus/toolkit/base/core/regarima/RegArimaModel;)Ljdplus/toolkit/base/api/data/DoubleSeq;
+      31: astore        5
+      33: aload_0
+      34: aload         5
+      36: aload_3
+      37: invokevirtual #80                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.getAnnualFrequency:()I
+      40: aload         4
+      42: invokevirtual #37                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.getD:()I
+      45: aload         4
+      47: invokevirtual #40                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.getBd:()I
+      50: invokevirtual #7                  // Method select:(Ljdplus/toolkit/base/api/data/DoubleSeq;III)Ljdplus/toolkit/base/api/arima/SarmaOrders;
+      53: astore        6
+      55: aload_2
+      56: aload         6
+      58: invokevirtual #83                 // Method jdplus/toolkit/base/api/arima/SarmaOrders.toString:()Ljava/lang/String;
+      61: invokedynamic #89,  0             // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+      66: new           #93                 // class jdplus/x13/base/core/x13/regarima/ArmaModule$CInfo
+      69: dup
+      70: aload_0
+      71: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+      74: aload         6
+      76: invokespecial #99                 // Method jdplus/x13/base/core/x13/regarima/ArmaModule$CInfo."<init>":([Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;Ljdplus/toolkit/base/api/arima/SarmaOrders;)V
+      79: invokeinterface #102,  3          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.info:(Ljava/lang/String;Ljava/lang/Object;)V
+      84: aload         6
+      86: aload         4
+      88: invokevirtual #106                // Method jdplus/toolkit/base/api/arima/SarimaOrders.doStationary:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+      91: invokevirtual #110                // Method jdplus/toolkit/base/api/arima/SarmaOrders.equals:(Ljava/lang/Object;)Z
+      94: ifeq          111
+      97: getstatic     #114                // Field jdplus/toolkit/base/core/regsarima/regular/ProcessingResult.Unchanged:Ljdplus/toolkit/base/core/regsarima/regular/ProcessingResult;
+     100: astore        7
+     102: aload_2
+     103: invokeinterface #120,  1          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.pop:()V
+     108: aload         7
+     110: areturn
+     111: aload         6
+     113: aload         4
+     115: invokevirtual #37                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.getD:()I
+     118: aload         4
+     120: invokevirtual #40                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.getBd:()I
+     123: invokestatic  #47                 // Method jdplus/toolkit/base/api/arima/SarimaOrders.of:(Ljdplus/toolkit/base/api/arima/SarmaOrders;II)Ljdplus/toolkit/base/api/arima/SarimaOrders;
+     126: astore        4
+     128: aload_3
+     129: aload         4
+     131: invokevirtual #123                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.setSpecification:(Ljdplus/toolkit/base/api/arima/SarimaOrders;)V
+     134: getstatic     #127                // Field jdplus/toolkit/base/core/regsarima/regular/ProcessingResult.Changed:Ljdplus/toolkit/base/core/regsarima/regular/ProcessingResult;
+     137: astore        7
+     139: aload_2
+     140: invokeinterface #120,  1          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.pop:()V
+     145: aload         7
+     147: areturn
+     148: astore_3
+     149: aload_2
+     150: ldc           #132                // String arma selection failed
+     152: invokeinterface #134,  2          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.remark:(Ljava/lang/String;)V
+     157: getstatic     #137                // Field jdplus/toolkit/base/core/regsarima/regular/ProcessingResult.Failed:Ljdplus/toolkit/base/core/regsarima/regular/ProcessingResult;
+     160: astore        4
+     162: aload_2
+     163: invokeinterface #120,  1          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.pop:()V
+     168: aload         4
+     170: areturn
+     171: astore        8
+     173: aload_2
+     174: invokeinterface #120,  1          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.pop:()V
+     179: aload         8
+     181: athrow
+    Exception table:
+       from    to  target type
+          13   102   148   Class java/lang/RuntimeException
+         111   139   148   Class java/lang/RuntimeException
+          13   102   171   any
+         111   139   171   any
+         148   162   171   any
+         171   173   171   any
+
+  private jdplus.x13.base.core.x13.regarima.ArmaModule(jdplus.x13.base.core.x13.regarima.ArmaModule$Builder);
+    Code:
+       0: aload_0
+       1: invokespecial #140                // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: aload_1
+       6: getfield      #143                // Field jdplus/x13/base/core/x13/regarima/ArmaModule$Builder.modelsCount:I
+       9: putfield      #147                // Field nmod:I
+      12: aload_0
+      13: aload_1
+      14: getfield      #150                // Field jdplus/x13/base/core/x13/regarima/ArmaModule$Builder.maxP:I
+      17: putfield      #153                // Field maxP:I
+      20: aload_0
+      21: aload_1
+      22: getfield      #154                // Field jdplus/x13/base/core/x13/regarima/ArmaModule$Builder.maxQ:I
+      25: putfield      #157                // Field maxQ:I
+      28: aload_0
+      29: aload_1
+      30: getfield      #158                // Field jdplus/x13/base/core/x13/regarima/ArmaModule$Builder.maxBp:I
+      33: putfield      #161                // Field maxBp:I
+      36: aload_0
+      37: aload_1
+      38: getfield      #162                // Field jdplus/x13/base/core/x13/regarima/ArmaModule$Builder.maxBq:I
+      41: putfield      #165                // Field maxBq:I
+      44: aload_0
+      45: aload_1
+      46: getfield      #166                // Field jdplus/x13/base/core/x13/regarima/ArmaModule$Builder.balanced:Z
+      49: putfield      #170                // Field balanced:Z
+      52: aload_0
+      53: aload_1
+      54: getfield      #171                // Field jdplus/x13/base/core/x13/regarima/ArmaModule$Builder.mixed:Z
+      57: putfield      #174                // Field mixed:Z
+      60: aload_0
+      61: aload_1
+      62: getfield      #175                // Field jdplus/x13/base/core/x13/regarima/ArmaModule$Builder.wn:Z
+      65: putfield      #178                // Field wn:Z
+      68: aload_0
+      69: aload_1
+      70: getfield      #179                // Field jdplus/x13/base/core/x13/regarima/ArmaModule$Builder.eps:D
+      73: putfield      #183                // Field eps:D
+      76: return
+
+  public void clear();
+    Code:
+       0: aload_0
+       1: aconst_null
+       2: putfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+       5: return
+
+  public int getCount();
+    Code:
+       0: aload_0
+       1: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+       4: ifnonnull     11
+       7: iconst_0
+       8: goto          16
+      11: aload_0
+      12: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+      15: arraylength
+      16: ireturn
+
+  public jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic[] getPreferedModels();
+    Code:
+       0: aload_0
+       1: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+       4: areturn
+
+  public jdplus.toolkit.base.api.arima.SarmaOrders select(jdplus.toolkit.base.api.data.DoubleSeq, int, int);
+    Code:
+       0: aload_0
+       1: getfield      #147                // Field nmod:I
+       4: istore        4
+       6: aload_0
+       7: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+      10: iload         4
+      12: iconst_1
+      13: isub
+      14: aaload
+      15: invokevirtual #184                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getBIC:()D
+      18: ldc2_w        #190                // double 99999.0d
+      21: dcmpl
+      22: ifne          31
+      25: iinc          4, -1
+      28: goto          6
+      31: aload_0
+      32: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+      35: iconst_0
+      36: aaload
+      37: invokevirtual #192                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getSpecification:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+      40: astore        5
+      42: aload         5
+      44: invokevirtual #195                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getP:()I
+      47: aload         5
+      49: invokevirtual #198                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getQ:()I
+      52: iadd
+      53: istore        6
+      55: aload         5
+      57: invokevirtual #201                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getBp:()I
+      60: aload         5
+      62: invokevirtual #204                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getBq:()I
+      65: iadd
+      66: istore        7
+      68: aload         5
+      70: invokevirtual #195                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getP:()I
+      73: iload_2
+      74: iadd
+      75: aload         5
+      77: invokevirtual #198                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getQ:()I
+      80: isub
+      81: invokestatic  #207                // Method java/lang/Math.abs:(I)I
+      84: istore        8
+      86: aload         5
+      88: invokevirtual #201                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getBp:()I
+      91: iload_3
+      92: iadd
+      93: aload         5
+      95: invokevirtual #204                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getBq:()I
+      98: isub
+      99: invokestatic  #207                // Method java/lang/Math.abs:(I)I
+     102: istore        9
+     104: aload_0
+     105: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     108: iload         4
+     110: iconst_1
+     111: isub
+     112: aaload
+     113: invokevirtual #184                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getBIC:()D
+     116: aload_0
+     117: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     120: iconst_0
+     121: aaload
+     122: invokevirtual #184                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getBIC:()D
+     125: dsub
+     126: dstore        10
+     128: dload         10
+     130: ldc2_w        #213                // double 0.003d
+     133: dcmpg
+     134: ifge          145
+     137: ldc2_w        #215                // double 0.0625d
+     140: dstore        10
+     142: goto          165
+     145: dload         10
+     147: ldc2_w        #217                // double 0.03d
+     150: dcmpg
+     151: ifge          162
+     154: ldc2_w        #219                // double 0.25d
+     157: dstore        10
+     159: goto          165
+     162: dconst_1
+     163: dstore        10
+     165: ldc2_w        #221                // double 0.01d
+     168: dload         10
+     170: dmul
+     171: dstore        12
+     173: ldc2_w        #223                // double 0.0025d
+     176: dload         10
+     178: dmul
+     179: dstore        14
+     181: ldc2_w        #225                // double 0.0075d
+     184: dload         10
+     186: dmul
+     187: dstore        16
+     189: iconst_0
+     190: istore        18
+     192: iconst_0
+     193: istore        19
+     195: iconst_1
+     196: istore        20
+     198: iload         20
+     200: iload         4
+     202: if_icmpge     878
+     205: aload_0
+     206: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     209: iload         20
+     211: aaload
+     212: invokevirtual #192                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getSpecification:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     215: astore        21
+     217: aload         21
+     219: invokevirtual #195                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getP:()I
+     222: aload         21
+     224: invokevirtual #198                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getQ:()I
+     227: iadd
+     228: istore        22
+     230: aload         21
+     232: invokevirtual #201                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getBp:()I
+     235: aload         21
+     237: invokevirtual #204                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getBq:()I
+     240: iadd
+     241: istore        23
+     243: aload         21
+     245: invokevirtual #195                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getP:()I
+     248: iload_2
+     249: iadd
+     250: aload         21
+     252: invokevirtual #198                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getQ:()I
+     255: isub
+     256: invokestatic  #207                // Method java/lang/Math.abs:(I)I
+     259: istore        24
+     261: aload         21
+     263: invokevirtual #201                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getBp:()I
+     266: iload_3
+     267: iadd
+     268: aload         21
+     270: invokevirtual #204                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getBq:()I
+     273: isub
+     274: invokestatic  #207                // Method java/lang/Math.abs:(I)I
+     277: istore        25
+     279: aload_0
+     280: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     283: iload         20
+     285: aaload
+     286: invokevirtual #184                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getBIC:()D
+     289: aload_0
+     290: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     293: iload         18
+     295: aaload
+     296: invokevirtual #184                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getBIC:()D
+     299: dsub
+     300: dstore        26
+     302: iconst_0
+     303: istore        28
+     305: iload         24
+     307: iload         8
+     309: if_icmplt     319
+     312: iload         25
+     314: iload         9
+     316: if_icmpge     354
+     319: iload         6
+     321: iload         22
+     323: if_icmpne     354
+     326: iload         7
+     328: iload         23
+     330: if_icmpne     354
+     333: dload         26
+     335: dload         12
+     337: dcmpg
+     338: ifgt          354
+     341: aload_0
+     342: getfield      #170                // Field balanced:Z
+     345: ifeq          354
+     348: iconst_1
+     349: istore        28
+     351: goto          794
+     354: iload         24
+     356: iload         8
+     358: if_icmpge     412
+     361: iload         22
+     363: iload         6
+     365: if_icmpgt     412
+     368: iload         23
+     370: iload         7
+     372: if_icmpne     412
+     375: dload         26
+     377: dload         14
+     379: dcmpg
+     380: ifgt          412
+     383: aload         21
+     385: invokevirtual #195                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getP:()I
+     388: ifle          412
+     391: aload         21
+     393: invokevirtual #198                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getQ:()I
+     396: ifle          412
+     399: aload_0
+     400: getfield      #170                // Field balanced:Z
+     403: ifeq          412
+     406: iconst_2
+     407: istore        28
+     409: goto          794
+     412: iload         24
+     414: ifne          428
+     417: iload         24
+     419: iload         8
+     421: if_icmpge     428
+     424: iload_2
+     425: ifgt          444
+     428: iload         25
+     430: ifne          479
+     433: iload         25
+     435: iload         9
+     437: if_icmpge     479
+     440: iload_3
+     441: ifle          479
+     444: iload         6
+     446: iload         22
+     448: if_icmpne     479
+     451: iload         7
+     453: iload         23
+     455: if_icmpne     479
+     458: dload         26
+     460: dload         12
+     462: dcmpg
+     463: ifgt          479
+     466: aload_0
+     467: getfield      #170                // Field balanced:Z
+     470: ifeq          479
+     473: iconst_3
+     474: istore        28
+     476: goto          794
+     479: iload         24
+     481: ifne          510
+     484: iload         25
+     486: ifne          510
+     489: dload         26
+     491: dload         14
+     493: dcmpg
+     494: ifge          510
+     497: aload_0
+     498: getfield      #170                // Field balanced:Z
+     501: ifeq          510
+     504: iconst_4
+     505: istore        28
+     507: goto          794
+     510: iload         22
+     512: iload         6
+     514: if_icmple     550
+     517: iload         24
+     519: ifne          550
+     522: iload         23
+     524: iload         7
+     526: if_icmpne     550
+     529: dload         26
+     531: dload         14
+     533: dcmpg
+     534: ifge          550
+     537: aload_0
+     538: getfield      #170                // Field balanced:Z
+     541: ifeq          550
+     544: iconst_5
+     545: istore        28
+     547: goto          794
+     550: iload         23
+     552: iload         7
+     554: if_icmple     591
+     557: iload         25
+     559: ifne          591
+     562: iload         22
+     564: iload         6
+     566: if_icmpne     591
+     569: dload         26
+     571: dload         14
+     573: dcmpg
+     574: ifge          591
+     577: aload_0
+     578: getfield      #170                // Field balanced:Z
+     581: ifeq          591
+     584: bipush        6
+     586: istore        28
+     588: goto          794
+     591: iload         23
+     593: iload         7
+     595: if_icmpge     637
+     598: iload         23
+     600: ifle          637
+     603: iload         22
+     605: iload         6
+     607: if_icmpne     637
+     610: iload         25
+     612: ifne          637
+     615: dload         26
+     617: dload         14
+     619: dcmpg
+     620: ifge          637
+     623: aload_0
+     624: getfield      #170                // Field balanced:Z
+     627: ifeq          637
+     630: bipush        7
+     632: istore        28
+     634: goto          794
+     637: iload         20
+     639: iconst_1
+     640: if_icmpne     676
+     643: iload         6
+     645: ifne          676
+     648: iload         22
+     650: iconst_1
+     651: if_icmpne     676
+     654: iload         23
+     656: iload         7
+     658: if_icmpne     676
+     661: dload         26
+     663: dload         14
+     665: dcmpg
+     666: ifge          676
+     669: bipush        8
+     671: istore        28
+     673: goto          794
+     676: iload         22
+     678: iload         6
+     680: if_icmpge     710
+     683: iload         22
+     685: ifle          710
+     688: iload         23
+     690: iload         7
+     692: if_icmpne     710
+     695: dload         26
+     697: dload         14
+     699: dcmpg
+     700: ifge          710
+     703: bipush        9
+     705: istore        28
+     707: goto          794
+     710: iload         23
+     712: iload         7
+     714: if_icmpge     744
+     717: iload         23
+     719: ifle          744
+     722: iload         22
+     724: iload         6
+     726: if_icmpne     744
+     729: dload         26
+     731: dload         14
+     733: dcmpg
+     734: ifge          744
+     737: bipush        10
+     739: istore        28
+     741: goto          794
+     744: aload         21
+     746: invokevirtual #195                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getP:()I
+     749: aload         5
+     751: invokevirtual #195                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getP:()I
+     754: if_icmpge     794
+     757: aload         21
+     759: invokevirtual #198                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getQ:()I
+     762: aload         5
+     764: invokevirtual #198                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getQ:()I
+     767: if_icmpne     794
+     770: iload         22
+     772: ifle          794
+     775: iload         23
+     777: iload         7
+     779: if_icmpne     794
+     782: dload         26
+     784: dload         16
+     786: dcmpg
+     787: ifge          794
+     790: bipush        11
+     792: istore        28
+     794: iload         28
+     796: ifle          872
+     799: iinc          19, 1
+     802: aload_0
+     803: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     806: iload         20
+     808: aaload
+     809: invokevirtual #184                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getBIC:()D
+     812: aload_0
+     813: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     816: iconst_0
+     817: aaload
+     818: invokevirtual #184                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getBIC:()D
+     821: dsub
+     822: dstore        29
+     824: dload         12
+     826: dload         29
+     828: dsub
+     829: dstore        12
+     831: dload         14
+     833: dload         29
+     835: dsub
+     836: dstore        14
+     838: dload         16
+     840: dload         29
+     842: dsub
+     843: dstore        16
+     845: iload         22
+     847: istore        6
+     849: iload         23
+     851: istore        7
+     853: iload         24
+     855: istore        8
+     857: iload         25
+     859: istore        9
+     861: iload         20
+     863: istore        18
+     865: aload         21
+     867: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     870: astore        5
+     872: iinc          20, 1
+     875: goto          198
+     878: aload         5
+     880: invokevirtual #230                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getParametersCount:()I
+     883: ifne          913
+     886: iload         18
+     888: aload_0
+     889: getfield      #147                // Field nmod:I
+     892: iconst_1
+     893: isub
+     894: if_icmpge     913
+     897: aload_0
+     898: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     901: iload         18
+     903: iconst_1
+     904: iadd
+     905: aaload
+     906: invokevirtual #192                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getSpecification:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     909: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     912: areturn
+     913: aload_0
+     914: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     917: iload         18
+     919: aaload
+     920: invokevirtual #192                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getSpecification:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     923: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     926: areturn
+
+  public jdplus.toolkit.base.api.arima.SarmaOrders select(jdplus.toolkit.base.api.data.DoubleSeq, int, int, int);
+    Code:
+       0: aload_0
+       1: invokevirtual #233                // Method clear:()V
+       4: new           #84                 // class jdplus/toolkit/base/api/arima/SarmaOrders
+       7: dup
+       8: iload_2
+       9: invokespecial #236                // Method jdplus/toolkit/base/api/arima/SarmaOrders."<init>":(I)V
+      12: astore        5
+      14: aconst_null
+      15: astore        6
+      17: aload_0
+      18: aload_0
+      19: getfield      #147                // Field nmod:I
+      22: anewarray     #185                // class jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic
+      25: putfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+      28: iload_2
+      29: iconst_2
+      30: if_icmpne     42
+      33: aload         5
+      35: iconst_1
+      36: invokevirtual #239                // Method jdplus/toolkit/base/api/arima/SarmaOrders.setP:(I)V
+      39: goto          48
+      42: aload         5
+      44: iconst_3
+      45: invokevirtual #239                // Method jdplus/toolkit/base/api/arima/SarmaOrders.setP:(I)V
+      48: aload         5
+      50: iconst_0
+      51: invokevirtual #242                // Method jdplus/toolkit/base/api/arima/SarmaOrders.setQ:(I)V
+      54: iconst_0
+      55: istore        7
+      57: new           #245                // class java/util/ArrayList
+      60: dup
+      61: invokespecial #247                // Method java/util/ArrayList."<init>":()V
+      64: astore        8
+      66: iload_2
+      67: iconst_1
+      68: if_icmpeq     211
+      71: iconst_0
+      72: istore        9
+      74: iconst_0
+      75: istore        10
+      77: iload         9
+      79: aload_0
+      80: getfield      #161                // Field maxBp:I
+      83: if_icmpgt     154
+      86: iconst_0
+      87: istore        11
+      89: iload         11
+      91: aload_0
+      92: getfield      #165                // Field maxBq:I
+      95: if_icmpgt     148
+      98: aload_0
+      99: getfield      #174                // Field mixed:Z
+     102: ifne          115
+     105: iload         9
+     107: ifeq          115
+     110: iload         11
+     112: ifne          142
+     115: aload         5
+     117: iload         9
+     119: invokevirtual #248                // Method jdplus/toolkit/base/api/arima/SarmaOrders.setBp:(I)V
+     122: aload         5
+     124: iload         11
+     126: invokevirtual #251                // Method jdplus/toolkit/base/api/arima/SarmaOrders.setBq:(I)V
+     129: aload         8
+     131: aload         5
+     133: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     136: invokeinterface #254,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     141: pop
+     142: iinc          11, 1
+     145: goto          89
+     148: iinc          9, 1
+     151: goto          77
+     154: aload         8
+     156: aload         8
+     158: invokeinterface #259,  1          // InterfaceMethod java/util/List.size:()I
+     163: anewarray     #84                 // class jdplus/toolkit/base/api/arima/SarmaOrders
+     166: invokeinterface #262,  2          // InterfaceMethod java/util/List.toArray:([Ljava/lang/Object;)[Ljava/lang/Object;
+     171: checkcast     #266                // class "[Ljdplus/toolkit/base/api/arima/SarmaOrders;"
+     174: astore        9
+     176: aload_1
+     177: aload         9
+     179: aload_0
+     180: getfield      #183                // Field eps:D
+     183: invokestatic  #268                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.sort:(Ljdplus/toolkit/base/api/data/DoubleSeq;[Ljdplus/toolkit/base/api/arima/SarmaOrders;D)[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     186: astore        10
+     188: aload         10
+     190: arraylength
+     191: ifne          196
+     194: aconst_null
+     195: areturn
+     196: aload         10
+     198: iconst_0
+     199: aaload
+     200: invokevirtual #192                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getSpecification:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     203: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     206: astore        6
+     208: goto          218
+     211: aload         5
+     213: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     216: astore        6
+     218: new           #245                // class java/util/ArrayList
+     221: dup
+     222: invokespecial #247                // Method java/util/ArrayList."<init>":()V
+     225: astore        9
+     227: iconst_0
+     228: istore        10
+     230: iconst_0
+     231: istore        11
+     233: iload         10
+     235: aload_0
+     236: getfield      #153                // Field maxP:I
+     239: if_icmpgt     310
+     242: iconst_0
+     243: istore        12
+     245: iload         12
+     247: aload_0
+     248: getfield      #157                // Field maxQ:I
+     251: if_icmpgt     304
+     254: aload_0
+     255: getfield      #174                // Field mixed:Z
+     258: ifne          271
+     261: iload         10
+     263: ifeq          271
+     266: iload         12
+     268: ifne          298
+     271: aload         6
+     273: iload         10
+     275: invokevirtual #239                // Method jdplus/toolkit/base/api/arima/SarmaOrders.setP:(I)V
+     278: aload         6
+     280: iload         12
+     282: invokevirtual #242                // Method jdplus/toolkit/base/api/arima/SarmaOrders.setQ:(I)V
+     285: aload         9
+     287: aload         6
+     289: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     292: invokeinterface #254,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     297: pop
+     298: iinc          12, 1
+     301: goto          245
+     304: iinc          10, 1
+     307: goto          233
+     310: aload         9
+     312: aload         9
+     314: invokeinterface #259,  1          // InterfaceMethod java/util/List.size:()I
+     319: anewarray     #84                 // class jdplus/toolkit/base/api/arima/SarmaOrders
+     322: invokeinterface #262,  2          // InterfaceMethod java/util/List.toArray:([Ljava/lang/Object;)[Ljava/lang/Object;
+     327: checkcast     #266                // class "[Ljdplus/toolkit/base/api/arima/SarmaOrders;"
+     330: astore        10
+     332: aload_1
+     333: aload         10
+     335: aload_0
+     336: getfield      #183                // Field eps:D
+     339: invokestatic  #268                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.sort:(Ljdplus/toolkit/base/api/data/DoubleSeq;[Ljdplus/toolkit/base/api/arima/SarmaOrders;D)[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     342: astore        11
+     344: aload         11
+     346: arraylength
+     347: ifne          352
+     350: aconst_null
+     351: areturn
+     352: aload         11
+     354: iconst_0
+     355: aaload
+     356: invokevirtual #192                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getSpecification:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     359: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     362: astore        6
+     364: aload         11
+     366: aload_0
+     367: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     370: invokestatic  #272                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.mergeInto:([Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;)V
+     373: aload_0
+     374: getfield      #161                // Field maxBp:I
+     377: istore        12
+     379: aload_0
+     380: getfield      #165                // Field maxBq:I
+     383: istore        13
+     385: iload         4
+     387: iconst_1
+     388: if_icmpne     394
+     391: iconst_0
+     392: istore        12
+     394: iload_2
+     395: iconst_1
+     396: if_icmpeq     538
+     399: new           #245                // class java/util/ArrayList
+     402: dup
+     403: invokespecial #247                // Method java/util/ArrayList."<init>":()V
+     406: astore        14
+     408: iconst_0
+     409: istore        15
+     411: iconst_0
+     412: istore        16
+     414: iload         15
+     416: iload         12
+     418: if_icmpgt     487
+     421: iconst_0
+     422: istore        17
+     424: iload         17
+     426: iload         13
+     428: if_icmpgt     481
+     431: aload_0
+     432: getfield      #174                // Field mixed:Z
+     435: ifne          448
+     438: iload         15
+     440: ifeq          448
+     443: iload         17
+     445: ifne          475
+     448: aload         6
+     450: iload         15
+     452: invokevirtual #248                // Method jdplus/toolkit/base/api/arima/SarmaOrders.setBp:(I)V
+     455: aload         6
+     457: iload         17
+     459: invokevirtual #251                // Method jdplus/toolkit/base/api/arima/SarmaOrders.setBq:(I)V
+     462: aload         14
+     464: aload         6
+     466: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     469: invokeinterface #254,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     474: pop
+     475: iinc          17, 1
+     478: goto          424
+     481: iinc          15, 1
+     484: goto          414
+     487: aload         14
+     489: aload         14
+     491: invokeinterface #259,  1          // InterfaceMethod java/util/List.size:()I
+     496: anewarray     #84                 // class jdplus/toolkit/base/api/arima/SarmaOrders
+     499: invokeinterface #262,  2          // InterfaceMethod java/util/List.toArray:([Ljava/lang/Object;)[Ljava/lang/Object;
+     504: checkcast     #266                // class "[Ljdplus/toolkit/base/api/arima/SarmaOrders;"
+     507: astore        15
+     509: aload_1
+     510: aload         15
+     512: aload_0
+     513: getfield      #183                // Field eps:D
+     516: invokestatic  #268                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.sort:(Ljdplus/toolkit/base/api/data/DoubleSeq;[Ljdplus/toolkit/base/api/arima/SarmaOrders;D)[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     519: astore        16
+     521: aload         16
+     523: arraylength
+     524: ifne          529
+     527: aconst_null
+     528: areturn
+     529: aload         16
+     531: aload_0
+     532: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     535: invokestatic  #272                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.mergeInto:([Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;)V
+     538: iload_2
+     539: iconst_1
+     540: if_icmpne     584
+     543: aload_0
+     544: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     547: iconst_0
+     548: aaload
+     549: invokevirtual #192                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getSpecification:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     552: invokevirtual #230                // Method jdplus/toolkit/base/api/arima/SarmaOrders.getParametersCount:()I
+     555: ifne          571
+     558: aload_0
+     559: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     562: iconst_1
+     563: aaload
+     564: invokevirtual #192                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getSpecification:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     567: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     570: areturn
+     571: aload_0
+     572: getfield      #95                 // Field estimations:[Ljdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic;
+     575: iconst_0
+     576: aaload
+     577: invokevirtual #192                // Method jdplus/x13/base/core/x13/regarima/ArmaModule$RegArmaBic.getSpecification:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     580: invokevirtual #227                // Method jdplus/toolkit/base/api/arima/SarmaOrders.clone:()Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     583: areturn
+     584: aload_0
+     585: aload_1
+     586: iload_3
+     587: iload         4
+     589: invokevirtual #276                // Method select:(Ljdplus/toolkit/base/api/data/DoubleSeq;II)Ljdplus/toolkit/base/api/arima/SarmaOrders;
+     592: areturn
+}

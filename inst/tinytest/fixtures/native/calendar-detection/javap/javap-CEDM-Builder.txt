@@ -1,0 +1,78 @@
+Compiled from "CalendarEffectsDetectionModule.java"
+public class jdplus.sa.base.core.regarima.CalendarEffectsDetectionModule$Builder {
+  private jdplus.toolkit.base.api.timeseries.regression.ITradingDaysVariable td;
+
+  private jdplus.toolkit.base.api.timeseries.regression.ILengthOfPeriodVariable lp;
+
+  private jdplus.toolkit.base.api.timeseries.calendars.LengthOfPeriodType adjust;
+
+  private jdplus.toolkit.base.core.regsarima.regular.IModelComparator comparator;
+
+  private double eps;
+
+  public jdplus.sa.base.core.regarima.CalendarEffectsDetectionModule$Builder();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: getstatic     #7                  // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.None:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+       8: putfield      #13                 // Field adjust:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      11: aload_0
+      12: new           #18                 // class jdplus/toolkit/base/core/regarima/AICcComparator
+      15: dup
+      16: dconst_0
+      17: invokespecial #20                 // Method jdplus/toolkit/base/core/regarima/AICcComparator."<init>":(D)V
+      20: putfield      #23                 // Field comparator:Ljdplus/toolkit/base/core/regsarima/regular/IModelComparator;
+      23: aload_0
+      24: ldc2_w        #27                 // double 1.0E-5d
+      27: putfield      #29                 // Field eps:D
+      30: return
+
+  public jdplus.sa.base.core.regarima.CalendarEffectsDetectionModule$Builder tradingDays(jdplus.toolkit.base.api.timeseries.regression.ITradingDaysVariable);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #33                 // Field td:Ljdplus/toolkit/base/api/timeseries/regression/ITradingDaysVariable;
+       5: aload_0
+       6: areturn
+
+  public jdplus.sa.base.core.regarima.CalendarEffectsDetectionModule$Builder leapYear(jdplus.toolkit.base.api.timeseries.regression.ILengthOfPeriodVariable);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #37                 // Field lp:Ljdplus/toolkit/base/api/timeseries/regression/ILengthOfPeriodVariable;
+       5: aload_0
+       6: areturn
+
+  public jdplus.sa.base.core.regarima.CalendarEffectsDetectionModule$Builder estimationPrecision(double);
+    Code:
+       0: aload_0
+       1: dload_1
+       2: putfield      #29                 // Field eps:D
+       5: aload_0
+       6: areturn
+
+  public jdplus.sa.base.core.regarima.CalendarEffectsDetectionModule$Builder adjust(jdplus.toolkit.base.api.timeseries.calendars.LengthOfPeriodType);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #13                 // Field adjust:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+       5: aload_0
+       6: areturn
+
+  public jdplus.sa.base.core.regarima.CalendarEffectsDetectionModule$Builder modelComparator(jdplus.toolkit.base.core.regsarima.regular.IModelComparator);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #23                 // Field comparator:Ljdplus/toolkit/base/core/regsarima/regular/IModelComparator;
+       5: aload_0
+       6: areturn
+
+  public jdplus.sa.base.core.regarima.CalendarEffectsDetectionModule build();
+    Code:
+       0: new           #41                 // class jdplus/sa/base/core/regarima/CalendarEffectsDetectionModule
+       3: dup
+       4: aload_0
+       5: invokespecial #43                 // Method jdplus/sa/base/core/regarima/CalendarEffectsDetectionModule."<init>":(Ljdplus/sa/base/core/regarima/CalendarEffectsDetectionModule$Builder;)V
+       8: areturn
+}

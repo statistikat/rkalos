@@ -1,0 +1,226 @@
+Compiled from "ConcentratedLikelihood.java"
+public interface jdplus.toolkit.base.core.stats.likelihood.ConcentratedLikelihood extends jdplus.toolkit.base.core.stats.likelihood.Likelihood {
+  public static jdplus.toolkit.base.core.stats.likelihood.ConcentratedLikelihood$Builder builder();
+    Code:
+       0: new           #1                  // class jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihood$Builder
+       3: dup
+       4: invokespecial #3                  // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihood$Builder."<init>":()V
+       7: areturn
+
+  public abstract jdplus.toolkit.base.api.data.DoubleSeq coefficients();
+
+  public abstract double coefficient(int);
+
+  public abstract jdplus.toolkit.base.core.math.matrices.FastMatrix unscaledCovariance();
+
+  public default jdplus.toolkit.base.core.math.matrices.FastMatrix covariance(int, boolean);
+    Code:
+       0: aload_0
+       1: invokeinterface #7,  1            // InterfaceMethod nx:()I
+       6: ifne          13
+       9: getstatic     #13                 // Field jdplus/toolkit/base/core/math/matrices/FastMatrix.EMPTY:Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+      12: areturn
+      13: aload_0
+      14: invokeinterface #19,  1           // InterfaceMethod unscaledCovariance:()Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+      19: invokevirtual #23                 // Method jdplus/toolkit/base/core/math/matrices/FastMatrix.deepClone:()Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+      22: astore_3
+      23: iload_2
+      24: ifeq          45
+      27: aload_0
+      28: invokeinterface #26,  1           // InterfaceMethod dim:()I
+      33: aload_0
+      34: invokeinterface #7,  1            // InterfaceMethod nx:()I
+      39: isub
+      40: iload_1
+      41: isub
+      42: goto          51
+      45: aload_0
+      46: invokeinterface #26,  1           // InterfaceMethod dim:()I
+      51: istore        4
+      53: aload_0
+      54: invokeinterface #29,  1           // InterfaceMethod ssq:()D
+      59: iload         4
+      61: i2d
+      62: ddiv
+      63: dstore        5
+      65: aload_3
+      66: dload         5
+      68: invokevirtual #33                 // Method jdplus/toolkit/base/core/math/matrices/FastMatrix.mul:(D)V
+      71: aload_3
+      72: areturn
+
+  public default int nx();
+    Code:
+       0: aload_0
+       1: invokeinterface #37,  1           // InterfaceMethod coefficients:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+       6: invokeinterface #41,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.length:()I
+      11: ireturn
+
+  public default int degreesOfFreedom();
+    Code:
+       0: aload_0
+       1: invokeinterface #26,  1           // InterfaceMethod dim:()I
+       6: aload_0
+       7: invokeinterface #7,  1            // InterfaceMethod nx:()I
+      12: isub
+      13: ireturn
+
+  public default double ser(int, int, boolean);
+    Code:
+       0: aload_0
+       1: invokeinterface #19,  1           // InterfaceMethod unscaledCovariance:()Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+       6: iload_1
+       7: iload_1
+       8: invokevirtual #46                 // Method jdplus/toolkit/base/core/math/matrices/FastMatrix.get:(II)D
+      11: dstore        4
+      13: dload         4
+      15: dconst_0
+      16: dcmpl
+      17: ifne          24
+      20: ldc2_w        #52                 // double NaNd
+      23: dreturn
+      24: aload_0
+      25: invokeinterface #37,  1           // InterfaceMethod coefficients:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      30: iload_1
+      31: invokeinterface #54,  2           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.get:(I)D
+      36: dstore        6
+      38: dload         6
+      40: dconst_0
+      41: dcmpl
+      42: ifne          47
+      45: dconst_0
+      46: dreturn
+      47: iload_3
+      48: ifeq          69
+      51: aload_0
+      52: invokeinterface #26,  1           // InterfaceMethod dim:()I
+      57: aload_0
+      58: invokeinterface #7,  1            // InterfaceMethod nx:()I
+      63: isub
+      64: iload_2
+      65: isub
+      66: goto          75
+      69: aload_0
+      70: invokeinterface #26,  1           // InterfaceMethod dim:()I
+      75: istore        8
+      77: dload         4
+      79: aload_0
+      80: invokeinterface #29,  1           // InterfaceMethod ssq:()D
+      85: dmul
+      86: iload         8
+      88: i2d
+      89: ddiv
+      90: invokestatic  #57                 // Method java/lang/Math.sqrt:(D)D
+      93: dreturn
+
+  public default double[] ser(int, boolean);
+    Code:
+       0: aload_0
+       1: invokeinterface #7,  1            // InterfaceMethod nx:()I
+       6: ifne          13
+       9: getstatic     #63                 // Field jdplus/toolkit/base/api/data/DoubleSeq.EMPTYARRAY:[D
+      12: areturn
+      13: aload_0
+      14: invokeinterface #19,  1           // InterfaceMethod unscaledCovariance:()Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+      19: invokevirtual #67                 // Method jdplus/toolkit/base/core/math/matrices/FastMatrix.diagonal:()Ljdplus/toolkit/base/core/data/DataBlock;
+      22: invokevirtual #71                 // Method jdplus/toolkit/base/core/data/DataBlock.toArray:()[D
+      25: astore_3
+      26: iload_2
+      27: ifeq          48
+      30: aload_0
+      31: invokeinterface #26,  1           // InterfaceMethod dim:()I
+      36: aload_0
+      37: invokeinterface #7,  1            // InterfaceMethod nx:()I
+      42: isub
+      43: iload_1
+      44: isub
+      45: goto          54
+      48: aload_0
+      49: invokeinterface #26,  1           // InterfaceMethod dim:()I
+      54: istore        4
+      56: aload_0
+      57: invokeinterface #29,  1           // InterfaceMethod ssq:()D
+      62: dstore        5
+      64: iconst_0
+      65: istore        7
+      67: iload         7
+      69: aload_3
+      70: arraylength
+      71: if_icmpge     98
+      74: aload_3
+      75: iload         7
+      77: aload_3
+      78: iload         7
+      80: daload
+      81: dload         5
+      83: dmul
+      84: iload         4
+      86: i2d
+      87: ddiv
+      88: invokestatic  #57                 // Method java/lang/Math.sqrt:(D)D
+      91: dastore
+      92: iinc          7, 1
+      95: goto          67
+      98: aload_3
+      99: areturn
+
+  public default double tstat(int, int, boolean);
+    Code:
+       0: aload_0
+       1: invokeinterface #77,  1           // InterfaceMethod isScalingFactor:()Z
+       6: ifne          19
+       9: new           #81                 // class jdplus/toolkit/base/api/eco/EcoException
+      12: dup
+      13: ldc           #83                 // String Unexpected operation
+      15: invokespecial #85                 // Method jdplus/toolkit/base/api/eco/EcoException."<init>":(Ljava/lang/String;)V
+      18: athrow
+      19: aload_0
+      20: iload_1
+      21: invokeinterface #88,  2           // InterfaceMethod coefficient:(I)D
+      26: aload_0
+      27: iload_1
+      28: iload_2
+      29: iload_3
+      30: invokeinterface #91,  4           // InterfaceMethod ser:(IIZ)D
+      35: ddiv
+      36: dreturn
+
+  public default double[] tstats(int, boolean);
+    Code:
+       0: aload_0
+       1: invokeinterface #77,  1           // InterfaceMethod isScalingFactor:()Z
+       6: ifne          19
+       9: new           #81                 // class jdplus/toolkit/base/api/eco/EcoException
+      12: dup
+      13: ldc           #83                 // String Unexpected operation
+      15: invokespecial #85                 // Method jdplus/toolkit/base/api/eco/EcoException."<init>":(Ljava/lang/String;)V
+      18: athrow
+      19: aload_0
+      20: iload_1
+      21: iload_2
+      22: invokeinterface #95,  3           // InterfaceMethod ser:(IZ)[D
+      27: astore_3
+      28: aload_0
+      29: invokeinterface #37,  1           // InterfaceMethod coefficients:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      34: invokeinterface #98,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.cursor:()Ljdplus/toolkit/base/api/data/DoubleSeqCursor;
+      39: astore        4
+      41: iconst_0
+      42: istore        5
+      44: iload         5
+      46: aload_3
+      47: arraylength
+      48: if_icmpge     73
+      51: aload_3
+      52: iload         5
+      54: aload         4
+      56: invokeinterface #102,  1          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeqCursor.getAndNext:()D
+      61: aload_3
+      62: iload         5
+      64: daload
+      65: ddiv
+      66: dastore
+      67: iinc          5, 1
+      70: goto          44
+      73: aload_3
+      74: areturn
+}

@@ -1,0 +1,4 @@
+TSC 0.357981 ns/tick
+CASE syn-stat-arma21 n=240 d=0 D=0 period=12
+SECTIONS arma_ms=0.0013 statinit_ms=0.0000 assembly_ms=0.0128 obs_ms=0.0363 upd_ms=0.0538 pred_ms=0.0879 obs_calls=240 upd_calls=240 pred_calls=239
+INSTRWALL syn-stat-arma21 route=fac1 median_ms=0.264687

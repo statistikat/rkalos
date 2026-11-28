@@ -1,0 +1,453 @@
+Compiled from "LogLevelModule.java"
+public class jdplus.sa.base.core.regarima.LogLevelModule implements jdplus.toolkit.base.core.regsarima.regular.ILogLevelModule {
+  private static final java.lang.String LL;
+
+  private static final java.lang.String NEG;
+
+  private static final java.lang.String FAILED;
+
+  private static final java.lang.String LOGS;
+
+  private static final java.lang.String LEVELS;
+
+  private final double aiccDiff;
+
+  private final double precision;
+
+  private final jdplus.toolkit.base.api.timeseries.calendars.LengthOfPeriodType preadjust;
+
+  private final boolean outliersCorrection;
+
+  private jdplus.toolkit.base.core.regarima.RegArimaEstimation<jdplus.toolkit.base.core.sarima.SarimaModel> level;
+
+  private jdplus.toolkit.base.core.regarima.RegArimaEstimation<jdplus.toolkit.base.core.sarima.SarimaModel> log;
+
+  private double aiccLevel;
+
+  private double aiccLog;
+
+  private static final jdplus.toolkit.base.core.modelling.regression.IOutlierFactory[] FAC;
+
+  public static jdplus.sa.base.core.regarima.LogLevelModule$Builder builder();
+    Code:
+       0: new           #1                  // class jdplus/sa/base/core/regarima/LogLevelModule$Builder
+       3: dup
+       4: invokespecial #3                  // Method jdplus/sa/base/core/regarima/LogLevelModule$Builder."<init>":()V
+       7: areturn
+
+  private jdplus.sa.base.core.regarima.LogLevelModule(double, double, jdplus.toolkit.base.api.timeseries.calendars.LengthOfPeriodType, boolean);
+    Code:
+       0: aload_0
+       1: invokespecial #7                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: dload_1
+       6: putfield      #10                 // Field aiccDiff:D
+       9: aload_0
+      10: dload_3
+      11: putfield      #16                 // Field precision:D
+      14: aload_0
+      15: aload         5
+      17: putfield      #19                 // Field preadjust:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+      20: aload_0
+      21: iload         6
+      23: putfield      #23                 // Field outliersCorrection:Z
+      26: return
+
+  public double getEpsilon();
+    Code:
+       0: aload_0
+       1: getfield      #16                 // Field precision:D
+       4: dreturn
+
+  public boolean isChoosingLog();
+    Code:
+       0: aload_0
+       1: getfield      #27                 // Field log:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       4: ifnonnull     9
+       7: iconst_0
+       8: ireturn
+       9: aload_0
+      10: getfield      #31                 // Field level:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      13: ifnonnull     18
+      16: iconst_1
+      17: ireturn
+      18: aload_0
+      19: getfield      #34                 // Field aiccLevel:D
+      22: aload_0
+      23: getfield      #37                 // Field aiccLog:D
+      26: aload_0
+      27: getfield      #10                 // Field aiccDiff:D
+      30: dadd
+      31: dcmpl
+      32: ifle          39
+      35: iconst_1
+      36: goto          40
+      39: iconst_0
+      40: ireturn
+
+  public jdplus.toolkit.base.core.regsarima.regular.ProcessingResult process(jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling);
+    Code:
+       0: aload_0
+       1: invokevirtual #40                 // Method clear:()V
+       4: aload_1
+       5: invokevirtual #43                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getLog:()Ljdplus/toolkit/base/api/processing/ProcessingLog;
+       8: astore_2
+       9: aload_2
+      10: ldc           #49                 // String log-level test
+      12: invokeinterface #51,  2           // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.push:(Ljava/lang/String;)V
+      17: iconst_0
+      18: istore_3
+      19: aload_1
+      20: invokevirtual #57                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getDescription:()Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+      23: astore        4
+      25: aload         4
+      27: invokevirtual #61                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.getSeries:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      30: invokevirtual #67                 // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      33: invokedynamic #73,  0             // InvokeDynamic #0:test:()Ljava/util/function/DoublePredicate;
+      38: invokeinterface #77,  2           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.anyMatch:(Ljava/util/function/DoublePredicate;)Z
+      43: ifeq          89
+      46: aload_2
+      47: ldc           #83                 // String negative values, levels are chosen
+      49: invokeinterface #85,  2           // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.remark:(Ljava/lang/String;)V
+      54: getstatic     #88                 // Field jdplus/toolkit/base/core/regsarima/regular/ProcessingResult.Unchanged:Ljdplus/toolkit/base/core/regsarima/regular/ProcessingResult;
+      57: astore        5
+      59: iload_3
+      60: ifeq          80
+      63: aload_1
+      64: invokevirtual #57                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getDescription:()Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+      67: invokedynamic #94,  0             // InvokeDynamic #1:test:()Ljava/util/function/Predicate;
+      72: invokevirtual #97                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.removeVariable:(Ljava/util/function/Predicate;)Z
+      75: pop
+      76: aload_1
+      77: invokevirtual #101                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.clearEstimation:()V
+      80: aload_2
+      81: invokeinterface #104,  1          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.pop:()V
+      86: aload         5
+      88: areturn
+      89: aload_0
+      90: getfield      #23                 // Field outliersCorrection:Z
+      93: ifeq          102
+      96: aload_0
+      97: aload_1
+      98: invokevirtual #107                // Method outliers:(Ljdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling;)Z
+     101: istore_3
+     102: iconst_1
+     103: aload_0
+     104: getfield      #16                 // Field precision:D
+     107: invokestatic  #111                // Method jdplus/sa/base/core/regarima/DemetraUtility.processor:(ZD)Ljdplus/toolkit/base/core/regarima/IRegArimaComputer;
+     110: astore        5
+     112: aload_0
+     113: aload         4
+     115: aload         5
+     117: invokevirtual #117                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.estimate:(Ljdplus/toolkit/base/core/regarima/IRegArimaComputer;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     120: putfield      #31                 // Field level:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     123: aload         4
+     125: invokestatic  #121                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.copyOf:(Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;)Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+     128: astore        6
+     130: aload         6
+     132: iconst_1
+     133: invokevirtual #125                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.setLogTransformation:(Z)V
+     136: aload_0
+     137: getfield      #19                 // Field preadjust:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+     140: getstatic     #129                // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.None:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+     143: if_acmpeq     165
+     146: aload         6
+     148: ldc           #134                // String lp
+     150: invokevirtual #136                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.remove:(Ljava/lang/String;)Z
+     153: ifeq          165
+     156: aload         6
+     158: aload_0
+     159: getfield      #19                 // Field preadjust:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+     162: invokevirtual #140                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.setPreadjustment:(Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;)V
+     165: aload_0
+     166: aload         6
+     168: aload         5
+     170: invokevirtual #117                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.estimate:(Ljdplus/toolkit/base/core/regarima/IRegArimaComputer;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     173: putfield      #27                 // Field log:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     176: aload_0
+     177: getfield      #31                 // Field level:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     180: ifnull        197
+     183: aload_0
+     184: aload_0
+     185: getfield      #31                 // Field level:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     188: invokevirtual #144                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.statistics:()Ljdplus/toolkit/base/core/stats/likelihood/LikelihoodStatistics;
+     191: invokevirtual #150                // Method jdplus/toolkit/base/core/stats/likelihood/LikelihoodStatistics.getAICC:()D
+     194: putfield      #34                 // Field aiccLevel:D
+     197: aload_0
+     198: getfield      #27                 // Field log:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     201: ifnull        218
+     204: aload_0
+     205: aload_0
+     206: getfield      #27                 // Field log:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     209: invokevirtual #144                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.statistics:()Ljdplus/toolkit/base/core/stats/likelihood/LikelihoodStatistics;
+     212: invokevirtual #150                // Method jdplus/toolkit/base/core/stats/likelihood/LikelihoodStatistics.getAICC:()D
+     215: putfield      #37                 // Field aiccLog:D
+     218: aload_0
+     219: getfield      #31                 // Field level:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     222: ifnonnull     275
+     225: aload_0
+     226: getfield      #27                 // Field log:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     229: ifnonnull     275
+     232: aload_2
+     233: ldc           #156                // String log/level failed
+     235: invokeinterface #158,  2          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.warning:(Ljava/lang/String;)V
+     240: getstatic     #161                // Field jdplus/toolkit/base/core/regsarima/regular/ProcessingResult.Failed:Ljdplus/toolkit/base/core/regsarima/regular/ProcessingResult;
+     243: astore        7
+     245: iload_3
+     246: ifeq          266
+     249: aload_1
+     250: invokevirtual #57                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getDescription:()Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+     253: invokedynamic #94,  0             // InvokeDynamic #1:test:()Ljava/util/function/Predicate;
+     258: invokevirtual #97                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.removeVariable:(Ljava/util/function/Predicate;)Z
+     261: pop
+     262: aload_1
+     263: invokevirtual #101                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.clearEstimation:()V
+     266: aload_2
+     267: invokeinterface #104,  1          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.pop:()V
+     272: aload         7
+     274: areturn
+     275: new           #164                // class jdplus/sa/base/core/regarima/LogLevelModule$Info
+     278: dup
+     279: aload_0
+     280: getfield      #37                 // Field aiccLog:D
+     283: aload_0
+     284: getfield      #34                 // Field aiccLevel:D
+     287: aload_0
+     288: getfield      #10                 // Field aiccDiff:D
+     291: invokespecial #166                // Method jdplus/sa/base/core/regarima/LogLevelModule$Info."<init>":(DDD)V
+     294: astore        7
+     296: aload_0
+     297: invokevirtual #169                // Method isChoosingLog:()Z
+     300: ifeq          358
+     303: aload_1
+     304: aload         6
+     306: aload_0
+     307: getfield      #27                 // Field log:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+     310: invokevirtual #173                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.set:(Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;)V
+     313: aload_2
+     314: ldc           #177                // String logs are chosen
+     316: aload         7
+     318: invokeinterface #179,  3          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.info:(Ljava/lang/String;Ljava/lang/Object;)V
+     323: getstatic     #183                // Field jdplus/toolkit/base/core/regsarima/regular/ProcessingResult.Changed:Ljdplus/toolkit/base/core/regsarima/regular/ProcessingResult;
+     326: astore        8
+     328: iload_3
+     329: ifeq          349
+     332: aload_1
+     333: invokevirtual #57                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getDescription:()Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+     336: invokedynamic #94,  0             // InvokeDynamic #1:test:()Ljava/util/function/Predicate;
+     341: invokevirtual #97                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.removeVariable:(Ljava/util/function/Predicate;)Z
+     344: pop
+     345: aload_1
+     346: invokevirtual #101                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.clearEstimation:()V
+     349: aload_2
+     350: invokeinterface #104,  1          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.pop:()V
+     355: aload         8
+     357: areturn
+     358: aload_2
+     359: ldc           #186                // String levels are chosen
+     361: aload         7
+     363: invokeinterface #179,  3          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.info:(Ljava/lang/String;Ljava/lang/Object;)V
+     368: getstatic     #88                 // Field jdplus/toolkit/base/core/regsarima/regular/ProcessingResult.Unchanged:Ljdplus/toolkit/base/core/regsarima/regular/ProcessingResult;
+     371: astore        8
+     373: iload_3
+     374: ifeq          394
+     377: aload_1
+     378: invokevirtual #57                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getDescription:()Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+     381: invokedynamic #94,  0             // InvokeDynamic #1:test:()Ljava/util/function/Predicate;
+     386: invokevirtual #97                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.removeVariable:(Ljava/util/function/Predicate;)Z
+     389: pop
+     390: aload_1
+     391: invokevirtual #101                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.clearEstimation:()V
+     394: aload_2
+     395: invokeinterface #104,  1          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.pop:()V
+     400: aload         8
+     402: areturn
+     403: astore        9
+     405: iload_3
+     406: ifeq          426
+     409: aload_1
+     410: invokevirtual #57                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getDescription:()Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+     413: invokedynamic #94,  0             // InvokeDynamic #1:test:()Ljava/util/function/Predicate;
+     418: invokevirtual #97                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.removeVariable:(Ljava/util/function/Predicate;)Z
+     421: pop
+     422: aload_1
+     423: invokevirtual #101                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.clearEstimation:()V
+     426: aload_2
+     427: invokeinterface #104,  1          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.pop:()V
+     432: aload         9
+     434: athrow
+    Exception table:
+       from    to  target type
+          19    59   403   any
+          89   245   403   any
+         275   328   403   any
+         358   373   403   any
+         403   405   403   any
+
+  private boolean outliers(jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling);
+    Code:
+       0: invokestatic  #188                // Method jdplus/toolkit/base/core/regsarima/regular/RobustOutliersDetector.builder:()Ljdplus/toolkit/base/core/regsarima/regular/RobustOutliersDetector$Builder;
+       3: ldc2_w        #194                // double 5.0d
+       6: invokevirtual #196                // Method jdplus/toolkit/base/core/regsarima/regular/RobustOutliersDetector$Builder.criticalValue:(D)Ljdplus/toolkit/base/core/regsarima/regular/RobustOutliersDetector$Builder;
+       9: ldc2_w        #202                // double 0.001d
+      12: invokevirtual #204                // Method jdplus/toolkit/base/core/regsarima/regular/RobustOutliersDetector$Builder.precision:(D)Ljdplus/toolkit/base/core/regsarima/regular/RobustOutliersDetector$Builder;
+      15: invokevirtual #206                // Method jdplus/toolkit/base/core/regsarima/regular/RobustOutliersDetector$Builder.build:()Ljdplus/toolkit/base/core/regsarima/regular/RobustOutliersDetector;
+      18: astore_2
+      19: aload_1
+      20: invokevirtual #57                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getDescription:()Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+      23: astore_3
+      24: aload_3
+      25: invokevirtual #210                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.getTransformedSeries:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      28: astore        4
+      30: aload_3
+      31: invokevirtual #213                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.regarima:()Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      34: invokevirtual #217                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.variables:()Ljdplus/toolkit/base/core/math/matrices/FastMatrix;
+      37: astore        5
+      39: aload_2
+      40: aload         4
+      42: invokevirtual #67                 // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      45: aload         4
+      47: invokevirtual #223                // Method jdplus/toolkit/base/api/timeseries/TsData.getAnnualFrequency:()I
+      50: aload         5
+      52: invokevirtual #227                // Method jdplus/toolkit/base/core/regsarima/regular/RobustOutliersDetector.process:(Ljdplus/toolkit/base/api/data/DoubleSeq;ILjdplus/toolkit/base/core/math/matrices/FastMatrix;)Ljdplus/toolkit/base/api/data/DoubleSeq;
+      55: pop
+      56: aload_2
+      57: invokevirtual #231                // Method jdplus/toolkit/base/core/regsarima/regular/RobustOutliersDetector.getOutliers:()[[I
+      60: astore        6
+      62: aload         6
+      64: arraylength
+      65: ifne          70
+      68: iconst_0
+      69: ireturn
+      70: iconst_0
+      71: istore        7
+      73: iload         7
+      75: aload         6
+      77: arraylength
+      78: if_icmpge     155
+      81: aload         6
+      83: iload         7
+      85: aaload
+      86: astore        8
+      88: aload         4
+      90: aload         8
+      92: iconst_0
+      93: iaload
+      94: invokevirtual #235                // Method jdplus/toolkit/base/api/timeseries/TsData.getPeriod:(I)Ljdplus/toolkit/base/api/timeseries/TimeSeriesInterval;
+      97: checkcast     #239                // class jdplus/toolkit/base/api/timeseries/TsPeriod
+     100: astore        9
+     102: getstatic     #241                // Field FAC:[Ljdplus/toolkit/base/core/modelling/regression/IOutlierFactory;
+     105: aload         8
+     107: iconst_1
+     108: iaload
+     109: aaload
+     110: aload         9
+     112: invokevirtual #245                // Method jdplus/toolkit/base/api/timeseries/TsPeriod.start:()Ljava/time/LocalDateTime;
+     115: invokeinterface #249,  2          // InterfaceMethod jdplus/toolkit/base/core/modelling/regression/IOutlierFactory.make:(Ljava/time/LocalDateTime;)Ljdplus/toolkit/base/api/timeseries/regression/IOutlier;
+     120: astore        10
+     122: aload_3
+     123: aload         10
+     125: invokeinterface #255,  1          // InterfaceMethod jdplus/toolkit/base/api/timeseries/regression/IOutlier.getCode:()Ljava/lang/String;
+     130: aload         9
+     132: invokestatic  #261                // InterfaceMethod jdplus/toolkit/base/api/timeseries/regression/IOutlier.defaultName:(Ljava/lang/String;Ljdplus/toolkit/base/api/timeseries/TsPeriod;)Ljava/lang/String;
+     135: aload         10
+     137: aload         10
+     139: invokestatic  #265                // Method jdplus/sa/base/core/regarima/OutliersDetectionModule.attributes:(Ljdplus/toolkit/base/api/timeseries/regression/IOutlier;)Ljava/util/Map;
+     142: invokestatic  #271                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.variable:(Ljava/lang/String;Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;Ljava/util/Map;)Ljdplus/toolkit/base/api/timeseries/regression/Variable;
+     145: invokevirtual #277                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.addVariable:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Ljdplus/toolkit/base/api/timeseries/regression/Variable;
+     148: pop
+     149: iinc          7, 1
+     152: goto          73
+     155: iconst_1
+     156: ireturn
+     157: astore        6
+     159: iconst_0
+     160: ireturn
+    Exception table:
+       from    to  target type
+          39    69   157   Class java/lang/Exception
+          70   156   157   Class java/lang/Exception
+
+  public jdplus.toolkit.base.api.modelling.TransformationType getTransformation();
+    Code:
+       0: aload_0
+       1: invokevirtual #169                // Method isChoosingLog:()Z
+       4: ifeq          13
+       7: getstatic     #283                // Field jdplus/toolkit/base/api/modelling/TransformationType.Log:Ljdplus/toolkit/base/api/modelling/TransformationType;
+      10: goto          16
+      13: getstatic     #289                // Field jdplus/toolkit/base/api/modelling/TransformationType.None:Ljdplus/toolkit/base/api/modelling/TransformationType;
+      16: areturn
+
+  public double getAICcLevel();
+    Code:
+       0: aload_0
+       1: getfield      #34                 // Field aiccLevel:D
+       4: dreturn
+
+  public double getAICcLog();
+    Code:
+       0: aload_0
+       1: getfield      #37                 // Field aiccLog:D
+       4: dreturn
+
+  private void clear();
+    Code:
+       0: aload_0
+       1: aconst_null
+       2: putfield      #27                 // Field log:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       5: aload_0
+       6: aconst_null
+       7: putfield      #31                 // Field level:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      10: aload_0
+      11: dconst_0
+      12: putfield      #34                 // Field aiccLevel:D
+      15: aload_0
+      16: dconst_0
+      17: putfield      #37                 // Field aiccLog:D
+      20: return
+
+  public jdplus.toolkit.base.core.regarima.RegArimaEstimation<jdplus.toolkit.base.core.sarima.SarimaModel> getLevel();
+    Code:
+       0: aload_0
+       1: getfield      #31                 // Field level:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       4: areturn
+
+  public jdplus.toolkit.base.core.regarima.RegArimaEstimation<jdplus.toolkit.base.core.sarima.SarimaModel> getLog();
+    Code:
+       0: aload_0
+       1: getfield      #27                 // Field log:Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       4: areturn
+
+  private static boolean lambda$process$1(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: iconst_1
+       2: invokestatic  #291                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isOutlier:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;Z)Z
+       5: ireturn
+
+  private static boolean lambda$process$0(double);
+    Code:
+       0: dload_0
+       1: dconst_0
+       2: dcmpg
+       3: ifgt          10
+       6: iconst_1
+       7: goto          11
+      10: iconst_0
+      11: ireturn
+
+  static {};
+    Code:
+       0: iconst_2
+       1: anewarray     #250                // class jdplus/toolkit/base/core/modelling/regression/IOutlierFactory
+       4: dup
+       5: iconst_0
+       6: getstatic     #297                // Field jdplus/toolkit/base/core/modelling/regression/AdditiveOutlierFactory.FACTORY:Ljdplus/toolkit/base/core/modelling/regression/AdditiveOutlierFactory;
+       9: aastore
+      10: dup
+      11: iconst_1
+      12: getstatic     #303                // Field jdplus/toolkit/base/core/modelling/regression/LevelShiftFactory.FACTORY_ZEROENDED:Ljdplus/toolkit/base/core/modelling/regression/LevelShiftFactory;
+      15: aastore
+      16: putstatic     #241                // Field FAC:[Ljdplus/toolkit/base/core/modelling/regression/IOutlierFactory;
+      19: return
+}

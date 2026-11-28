@@ -1,0 +1,549 @@
+Compiled from "ExactOutliersDetector.java"
+public class jdplus.toolkit.base.core.regsarima.ami.ExactOutliersDetector implements jdplus.toolkit.base.core.regarima.ami.GenericOutliersDetection<jdplus.toolkit.base.core.sarima.SarimaModel> {
+  static int DEF_MAXROUND;
+
+  static int DEF_MAXOUTLIERS;
+
+  static final double EPS;
+
+  private final int maxRound;
+
+  private final int maxOutliers;
+
+  private jdplus.toolkit.base.core.regarima.RegArimaModel<jdplus.toolkit.base.core.sarima.SarimaModel> regarima;
+
+  private final java.util.ArrayList<int[]> outliers;
+
+  private final jdplus.toolkit.base.core.regarima.outlier.SingleOutlierDetector sod;
+
+  private final jdplus.toolkit.base.core.regarima.IRegArimaComputer<jdplus.toolkit.base.core.sarima.SarimaModel> processor;
+
+  private final double cv;
+
+  private double[] tstats;
+
+  private int round;
+
+  private boolean changed;
+
+  public static jdplus.toolkit.base.core.regsarima.ami.ExactOutliersDetector$Builder builder();
+    Code:
+       0: new           #1                  // class jdplus/toolkit/base/core/regsarima/ami/ExactOutliersDetector$Builder
+       3: dup
+       4: invokespecial #3                  // Method jdplus/toolkit/base/core/regsarima/ami/ExactOutliersDetector$Builder."<init>":()V
+       7: areturn
+
+  private jdplus.toolkit.base.core.regsarima.ami.ExactOutliersDetector(jdplus.toolkit.base.core.regarima.outlier.SingleOutlierDetector, double, jdplus.toolkit.base.core.regarima.IRegArimaComputer<jdplus.toolkit.base.core.sarima.SarimaModel>, int, int);
+    Code:
+       0: aload_0
+       1: invokespecial #7                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: new           #10                 // class java/util/ArrayList
+       8: dup
+       9: invokespecial #12                 // Method java/util/ArrayList."<init>":()V
+      12: putfield      #13                 // Field outliers:Ljava/util/ArrayList;
+      15: aload_0
+      16: aload_1
+      17: putfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+      20: aload_0
+      21: dload_2
+      22: putfield      #23                 // Field cv:D
+      25: aload_0
+      26: aload         4
+      28: putfield      #27                 // Field processor:Ljdplus/toolkit/base/core/regarima/IRegArimaComputer;
+      31: aload_0
+      32: iload         5
+      34: putfield      #31                 // Field maxOutliers:I
+      37: aload_0
+      38: iload         6
+      40: putfield      #35                 // Field maxRound:I
+      43: return
+
+  public boolean process(jdplus.toolkit.base.core.regarima.RegArimaModel<jdplus.toolkit.base.core.sarima.SarimaModel>, jdplus.toolkit.base.core.arima.estimation.IArimaMapping<jdplus.toolkit.base.core.sarima.SarimaModel>);
+    Code:
+       0: aload_0
+       1: iconst_0
+       2: putfield      #38                 // Field changed:Z
+       5: aload_0
+       6: aload_1
+       7: putfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      10: aload_0
+      11: aload_2
+      12: iconst_1
+      13: invokevirtual #46                 // Method estimateModel:(Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;Z)Z
+      16: pop
+      17: aload_0
+      18: aload_2
+      19: invokevirtual #50                 // Method execute:(Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;)V
+      22: aload_0
+      23: getfield      #38                 // Field changed:Z
+      26: ireturn
+
+  public void prepare(int);
+    Code:
+       0: aload_0
+       1: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+       4: iload_1
+       5: invokevirtual #54                 // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.prepare:(I)V
+       8: return
+
+  public void setBounds(int, int);
+    Code:
+       0: aload_0
+       1: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+       4: iload_1
+       5: iload_2
+       6: invokevirtual #60                 // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.setBounds:(II)V
+       9: return
+
+  public void exclude(int, int);
+    Code:
+       0: aload_0
+       1: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+       4: iload_1
+       5: iload_2
+       6: invokevirtual #64                 // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.exclude:(II)V
+       9: return
+
+  public void exclude(int);
+    Code:
+       0: aload_0
+       1: invokevirtual #67                 // Method getOutlierFactoriesCount:()I
+       4: istore_2
+       5: iconst_0
+       6: istore_3
+       7: iload_3
+       8: iload_2
+       9: if_icmpge     27
+      12: aload_0
+      13: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+      16: iload_1
+      17: iload_3
+      18: invokevirtual #64                 // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.exclude:(II)V
+      21: iinc          3, 1
+      24: goto          7
+      27: return
+
+  public int[][] getOutliers();
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+       4: invokedynamic #71,  0             // InvokeDynamic #0:apply:()Ljava/util/function/IntFunction;
+       9: invokevirtual #75                 // Method java/util/ArrayList.toArray:(Ljava/util/function/IntFunction;)[Ljava/lang/Object;
+      12: checkcast     #79                 // class "[[I"
+      15: areturn
+
+  public jdplus.toolkit.base.core.regarima.RegArimaModel<jdplus.toolkit.base.core.sarima.SarimaModel> getRegArima();
+    Code:
+       0: aload_0
+       1: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+       4: areturn
+
+  public jdplus.toolkit.base.core.modelling.regression.IOutlierFactory getFactory(int);
+    Code:
+       0: aload_0
+       1: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+       4: iload_1
+       5: invokevirtual #81                 // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.getOutlierFactory:(I)Ljdplus/toolkit/base/core/modelling/regression/IOutlierFactory;
+       8: areturn
+
+  public java.lang.String[] outlierTypes();
+    Code:
+       0: aload_0
+       1: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+       4: invokevirtual #85                 // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.getOutliersFactories:()[Ljdplus/toolkit/base/core/modelling/regression/IOutlierFactory;
+       7: astore_1
+       8: aload_1
+       9: arraylength
+      10: anewarray     #89                 // class java/lang/String
+      13: astore_2
+      14: iconst_0
+      15: istore_3
+      16: iload_3
+      17: aload_2
+      18: arraylength
+      19: if_icmpge     39
+      22: aload_2
+      23: iload_3
+      24: aload_1
+      25: iload_3
+      26: aaload
+      27: invokeinterface #91,  1           // InterfaceMethod jdplus/toolkit/base/core/modelling/regression/IOutlierFactory.getCode:()Ljava/lang/String;
+      32: aastore
+      33: iinc          3, 1
+      36: goto          16
+      39: aload_2
+      40: areturn
+
+  private void addNewOutlier(int, int);
+    Code:
+       0: iconst_2
+       1: newarray       int
+       3: dup
+       4: iconst_0
+       5: iload_1
+       6: iastore
+       7: dup
+       8: iconst_1
+       9: iload_2
+      10: iastore
+      11: astore_3
+      12: aload_0
+      13: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+      16: aload_3
+      17: invokevirtual #97                 // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+      20: pop
+      21: aload_0
+      22: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      25: invokevirtual #101                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getObservationsCount:()I
+      28: newarray       double
+      30: astore        4
+      32: aload         4
+      34: invokestatic  #106                // Method jdplus/toolkit/base/core/data/DataBlock.of:([D)Ljdplus/toolkit/base/core/data/DataBlock;
+      37: astore        5
+      39: aload_0
+      40: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+      43: iload_2
+      44: invokevirtual #81                 // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.getOutlierFactory:(I)Ljdplus/toolkit/base/core/modelling/regression/IOutlierFactory;
+      47: iload_1
+      48: aload         5
+      50: invokeinterface #112,  3          // InterfaceMethod jdplus/toolkit/base/core/modelling/regression/IOutlierFactory.fill:(ILjdplus/toolkit/base/core/data/DataBlock;)V
+      55: aload_0
+      56: aload_0
+      57: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      60: invokevirtual #116                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.toBuilder:()Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+      63: aload         5
+      65: invokevirtual #120                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.addX:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+      68: invokevirtual #126                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.build:()Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      71: putfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      74: aload_0
+      75: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+      78: iload_1
+      79: iload_2
+      80: invokevirtual #64                 // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.exclude:(II)V
+      83: aload_0
+      84: iconst_1
+      85: putfield      #38                 // Field changed:Z
+      88: return
+
+  public void addOutlier(int, int);
+    Code:
+       0: iconst_2
+       1: newarray       int
+       3: dup
+       4: iconst_0
+       5: iload_1
+       6: iastore
+       7: dup
+       8: iconst_1
+       9: iload_2
+      10: iastore
+      11: astore_3
+      12: aload_0
+      13: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+      16: aload_3
+      17: invokevirtual #97                 // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z
+      20: pop
+      21: aload_0
+      22: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+      25: iload_1
+      26: iload_2
+      27: invokevirtual #64                 // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.exclude:(II)V
+      30: return
+
+  public void clear();
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+       4: invokevirtual #130                // Method java/util/ArrayList.clear:()V
+       7: aload_0
+       8: aconst_null
+       9: putfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      12: return
+
+  private void execute(jdplus.toolkit.base.core.arima.estimation.IArimaMapping<jdplus.toolkit.base.core.sarima.SarimaModel>);
+    Code:
+       0: aload_0
+       1: iconst_0
+       2: putfield      #133                // Field round:I
+       5: aload_0
+       6: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+       9: aload_0
+      10: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      13: invokevirtual #136                // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.process:(Ljdplus/toolkit/base/core/regarima/RegArimaModel;)Z
+      16: ifne          22
+      19: goto          135
+      22: aload_0
+      23: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+      26: invokevirtual #140                // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.getMaxTStat:()D
+      29: dstore_2
+      30: dload_2
+      31: invokestatic  #144                // Method java/lang/Math.abs:(D)D
+      34: aload_0
+      35: getfield      #23                 // Field cv:D
+      38: dcmpl
+      39: ifle          135
+      42: aload_0
+      43: dup
+      44: getfield      #133                // Field round:I
+      47: iconst_1
+      48: iadd
+      49: putfield      #133                // Field round:I
+      52: aload_0
+      53: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+      56: invokevirtual #150                // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.getMaxOutlierType:()I
+      59: istore        4
+      61: aload_0
+      62: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+      65: invokevirtual #153                // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.getMaxOutlierPosition:()I
+      68: istore        5
+      70: aload_0
+      71: iload         5
+      73: iload         4
+      75: invokevirtual #156                // Method addNewOutlier:(II)V
+      78: aload_0
+      79: aload_1
+      80: iconst_1
+      81: invokevirtual #46                 // Method estimateModel:(Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;Z)Z
+      84: ifne          110
+      87: aload_0
+      88: aload_0
+      89: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+      92: invokevirtual #159                // Method java/util/ArrayList.size:()I
+      95: iconst_1
+      96: isub
+      97: invokevirtual #162                // Method removeOutlier:(I)V
+     100: aload_0
+     101: aload_1
+     102: iconst_0
+     103: invokevirtual #46                 // Method estimateModel:(Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;Z)Z
+     106: pop
+     107: goto          135
+     110: aload_0
+     111: getfield      #133                // Field round:I
+     114: aload_0
+     115: getfield      #35                 // Field maxRound:I
+     118: if_icmpge     135
+     121: aload_0
+     122: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+     125: invokevirtual #159                // Method java/util/ArrayList.size:()I
+     128: aload_0
+     129: getfield      #31                 // Field maxOutliers:I
+     132: if_icmplt     5
+     135: aload_0
+     136: invokevirtual #165                // Method verifymodel:()Z
+     139: ifne          154
+     142: aload_0
+     143: aload_1
+     144: iconst_0
+     145: invokevirtual #46                 // Method estimateModel:(Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;Z)Z
+     148: ifne          135
+     151: goto          154
+     154: return
+
+  public double getCritivalValue();
+    Code:
+       0: aload_0
+       1: getfield      #23                 // Field cv:D
+       4: dreturn
+
+  public int getMaxIter();
+    Code:
+       0: aload_0
+       1: getfield      #35                 // Field maxRound:I
+       4: ireturn
+
+  public jdplus.toolkit.base.core.regarima.RegArimaModel<jdplus.toolkit.base.core.sarima.SarimaModel> getModel();
+    Code:
+       0: aload_0
+       1: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+       4: areturn
+
+  public int getOutlierFactoriesCount();
+    Code:
+       0: aload_0
+       1: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+       4: invokevirtual #169                // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.getOutlierFactoriesCount:()I
+       7: ireturn
+
+  public int getOutliersCount();
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+       4: invokevirtual #159                // Method java/util/ArrayList.size:()I
+       7: ireturn
+
+  private boolean estimateModel(jdplus.toolkit.base.core.arima.estimation.IArimaMapping<jdplus.toolkit.base.core.sarima.SarimaModel>, boolean);
+    Code:
+       0: iload_2
+       1: ifeq          21
+       4: aload_0
+       5: getfield      #27                 // Field processor:Ljdplus/toolkit/base/core/regarima/IRegArimaComputer;
+       8: aload_0
+       9: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      12: aload_1
+      13: invokeinterface #170,  3          // InterfaceMethod jdplus/toolkit/base/core/regarima/IRegArimaComputer.process:(Ljdplus/toolkit/base/core/regarima/RegArimaModel;Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      18: goto          35
+      21: aload_0
+      22: getfield      #27                 // Field processor:Ljdplus/toolkit/base/core/regarima/IRegArimaComputer;
+      25: aload_0
+      26: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      29: aload_1
+      30: invokeinterface #175,  3          // InterfaceMethod jdplus/toolkit/base/core/regarima/IRegArimaComputer.optimize:(Ljdplus/toolkit/base/core/regarima/RegArimaModel;Ljdplus/toolkit/base/core/arima/estimation/IArimaMapping;)Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      35: astore_3
+      36: aload_3
+      37: ifnonnull     42
+      40: iconst_0
+      41: ireturn
+      42: aload_0
+      43: aload_3
+      44: invokevirtual #178                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.getModel:()Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      47: putfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      50: aload_0
+      51: aload_3
+      52: invokevirtual #183                // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.getConcentratedLikelihood:()Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;
+      55: iconst_0
+      56: iconst_0
+      57: invokevirtual #187                // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.tstats:(IZ)[D
+      60: putfield      #193                // Field tstats:[D
+      63: iconst_1
+      64: ireturn
+
+  public boolean isInitialized();
+    Code:
+       0: aload_0
+       1: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+       4: ifnull        11
+       7: iconst_1
+       8: goto          12
+      11: iconst_0
+      12: ireturn
+
+  private void removeOutlier(int);
+    Code:
+       0: aload_0
+       1: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+       4: invokevirtual #196                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getXCount:()I
+       7: aload_0
+       8: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+      11: invokevirtual #159                // Method java/util/ArrayList.size:()I
+      14: isub
+      15: iload_1
+      16: iadd
+      17: istore_2
+      18: aload_0
+      19: aload_0
+      20: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      23: invokevirtual #116                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.toBuilder:()Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+      26: iload_2
+      27: invokevirtual #199                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.removeX:(I)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+      30: invokevirtual #126                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.build:()Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      33: putfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      36: aload_0
+      37: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+      40: iload_1
+      41: invokevirtual #203                // Method java/util/ArrayList.remove:(I)Ljava/lang/Object;
+      44: pop
+      45: aload_0
+      46: iconst_1
+      47: putfield      #38                 // Field changed:Z
+      50: return
+
+  private boolean verifymodel();
+    Code:
+       0: aload_0
+       1: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+       4: ifnonnull     9
+       7: iconst_1
+       8: ireturn
+       9: aload_0
+      10: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+      13: invokevirtual #207                // Method java/util/ArrayList.isEmpty:()Z
+      16: ifeq          21
+      19: iconst_1
+      20: ireturn
+      21: aload_0
+      22: getfield      #42                 // Field regarima:Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      25: invokevirtual #210                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getVariablesCount:()I
+      28: aload_0
+      29: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+      32: invokevirtual #159                // Method java/util/ArrayList.size:()I
+      35: isub
+      36: istore_1
+      37: iconst_0
+      38: istore_2
+      39: iconst_1
+      40: istore_3
+      41: iload_3
+      42: aload_0
+      43: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+      46: invokevirtual #159                // Method java/util/ArrayList.size:()I
+      49: if_icmpge     86
+      52: aload_0
+      53: getfield      #193                // Field tstats:[D
+      56: iload_3
+      57: iload_1
+      58: iadd
+      59: daload
+      60: invokestatic  #144                // Method java/lang/Math.abs:(D)D
+      63: aload_0
+      64: getfield      #193                // Field tstats:[D
+      67: iload_2
+      68: iload_1
+      69: iadd
+      70: daload
+      71: invokestatic  #144                // Method java/lang/Math.abs:(D)D
+      74: dcmpg
+      75: ifge          80
+      78: iload_3
+      79: istore_2
+      80: iinc          3, 1
+      83: goto          41
+      86: aload_0
+      87: getfield      #193                // Field tstats:[D
+      90: iload_1
+      91: iload_2
+      92: iadd
+      93: daload
+      94: invokestatic  #144                // Method java/lang/Math.abs:(D)D
+      97: aload_0
+      98: getfield      #23                 // Field cv:D
+     101: dcmpl
+     102: iflt          107
+     105: iconst_1
+     106: ireturn
+     107: aload_0
+     108: getfield      #13                 // Field outliers:Ljava/util/ArrayList;
+     111: iload_2
+     112: invokevirtual #213                // Method java/util/ArrayList.get:(I)Ljava/lang/Object;
+     115: checkcast     #216                // class "[I"
+     118: astore_3
+     119: aload_0
+     120: getfield      #19                 // Field sod:Ljdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector;
+     123: aload_3
+     124: iconst_0
+     125: iaload
+     126: aload_3
+     127: iconst_1
+     128: iaload
+     129: invokevirtual #218                // Method jdplus/toolkit/base/core/regarima/outlier/SingleOutlierDetector.allow:(II)V
+     132: aload_0
+     133: iload_2
+     134: invokevirtual #162                // Method removeOutlier:(I)V
+     137: iconst_0
+     138: ireturn
+
+  private static int[][] lambda$getOutliers$0(int);
+    Code:
+       0: iload_0
+       1: anewarray     #216                // class "[I"
+       4: areturn
+
+  static {};
+    Code:
+       0: bipush        100
+       2: putstatic     #221                // Field DEF_MAXROUND:I
+       5: bipush        50
+       7: putstatic     #224                // Field DEF_MAXOUTLIERS:I
+      10: return
+}

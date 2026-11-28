@@ -223,6 +223,165 @@ DenseMatrix joseph(const DenseMatrix& p, const std::vector<double>& gain,
     return posterior;
 }
 
+// ---- Item-30 option (ii): structure-aware dense k = 0 steps ----
+// (docs/item30-k0-routing-probe-2026-11-28.md §6-§7; maintainer adoption
+// ruling of 2026-11-28: "yes go with option (ii)"). Scope is the k = 0
+// dense regime ONLY: the pointer-local accessor idiom and the exact-zero
+// structural skips must not widen beyond the k = 0 gate below, and every
+// k > 0 or generic-diffuse shape keeps the dense/factorized code above
+// bit-for-bit. The witnesses are shape-only and evaluated once per call;
+// a shape failure keeps today's dense path. The k > 0 canonical route is
+// structurally excluded (its FiniteStateFactor is armed, and the structural
+// branches sit behind the factor in every branch chain).
+//
+// Exactness argument (the same one the shipped D4 case E1 uses): under the
+// witnesses the skipped products are EXACT +-0.0 terms in accumulators that
+// start at +0; +0 + (+-0) = +0 and a nonzero accumulator is unchanged by a
+// +-0 add, so every stored long double accumulator — and hence every named
+// binary64 value — equals the generic sandwich/joseph/product result bit for
+// bit, in the same ascending-k term order. The claim was additionally tested
+// byte-for-byte on both frozen k = 0 shapes (probe corpus, OPTION-II-BIT-
+// IDENTICAL) and is re-pinned by tests/test_diffuse_k0_goldens.cpp.
+bool witness_e1_loading(const std::vector<double>& z) {
+    for (std::size_t i = 0; i < z.size(); ++i)
+        if (z[i] != (i == 0 ? 1.0 : 0.0)) return false;
+    return true;
+}
+
+bool witness_companion_columns(const DenseMatrix& t) {
+    // A(i,0) arbitrary; A(i,i+1) exactly 1.0 for i < m-1; every other entry
+    // exactly 0.0 (the stationary_arma companion: coefficient column 0 and a
+    // superdiagonal shift).
+    const auto m = t.rows();
+    if (t.columns() != m) return false;
+    for (std::size_t i = 0; i < m; ++i)
+        for (std::size_t j = 1; j < m; ++j)
+            if (t(i, j) != (j == i + 1 ? 1.0 : 0.0)) return false;
+    return true;
+}
+
+struct StructuralScratch {
+    DenseMatrix ap{1, 1};         // persistent (TP / UP) product buffer
+    std::vector<double> u_col0;   // (delta_i0 - gain_i) column of U = I - K Z
+};
+
+// pz = P z and f = h + z' P z for z = e_1 (witness-checked by the caller):
+// pz[i] = checked(0 + P(i,0)*1 + sum_{k>0} P(i,k)*0), the generic product's
+// accumulator reduced to its only nonzero term, and f starts from h and adds
+// z[0]*pz[0] = pz[0] before its +-0 tail. pz is resized, never reallocated
+// mid-run; the structural path performs no per-step allocation.
+void struct_observation(const DenseMatrix& p, double h, std::vector<double>& pz, long double& f) {
+    const auto m = p.rows();
+    pz.resize(m);
+    const double* pp = p.values().data();
+    for (std::size_t i = 0; i < m; ++i) {
+        // Accumulator semantics match the generic product term for term,
+        // including the sign of zero: +0 + (-0) = +0, so a -0.0 entry of the
+        // first covariance column reads as the +0.0 the generic accumulation
+        // stores (a raw read would not; the skeleton's raw read is hardened
+        // here, a value-identical deviation on every captured shape).
+        long double value = 0;
+        value += static_cast<long double>(pp[i]);
+        pz[i] = checked(value);
+    }
+    f = static_cast<long double>(h);
+    f += static_cast<long double>(pz[0]);
+}
+
+// joseph with z = e_1: U = I - K e_1' has column 0 = (1-K_0, -K_1, ...) and
+// identity columns elsewhere; the posterior is written into p in place after
+// the UP product completed into scratch (the generic path's return-and-assign
+// has the same read/write history). Raw values() views replace the
+// out-of-line bounds-checked DenseMatrix::operator() — pointer-local
+// accumulation is a k = 0 idiom per the 2026-11-28 ruling and the dense
+// k > 0 fallback above is deliberately left on the accessor path.
+void struct_joseph(DenseMatrix& p, const std::vector<double>& gain,
+                   double h, StructuralScratch& scratch) {
+    const auto m = p.rows();
+    scratch.u_col0.resize(m);
+    for (std::size_t i = 0; i < m; ++i)
+        scratch.u_col0[i] = checked((i == 0 ? 1.0L : 0.0L) - static_cast<long double>(gain[i]));
+    DenseMatrix& ap = scratch.ap;  // persistent buffer: no per-step allocation
+    if (ap.rows() != m || ap.columns() != m) ap = DenseMatrix(m, m);
+    double* pp = p.values().data();
+    double* pap = ap.values().data();
+    // ap = U * P: k = 0 term (u_col0[i] * P(0,j)) then, for i > 0, the k = i
+    // term +1.0 * P(i,j); the generic loop accumulates k in ascending order
+    // from a +0 accumulator — the folds below keep that start, so a product
+    // that is exactly +-0 folds to +0 exactly as the generic loop's does.
+    for (std::size_t j = 0; j < m; ++j) {
+        const double p0j = pp[m * j];
+        for (std::size_t i = 0; i < m; ++i) {
+            long double value = 0;
+            value += static_cast<long double>(scratch.u_col0[i]) * p0j;
+            if (i > 0) value += static_cast<long double>(pp[i + m * j]);
+            pap[i + m * j] = checked(value);
+        }
+    }
+    // posterior(i,j) = sum_k ap(i,k) U(j,k): j = 0 keeps the k = 0 term only;
+    // j > 0 accumulates k = 0 (ap(i,0) * u_col0[j]) then k = j (+ap(i,j)).
+    for (std::size_t j = 0; j < m; ++j) {
+        const double u0j = scratch.u_col0[j];
+        for (std::size_t i = 0; i <= j; ++i) {
+            long double value = 0;
+            value += static_cast<long double>(pap[i]) * u0j;
+            if (j > 0) value += static_cast<long double>(pap[i + m * j]);
+            const double v = checked(value);
+            pp[i + m * j] = v;
+            pp[j + m * i] = v;
+        }
+    }
+    for (std::size_t j = 0; j < m; ++j) {
+        const double gj = gain[j];
+        for (std::size_t i = 0; i <= j; ++i) {
+            const double v = checked(static_cast<long double>(pp[i + m * j]) +
+                static_cast<long double>(h) * gain[i] * gj);
+            pp[i + m * j] = v;
+            pp[j + m * i] = v;
+        }
+    }
+}
+
+// sandwich(t, p) + process for the witness_companion_columns transition:
+// (T P)(i,j) accumulates k = 0 (phi_i * P(0,j)) then k = i+1 (+P(i+1,j));
+// (T P T')(i,j) accumulates k = 0 (ap(i,0) * phi_j) then k = j+1 (+ap(i,j+1)).
+void struct_predict_add(DenseMatrix& p, const DenseMatrix& t, const DenseMatrix& process,
+                        StructuralScratch& scratch) {
+    const auto m = p.rows();
+    DenseMatrix& ap = scratch.ap;
+    if (ap.rows() != m || ap.columns() != m) ap = DenseMatrix(m, m);
+    double* pp = p.values().data();
+    double* pap = ap.values().data();
+    const double* pt = t.values().data();
+    // The folds below start from the same +0 accumulator as the generic
+    // sandwich loops (see the note in struct_joseph), so stored covariance
+    // entries carry the same sign of zero as the generic path's do.
+    for (std::size_t j = 0; j < m; ++j) {
+        const double p0j = pp[m * j];
+        for (std::size_t i = 0; i < m; ++i) {
+            long double value = 0;
+            value += static_cast<long double>(pt[i]) * p0j;
+            if (i + 1 < m) value += static_cast<long double>(pp[i + 1 + m * j]);
+            pap[i + m * j] = checked(value);
+        }
+    }
+    for (std::size_t j = 0; j < m; ++j) {
+        const double phi_j = pt[j];
+        const double* apj1 = j + 1 < m ? pap + m * (j + 1) : nullptr;
+        for (std::size_t i = 0; i <= j; ++i) {
+            long double value = 0;
+            value += static_cast<long double>(pap[i]) * phi_j;
+            if (apj1) value += static_cast<long double>(apj1[i]);
+            const double v = checked(value);
+            pp[i + m * j] = v;
+            pp[j + m * i] = v;
+        }
+    }
+    const double* pr = process.values().data();
+    for (std::size_t i = 0; i < p.values().size(); ++i)
+        pp[i] = checked(static_cast<long double>(pp[i]) + pr[i]);
+}
+
 void validate_model(const DiffuseStateSpace& model, const std::vector<double>& state,
                      double mean, double variance, const Interrupt& interrupt) {
     model.transition.validate(interrupt);
@@ -245,7 +404,7 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
                           detail::CountsHistoryCertificate* history = nullptr,
                           detail::SparseHistoryBasis* stable_history = nullptr,
                           detail::FiniteStateFactor* finite_factor = nullptr,
-                          bool save_gains = false) {
+                          bool save_gains = false, bool k0_canonical = false) {
     series.validate();
     validate_model(model, state, mean, variance, interrupt);
     validate_basis(basis, interrupt, "initial diffuse loading is numerically rank deficient");
@@ -309,6 +468,28 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
     // step and the state-add loop keeps its m-long form.
     std::vector<double> d4_pz, d4_state_scratch, d4_gain_r;
     bool d4_block_state = false;
+    // Item-30 option (ii) gate (structure-aware dense k = 0 steps; helper
+    // comments above carry the scope note and the exactness argument). The
+    // witness is shape-only and evaluated once per call, fail-closed: any
+    // failure — non-canonical route, an armed factor (every canonical k > 0
+    // call arms one), a nonzero initial diffuse rank, nonzero observation
+    // variance, or a shape departure from the e_1 loading / companion
+    // transition — keeps today's dense fallback bit-for-bit. Under the armed
+    // witness the diffuse pivot branch is unreachable (a rank-zero basis
+    // keeps w empty, so w_norm == 0 at every step) and the post-pivot route
+    // stays 0, exactly as today at k = 0.
+    StructuralScratch k0_scratch;
+    const bool k0_structural = k0_canonical && finite_factor == nullptr &&
+                               initial_rank == 0 && model.observation_variance == 0 &&
+                               witness_e1_loading(model.observation) &&
+                               witness_companion_columns(model.transition);
+    // The projected-loading buffer lives outside the loop: the structural
+    // observation branch resizes it (capacity retained, no mid-run
+    // allocation) and every other branch assigns it in full before reading,
+    // exactly as the per-step local did (one buffer acquisition per
+    // evaluation for the factor/dense branches, none for the structural
+    // branch after the first step).
+    std::vector<double> pz;
     const auto process = gram(model.noise_loading);
     const auto initial_finite = p;
     const auto initial_diffuse = gram(basis);
@@ -348,7 +529,6 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
         // Case E4: the reduced route keeps the r-wide projected loading
         // (d4_pz) without the m-wide zero padding; every full-path branch
         // below assigns the m-wide vector in full, as before.
-        std::vector<double> pz;
         long double finite_f = model.observation_variance;
         if (d4_state == 2) {
             // Reduced observation on the certified r-wide factor: every
@@ -369,6 +549,8 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
             auto projected = finite_factor->observation(model.observation, model.observation_variance, interrupt);
             pz = std::move(projected.pz);
             finite_f = projected.variance;
+        } else if (k0_structural) {
+            struct_observation(p, model.observation_variance, pz, finite_f);
         } else {
             pz = product(p, model.observation);
             for (std::size_t i = 0; i < m; ++i) finite_f += static_cast<long double>(model.observation[i]) * pz[i];
@@ -473,6 +655,7 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
                     for (std::size_t i = 0; i < d4_r; ++i) d4_gain_r[i] = gain[i];
                     finite_factor->update(d4_gain_r, d4_observation, model.observation_variance, interrupt);
                 } else if (finite_factor) finite_factor->update(gain, model.observation, model.observation_variance, interrupt);
+                else if (k0_structural) struct_joseph(p, gain, model.observation_variance, k0_scratch);
                 else p = joseph(p, gain, model.observation, model.observation_variance);
                 ++finite_count;
                 if (exact_zero) ++exact_zero_count;
@@ -575,6 +758,7 @@ DiffuseLikelihood filter(const MaskedSeries& series, const DiffuseStateSpace& mo
                 }
             }
             else if (finite_factor) finite_factor->predict(model.transition, model.noise_loading, interrupt);
+            else if (k0_structural) struct_predict_add(p, model.transition, process, k0_scratch);
             else {
                 p = sandwich(model.transition, p);
                 for (std::size_t i = 0; i < p.values().size(); ++i) p.values()[i] = checked(static_cast<long double>(p.values()[i]) + process.values()[i]);
@@ -713,7 +897,7 @@ SarimaLikelihood sarima_innovations(const MaskedSeries& series, const std::vecto
     auto likelihood = filter(series, model, std::vector<double>(m, 0), std::move(initial_finite),
                               std::move(basis), mean, variance, interrupt,
                               k > 0 ? &history : nullptr, k > 0 ? &stable_history : nullptr,
-                              finite_factor.get(), save_gains);
+                              finite_factor.get(), save_gains, k == 0);
     return {std::move(model), std::move(arma.ar), std::move(arma.ma),
             std::move(difference), std::move(likelihood)};
 }

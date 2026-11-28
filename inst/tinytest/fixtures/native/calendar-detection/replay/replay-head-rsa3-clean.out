@@ -1,0 +1,26 @@
+specinfo rsa3 clean n=96
+status available
+chain init r0 curva=3.800743465029901 pcr=0.94999999999999996 n=96
+chain transformation r0 log_chosen=0 aicc_level=-4964.9963946478401 aicc_log=-430.95063527940408
+chain meantest0 r0 cval=1.96 tstat=0.77796827505620214 mean_after=0 changed=0
+chain outliers0 r0 cv=3.800743465029901 changed=1 n_outliers=6 rounds=6
+chain regtest0 r0 mean_cutoff=1.96 changed=0 mean_after=0 removed=[0,0,0,0,0,0] tstats=[6.40872,-3.31285,4.24438,-2.52205,-1.56867,2.17034]
+chain accept0 r0 plbox0=0.73966003108183997 rvr0=1.0022262436328671e-14 rtval0=0.026490048372382318 accepted=1 acc[rtval=0.026490048372382318 rvr=1.0022262436328671e-14 lb_p=0.26033996891816003 accepted=1]
+chain round1.refine r1 p=0 q=1 bp=0 bq=1 d=1 bd=1 mean=0 changed=0 fallback=0
+chain round1.outliers r1 cv=3.800743465029901 changed=1 n_outliers=6 rounds=6
+chain round1.pass2 r1 filter=0 plbox=0.73966003108183997 plbox0=0.73966003108183997 rvr=1.0022262436328671e-14 rtval=0.026490048372382318 pcr_after=0.97499999999999998 loop_after=2 curva_after=3.800743465029901 continue_round=1 p2[filter=0 plbox=0.73966003108183997 plbox0=0.73966003108183997 pcr=0.97499999999999998 cont=1]
+chain round1.regtest r1 mean_cutoff=1 changed=0 mean_after=0 removed=[0,0,0,0,0,0] tstats=[6.40872,-3.31285,4.24438,-2.52205,-1.56867,2.17034]
+chain round1.unitroots r1 regular_count=0 seasonal_count=0 regular_fired=0 seasonal_fired=0 regular_margin=nan seasonal_margin=nan p_after=0 d_after=1 bp_after=0 bd_after=1
+chain round1.meantest r1 cval=1.6000000000000001 tstat=490330521950950.38 mean_after=1 changed=0
+chain round1.outliers r1 cv=3.800743465029901 changed=0 n_outliers=0 rounds=0
+chain round1.accept r1 plbox0=0.99901402800042838 rvr0=1.7362752966061454e-14 rtval0=0.025116327195048381 accepted=0 acc[rtval=0.025116327195048381 rvr=1.7362752966061454e-14 lb_p=0.00098597199957162207 accepted=0]
+chain round1.matest r1 scanned=1 abs_theta_at_1=0.00013388175146511472 fired=1 q_after=0 d_after=0 mean_set=1
+chain round1.unitroots r1 regular_count=0 seasonal_count=0 regular_fired=0 seasonal_fired=0 regular_margin=nan seasonal_margin=nan p_after=0 d_after=0 bp_after=0 bd_after=1
+chain round1.matest r1 scanned=0 q_after=0 d_after=0
+chain round1.meanrule r1 rtval0=0.025116327195048381 mean_added=0
+chain round1.cascade r1 status=1 status=-2
+chain final r0 p=0 q=0 bp=0 bq=0 d=0 bd=1 mean=1 log=0 n_outliers=0 log_likelihood=2542.3032044741399 aicc=-5080.4582608001319
+fact log=0 mean=1 orders 0 0 0 0 1 0
+fact ll=2542.3032044741399 aicc=-5080.4582608001319 eff=84
+landed mean=1
+fit_status available

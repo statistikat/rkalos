@@ -1,0 +1,30 @@
+case                         kalos_head_ms   jvm_ms   ratio
+d2-arma12                            0.197    0.126     1.6
+leadgap-airline-x                    3.561    0.934     3.8
+nearni-airline                       3.324    0.223    14.9
+nearur-airline                       3.414    0.226    15.1
+real-airline-gaps-x                  8.304    0.934     8.9
+real-airline-noreg                   3.459    0.237    14.6
+real-airline-redundant-x             3.320        -       -
+real-airline-x                       3.354    0.399     8.4
+real-airline-zerocol-x               3.330        -       -
+slow-seasonal                        3.483    0.266    13.1
+syn-airline12                        3.515    0.237    14.8
+syn-airline4                         0.577    0.136     4.2
+syn-mixed4                           0.429    0.104     4.1
+syn-stat-arma21                      0.221    0.160     1.4
+syn-stat-sarma11                    27.936    0.405    68.9
+
+jvm warm eval=1..5 medians (ms):
+  airline-gaps-x       0.9343
+  airline-noreg        0.2369
+  airline-x            0.3993
+  airline4             0.1361
+  d2                   0.1263
+  mixed4               0.1039
+  nearni               0.2234
+  nearur               0.2257
+  slow                 0.2658
+  stat-arma21          0.1602
+  stat-arma21n         0.1504
+  stat-sarma11         0.4052

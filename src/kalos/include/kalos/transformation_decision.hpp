@@ -33,6 +33,22 @@ struct TransformationDecisionRequest {
     // DEF_AICDIFF, -2.0). Not validated: the pinned comparison has defined
     // results for every double, including NaN, which selects levels.
     double aicc_log_correction;
+    // 21-I stage 1 (m17-td1): the calendar-carrying variant of the same
+    // pinned module. The X13 decoder puts the spec trading-days variables in
+    // the initial description and hands LogLevelModule$Builder.preadjust
+    // (autoAdjust ? lp : None, readTransformation offsets 43-60), so the
+    // level branch estimates with [td, lp], the log branch with the "lp"
+    // variable removed (LogLevelModule offsets 146-153) and, under a
+    // preadjustment, the length-of-period factors folded into the data
+    // (LengthOfPeriodTransformation before the log; the Jacobian gains
+    // sum log f over the estimation window, the same structure the CEDM
+    // arms use). Empty vectors keep the pinned shape byte-identical.
+    // Columns carry the RAW domain (the estimation unit's unit-root filter
+    // maps them, 23-F F.2 multi-column machine); every column must have
+    // branch.series size, factors likewise with strictly positive entries.
+    std::vector<std::vector<double>> level_columns;
+    std::vector<std::vector<double>> log_columns;
+    std::vector<double> log_preadjust_factors;
 };
 
 // One branch as the pinned module leaves it after ModelDescription.estimate

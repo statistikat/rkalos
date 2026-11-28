@@ -1,0 +1,13 @@
+# m17-td1 stage-1 Tier-3 lane: native TD replay, single thread, nice -n 10.
+# Determinism: two consecutive runs of td1_replay per case, byte-compared.
+# Loadavg bracket: /proc/loadavg 1-minute value before/after each timed run.
+# columns: case loadavg_before elapsed_s loadavg_after run2_match
+td2noe/clean 7.02 9.469 8.10 yes
+td2noe/tdeff 8.10 95.260 7.23 yes
+td2noe/air 7.23 3.010 6.97 yes
+td7noe/clean 6.97 9.515 6.51 yes
+td7noe/tdeff 6.51 95.243 4.39 yes
+td7noe/air 4.39 2.758 4.39 yes
+td2noadj/clean 4.39 10.046 4.25 yes
+td2noadj/tdeff 4.25 48.632 3.61 yes
+td2noadj/air 3.61 3.195 3.56 yes

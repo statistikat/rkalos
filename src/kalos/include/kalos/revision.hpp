@@ -1,2 +1,2 @@
 // Generated from core.lock.json; do not edit.
-#define KALOS_CORE_REVISION "1e2e3c896ade4f67124f057c0aa5a0fedd4fc734"
+#define KALOS_CORE_REVISION "ec3f3a64dc2678661f0b2fd899472faa1a0fab8e"

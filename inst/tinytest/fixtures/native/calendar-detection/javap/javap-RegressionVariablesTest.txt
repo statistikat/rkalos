@@ -1,0 +1,367 @@
+Compiled from "RegressionVariablesTest.java"
+public class jdplus.toolkit.base.core.regsarima.regular.RegressionVariablesTest {
+  public static final double CVAL;
+
+  public static final double F_PROB;
+
+  public static final double TSIG;
+
+  private final jdplus.toolkit.base.core.regsarima.regular.IRegressionTest meanTest;
+
+  private final jdplus.toolkit.base.core.regsarima.regular.IRegressionTest tdTest;
+
+  private final jdplus.toolkit.base.core.regsarima.regular.IRegressionTest mhTest;
+
+  private final jdplus.toolkit.base.core.regarima.DerivedRegressionTest derivedTest;
+
+  public static jdplus.toolkit.base.core.regsarima.regular.RegressionVariablesTest$Builder builder();
+    Code:
+       0: new           #1                  // class jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder
+       3: dup
+       4: invokespecial #3                  // Method jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder."<init>":()V
+       7: areturn
+
+  private jdplus.toolkit.base.core.regsarima.regular.RegressionVariablesTest(jdplus.toolkit.base.core.regsarima.regular.RegressionVariablesTest$Builder);
+    Code:
+       0: aload_0
+       1: invokespecial #7                  // Method java/lang/Object."<init>":()V
+       4: aload_1
+       5: getfield      #10                 // Field jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder.tmu:D
+       8: dconst_0
+       9: dcmpl
+      10: ifle          31
+      13: aload_0
+      14: new           #14                 // class jdplus/toolkit/base/core/regsarima/regular/TRegressionTest
+      17: dup
+      18: aload_1
+      19: getfield      #10                 // Field jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder.tmu:D
+      22: invokespecial #16                 // Method jdplus/toolkit/base/core/regsarima/regular/TRegressionTest."<init>":(D)V
+      25: putfield      #19                 // Field meanTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+      28: goto          36
+      31: aload_0
+      32: aconst_null
+      33: putfield      #19                 // Field meanTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+      36: aload_1
+      37: getfield      #25                 // Field jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder.tmh:D
+      40: dconst_0
+      41: dcmpl
+      42: ifle          63
+      45: aload_0
+      46: new           #14                 // class jdplus/toolkit/base/core/regsarima/regular/TRegressionTest
+      49: dup
+      50: aload_1
+      51: getfield      #25                 // Field jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder.tmh:D
+      54: invokespecial #16                 // Method jdplus/toolkit/base/core/regsarima/regular/TRegressionTest."<init>":(D)V
+      57: putfield      #28                 // Field mhTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+      60: goto          68
+      63: aload_0
+      64: aconst_null
+      65: putfield      #28                 // Field mhTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+      68: aload_1
+      69: getfield      #31                 // Field jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder.ttd:D
+      72: dconst_0
+      73: dcmpl
+      74: ifle          126
+      77: aload_0
+      78: new           #14                 // class jdplus/toolkit/base/core/regsarima/regular/TRegressionTest
+      81: dup
+      82: aload_1
+      83: getfield      #31                 // Field jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder.ttd:D
+      86: invokespecial #16                 // Method jdplus/toolkit/base/core/regsarima/regular/TRegressionTest."<init>":(D)V
+      89: putfield      #34                 // Field tdTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+      92: aload_1
+      93: getfield      #37                 // Field jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder.derived:Z
+      96: ifeq          118
+      99: aload_0
+     100: new           #41                 // class jdplus/toolkit/base/core/regarima/DerivedRegressionTest
+     103: dup
+     104: aload_1
+     105: getfield      #31                 // Field jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder.ttd:D
+     108: iconst_1
+     109: invokespecial #43                 // Method jdplus/toolkit/base/core/regarima/DerivedRegressionTest."<init>":(DZ)V
+     112: putfield      #46                 // Field derivedTest:Ljdplus/toolkit/base/core/regarima/DerivedRegressionTest;
+     115: goto          163
+     118: aload_0
+     119: aconst_null
+     120: putfield      #46                 // Field derivedTest:Ljdplus/toolkit/base/core/regarima/DerivedRegressionTest;
+     123: goto          163
+     126: aload_0
+     127: aconst_null
+     128: putfield      #46                 // Field derivedTest:Ljdplus/toolkit/base/core/regarima/DerivedRegressionTest;
+     131: aload_1
+     132: getfield      #50                 // Field jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder.ftd:D
+     135: dconst_0
+     136: dcmpl
+     137: ifle          158
+     140: aload_0
+     141: new           #53                 // class jdplus/toolkit/base/core/regarima/FRegressionTest
+     144: dup
+     145: aload_1
+     146: getfield      #50                 // Field jdplus/toolkit/base/core/regsarima/regular/RegressionVariablesTest$Builder.ftd:D
+     149: invokespecial #55                 // Method jdplus/toolkit/base/core/regarima/FRegressionTest."<init>":(D)V
+     152: putfield      #34                 // Field tdTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+     155: goto          163
+     158: aload_0
+     159: aconst_null
+     160: putfield      #34                 // Field tdTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+     163: return
+
+  public jdplus.toolkit.base.core.regsarima.regular.ProcessingResult process(jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling);
+    Code:
+       0: aload_1
+       1: invokevirtual #56                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getEstimation:()Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       4: invokevirtual #62                 // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.getConcentratedLikelihood:()Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;
+       7: astore_2
+       8: aload_1
+       9: invokevirtual #68                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getDescription:()Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+      12: astore_3
+      13: iconst_0
+      14: istore        4
+      16: new           #72                 // class java/util/ArrayList
+      19: dup
+      20: invokespecial #74                 // Method java/util/ArrayList."<init>":()V
+      23: astore        5
+      25: iconst_0
+      26: istore        6
+      28: iconst_0
+      29: istore        7
+      31: aload_0
+      32: getfield      #34                 // Field tdTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+      35: ifnull        295
+      38: aload_3
+      39: invokevirtual #75                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.variables:()Ljava/util/stream/Stream;
+      42: invokedynamic #81,  0             // InvokeDynamic #0:test:()Ljava/util/function/Predicate;
+      47: invokeinterface #85,  2           // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+      52: invokestatic  #91                 // Method java/util/stream/Collectors.toList:()Ljava/util/stream/Collector;
+      55: invokeinterface #97,  2           // InterfaceMethod java/util/stream/Stream.collect:(Ljava/util/stream/Collector;)Ljava/lang/Object;
+      60: checkcast     #101                // class java/util/List
+      63: astore        8
+      65: aload         8
+      67: invokeinterface #103,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+      72: astore        9
+      74: aload         9
+      76: invokeinterface #107,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      81: ifeq          186
+      84: aload         9
+      86: invokeinterface #113,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      91: checkcast     #117                // class jdplus/toolkit/base/api/timeseries/regression/Variable
+      94: astore        10
+      96: aload         10
+      98: invokevirtual #119                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+     101: astore        11
+     103: aload_3
+     104: aload         11
+     106: invokevirtual #123                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.findPosition:(Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;)I
+     109: istore        12
+     111: aload         11
+     113: invokeinterface #127,  1          // InterfaceMethod jdplus/toolkit/base/api/timeseries/regression/ITsVariable.dim:()I
+     118: istore        13
+     120: aload_0
+     121: getfield      #34                 // Field tdTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+     124: aload_2
+     125: iconst_m1
+     126: iload         12
+     128: iload         13
+     130: invokeinterface #133,  5          // InterfaceMethod jdplus/toolkit/base/core/regsarima/regular/IRegressionTest.accept:(Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;III)Z
+     135: ifne          180
+     138: iload         13
+     140: iconst_1
+     141: if_icmple     167
+     144: aload_0
+     145: getfield      #46                 // Field derivedTest:Ljdplus/toolkit/base/core/regarima/DerivedRegressionTest;
+     148: ifnull        167
+     151: aload_0
+     152: getfield      #46                 // Field derivedTest:Ljdplus/toolkit/base/core/regarima/DerivedRegressionTest;
+     155: aload_2
+     156: iconst_m1
+     157: iload         12
+     159: iload         13
+     161: invokevirtual #139                // Method jdplus/toolkit/base/core/regarima/DerivedRegressionTest.accept:(Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;III)Z
+     164: ifne          180
+     167: aload         5
+     169: aload         11
+     171: invokeinterface #140,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     176: pop
+     177: goto          183
+     180: iconst_1
+     181: istore        6
+     183: goto          74
+     186: aload_3
+     187: invokevirtual #75                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.variables:()Ljava/util/stream/Stream;
+     190: invokedynamic #144,  0            // InvokeDynamic #1:test:()Ljava/util/function/Predicate;
+     195: invokeinterface #85,  2           // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+     200: invokestatic  #91                 // Method java/util/stream/Collectors.toList:()Ljava/util/stream/Collector;
+     203: invokeinterface #97,  2           // InterfaceMethod java/util/stream/Stream.collect:(Ljava/util/stream/Collector;)Ljava/lang/Object;
+     208: checkcast     #101                // class java/util/List
+     211: astore        9
+     213: aload         9
+     215: invokeinterface #103,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     220: astore        10
+     222: aload         10
+     224: invokeinterface #107,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     229: ifeq          295
+     232: aload         10
+     234: invokeinterface #113,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     239: checkcast     #117                // class jdplus/toolkit/base/api/timeseries/regression/Variable
+     242: astore        11
+     244: aload         11
+     246: invokevirtual #119                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+     249: astore        12
+     251: aload_3
+     252: aload         12
+     254: invokevirtual #123                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.findPosition:(Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;)I
+     257: istore        13
+     259: aload_0
+     260: getfield      #34                 // Field tdTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+     263: aload_2
+     264: iconst_m1
+     265: iload         13
+     267: iconst_1
+     268: invokeinterface #133,  5          // InterfaceMethod jdplus/toolkit/base/core/regsarima/regular/IRegressionTest.accept:(Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;III)Z
+     273: ifne          289
+     276: aload         5
+     278: aload         12
+     280: invokeinterface #140,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     285: pop
+     286: goto          292
+     289: iconst_1
+     290: istore        7
+     292: goto          222
+     295: aload_0
+     296: getfield      #28                 // Field mhTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+     299: ifnull        458
+     302: new           #72                 // class java/util/ArrayList
+     305: dup
+     306: invokespecial #74                 // Method java/util/ArrayList."<init>":()V
+     309: astore        8
+     311: aload_3
+     312: invokevirtual #75                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.variables:()Ljava/util/stream/Stream;
+     315: invokedynamic #145,  0            // InvokeDynamic #2:test:()Ljava/util/function/Predicate;
+     320: invokeinterface #85,  2           // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+     325: invokestatic  #91                 // Method java/util/stream/Collectors.toList:()Ljava/util/stream/Collector;
+     328: invokeinterface #97,  2           // InterfaceMethod java/util/stream/Stream.collect:(Ljava/util/stream/Collector;)Ljava/lang/Object;
+     333: checkcast     #101                // class java/util/List
+     336: astore        9
+     338: aload         9
+     340: invokeinterface #103,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     345: astore        10
+     347: aload         10
+     349: invokeinterface #107,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     354: ifeq          417
+     357: aload         10
+     359: invokeinterface #113,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     364: checkcast     #117                // class jdplus/toolkit/base/api/timeseries/regression/Variable
+     367: astore        11
+     369: aload         11
+     371: invokevirtual #119                // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+     374: astore        12
+     376: aload_3
+     377: aload         12
+     379: invokevirtual #123                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.findPosition:(Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;)I
+     382: istore        13
+     384: aload_0
+     385: getfield      #28                 // Field mhTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+     388: aload_2
+     389: iconst_m1
+     390: iload         13
+     392: iconst_1
+     393: invokeinterface #133,  5          // InterfaceMethod jdplus/toolkit/base/core/regsarima/regular/IRegressionTest.accept:(Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;III)Z
+     398: ifne          414
+     401: aload         8
+     403: aload         12
+     405: invokeinterface #140,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     410: pop
+     411: iconst_1
+     412: istore        4
+     414: goto          347
+     417: aload         8
+     419: invokeinterface #103,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     424: astore        10
+     426: aload         10
+     428: invokeinterface #107,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     433: ifeq          458
+     436: aload         10
+     438: invokeinterface #113,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     443: checkcast     #128                // class jdplus/toolkit/base/api/timeseries/regression/ITsVariable
+     446: astore        11
+     448: aload_3
+     449: aload         11
+     451: invokevirtual #146                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.remove:(Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;)Z
+     454: pop
+     455: goto          426
+     458: aload         5
+     460: invokeinterface #150,  1          // InterfaceMethod java/util/List.isEmpty:()Z
+     465: ifne          536
+     468: iload         7
+     470: ifne          536
+     473: iload         6
+     475: ifne          536
+     478: iconst_1
+     479: istore        4
+     481: aload         5
+     483: invokeinterface #103,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     488: astore        8
+     490: aload         8
+     492: invokeinterface #107,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     497: ifeq          522
+     500: aload         8
+     502: invokeinterface #113,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     507: checkcast     #128                // class jdplus/toolkit/base/api/timeseries/regression/ITsVariable
+     510: astore        9
+     512: aload_3
+     513: aload         9
+     515: invokevirtual #146                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.remove:(Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;)Z
+     518: pop
+     519: goto          490
+     522: aload_3
+     523: invokevirtual #153                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.isAdjusted:()Z
+     526: ifeq          536
+     529: aload_3
+     530: getstatic     #156                // Field jdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType.None:Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;
+     533: invokevirtual #162                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.setPreadjustment:(Ljdplus/toolkit/base/api/timeseries/calendars/LengthOfPeriodType;)V
+     536: aload_0
+     537: getfield      #19                 // Field meanTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+     540: ifnull        574
+     543: aload_3
+     544: invokevirtual #166                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.isMean:()Z
+     547: ifeq          574
+     550: aload_0
+     551: getfield      #19                 // Field meanTest:Ljdplus/toolkit/base/core/regsarima/regular/IRegressionTest;
+     554: aload_2
+     555: iconst_m1
+     556: iconst_0
+     557: iconst_1
+     558: invokeinterface #133,  5          // InterfaceMethod jdplus/toolkit/base/core/regsarima/regular/IRegressionTest.accept:(Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;III)Z
+     563: ifne          574
+     566: aload_3
+     567: iconst_0
+     568: invokevirtual #169                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.setMean:(Z)V
+     571: iconst_1
+     572: istore        4
+     574: iload         4
+     576: ifeq          587
+     579: aload_1
+     580: invokevirtual #173                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.clearEstimation:()V
+     583: getstatic     #176                // Field jdplus/toolkit/base/core/regsarima/regular/ProcessingResult.Changed:Ljdplus/toolkit/base/core/regsarima/regular/ProcessingResult;
+     586: areturn
+     587: getstatic     #182                // Field jdplus/toolkit/base/core/regsarima/regular/ProcessingResult.Unchanged:Ljdplus/toolkit/base/core/regsarima/regular/ProcessingResult;
+     590: areturn
+
+  private static boolean lambda$process$2(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #185                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isMovingHoliday:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$process$1(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #191                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isLengthOfPeriod:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$process$0(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #194                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isTradingDays:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+}

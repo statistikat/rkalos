@@ -1,0 +1,15 @@
+INIT real-airline-noreg median_ms=0.615458
+INIT real-airline-x median_ms=0.401362
+INIT real-airline-gaps-x median_ms=0.382050
+INIT real-airline-redundant-x median_ms=0.382615
+INIT real-airline-zerocol-x median_ms=0.378963
+INIT syn-airline12 median_ms=0.383323
+INIT syn-stat-arma21 median_ms=0.006613
+INIT syn-stat-sarma11 median_ms=0.273286
+INIT syn-airline4 median_ms=0.112081
+INIT syn-mixed4 median_ms=0.061241
+INIT nearur-airline median_ms=0.387483
+INIT nearni-airline median_ms=0.389378
+INIT d2-arma12 median_ms=0.011093
+INIT slow-seasonal median_ms=0.405172
+INIT leadgap-airline-x median_ms=0.383071

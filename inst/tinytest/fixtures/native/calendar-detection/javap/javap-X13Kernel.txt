@@ -1,0 +1,1401 @@
+Compiled from "X13Kernel.java"
+public final class jdplus.x13.base.core.x13.X13Kernel {
+  private final jdplus.sa.base.core.PreliminaryChecks$Tool preliminary;
+
+  private final jdplus.x13.base.core.x13.regarima.RegArimaKernel regarima;
+
+  private final jdplus.sa.base.core.modelling.SaVariablesMapping samapping;
+
+  private final jdplus.x13.base.api.x11.X11Spec spec;
+
+  private final boolean preprop;
+
+  private final jdplus.sa.base.core.CholetteProcessor cholette;
+
+  private static jdplus.sa.base.core.PreliminaryChecks$Tool of(jdplus.x13.base.api.x13.X13Spec);
+    Code:
+       0: aload_0
+       1: invokevirtual #1                  // Method jdplus/x13/base/api/x13/X13Spec.getRegArima:()Ljdplus/x13/base/api/regarima/RegArimaSpec;
+       4: invokevirtual #7                  // Method jdplus/x13/base/api/regarima/RegArimaSpec.getBasic:()Ljdplus/x13/base/api/regarima/BasicSpec;
+       7: astore_1
+       8: aload_1
+       9: invokedynamic #13,  0             // InvokeDynamic #0:check:(Ljdplus/x13/base/api/regarima/BasicSpec;)Ljdplus/sa/base/core/PreliminaryChecks$Tool;
+      14: areturn
+
+  public static jdplus.x13.base.core.x13.X13Kernel of(jdplus.x13.base.api.x13.X13Spec, jdplus.toolkit.base.api.timeseries.regression.ModellingContext);
+    Code:
+       0: aload_0
+       1: invokestatic  #17                 // Method of:(Ljdplus/x13/base/api/x13/X13Spec;)Ljdplus/sa/base/core/PreliminaryChecks$Tool;
+       4: astore_2
+       5: aload_0
+       6: invokevirtual #1                  // Method jdplus/x13/base/api/x13/X13Spec.getRegArima:()Ljdplus/x13/base/api/regarima/RegArimaSpec;
+       9: invokevirtual #7                  // Method jdplus/x13/base/api/regarima/RegArimaSpec.getBasic:()Ljdplus/x13/base/api/regarima/BasicSpec;
+      12: invokevirtual #23                 // Method jdplus/x13/base/api/regarima/BasicSpec.isPreprocessing:()Z
+      15: istore_3
+      16: aload_0
+      17: invokevirtual #1                  // Method jdplus/x13/base/api/x13/X13Spec.getRegArima:()Ljdplus/x13/base/api/regarima/RegArimaSpec;
+      20: aload_1
+      21: invokestatic  #29                 // Method jdplus/x13/base/core/x13/regarima/RegArimaKernel.of:(Ljdplus/x13/base/api/regarima/RegArimaSpec;Ljdplus/toolkit/base/api/timeseries/regression/ModellingContext;)Ljdplus/x13/base/core/x13/regarima/RegArimaKernel;
+      24: astore        4
+      26: new           #34                 // class jdplus/sa/base/core/modelling/SaVariablesMapping
+      29: dup
+      30: invokespecial #36                 // Method jdplus/sa/base/core/modelling/SaVariablesMapping."<init>":()V
+      33: astore        5
+      35: new           #18                 // class jdplus/x13/base/core/x13/X13Kernel
+      38: dup
+      39: aload_2
+      40: aload         4
+      42: aload         5
+      44: aload_0
+      45: invokevirtual #40                 // Method jdplus/x13/base/api/x13/X13Spec.getX11:()Ljdplus/x13/base/api/x11/X11Spec;
+      48: iload_3
+      49: aload_0
+      50: invokevirtual #44                 // Method jdplus/x13/base/api/x13/X13Spec.getBenchmarking:()Ljdplus/sa/base/api/benchmarking/SaBenchmarkingSpec;
+      53: invokestatic  #48                 // Method jdplus/sa/base/core/CholetteProcessor.of:(Ljdplus/sa/base/api/benchmarking/SaBenchmarkingSpec;)Ljdplus/sa/base/core/CholetteProcessor;
+      56: invokespecial #53                 // Method "<init>":(Ljdplus/sa/base/core/PreliminaryChecks$Tool;Ljdplus/x13/base/core/x13/regarima/RegArimaKernel;Ljdplus/sa/base/core/modelling/SaVariablesMapping;Ljdplus/x13/base/api/x11/X11Spec;ZLjdplus/sa/base/core/CholetteProcessor;)V
+      59: areturn
+
+  public jdplus.x13.base.core.x13.X13Results process(jdplus.toolkit.base.api.timeseries.TsData, jdplus.toolkit.base.api.processing.ProcessingLog);
+    Code:
+       0: aload_2
+       1: ifnonnull     8
+       4: invokestatic  #56                 // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.dummy:()Ljdplus/toolkit/base/api/processing/ProcessingLog;
+       7: astore_2
+       8: aload_0
+       9: getfield      #62                 // Field preliminary:Ljdplus/sa/base/core/PreliminaryChecks$Tool;
+      12: aload_1
+      13: aload_2
+      14: invokeinterface #66,  3           // InterfaceMethod jdplus/sa/base/core/PreliminaryChecks$Tool.check:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/processing/ProcessingLog;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      19: astore_3
+      20: aload_3
+      21: ifnonnull     35
+      24: invokestatic  #71                 // Method jdplus/x13/base/core/x13/X13Results.builder:()Ljdplus/x13/base/core/x13/X13Results$Builder;
+      27: aload_2
+      28: invokevirtual #77                 // Method jdplus/x13/base/core/x13/X13Results$Builder.log:(Ljdplus/toolkit/base/api/processing/ProcessingLog;)Ljdplus/x13/base/core/x13/X13Results$Builder;
+      31: invokevirtual #83                 // Method jdplus/x13/base/core/x13/X13Results$Builder.build:()Ljdplus/x13/base/core/x13/X13Results;
+      34: areturn
+      35: aload_0
+      36: getfield      #87                 // Field regarima:Ljdplus/x13/base/core/x13/regarima/RegArimaKernel;
+      39: ifnull        130
+      42: aload_0
+      43: getfield      #87                 // Field regarima:Ljdplus/x13/base/core/x13/regarima/RegArimaKernel;
+      46: aload_1
+      47: aload_2
+      48: invokevirtual #91                 // Method jdplus/x13/base/core/x13/regarima/RegArimaKernel.process:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/processing/ProcessingLog;)Ljdplus/toolkit/base/core/regsarima/regular/RegSarimaModel;
+      51: astore        4
+      53: aload_0
+      54: getfield      #95                 // Field spec:Ljdplus/x13/base/api/x11/X11Spec;
+      57: invokevirtual #99                 // Method jdplus/x13/base/api/x11/X11Spec.getBackcastHorizon:()I
+      60: istore        7
+      62: iload         7
+      64: ifge          77
+      67: iload         7
+      69: ineg
+      70: aload_1
+      71: invokevirtual #105                // Method jdplus/toolkit/base/api/timeseries/TsData.getAnnualFrequency:()I
+      74: imul
+      75: istore        7
+      77: aload_0
+      78: getfield      #95                 // Field spec:Ljdplus/x13/base/api/x11/X11Spec;
+      81: invokevirtual #110                // Method jdplus/x13/base/api/x11/X11Spec.getForecastHorizon:()I
+      84: istore        8
+      86: iload         8
+      88: ifge          101
+      91: iload         8
+      93: ineg
+      94: aload_1
+      95: invokevirtual #105                // Method jdplus/toolkit/base/api/timeseries/TsData.getAnnualFrequency:()I
+      98: imul
+      99: istore        8
+     101: invokestatic  #113                // Method jdplus/x13/base/core/x13/X13Preadjustment.builder:()Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     104: astore        9
+     106: aload_0
+     107: aload         4
+     109: iload         7
+     111: iload         8
+     113: aload         9
+     115: invokevirtual #118                // Method initialStep:(Ljdplus/toolkit/base/core/regsarima/regular/RegSarimaModel;IILjdplus/x13/base/core/x13/X13Preadjustment$Builder;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     118: astore        6
+     120: aload         9
+     122: invokevirtual #122                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.build:()Ljdplus/x13/base/core/x13/X13Preadjustment;
+     125: astore        5
+     127: goto          148
+     130: aconst_null
+     131: astore        4
+     133: invokestatic  #113                // Method jdplus/x13/base/core/x13/X13Preadjustment.builder:()Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     136: aload_3
+     137: invokevirtual #127                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a1:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     140: invokevirtual #122                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.build:()Ljdplus/x13/base/core/x13/X13Preadjustment;
+     143: astore        5
+     145: aload_3
+     146: astore        6
+     148: new           #131                // class jdplus/x13/base/core/x11/X11Kernel
+     151: dup
+     152: invokespecial #133                // Method jdplus/x13/base/core/x11/X11Kernel."<init>":()V
+     155: astore        7
+     157: aload_0
+     158: aload_0
+     159: getfield      #95                 // Field spec:Ljdplus/x13/base/api/x11/X11Spec;
+     162: aload         4
+     164: invokevirtual #134                // Method updateSpec:(Ljdplus/x13/base/api/x11/X11Spec;Ljdplus/toolkit/base/core/regsarima/regular/RegSarimaModel;)Ljdplus/x13/base/api/x11/X11Spec;
+     167: astore        8
+     169: aload         7
+     171: aload         6
+     173: aload         8
+     175: aload_2
+     176: invokevirtual #138                // Method jdplus/x13/base/core/x11/X11Kernel.process:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/x13/base/api/x11/X11Spec;Ljdplus/toolkit/base/api/processing/ProcessingLog;)Ljdplus/x13/base/core/x11/X11Results;
+     179: astore        9
+     181: aconst_null
+     182: astore        10
+     184: aconst_null
+     185: astore        11
+     187: aconst_null
+     188: astore        12
+     190: aload         9
+     192: ifnull        265
+     195: aload_0
+     196: aload         8
+     198: invokevirtual #141                // Method jdplus/x13/base/api/x11/X11Spec.getMode:()Ljdplus/sa/base/api/DecompositionMode;
+     201: aload         5
+     203: aload         9
+     205: invokevirtual #145                // Method finals:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/x13/base/core/x13/X13Preadjustment;Ljdplus/x13/base/core/x11/X11Results;)Ljdplus/x13/base/core/x13/X13Finals;
+     208: astore        10
+     210: aload_0
+     211: getfield      #149                // Field cholette:Ljdplus/sa/base/core/CholetteProcessor;
+     214: ifnull        252
+     217: aload_0
+     218: getfield      #149                // Field cholette:Ljdplus/sa/base/core/CholetteProcessor;
+     221: aload_1
+     222: iconst_2
+     223: anewarray     #106                // class jdplus/toolkit/base/api/timeseries/TsData
+     226: dup
+     227: iconst_0
+     228: aload         10
+     230: invokevirtual #153                // Method jdplus/x13/base/core/x13/X13Finals.getD11final:()Ljdplus/toolkit/base/api/timeseries/TsData;
+     233: aastore
+     234: dup
+     235: iconst_1
+     236: aload         10
+     238: invokevirtual #159                // Method jdplus/x13/base/core/x13/X13Finals.getD11a:()Ljdplus/toolkit/base/api/timeseries/TsData;
+     241: aastore
+     242: invokestatic  #162                // Method jdplus/toolkit/base/api/timeseries/TsData.concatenate:([Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     245: aload         4
+     247: invokevirtual #166                // Method jdplus/sa/base/core/CholetteProcessor.process:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/information/Explorable;)Ljdplus/sa/base/core/SaBenchmarkingResults;
+     250: astore        11
+     252: aload         4
+     254: aload         5
+     256: aload         9
+     258: aload         10
+     260: invokestatic  #169                // Method jdplus/x13/base/core/x13/X13Diagnostics.of:(Ljdplus/toolkit/base/core/regsarima/regular/RegSarimaModel;Ljdplus/x13/base/core/x13/X13Preadjustment;Ljdplus/x13/base/core/x11/X11Results;Ljdplus/x13/base/core/x13/X13Finals;)Ljdplus/x13/base/core/x13/X13Diagnostics;
+     263: astore        12
+     265: invokestatic  #71                 // Method jdplus/x13/base/core/x13/X13Results.builder:()Ljdplus/x13/base/core/x13/X13Results$Builder;
+     268: aload         4
+     270: invokevirtual #174                // Method jdplus/x13/base/core/x13/X13Results$Builder.preprocessing:(Ljdplus/toolkit/base/core/regsarima/regular/RegSarimaModel;)Ljdplus/x13/base/core/x13/X13Results$Builder;
+     273: aload         5
+     275: invokevirtual #178                // Method jdplus/x13/base/core/x13/X13Results$Builder.preadjustment:(Ljdplus/x13/base/core/x13/X13Preadjustment;)Ljdplus/x13/base/core/x13/X13Results$Builder;
+     278: aload         9
+     280: invokevirtual #182                // Method jdplus/x13/base/core/x13/X13Results$Builder.decomposition:(Ljdplus/x13/base/core/x11/X11Results;)Ljdplus/x13/base/core/x13/X13Results$Builder;
+     283: aload         10
+     285: invokevirtual #186                // Method jdplus/x13/base/core/x13/X13Results$Builder.finals:(Ljdplus/x13/base/core/x13/X13Finals;)Ljdplus/x13/base/core/x13/X13Results$Builder;
+     288: aload         11
+     290: invokevirtual #189                // Method jdplus/x13/base/core/x13/X13Results$Builder.benchmarking:(Ljdplus/sa/base/core/SaBenchmarkingResults;)Ljdplus/x13/base/core/x13/X13Results$Builder;
+     293: aload         12
+     295: invokevirtual #193                // Method jdplus/x13/base/core/x13/X13Results$Builder.diagnostics:(Ljdplus/x13/base/core/x13/X13Diagnostics;)Ljdplus/x13/base/core/x13/X13Results$Builder;
+     298: aload_2
+     299: invokevirtual #77                 // Method jdplus/x13/base/core/x13/X13Results$Builder.log:(Ljdplus/toolkit/base/api/processing/ProcessingLog;)Ljdplus/x13/base/core/x13/X13Results$Builder;
+     302: invokevirtual #83                 // Method jdplus/x13/base/core/x13/X13Results$Builder.build:()Ljdplus/x13/base/core/x13/X13Results;
+     305: areturn
+     306: astore_3
+     307: aload_2
+     308: aload_3
+     309: invokeinterface #199,  2          // InterfaceMethod jdplus/toolkit/base/api/processing/ProcessingLog.error:(Ljava/lang/Exception;)V
+     314: invokestatic  #71                 // Method jdplus/x13/base/core/x13/X13Results.builder:()Ljdplus/x13/base/core/x13/X13Results$Builder;
+     317: aload_2
+     318: invokevirtual #77                 // Method jdplus/x13/base/core/x13/X13Results$Builder.log:(Ljdplus/toolkit/base/api/processing/ProcessingLog;)Ljdplus/x13/base/core/x13/X13Results$Builder;
+     321: invokevirtual #83                 // Method jdplus/x13/base/core/x13/X13Results$Builder.build:()Ljdplus/x13/base/core/x13/X13Results;
+     324: areturn
+    Exception table:
+       from    to  target type
+           8    34   306   Class java/lang/Exception
+          35   305   306   Class java/lang/Exception
+
+  private jdplus.toolkit.base.api.timeseries.TsData initialStep(jdplus.toolkit.base.core.regsarima.regular.RegSarimaModel, int, int, jdplus.x13.base.core.x13.X13Preadjustment$Builder);
+    Code:
+       0: aload_1
+       1: invokevirtual #203                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.getDescription:()Ljdplus/toolkit/base/core/modelling/GeneralLinearModel$Description;
+       4: invokeinterface #209,  1          // InterfaceMethod jdplus/toolkit/base/core/modelling/GeneralLinearModel$Description.isLogTransformation:()Z
+       9: istore        5
+      11: aload_1
+      12: iconst_0
+      13: invokevirtual #214                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.interpolatedSeries:(Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+      16: astore        6
+      18: aload         6
+      20: invokevirtual #218                // Method jdplus/toolkit/base/api/timeseries/TsData.getDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      23: astore        7
+      25: aload         7
+      27: iload_2
+      28: iload_3
+      29: invokevirtual #222                // Method jdplus/toolkit/base/api/timeseries/TsDomain.extend:(II)Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      32: astore        8
+      34: aload         8
+      36: invokevirtual #228                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getStartPeriod:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      39: astore        9
+      41: aload         7
+      43: invokevirtual #232                // Method jdplus/toolkit/base/api/timeseries/TsDomain.getEndPeriod:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      46: astore        10
+      48: aload_1
+      49: aload         8
+      51: invokedynamic #235,  0            // InvokeDynamic #1:test:()Ljava/util/function/Predicate;
+      56: invokevirtual #239                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.deterministicEffect:(Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      59: astore        11
+      61: aload_1
+      62: aload         8
+      64: invokedynamic #243,  0            // InvokeDynamic #2:test:()Ljava/util/function/Predicate;
+      69: invokevirtual #239                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.deterministicEffect:(Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      72: astore        12
+      74: aload_1
+      75: aload         8
+      77: getstatic     #244                // Field jdplus/sa/base/api/ComponentType.Trend:Ljdplus/sa/base/api/ComponentType;
+      80: iconst_1
+      81: invokedynamic #250,  0            // InvokeDynamic #3:test:()Ljava/util/function/Predicate;
+      86: invokestatic  #251                // Method jdplus/sa/base/core/modelling/RegArimaDecomposer.deterministicEffect:(Ljdplus/toolkit/base/core/modelling/GeneralLinearModel;Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/sa/base/api/ComponentType;ZLjava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      89: astore        13
+      91: aload_1
+      92: aload         8
+      94: getstatic     #256                // Field jdplus/sa/base/api/ComponentType.Seasonal:Ljdplus/sa/base/api/ComponentType;
+      97: iconst_1
+      98: invokedynamic #259,  0            // InvokeDynamic #4:test:()Ljava/util/function/Predicate;
+     103: invokestatic  #251                // Method jdplus/sa/base/core/modelling/RegArimaDecomposer.deterministicEffect:(Ljdplus/toolkit/base/core/modelling/GeneralLinearModel;Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/sa/base/api/ComponentType;ZLjava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     106: astore        14
+     108: aload_1
+     109: aload         8
+     111: getstatic     #260                // Field jdplus/sa/base/api/ComponentType.Irregular:Ljdplus/sa/base/api/ComponentType;
+     114: iconst_1
+     115: invokedynamic #263,  0            // InvokeDynamic #5:test:()Ljava/util/function/Predicate;
+     120: invokestatic  #251                // Method jdplus/sa/base/core/modelling/RegArimaDecomposer.deterministicEffect:(Ljdplus/toolkit/base/core/modelling/GeneralLinearModel;Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/sa/base/api/ComponentType;ZLjava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     123: astore        15
+     125: aload_1
+     126: aload         8
+     128: getstatic     #244                // Field jdplus/sa/base/api/ComponentType.Trend:Ljdplus/sa/base/api/ComponentType;
+     131: iconst_1
+     132: invokedynamic #264,  0            // InvokeDynamic #6:test:()Ljava/util/function/Predicate;
+     137: invokestatic  #251                // Method jdplus/sa/base/core/modelling/RegArimaDecomposer.deterministicEffect:(Ljdplus/toolkit/base/core/modelling/GeneralLinearModel;Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/sa/base/api/ComponentType;ZLjava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     140: astore        16
+     142: aload_1
+     143: aload         8
+     145: getstatic     #256                // Field jdplus/sa/base/api/ComponentType.Seasonal:Ljdplus/sa/base/api/ComponentType;
+     148: iconst_1
+     149: invokedynamic #265,  0            // InvokeDynamic #7:test:()Ljava/util/function/Predicate;
+     154: invokestatic  #251                // Method jdplus/sa/base/core/modelling/RegArimaDecomposer.deterministicEffect:(Ljdplus/toolkit/base/core/modelling/GeneralLinearModel;Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/sa/base/api/ComponentType;ZLjava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     157: astore        17
+     159: aload_1
+     160: aload         8
+     162: getstatic     #260                // Field jdplus/sa/base/api/ComponentType.Irregular:Ljdplus/sa/base/api/ComponentType;
+     165: iconst_1
+     166: invokedynamic #266,  0            // InvokeDynamic #8:test:()Ljava/util/function/Predicate;
+     171: invokestatic  #251                // Method jdplus/sa/base/core/modelling/RegArimaDecomposer.deterministicEffect:(Ljdplus/toolkit/base/core/modelling/GeneralLinearModel;Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/sa/base/api/ComponentType;ZLjava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     174: astore        18
+     176: aload_1
+     177: aload         8
+     179: getstatic     #267                // Field jdplus/sa/base/api/ComponentType.SeasonallyAdjusted:Ljdplus/sa/base/api/ComponentType;
+     182: iconst_1
+     183: invokedynamic #270,  0            // InvokeDynamic #9:test:()Ljava/util/function/Predicate;
+     188: invokestatic  #251                // Method jdplus/sa/base/core/modelling/RegArimaDecomposer.deterministicEffect:(Ljdplus/toolkit/base/core/modelling/GeneralLinearModel;Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/sa/base/api/ComponentType;ZLjava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     191: astore        19
+     193: aload_1
+     194: aload         8
+     196: getstatic     #271                // Field jdplus/sa/base/api/ComponentType.Series:Ljdplus/sa/base/api/ComponentType;
+     199: iconst_1
+     200: invokedynamic #274,  0            // InvokeDynamic #10:test:()Ljava/util/function/Predicate;
+     205: invokestatic  #251                // Method jdplus/sa/base/core/modelling/RegArimaDecomposer.deterministicEffect:(Ljdplus/toolkit/base/core/modelling/GeneralLinearModel;Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/sa/base/api/ComponentType;ZLjava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     208: astore        20
+     210: aload_1
+     211: aload         8
+     213: getstatic     #275                // Field jdplus/sa/base/api/ComponentType.Undefined:Ljdplus/sa/base/api/ComponentType;
+     216: iconst_1
+     217: invokedynamic #278,  0            // InvokeDynamic #11:test:()Ljava/util/function/Predicate;
+     222: invokestatic  #251                // Method jdplus/sa/base/core/modelling/RegArimaDecomposer.deterministicEffect:(Ljdplus/toolkit/base/core/modelling/GeneralLinearModel;Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/sa/base/api/ComponentType;ZLjava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     225: astore        21
+     227: aload_1
+     228: aload         8
+     230: getstatic     #279                // Field jdplus/sa/base/api/ComponentType.CalendarEffect:Ljdplus/sa/base/api/ComponentType;
+     233: iconst_1
+     234: invokedynamic #282,  0            // InvokeDynamic #12:test:()Ljava/util/function/Predicate;
+     239: invokestatic  #251                // Method jdplus/sa/base/core/modelling/RegArimaDecomposer.deterministicEffect:(Ljdplus/toolkit/base/core/modelling/GeneralLinearModel;Ljdplus/toolkit/base/api/timeseries/TsDomain;Ljdplus/sa/base/api/ComponentType;ZLjava/util/function/Predicate;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     242: astore        22
+     244: aload         13
+     246: aload         16
+     248: invokestatic  #283                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     251: astore        13
+     253: aload         14
+     255: aload         17
+     257: invokestatic  #283                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     260: astore        14
+     262: aload         15
+     264: aload         18
+     266: invokestatic  #283                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     269: astore        15
+     271: aload         13
+     273: iconst_2
+     274: anewarray     #106                // class jdplus/toolkit/base/api/timeseries/TsData
+     277: dup
+     278: iconst_0
+     279: aload         14
+     281: aastore
+     282: dup
+     283: iconst_1
+     284: aload         15
+     286: aastore
+     287: invokestatic  #287                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;[Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     290: astore        23
+     292: aload         13
+     294: iconst_2
+     295: anewarray     #106                // class jdplus/toolkit/base/api/timeseries/TsData
+     298: dup
+     299: iconst_0
+     300: aload         14
+     302: aastore
+     303: dup
+     304: iconst_1
+     305: aload         15
+     307: aastore
+     308: invokestatic  #287                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;[Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     311: astore        24
+     313: aload         22
+     315: iconst_2
+     316: anewarray     #106                // class jdplus/toolkit/base/api/timeseries/TsData
+     319: dup
+     320: iconst_0
+     321: aload         19
+     323: aastore
+     324: dup
+     325: iconst_1
+     326: aload         20
+     328: aastore
+     329: invokestatic  #287                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;[Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     332: astore        25
+     334: aload         12
+     336: iconst_3
+     337: anewarray     #106                // class jdplus/toolkit/base/api/timeseries/TsData
+     340: dup
+     341: iconst_0
+     342: aload         11
+     344: aastore
+     345: dup
+     346: iconst_1
+     347: aload         23
+     349: aastore
+     350: dup
+     351: iconst_2
+     352: aload         25
+     354: aastore
+     355: invokestatic  #287                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;[Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     358: astore        26
+     360: aload         26
+     362: aload         21
+     364: invokestatic  #283                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     367: astore        27
+     369: aconst_null
+     370: astore        28
+     372: aconst_null
+     373: astore        29
+     375: aload_1
+     376: iconst_1
+     377: invokevirtual #214                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.interpolatedSeries:(Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     380: astore        30
+     382: iload_2
+     383: ifgt          390
+     386: iload_3
+     387: ifle          500
+     390: aload         30
+     392: aload         27
+     394: invokestatic  #290                // Method jdplus/toolkit/base/api/timeseries/TsData.subtract:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     397: astore        31
+     399: aload_1
+     400: invokevirtual #293                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.arima:()Ljdplus/toolkit/base/core/sarima/SarimaModel;
+     403: astore        32
+     405: new           #297                // class jdplus/toolkit/base/core/ssf/arima/ExactArimaForecasts
+     408: dup
+     409: invokespecial #299                // Method jdplus/toolkit/base/core/ssf/arima/ExactArimaForecasts."<init>":()V
+     412: astore        33
+     414: aload_1
+     415: invokevirtual #300                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.isMeanCorrection:()Z
+     418: istore        34
+     420: aload         33
+     422: aload         32
+     424: iload         34
+     426: invokevirtual #303                // Method jdplus/toolkit/base/core/ssf/arima/ExactArimaForecasts.prepare:(Ljdplus/toolkit/base/core/arima/IArimaModel;Z)Z
+     429: pop
+     430: iload_2
+     431: ifle          465
+     434: aload         33
+     436: aload         31
+     438: invokevirtual #307                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+     441: iload_2
+     442: invokevirtual #311                // Method jdplus/toolkit/base/core/ssf/arima/ExactArimaForecasts.backcasts:(Ljdplus/toolkit/base/api/data/DoubleSeq;I)Ljdplus/toolkit/base/api/data/DoubleSeq;
+     445: astore        35
+     447: aload         9
+     449: aload         35
+     451: invokestatic  #315                // Method jdplus/toolkit/base/api/timeseries/TsData.of:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     454: astore        28
+     456: aload         28
+     458: aload         27
+     460: invokestatic  #283                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     463: astore        28
+     465: iload_3
+     466: ifle          500
+     469: aload         33
+     471: aload         31
+     473: invokevirtual #307                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+     476: iload_3
+     477: invokevirtual #318                // Method jdplus/toolkit/base/core/ssf/arima/ExactArimaForecasts.forecasts:(Ljdplus/toolkit/base/api/data/DoubleSeq;I)Ljdplus/toolkit/base/api/data/DoubleSeq;
+     480: astore        35
+     482: aload         10
+     484: aload         35
+     486: invokestatic  #315                // Method jdplus/toolkit/base/api/timeseries/TsData.of:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     489: astore        29
+     491: aload         29
+     493: aload         27
+     495: invokestatic  #283                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     498: astore        29
+     500: aload         29
+     502: ifnonnull     509
+     505: aconst_null
+     506: goto          516
+     509: aload_1
+     510: aload         29
+     512: iconst_1
+     513: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     516: astore        31
+     518: aload         28
+     520: ifnonnull     527
+     523: aconst_null
+     524: goto          534
+     527: aload_1
+     528: aload         28
+     530: iconst_1
+     531: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     534: astore        32
+     536: aload         4
+     538: aload         6
+     540: invokevirtual #127                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a1:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     543: aload         31
+     545: invokevirtual #325                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a1a:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     548: aload         32
+     550: invokevirtual #328                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a1b:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     553: aload_1
+     554: aload         12
+     556: iconst_1
+     557: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     560: invokevirtual #331                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a6:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     563: aload_1
+     564: aload         11
+     566: iconst_0
+     567: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     570: invokevirtual #334                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a7:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     573: aload_1
+     574: aload         24
+     576: iconst_0
+     577: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     580: invokevirtual #337                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a8:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     583: aload_1
+     584: aload         13
+     586: iconst_0
+     587: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     590: invokevirtual #340                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a8t:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     593: aload_1
+     594: aload         14
+     596: iconst_0
+     597: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     600: invokevirtual #343                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a8s:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     603: aload_1
+     604: aload         15
+     606: iconst_0
+     607: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     610: invokevirtual #346                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a8i:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     613: aload_1
+     614: aload         25
+     616: iconst_0
+     617: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     620: invokevirtual #349                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a9:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     623: aload_1
+     624: aload         21
+     626: iconst_0
+     627: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     630: invokevirtual #352                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a9u:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     633: aload_1
+     634: aload         22
+     636: iconst_0
+     637: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     640: invokevirtual #355                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a9cal:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     643: aload_1
+     644: aload         19
+     646: iconst_0
+     647: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     650: invokevirtual #358                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a9sa:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     653: aload_1
+     654: aload         20
+     656: iconst_0
+     657: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     660: invokevirtual #361                // Method jdplus/x13/base/core/x13/X13Preadjustment$Builder.a9ser:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Preadjustment$Builder;
+     663: pop
+     664: iconst_3
+     665: anewarray     #106                // class jdplus/toolkit/base/api/timeseries/TsData
+     668: dup
+     669: iconst_0
+     670: aload         32
+     672: aastore
+     673: dup
+     674: iconst_1
+     675: aload         6
+     677: aastore
+     678: dup
+     679: iconst_2
+     680: aload         31
+     682: aastore
+     683: invokestatic  #162                // Method jdplus/toolkit/base/api/timeseries/TsData.concatenate:([Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     686: astore        6
+     688: aload_1
+     689: aload         26
+     691: iconst_1
+     692: invokevirtual #321                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.backTransform:(Ljdplus/toolkit/base/api/timeseries/TsData;Z)Ljdplus/toolkit/base/api/timeseries/TsData;
+     695: astore        33
+     697: iload         5
+     699: ifeq          712
+     702: aload         6
+     704: aload         33
+     706: invokestatic  #364                // Method jdplus/toolkit/base/api/timeseries/TsData.divide:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     709: goto          719
+     712: aload         6
+     714: aload         33
+     716: invokestatic  #290                // Method jdplus/toolkit/base/api/timeseries/TsData.subtract:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     719: areturn
+
+  private jdplus.x13.base.api.x11.X11Spec updateSpec(jdplus.x13.base.api.x11.X11Spec, jdplus.toolkit.base.core.regsarima.regular.RegSarimaModel);
+    Code:
+       0: aload_2
+       1: ifnonnull     6
+       4: aload_1
+       5: areturn
+       6: aload_1
+       7: invokevirtual #99                 // Method jdplus/x13/base/api/x11/X11Spec.getBackcastHorizon:()I
+      10: istore_3
+      11: aload_1
+      12: invokevirtual #110                // Method jdplus/x13/base/api/x11/X11Spec.getForecastHorizon:()I
+      15: istore        4
+      17: aload_2
+      18: invokevirtual #367                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.getAnnualFrequency:()I
+      21: istore        5
+      23: aload_1
+      24: invokevirtual #368                // Method jdplus/x13/base/api/x11/X11Spec.toBuilder:()Ljdplus/x13/base/api/x11/X11Spec$Builder;
+      27: iload_3
+      28: ifge          39
+      31: iload_3
+      32: ineg
+      33: iload         5
+      35: imul
+      36: goto          40
+      39: iload_3
+      40: invokevirtual #372                // Method jdplus/x13/base/api/x11/X11Spec$Builder.backcastHorizon:(I)Ljdplus/x13/base/api/x11/X11Spec$Builder;
+      43: iload         4
+      45: ifge          57
+      48: iload         4
+      50: ineg
+      51: iload         5
+      53: imul
+      54: goto          59
+      57: iload         4
+      59: invokevirtual #378                // Method jdplus/x13/base/api/x11/X11Spec$Builder.forecastHorizon:(I)Ljdplus/x13/base/api/x11/X11Spec$Builder;
+      62: astore        6
+      64: aload_0
+      65: getfield      #381                // Field preprop:Z
+      68: ifne          106
+      71: aload         6
+      73: aload_1
+      74: invokevirtual #141                // Method jdplus/x13/base/api/x11/X11Spec.getMode:()Ljdplus/sa/base/api/DecompositionMode;
+      77: getstatic     #385                // Field jdplus/sa/base/api/DecompositionMode.Undefined:Ljdplus/sa/base/api/DecompositionMode;
+      80: if_acmpne     89
+      83: getstatic     #390                // Field jdplus/sa/base/api/DecompositionMode.Additive:Ljdplus/sa/base/api/DecompositionMode;
+      86: goto          93
+      89: aload_1
+      90: invokevirtual #141                // Method jdplus/x13/base/api/x11/X11Spec.getMode:()Ljdplus/sa/base/api/DecompositionMode;
+      93: invokevirtual #393                // Method jdplus/x13/base/api/x11/X11Spec$Builder.mode:(Ljdplus/sa/base/api/DecompositionMode;)Ljdplus/x13/base/api/x11/X11Spec$Builder;
+      96: pop
+      97: aload         6
+      99: invokevirtual #397                // Method jdplus/x13/base/api/x11/X11Spec$Builder.build:()Ljdplus/toolkit/base/api/util/Validatable;
+     102: checkcast     #100                // class jdplus/x13/base/api/x11/X11Spec
+     105: areturn
+     106: aload_1
+     107: invokevirtual #141                // Method jdplus/x13/base/api/x11/X11Spec.getMode:()Ljdplus/sa/base/api/DecompositionMode;
+     110: getstatic     #400                // Field jdplus/sa/base/api/DecompositionMode.PseudoAdditive:Ljdplus/sa/base/api/DecompositionMode;
+     113: if_acmpeq     173
+     116: aload_2
+     117: invokevirtual #203                // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModel.getDescription:()Ljdplus/toolkit/base/core/modelling/GeneralLinearModel$Description;
+     120: invokeinterface #209,  1          // InterfaceMethod jdplus/toolkit/base/core/modelling/GeneralLinearModel$Description.isLogTransformation:()Z
+     125: istore        7
+     127: iload         7
+     129: ifeq          164
+     132: aload_1
+     133: invokevirtual #141                // Method jdplus/x13/base/api/x11/X11Spec.getMode:()Ljdplus/sa/base/api/DecompositionMode;
+     136: getstatic     #403                // Field jdplus/sa/base/api/DecompositionMode.Multiplicative:Ljdplus/sa/base/api/DecompositionMode;
+     139: if_acmpeq     173
+     142: aload_1
+     143: invokevirtual #141                // Method jdplus/x13/base/api/x11/X11Spec.getMode:()Ljdplus/sa/base/api/DecompositionMode;
+     146: getstatic     #406                // Field jdplus/sa/base/api/DecompositionMode.LogAdditive:Ljdplus/sa/base/api/DecompositionMode;
+     149: if_acmpeq     173
+     152: aload         6
+     154: getstatic     #403                // Field jdplus/sa/base/api/DecompositionMode.Multiplicative:Ljdplus/sa/base/api/DecompositionMode;
+     157: invokevirtual #393                // Method jdplus/x13/base/api/x11/X11Spec$Builder.mode:(Ljdplus/sa/base/api/DecompositionMode;)Ljdplus/x13/base/api/x11/X11Spec$Builder;
+     160: pop
+     161: goto          173
+     164: aload         6
+     166: getstatic     #390                // Field jdplus/sa/base/api/DecompositionMode.Additive:Ljdplus/sa/base/api/DecompositionMode;
+     169: invokevirtual #393                // Method jdplus/x13/base/api/x11/X11Spec$Builder.mode:(Ljdplus/sa/base/api/DecompositionMode;)Ljdplus/x13/base/api/x11/X11Spec$Builder;
+     172: pop
+     173: aload         6
+     175: invokevirtual #397                // Method jdplus/x13/base/api/x11/X11Spec$Builder.build:()Ljdplus/toolkit/base/api/util/Validatable;
+     178: checkcast     #100                // class jdplus/x13/base/api/x11/X11Spec
+     181: areturn
+
+  private jdplus.toolkit.base.api.timeseries.TsData op(jdplus.sa.base.api.DecompositionMode, jdplus.toolkit.base.api.timeseries.TsData, jdplus.toolkit.base.api.timeseries.TsData);
+    Code:
+       0: aload_1
+       1: getstatic     #403                // Field jdplus/sa/base/api/DecompositionMode.Multiplicative:Ljdplus/sa/base/api/DecompositionMode;
+       4: if_acmpeq     20
+       7: aload_1
+       8: getstatic     #400                // Field jdplus/sa/base/api/DecompositionMode.PseudoAdditive:Ljdplus/sa/base/api/DecompositionMode;
+      11: if_acmpeq     20
+      14: aload_2
+      15: aload_3
+      16: invokestatic  #290                // Method jdplus/toolkit/base/api/timeseries/TsData.subtract:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      19: areturn
+      20: aload_2
+      21: aload_3
+      22: invokestatic  #364                // Method jdplus/toolkit/base/api/timeseries/TsData.divide:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      25: areturn
+
+  private jdplus.toolkit.base.api.timeseries.TsData invOp(jdplus.sa.base.api.DecompositionMode, jdplus.toolkit.base.api.timeseries.TsData, jdplus.toolkit.base.api.timeseries.TsData);
+    Code:
+       0: aload_1
+       1: invokevirtual #409                // Method jdplus/sa/base/api/DecompositionMode.isMultiplicative:()Z
+       4: ifne          20
+       7: aload_1
+       8: getstatic     #400                // Field jdplus/sa/base/api/DecompositionMode.PseudoAdditive:Ljdplus/sa/base/api/DecompositionMode;
+      11: if_acmpeq     20
+      14: aload_2
+      15: aload_3
+      16: invokestatic  #283                // Method jdplus/toolkit/base/api/timeseries/TsData.add:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      19: areturn
+      20: aload_2
+      21: iconst_1
+      22: anewarray     #106                // class jdplus/toolkit/base/api/timeseries/TsData
+      25: dup
+      26: iconst_0
+      27: aload_3
+      28: aastore
+      29: invokestatic  #412                // Method jdplus/toolkit/base/api/timeseries/TsData.multiply:(Ljdplus/toolkit/base/api/timeseries/TsData;[Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      32: areturn
+
+  private double mean(jdplus.sa.base.api.DecompositionMode);
+    Code:
+       0: aload_1
+       1: invokevirtual #409                // Method jdplus/sa/base/api/DecompositionMode.isMultiplicative:()Z
+       4: ifne          16
+       7: aload_1
+       8: getstatic     #400                // Field jdplus/sa/base/api/DecompositionMode.PseudoAdditive:Ljdplus/sa/base/api/DecompositionMode;
+      11: if_acmpeq     16
+      14: dconst_0
+      15: dreturn
+      16: dconst_1
+      17: dreturn
+
+  private jdplus.toolkit.base.api.timeseries.TsData correct(jdplus.toolkit.base.api.timeseries.TsData, jdplus.toolkit.base.api.timeseries.TsData, jdplus.toolkit.base.api.timeseries.TsData);
+    Code:
+       0: aload_1
+       1: invokevirtual #307                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+       4: aload_2
+       5: invokevirtual #307                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+       8: aload_3
+       9: invokevirtual #307                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      12: invokestatic  #415                // Method jdplus/x13/base/core/x11/X11Utility.correctSeries:(Ljdplus/toolkit/base/api/data/DoubleSeq;Ljdplus/toolkit/base/api/data/DoubleSeq;Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/api/data/DoubleSeq;
+      15: astore        4
+      17: aload_1
+      18: invokevirtual #421                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      21: aload         4
+      23: invokeinterface #424,  1          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.commit:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      28: invokestatic  #315                // Method jdplus/toolkit/base/api/timeseries/TsData.of:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      31: areturn
+
+  private jdplus.toolkit.base.api.timeseries.TsData correct(jdplus.toolkit.base.api.timeseries.TsData, jdplus.toolkit.base.api.timeseries.TsData, double);
+    Code:
+       0: aload_1
+       1: invokevirtual #307                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+       4: aload_2
+       5: invokevirtual #307                // Method jdplus/toolkit/base/api/timeseries/TsData.getValues:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+       8: dload_3
+       9: invokestatic  #429                // Method jdplus/x13/base/core/x11/X11Utility.correctSeries:(Ljdplus/toolkit/base/api/data/DoubleSeq;Ljdplus/toolkit/base/api/data/DoubleSeq;D)Ljdplus/toolkit/base/api/data/DoubleSeq;
+      12: astore        5
+      14: aload_1
+      15: invokevirtual #421                // Method jdplus/toolkit/base/api/timeseries/TsData.getStart:()Ljdplus/toolkit/base/api/timeseries/TsPeriod;
+      18: aload         5
+      20: invokeinterface #424,  1          // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.commit:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      25: invokestatic  #315                // Method jdplus/toolkit/base/api/timeseries/TsData.of:(Ljdplus/toolkit/base/api/timeseries/TsPeriod;Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/api/timeseries/TsData;
+      28: areturn
+
+  private jdplus.x13.base.core.x13.X13Finals finals(jdplus.sa.base.api.DecompositionMode, jdplus.x13.base.core.x13.X13Preadjustment, jdplus.x13.base.core.x11.X11Results);
+    Code:
+       0: aload_2
+       1: invokevirtual #432                // Method jdplus/x13/base/core/x13/X13Preadjustment.getA1:()Ljdplus/toolkit/base/api/timeseries/TsData;
+       4: astore        4
+       6: aload_2
+       7: invokevirtual #435                // Method jdplus/x13/base/core/x13/X13Preadjustment.getA1a:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      10: astore        5
+      12: aload_2
+      13: invokevirtual #438                // Method jdplus/x13/base/core/x13/X13Preadjustment.getA1b:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      16: astore        6
+      18: aload_2
+      19: invokevirtual #441                // Method jdplus/x13/base/core/x13/X13Preadjustment.getA8t:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      22: astore        7
+      24: aload_2
+      25: invokevirtual #444                // Method jdplus/x13/base/core/x13/X13Preadjustment.getA8i:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      28: astore        8
+      30: aload_2
+      31: invokevirtual #447                // Method jdplus/x13/base/core/x13/X13Preadjustment.getA8s:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      34: astore        9
+      36: aload_3
+      37: invokevirtual #450                // Method jdplus/x13/base/core/x11/X11Results.getD10:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      40: astore        10
+      42: aload_3
+      43: invokevirtual #455                // Method jdplus/x13/base/core/x11/X11Results.getD11:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      46: astore        11
+      48: aload_3
+      49: invokevirtual #458                // Method jdplus/x13/base/core/x11/X11Results.getD12:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      52: astore        12
+      54: aload_3
+      55: invokevirtual #461                // Method jdplus/x13/base/core/x11/X11Results.getD13:()Ljdplus/toolkit/base/api/timeseries/TsData;
+      58: astore        13
+      60: invokestatic  #464                // Method jdplus/x13/base/core/x13/X13Finals.builder:()Ljdplus/x13/base/core/x13/X13Finals$Builder;
+      63: astore        14
+      65: aload         6
+      67: ifnonnull     74
+      70: aconst_null
+      71: goto          79
+      74: aload         6
+      76: invokevirtual #218                // Method jdplus/toolkit/base/api/timeseries/TsData.getDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      79: astore        15
+      81: aload         5
+      83: ifnonnull     90
+      86: aconst_null
+      87: goto          95
+      90: aload         5
+      92: invokevirtual #218                // Method jdplus/toolkit/base/api/timeseries/TsData.getDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+      95: astore        16
+      97: aload         4
+      99: invokevirtual #218                // Method jdplus/toolkit/base/api/timeseries/TsData.getDomain:()Ljdplus/toolkit/base/api/timeseries/TsDomain;
+     102: astore        17
+     104: aload_2
+     105: invokevirtual #467                // Method jdplus/x13/base/core/x13/X13Preadjustment.getA6:()Ljdplus/toolkit/base/api/timeseries/TsData;
+     108: astore        18
+     110: aload_2
+     111: invokevirtual #470                // Method jdplus/x13/base/core/x13/X13Preadjustment.getA7:()Ljdplus/toolkit/base/api/timeseries/TsData;
+     114: astore        19
+     116: aload_2
+     117: invokevirtual #473                // Method jdplus/x13/base/core/x13/X13Preadjustment.getA9cal:()Ljdplus/toolkit/base/api/timeseries/TsData;
+     120: astore        20
+     122: aload_0
+     123: aload_1
+     124: aload         18
+     126: aload         19
+     128: invokevirtual #476                // Method invOp:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     131: astore        21
+     133: aload_0
+     134: aload_1
+     135: aload         21
+     137: aload         20
+     139: invokevirtual #476                // Method invOp:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     142: astore        21
+     144: aload_0
+     145: aload_1
+     146: aload         10
+     148: aload         9
+     150: invokevirtual #476                // Method invOp:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     153: astore        22
+     155: aload_0
+     156: aload_1
+     157: aload         22
+     159: aload         21
+     161: invokevirtual #476                // Method invOp:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     164: astore        23
+     166: aload_0
+     167: aload_1
+     168: aload         11
+     170: aload         7
+     172: invokevirtual #476                // Method invOp:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     175: astore        24
+     177: aload_0
+     178: aload_1
+     179: aload         24
+     181: aload         8
+     183: invokevirtual #476                // Method invOp:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     186: astore        24
+     188: aload_2
+     189: invokevirtual #480                // Method jdplus/x13/base/core/x13/X13Preadjustment.getA9sa:()Ljdplus/toolkit/base/api/timeseries/TsData;
+     192: astore        25
+     194: aload_0
+     195: aload_1
+     196: aload         24
+     198: aload         25
+     200: invokevirtual #476                // Method invOp:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     203: astore        24
+     205: aload_0
+     206: aload_1
+     207: aload         12
+     209: aload         7
+     211: invokevirtual #476                // Method invOp:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     214: astore        26
+     216: aload_0
+     217: aload_1
+     218: aload         13
+     220: aload         8
+     222: invokevirtual #476                // Method invOp:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     225: astore        27
+     227: aload         16
+     229: ifnull        284
+     232: aload         14
+     234: aload         24
+     236: aload         16
+     238: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     241: invokevirtual #487                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d11a:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     244: pop
+     245: aload         14
+     247: aload         26
+     249: aload         16
+     251: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     254: invokevirtual #493                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d12a:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     257: pop
+     258: aload         14
+     260: aload         23
+     262: aload         16
+     264: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     267: invokevirtual #496                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d16a:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     270: pop
+     271: aload         14
+     273: aload         21
+     275: aload         16
+     277: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     280: invokevirtual #499                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d18a:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     283: pop
+     284: aload         15
+     286: ifnull        341
+     289: aload         14
+     291: aload         24
+     293: aload         15
+     295: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     298: invokevirtual #502                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d11b:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     301: pop
+     302: aload         14
+     304: aload         26
+     306: aload         15
+     308: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     311: invokevirtual #505                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d12b:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     314: pop
+     315: aload         14
+     317: aload         23
+     319: aload         15
+     321: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     324: invokevirtual #508                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d16b:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     327: pop
+     328: aload         14
+     330: aload         21
+     332: aload         15
+     334: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     337: invokevirtual #511                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d18b:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     340: pop
+     341: aload         24
+     343: aload         17
+     345: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     348: astore        24
+     350: aload         26
+     352: aload         17
+     354: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     357: astore        26
+     359: aload         23
+     361: aload         17
+     363: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     366: astore        23
+     368: aload         21
+     370: aload         17
+     372: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     375: astore        21
+     377: aload         27
+     379: aload         17
+     381: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     384: astore        27
+     386: aload         14
+     388: aload         24
+     390: invokevirtual #514                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d11final:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     393: pop
+     394: aload         14
+     396: aload         26
+     398: invokevirtual #517                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d12final:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     401: pop
+     402: aload         14
+     404: aload         27
+     406: invokevirtual #520                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d13final:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     409: pop
+     410: aload         14
+     412: aload         23
+     414: invokevirtual #523                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d16:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     417: pop
+     418: aload         14
+     420: aload         21
+     422: invokevirtual #526                // Method jdplus/x13/base/core/x13/X13Finals$Builder.d18:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     425: pop
+     426: aload_0
+     427: aload_1
+     428: aload         4
+     430: aload         8
+     432: invokevirtual #529                // Method op:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     435: astore        28
+     437: aload_0
+     438: aload_1
+     439: aload         24
+     441: aload         8
+     443: invokevirtual #529                // Method op:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     446: astore        24
+     448: aload_3
+     449: invokevirtual #532                // Method jdplus/x13/base/core/x11/X11Results.getC17:()Ljdplus/toolkit/base/api/timeseries/TsData;
+     452: aload         17
+     454: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     457: astore        29
+     459: aload_0
+     460: aload_1
+     461: aload         4
+     463: aload         27
+     465: invokevirtual #529                // Method op:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     468: astore        30
+     470: aload_0
+     471: aload         28
+     473: aload         29
+     475: aload         30
+     477: invokevirtual #535                // Method correct:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     480: astore        31
+     482: aload_0
+     483: aload         24
+     485: aload         29
+     487: aload         12
+     489: invokevirtual #535                // Method correct:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     492: astore        32
+     494: aload_0
+     495: aload         13
+     497: aload         17
+     499: invokestatic  #483                // Method jdplus/toolkit/base/api/timeseries/TsData.fitToDomain:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsDomain;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     502: aload         29
+     504: aload_0
+     505: aload_1
+     506: invokevirtual #539                // Method mean:(Ljdplus/sa/base/api/DecompositionMode;)D
+     509: invokevirtual #543                // Method correct:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;D)Ljdplus/toolkit/base/api/timeseries/TsData;
+     512: astore        33
+     514: aload_0
+     515: aload         24
+     517: aload         29
+     519: aload_0
+     520: aload_1
+     521: aload         12
+     523: aload_0
+     524: aload_1
+     525: aload         28
+     527: aload         31
+     529: invokevirtual #529                // Method op:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     532: invokevirtual #476                // Method invOp:(Ljdplus/sa/base/api/DecompositionMode;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     535: invokevirtual #535                // Method correct:(Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/toolkit/base/api/timeseries/TsData;
+     538: astore        34
+     540: aload         14
+     542: aload         31
+     544: invokevirtual #546                // Method jdplus/x13/base/core/x13/X13Finals$Builder.e1:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     547: pop
+     548: aload         14
+     550: aload         32
+     552: invokevirtual #549                // Method jdplus/x13/base/core/x13/X13Finals$Builder.e2:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     555: pop
+     556: aload         14
+     558: aload         33
+     560: invokevirtual #552                // Method jdplus/x13/base/core/x13/X13Finals$Builder.e3:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     563: pop
+     564: aload         14
+     566: aload         34
+     568: invokevirtual #555                // Method jdplus/x13/base/core/x13/X13Finals$Builder.e11:(Ljdplus/toolkit/base/api/timeseries/TsData;)Ljdplus/x13/base/core/x13/X13Finals$Builder;
+     571: pop
+     572: aload         14
+     574: invokevirtual #558                // Method jdplus/x13/base/core/x13/X13Finals$Builder.build:()Ljdplus/x13/base/core/x13/X13Finals;
+     577: areturn
+
+  public jdplus.x13.base.core.x13.X13Kernel(jdplus.sa.base.core.PreliminaryChecks$Tool, jdplus.x13.base.core.x13.regarima.RegArimaKernel, jdplus.sa.base.core.modelling.SaVariablesMapping, jdplus.x13.base.api.x11.X11Spec, boolean, jdplus.sa.base.core.CholetteProcessor);
+    Code:
+       0: aload_0
+       1: invokespecial #561                // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: aload_1
+       6: putfield      #62                 // Field preliminary:Ljdplus/sa/base/core/PreliminaryChecks$Tool;
+       9: aload_0
+      10: aload_2
+      11: putfield      #87                 // Field regarima:Ljdplus/x13/base/core/x13/regarima/RegArimaKernel;
+      14: aload_0
+      15: aload_3
+      16: putfield      #564                // Field samapping:Ljdplus/sa/base/core/modelling/SaVariablesMapping;
+      19: aload_0
+      20: aload         4
+      22: putfield      #95                 // Field spec:Ljdplus/x13/base/api/x11/X11Spec;
+      25: aload_0
+      26: iload         5
+      28: putfield      #381                // Field preprop:Z
+      31: aload_0
+      32: aload         6
+      34: putfield      #149                // Field cholette:Ljdplus/sa/base/core/CholetteProcessor;
+      37: return
+
+  public jdplus.sa.base.core.PreliminaryChecks$Tool getPreliminary();
+    Code:
+       0: aload_0
+       1: getfield      #62                 // Field preliminary:Ljdplus/sa/base/core/PreliminaryChecks$Tool;
+       4: areturn
+
+  public jdplus.x13.base.core.x13.regarima.RegArimaKernel getRegarima();
+    Code:
+       0: aload_0
+       1: getfield      #87                 // Field regarima:Ljdplus/x13/base/core/x13/regarima/RegArimaKernel;
+       4: areturn
+
+  public jdplus.sa.base.core.modelling.SaVariablesMapping getSamapping();
+    Code:
+       0: aload_0
+       1: getfield      #564                // Field samapping:Ljdplus/sa/base/core/modelling/SaVariablesMapping;
+       4: areturn
+
+  public jdplus.x13.base.api.x11.X11Spec getSpec();
+    Code:
+       0: aload_0
+       1: getfield      #95                 // Field spec:Ljdplus/x13/base/api/x11/X11Spec;
+       4: areturn
+
+  public boolean isPreprop();
+    Code:
+       0: aload_0
+       1: getfield      #381                // Field preprop:Z
+       4: ireturn
+
+  public jdplus.sa.base.core.CholetteProcessor getCholette();
+    Code:
+       0: aload_0
+       1: getfield      #149                // Field cholette:Ljdplus/sa/base/core/CholetteProcessor;
+       4: areturn
+
+  public boolean equals(java.lang.Object);
+    Code:
+       0: aload_1
+       1: aload_0
+       2: if_acmpne     7
+       5: iconst_1
+       6: ireturn
+       7: aload_1
+       8: instanceof    #18                 // class jdplus/x13/base/core/x13/X13Kernel
+      11: ifne          16
+      14: iconst_0
+      15: ireturn
+      16: aload_1
+      17: checkcast     #18                 // class jdplus/x13/base/core/x13/X13Kernel
+      20: astore_2
+      21: aload_0
+      22: invokevirtual #568                // Method isPreprop:()Z
+      25: aload_2
+      26: invokevirtual #568                // Method isPreprop:()Z
+      29: if_icmpeq     34
+      32: iconst_0
+      33: ireturn
+      34: aload_0
+      35: invokevirtual #571                // Method getPreliminary:()Ljdplus/sa/base/core/PreliminaryChecks$Tool;
+      38: astore_3
+      39: aload_2
+      40: invokevirtual #571                // Method getPreliminary:()Ljdplus/sa/base/core/PreliminaryChecks$Tool;
+      43: astore        4
+      45: aload_3
+      46: ifnonnull     57
+      49: aload         4
+      51: ifnull        68
+      54: goto          66
+      57: aload_3
+      58: aload         4
+      60: invokevirtual #575                // Method java/lang/Object.equals:(Ljava/lang/Object;)Z
+      63: ifne          68
+      66: iconst_0
+      67: ireturn
+      68: aload_0
+      69: invokevirtual #579                // Method getRegarima:()Ljdplus/x13/base/core/x13/regarima/RegArimaKernel;
+      72: astore        5
+      74: aload_2
+      75: invokevirtual #579                // Method getRegarima:()Ljdplus/x13/base/core/x13/regarima/RegArimaKernel;
+      78: astore        6
+      80: aload         5
+      82: ifnonnull     93
+      85: aload         6
+      87: ifnull        105
+      90: goto          103
+      93: aload         5
+      95: aload         6
+      97: invokevirtual #575                // Method java/lang/Object.equals:(Ljava/lang/Object;)Z
+     100: ifne          105
+     103: iconst_0
+     104: ireturn
+     105: aload_0
+     106: invokevirtual #583                // Method getSamapping:()Ljdplus/sa/base/core/modelling/SaVariablesMapping;
+     109: astore        7
+     111: aload_2
+     112: invokevirtual #583                // Method getSamapping:()Ljdplus/sa/base/core/modelling/SaVariablesMapping;
+     115: astore        8
+     117: aload         7
+     119: ifnonnull     130
+     122: aload         8
+     124: ifnull        142
+     127: goto          140
+     130: aload         7
+     132: aload         8
+     134: invokevirtual #575                // Method java/lang/Object.equals:(Ljava/lang/Object;)Z
+     137: ifne          142
+     140: iconst_0
+     141: ireturn
+     142: aload_0
+     143: invokevirtual #587                // Method getSpec:()Ljdplus/x13/base/api/x11/X11Spec;
+     146: astore        9
+     148: aload_2
+     149: invokevirtual #587                // Method getSpec:()Ljdplus/x13/base/api/x11/X11Spec;
+     152: astore        10
+     154: aload         9
+     156: ifnonnull     167
+     159: aload         10
+     161: ifnull        179
+     164: goto          177
+     167: aload         9
+     169: aload         10
+     171: invokevirtual #575                // Method java/lang/Object.equals:(Ljava/lang/Object;)Z
+     174: ifne          179
+     177: iconst_0
+     178: ireturn
+     179: aload_0
+     180: invokevirtual #590                // Method getCholette:()Ljdplus/sa/base/core/CholetteProcessor;
+     183: astore        11
+     185: aload_2
+     186: invokevirtual #590                // Method getCholette:()Ljdplus/sa/base/core/CholetteProcessor;
+     189: astore        12
+     191: aload         11
+     193: ifnonnull     204
+     196: aload         12
+     198: ifnull        216
+     201: goto          214
+     204: aload         11
+     206: aload         12
+     208: invokevirtual #575                // Method java/lang/Object.equals:(Ljava/lang/Object;)Z
+     211: ifne          216
+     214: iconst_0
+     215: ireturn
+     216: iconst_1
+     217: ireturn
+
+  public int hashCode();
+    Code:
+       0: bipush        59
+       2: istore_1
+       3: iconst_1
+       4: istore_2
+       5: iload_2
+       6: bipush        59
+       8: imul
+       9: aload_0
+      10: invokevirtual #568                // Method isPreprop:()Z
+      13: ifeq          21
+      16: bipush        79
+      18: goto          23
+      21: bipush        97
+      23: iadd
+      24: istore_2
+      25: aload_0
+      26: invokevirtual #571                // Method getPreliminary:()Ljdplus/sa/base/core/PreliminaryChecks$Tool;
+      29: astore_3
+      30: iload_2
+      31: bipush        59
+      33: imul
+      34: aload_3
+      35: ifnonnull     43
+      38: bipush        43
+      40: goto          47
+      43: aload_3
+      44: invokevirtual #594                // Method java/lang/Object.hashCode:()I
+      47: iadd
+      48: istore_2
+      49: aload_0
+      50: invokevirtual #579                // Method getRegarima:()Ljdplus/x13/base/core/x13/regarima/RegArimaKernel;
+      53: astore        4
+      55: iload_2
+      56: bipush        59
+      58: imul
+      59: aload         4
+      61: ifnonnull     69
+      64: bipush        43
+      66: goto          74
+      69: aload         4
+      71: invokevirtual #594                // Method java/lang/Object.hashCode:()I
+      74: iadd
+      75: istore_2
+      76: aload_0
+      77: invokevirtual #583                // Method getSamapping:()Ljdplus/sa/base/core/modelling/SaVariablesMapping;
+      80: astore        5
+      82: iload_2
+      83: bipush        59
+      85: imul
+      86: aload         5
+      88: ifnonnull     96
+      91: bipush        43
+      93: goto          101
+      96: aload         5
+      98: invokevirtual #594                // Method java/lang/Object.hashCode:()I
+     101: iadd
+     102: istore_2
+     103: aload_0
+     104: invokevirtual #587                // Method getSpec:()Ljdplus/x13/base/api/x11/X11Spec;
+     107: astore        6
+     109: iload_2
+     110: bipush        59
+     112: imul
+     113: aload         6
+     115: ifnonnull     123
+     118: bipush        43
+     120: goto          128
+     123: aload         6
+     125: invokevirtual #594                // Method java/lang/Object.hashCode:()I
+     128: iadd
+     129: istore_2
+     130: aload_0
+     131: invokevirtual #590                // Method getCholette:()Ljdplus/sa/base/core/CholetteProcessor;
+     134: astore        7
+     136: iload_2
+     137: bipush        59
+     139: imul
+     140: aload         7
+     142: ifnonnull     150
+     145: bipush        43
+     147: goto          155
+     150: aload         7
+     152: invokevirtual #594                // Method java/lang/Object.hashCode:()I
+     155: iadd
+     156: istore_2
+     157: iload_2
+     158: ireturn
+
+  public java.lang.String toString();
+    Code:
+       0: aload_0
+       1: invokevirtual #571                // Method getPreliminary:()Ljdplus/sa/base/core/PreliminaryChecks$Tool;
+       4: invokestatic  #597                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+       7: aload_0
+       8: invokevirtual #579                // Method getRegarima:()Ljdplus/x13/base/core/x13/regarima/RegArimaKernel;
+      11: invokestatic  #597                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+      14: aload_0
+      15: invokevirtual #583                // Method getSamapping:()Ljdplus/sa/base/core/modelling/SaVariablesMapping;
+      18: invokestatic  #597                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+      21: aload_0
+      22: invokevirtual #587                // Method getSpec:()Ljdplus/x13/base/api/x11/X11Spec;
+      25: invokestatic  #597                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+      28: aload_0
+      29: invokevirtual #568                // Method isPreprop:()Z
+      32: aload_0
+      33: invokevirtual #590                // Method getCholette:()Ljdplus/sa/base/core/CholetteProcessor;
+      36: invokestatic  #597                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+      39: invokedynamic #603,  0            // InvokeDynamic #13:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;)Ljava/lang/String;
+      44: areturn
+
+  private static boolean lambda$initialStep$12(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #607                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isUser:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$11(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #607                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isUser:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$10(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #607                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isUser:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$9(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #607                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isUser:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$8(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #607                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isUser:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$7(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #607                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isUser:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$6(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #607                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isUser:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$5(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #613                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isOutlier:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$4(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #613                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isOutlier:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$3(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #613                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isOutlier:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$2(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #616                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isDaysRelated:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static boolean lambda$initialStep$1(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #619                // Method jdplus/toolkit/base/api/timeseries/regression/ModellingUtility.isMovingHoliday:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ireturn
+
+  private static jdplus.toolkit.base.api.timeseries.TsData lambda$of$0(jdplus.x13.base.api.regarima.BasicSpec, jdplus.toolkit.base.api.timeseries.TsData, jdplus.toolkit.base.api.processing.ProcessingLog);
+    Code:
+       0: aload_1
+       1: aload_0
+       2: invokevirtual #622                // Method jdplus/x13/base/api/regarima/BasicSpec.getSpan:()Ljdplus/toolkit/base/api/timeseries/TimeSelector;
+       5: invokevirtual #626                // Method jdplus/toolkit/base/api/timeseries/TsData.select:(Ljdplus/toolkit/base/api/timeseries/TimeSelector;)Ljdplus/toolkit/base/api/timeseries/TsData;
+       8: astore_3
+       9: aload_0
+      10: invokevirtual #630                // Method jdplus/x13/base/api/regarima/BasicSpec.isPreliminaryCheck:()Z
+      13: ifeq          20
+      16: aload_3
+      17: invokestatic  #633                // Method jdplus/sa/base/core/PreliminaryChecks.testSeries:(Ljdplus/toolkit/base/api/timeseries/TsData;)V
+      20: aload_3
+      21: areturn
+}

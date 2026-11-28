@@ -1,0 +1,515 @@
+Compiled from "RegArimaUtility.java"
+public final class jdplus.toolkit.base.core.regarima.RegArimaUtility {
+  public static <M extends jdplus.toolkit.base.core.arima.IArimaModel> jdplus.toolkit.base.api.data.DoubleSeq linearizedData(jdplus.toolkit.base.core.regarima.RegArimaModel<M>, jdplus.toolkit.base.core.stats.likelihood.ConcentratedLikelihoodWithMissing);
+    Code:
+       0: aload_0
+       1: ifnonnull     14
+       4: new           #1                  // class java/lang/NullPointerException
+       7: dup
+       8: ldc           #3                  // String model is marked non-null but is null
+      10: invokespecial #5                  // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      13: athrow
+      14: aload_1
+      15: ifnonnull     28
+      18: new           #1                  // class java/lang/NullPointerException
+      21: dup
+      22: ldc           #9                  // String concentratedLikelihood is marked non-null but is null
+      24: invokespecial #5                  // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      27: athrow
+      28: aload_0
+      29: invokevirtual #11                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getY:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      32: invokeinterface #17,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.toArray:()[D
+      37: astore_2
+      38: aload_0
+      39: invokevirtual #23                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.missing:()[I
+      42: astore_3
+      43: aload_3
+      44: arraylength
+      45: ifle          88
+      48: aload_1
+      49: invokevirtual #27                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.missingCorrections:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      52: astore        4
+      54: iconst_0
+      55: istore        5
+      57: iload         5
+      59: aload_3
+      60: arraylength
+      61: if_icmpge     88
+      64: aload_2
+      65: aload_3
+      66: iload         5
+      68: iaload
+      69: dup2
+      70: daload
+      71: aload         4
+      73: iload         5
+      75: invokeinterface #32,  2           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.get:(I)D
+      80: dsub
+      81: dastore
+      82: iinc          5, 1
+      85: goto          57
+      88: aload_1
+      89: invokevirtual #36                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.coefficients:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      92: astore        4
+      94: aload_2
+      95: invokestatic  #39                 // Method jdplus/toolkit/base/core/data/DataBlock.of:([D)Ljdplus/toolkit/base/core/data/DataBlock;
+      98: astore        5
+     100: aload         4
+     102: invokeinterface #45,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.length:()I
+     107: ifle          189
+     110: aload_0
+     111: invokevirtual #49                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getX:()Ljava/util/List;
+     114: astore        6
+     116: aload_0
+     117: invokevirtual #53                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.isMean:()Z
+     120: ifeq          127
+     123: iconst_1
+     124: goto          128
+     127: iconst_0
+     128: istore        7
+     130: iconst_0
+     131: istore        8
+     133: iload         8
+     135: aload         6
+     137: invokeinterface #57,  1           // InterfaceMethod java/util/List.size:()I
+     142: if_icmpge     189
+     145: aload         4
+     147: iload         7
+     149: iinc          7, 1
+     152: invokeinterface #32,  2           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.get:(I)D
+     157: dstore        9
+     159: aload         5
+     161: aload         6
+     163: iload         8
+     165: invokeinterface #62,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     170: checkcast     #18                 // class jdplus/toolkit/base/api/data/DoubleSeq
+     173: dload         9
+     175: invokedynamic #65,  0             // InvokeDynamic #0:applyAsDouble:(D)Ljava/util/function/DoubleBinaryOperator;
+     180: invokevirtual #69                 // Method jdplus/toolkit/base/core/data/DataBlock.apply:(Ljdplus/toolkit/base/api/data/DoubleSeq;Ljava/util/function/DoubleBinaryOperator;)V
+     183: iinc          8, 1
+     186: goto          133
+     189: aload         5
+     191: areturn
+
+  public static <M extends jdplus.toolkit.base.core.arima.IArimaModel> jdplus.toolkit.base.api.data.DoubleSeq interpolatedData(jdplus.toolkit.base.core.regarima.RegArimaModel<M>, jdplus.toolkit.base.core.stats.likelihood.ConcentratedLikelihoodWithMissing);
+    Code:
+       0: aload_0
+       1: ifnonnull     14
+       4: new           #1                  // class java/lang/NullPointerException
+       7: dup
+       8: ldc           #3                  // String model is marked non-null but is null
+      10: invokespecial #5                  // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      13: athrow
+      14: aload_1
+      15: ifnonnull     28
+      18: new           #1                  // class java/lang/NullPointerException
+      21: dup
+      22: ldc           #9                  // String concentratedLikelihood is marked non-null but is null
+      24: invokespecial #5                  // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      27: athrow
+      28: aload_0
+      29: invokevirtual #23                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.missing:()[I
+      32: astore_2
+      33: aload_2
+      34: arraylength
+      35: ifne          43
+      38: aload_0
+      39: invokevirtual #11                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getY:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      42: areturn
+      43: aload_0
+      44: invokevirtual #11                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getY:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      47: invokeinterface #17,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.toArray:()[D
+      52: astore_3
+      53: aload_1
+      54: invokevirtual #27                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.missingCorrections:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      57: invokeinterface #73,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.cursor:()Ljdplus/toolkit/base/api/data/DoubleSeqCursor;
+      62: astore        4
+      64: iconst_0
+      65: istore        5
+      67: iload         5
+      69: aload_2
+      70: arraylength
+      71: if_icmpge     96
+      74: aload_3
+      75: aload_2
+      76: iload         5
+      78: iaload
+      79: dup2
+      80: daload
+      81: aload         4
+      83: invokeinterface #77,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeqCursor.getAndNext:()D
+      88: dsub
+      89: dastore
+      90: iinc          5, 1
+      93: goto          67
+      96: aload_3
+      97: invokestatic  #83                 // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.of:([D)Ljdplus/toolkit/base/api/data/DoubleSeq;
+     100: areturn
+
+  public static <M extends jdplus.toolkit.base.core.arima.IArimaModel> jdplus.toolkit.base.api.data.DoubleSeq regressionEffect(jdplus.toolkit.base.core.regarima.RegArimaModel<M>, jdplus.toolkit.base.core.stats.likelihood.ConcentratedLikelihoodWithMissing, int, int);
+    Code:
+       0: aload_0
+       1: ifnonnull     14
+       4: new           #1                  // class java/lang/NullPointerException
+       7: dup
+       8: ldc           #3                  // String model is marked non-null but is null
+      10: invokespecial #5                  // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      13: athrow
+      14: aload_1
+      15: ifnonnull     28
+      18: new           #1                  // class java/lang/NullPointerException
+      21: dup
+      22: ldc           #9                  // String concentratedLikelihood is marked non-null but is null
+      24: invokespecial #5                  // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      27: athrow
+      28: aload_1
+      29: invokevirtual #36                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.coefficients:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      32: astore        4
+      34: aload_0
+      35: invokevirtual #86                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getObservationsCount:()I
+      38: invokestatic  #89                 // Method jdplus/toolkit/base/core/data/DataBlock.make:(I)Ljdplus/toolkit/base/core/data/DataBlock;
+      41: astore        5
+      43: aload         4
+      45: invokeinterface #45,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.length:()I
+      50: ifle          148
+      53: aload_0
+      54: invokevirtual #49                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getX:()Ljava/util/List;
+      57: astore        6
+      59: aload         4
+      61: invokeinterface #73,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.cursor:()Ljdplus/toolkit/base/api/data/DoubleSeqCursor;
+      66: astore        7
+      68: aload         7
+      70: iload_2
+      71: invokeinterface #93,  2           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeqCursor.moveTo:(I)V
+      76: aload_0
+      77: invokevirtual #53                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.isMean:()Z
+      80: ifeq          89
+      83: iload_2
+      84: iconst_1
+      85: isub
+      86: goto          90
+      89: iload_2
+      90: istore        8
+      92: iload         8
+      94: iload_3
+      95: iadd
+      96: istore        9
+      98: iload         8
+     100: istore        10
+     102: iload         10
+     104: iload         9
+     106: if_icmpge     148
+     109: aload         7
+     111: invokeinterface #77,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeqCursor.getAndNext:()D
+     116: dstore        11
+     118: aload         5
+     120: aload         6
+     122: iload         10
+     124: invokeinterface #62,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     129: checkcast     #18                 // class jdplus/toolkit/base/api/data/DoubleSeq
+     132: dload         11
+     134: invokedynamic #97,  0             // InvokeDynamic #1:applyAsDouble:(D)Ljava/util/function/DoubleBinaryOperator;
+     139: invokevirtual #69                 // Method jdplus/toolkit/base/core/data/DataBlock.apply:(Ljdplus/toolkit/base/api/data/DoubleSeq;Ljava/util/function/DoubleBinaryOperator;)V
+     142: iinc          10, 1
+     145: goto          102
+     148: aload         5
+     150: invokevirtual #98                 // Method jdplus/toolkit/base/core/data/DataBlock.unmodifiable:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+     153: areturn
+
+  public static <M extends jdplus.toolkit.base.core.arima.IArimaModel> jdplus.toolkit.base.api.data.DoubleSeq olsResiduals(jdplus.toolkit.base.core.regarima.RegArimaModel<M>);
+    Code:
+       0: aload_0
+       1: ifnonnull     14
+       4: new           #1                  // class java/lang/NullPointerException
+       7: dup
+       8: ldc           #3                  // String model is marked non-null but is null
+      10: invokespecial #5                  // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      13: athrow
+      14: aload_0
+      15: invokevirtual #101                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.differencedModel:()Ljdplus/toolkit/base/core/regarima/RegArmaModel;
+      18: invokevirtual #105                // Method jdplus/toolkit/base/core/regarima/RegArmaModel.asLinearModel:()Ljdplus/toolkit/base/core/stats/linearmodel/LinearModel;
+      21: astore_1
+      22: aload_1
+      23: invokevirtual #111                // Method jdplus/toolkit/base/core/stats/linearmodel/LinearModel.getVariablesCount:()I
+      26: ifle          43
+      29: aload_1
+      30: invokestatic  #116                // Method jdplus/toolkit/base/core/stats/linearmodel/Ols.compute:(Ljdplus/toolkit/base/core/stats/linearmodel/LinearModel;)Ljdplus/toolkit/base/core/stats/linearmodel/LeastSquaresResults;
+      33: astore_2
+      34: aload_1
+      35: aload_2
+      36: invokevirtual #122                // Method jdplus/toolkit/base/core/stats/linearmodel/LeastSquaresResults.getCoefficients:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      39: invokevirtual #127                // Method jdplus/toolkit/base/core/stats/linearmodel/LinearModel.calcResiduals:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/data/DataBlock;
+      42: areturn
+      43: aload_1
+      44: invokevirtual #131                // Method jdplus/toolkit/base/core/stats/linearmodel/LinearModel.getY:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      47: areturn
+
+  public static <M extends jdplus.toolkit.base.core.arima.IArimaModel> jdplus.toolkit.base.api.data.DoubleSeq fullResiduals(jdplus.toolkit.base.core.regarima.RegArimaModel<M>, jdplus.toolkit.base.core.stats.likelihood.ConcentratedLikelihoodWithMissing);
+    Code:
+       0: aload_0
+       1: ifnonnull     14
+       4: new           #1                  // class java/lang/NullPointerException
+       7: dup
+       8: ldc           #3                  // String model is marked non-null but is null
+      10: invokespecial #5                  // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      13: athrow
+      14: aload_1
+      15: ifnonnull     28
+      18: new           #1                  // class java/lang/NullPointerException
+      21: dup
+      22: ldc           #9                  // String concentratedLikelihood is marked non-null but is null
+      24: invokespecial #5                  // Method java/lang/NullPointerException."<init>":(Ljava/lang/String;)V
+      27: athrow
+      28: aload_0
+      29: invokevirtual #132                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.getVariablesCount:()I
+      32: ifne          40
+      35: aload_1
+      36: invokevirtual #133                // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.e:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      39: areturn
+      40: aload_0
+      41: aload_1
+      42: invokestatic  #136                // Method linearizedData:(Ljdplus/toolkit/base/core/regarima/RegArimaModel;Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;)Ljdplus/toolkit/base/api/data/DoubleSeq;
+      45: astore_2
+      46: aload_0
+      47: invokevirtual #142                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.arima:()Ljdplus/toolkit/base/core/arima/IArimaModel;
+      50: invokeinterface #146,  1          // InterfaceMethod jdplus/toolkit/base/core/arima/IArimaModel.stationaryTransformation:()Ljdplus/toolkit/base/core/arima/StationaryTransformation;
+      55: astore_3
+      56: aload_3
+      57: invokevirtual #152                // Method jdplus/toolkit/base/core/arima/StationaryTransformation.getUnitRoots:()Ljdplus/toolkit/base/core/math/linearfilters/BackFilter;
+      60: invokevirtual #158                // Method jdplus/toolkit/base/core/math/linearfilters/BackFilter.getDegree:()I
+      63: ifne          75
+      66: aload_2
+      67: invokestatic  #163                // Method jdplus/toolkit/base/core/data/DataBlock.of:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/data/DataBlock;
+      70: astore        4
+      72: goto          104
+      75: aload_2
+      76: invokeinterface #45,  1           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.length:()I
+      81: aload_3
+      82: invokevirtual #152                // Method jdplus/toolkit/base/core/arima/StationaryTransformation.getUnitRoots:()Ljdplus/toolkit/base/core/math/linearfilters/BackFilter;
+      85: invokevirtual #158                // Method jdplus/toolkit/base/core/math/linearfilters/BackFilter.getDegree:()I
+      88: isub
+      89: invokestatic  #89                 // Method jdplus/toolkit/base/core/data/DataBlock.make:(I)Ljdplus/toolkit/base/core/data/DataBlock;
+      92: astore        4
+      94: aload_3
+      95: invokevirtual #152                // Method jdplus/toolkit/base/core/arima/StationaryTransformation.getUnitRoots:()Ljdplus/toolkit/base/core/math/linearfilters/BackFilter;
+      98: aload_2
+      99: aload         4
+     101: invokevirtual #165                // Method jdplus/toolkit/base/core/math/linearfilters/BackFilter.apply:(Ljdplus/toolkit/base/api/data/DoubleSeq;Ljdplus/toolkit/base/api/data/DoubleSeq$Mutable;)V
+     104: aload_0
+     105: invokevirtual #53                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.isMean:()Z
+     108: ifeq          126
+     111: aload         4
+     113: aload_1
+     114: invokevirtual #36                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.coefficients:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+     117: iconst_0
+     118: invokeinterface #32,  2           // InterfaceMethod jdplus/toolkit/base/api/data/DoubleSeq.get:(I)D
+     123: invokevirtual #168                // Method jdplus/toolkit/base/core/data/DataBlock.sub:(D)V
+     126: new           #172                // class jdplus/toolkit/base/core/arima/estimation/FastKalmanFilter
+     129: dup
+     130: aload_3
+     131: invokevirtual #174                // Method jdplus/toolkit/base/core/arima/StationaryTransformation.getStationaryModel:()Ljdplus/toolkit/base/core/arima/ILinearProcess;
+     134: checkcast     #147                // class jdplus/toolkit/base/core/arima/IArimaModel
+     137: invokespecial #178                // Method jdplus/toolkit/base/core/arima/estimation/FastKalmanFilter."<init>":(Ljdplus/toolkit/base/core/arima/IArimaModel;)V
+     140: astore        5
+     142: aload         5
+     144: aload         4
+     146: invokevirtual #181                // Method jdplus/toolkit/base/core/arima/estimation/FastKalmanFilter.process:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/stats/likelihood/Likelihood;
+     149: astore        6
+     151: aload         6
+     153: invokeinterface #185,  1          // InterfaceMethod jdplus/toolkit/base/core/stats/likelihood/Likelihood.e:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+     158: areturn
+
+  public static jdplus.toolkit.base.core.regarima.IRegArimaComputer<jdplus.toolkit.base.core.sarima.SarimaModel> processor(boolean, double);
+    Code:
+       0: invokestatic  #188                // Method jdplus/toolkit/base/core/regsarima/internal/HannanRissanenInitializer.builder:()Ljdplus/toolkit/base/core/regsarima/internal/HannanRissanenInitializer$Builder;
+       3: iconst_1
+       4: invokevirtual #194                // Method jdplus/toolkit/base/core/regsarima/internal/HannanRissanenInitializer$Builder.stabilize:(Z)Ljdplus/toolkit/base/core/regsarima/internal/HannanRissanenInitializer$Builder;
+       7: iconst_1
+       8: invokevirtual #200                // Method jdplus/toolkit/base/core/regsarima/internal/HannanRissanenInitializer$Builder.useDefaultIfFailed:(Z)Ljdplus/toolkit/base/core/regsarima/internal/HannanRissanenInitializer$Builder;
+      11: invokevirtual #203                // Method jdplus/toolkit/base/core/regsarima/internal/HannanRissanenInitializer$Builder.build:()Ljdplus/toolkit/base/core/regsarima/internal/HannanRissanenInitializer;
+      14: astore_3
+      15: invokestatic  #207                // Method jdplus/toolkit/base/core/regsarima/GlsSarimaComputer.builder:()Ljdplus/toolkit/base/core/regsarima/GlsSarimaComputer$Builder;
+      18: invokestatic  #212                // Method jdplus/toolkit/base/core/math/functions/levmar/LevenbergMarquardtMinimizer.builder:()Ljdplus/toolkit/base/core/math/functions/levmar/LevenbergMarquardtMinimizer$LmBuilder;
+      21: invokevirtual #217                // Method jdplus/toolkit/base/core/regsarima/GlsSarimaComputer$Builder.minimizer:(Ljdplus/toolkit/base/core/math/functions/ssq/SsqFunctionMinimizer$Builder;)Ljdplus/toolkit/base/core/regsarima/GlsSarimaComputer$Builder;
+      24: dload_1
+      25: invokevirtual #223                // Method jdplus/toolkit/base/core/regsarima/GlsSarimaComputer$Builder.precision:(D)Ljdplus/toolkit/base/core/regsarima/GlsSarimaComputer$Builder;
+      28: aload_3
+      29: invokevirtual #227                // Method jdplus/toolkit/base/core/regsarima/GlsSarimaComputer$Builder.initializer:(Ljdplus/toolkit/base/core/regsarima/IArmaInitializer;)Ljdplus/toolkit/base/core/regsarima/GlsSarimaComputer$Builder;
+      32: iload_0
+      33: invokevirtual #231                // Method jdplus/toolkit/base/core/regsarima/GlsSarimaComputer$Builder.useMaximumLikelihood:(Z)Ljdplus/toolkit/base/core/regsarima/GlsSarimaComputer$Builder;
+      36: invokevirtual #235                // Method jdplus/toolkit/base/core/regsarima/GlsSarimaComputer$Builder.build:()Ljdplus/toolkit/base/core/regsarima/GlsSarimaComputer;
+      39: areturn
+
+  public static jdplus.toolkit.base.core.regarima.RegArimaModel<jdplus.toolkit.base.core.sarima.SarimaModel> airlineModel(jdplus.toolkit.base.api.data.DoubleSeq, boolean, int, boolean);
+    Code:
+       0: iload_3
+       1: ifeq          11
+       4: iload_2
+       5: invokestatic  #238                // Method jdplus/toolkit/base/api/arima/SarimaOrders.airline:(I)Ljdplus/toolkit/base/api/arima/SarimaOrders;
+       8: goto          15
+      11: iload_2
+      12: invokestatic  #244                // Method jdplus/toolkit/base/api/arima/SarimaOrders.m011:(I)Ljdplus/toolkit/base/api/arima/SarimaOrders;
+      15: astore        4
+      17: aload         4
+      19: invokestatic  #247                // Method jdplus/toolkit/base/core/sarima/SarimaModel.builder:(Ljdplus/toolkit/base/api/arima/SarimaOrders;)Ljdplus/toolkit/base/core/sarima/SarimaModel$Builder;
+      22: invokevirtual #252                // Method jdplus/toolkit/base/core/sarima/SarimaModel$Builder.setDefault:()Ljdplus/toolkit/base/core/sarima/SarimaModel$Builder;
+      25: invokevirtual #258                // Method jdplus/toolkit/base/core/sarima/SarimaModel$Builder.build:()Ljdplus/toolkit/base/core/sarima/SarimaModel;
+      28: astore        5
+      30: invokestatic  #261                // Method jdplus/toolkit/base/core/regarima/RegArimaModel.builder:()Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+      33: aload         5
+      35: invokevirtual #264                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.arima:(Ljdplus/toolkit/base/core/arima/IArimaModel;)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+      38: aload_0
+      39: invokevirtual #269                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.y:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+      42: iload_1
+      43: invokevirtual #273                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.meanCorrection:(Z)Ljdplus/toolkit/base/core/regarima/RegArimaModel$Builder;
+      46: invokevirtual #277                // Method jdplus/toolkit/base/core/regarima/RegArimaModel$Builder.build:()Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      49: areturn
+
+  public static jdplus.toolkit.base.core.math.linearfilters.BackFilter differencingFilter(int, int, int);
+    Code:
+       0: aconst_null
+       1: astore_3
+       2: iload_1
+       3: ifle          12
+       6: iconst_1
+       7: iload_1
+       8: invokestatic  #280                // Method jdplus/toolkit/base/core/math/polynomials/UnitRoots.D:(II)Ljdplus/toolkit/base/core/math/polynomials/Polynomial;
+      11: astore_3
+      12: iload_2
+      13: ifle          40
+      16: iload_0
+      17: iload_2
+      18: invokestatic  #280                // Method jdplus/toolkit/base/core/math/polynomials/UnitRoots.D:(II)Ljdplus/toolkit/base/core/math/polynomials/Polynomial;
+      21: astore        4
+      23: aload_3
+      24: ifnonnull     33
+      27: aload         4
+      29: astore_3
+      30: goto          40
+      33: aload_3
+      34: aload         4
+      36: invokevirtual #286                // Method jdplus/toolkit/base/core/math/polynomials/Polynomial.times:(Ljdplus/toolkit/base/core/math/polynomials/Polynomial;)Ljdplus/toolkit/base/core/math/polynomials/Polynomial;
+      39: astore_3
+      40: aload_3
+      41: ifnonnull     48
+      44: getstatic     #292                // Field jdplus/toolkit/base/core/math/polynomials/Polynomial.ONE:Ljdplus/toolkit/base/core/math/polynomials/Polynomial;
+      47: astore_3
+      48: new           #159                // class jdplus/toolkit/base/core/math/linearfilters/BackFilter
+      51: dup
+      52: aload_3
+      53: invokespecial #296                // Method jdplus/toolkit/base/core/math/linearfilters/BackFilter."<init>":(Ljdplus/toolkit/base/core/math/polynomials/Polynomial;)V
+      56: areturn
+
+  public static double[] meanRegressionVariable(jdplus.toolkit.base.core.math.linearfilters.BackFilter, int);
+    Code:
+       0: iload_1
+       1: newarray       double
+       3: astore_2
+       4: aload_0
+       5: iload_1
+       6: aload_2
+       7: iconst_0
+       8: invokestatic  #299                // Method meanRegressionVariable:(Ljdplus/toolkit/base/core/math/linearfilters/BackFilter;I[DI)V
+      11: aload_2
+      12: areturn
+
+  public static void meanRegressionVariable(jdplus.toolkit.base.core.math.linearfilters.BackFilter, int, double[], int);
+    Code:
+       0: aload_0
+       1: invokevirtual #303                // Method jdplus/toolkit/base/core/math/linearfilters/BackFilter.asPolynomial:()Ljdplus/toolkit/base/core/math/polynomials/Polynomial;
+       4: invokevirtual #307                // Method jdplus/toolkit/base/core/math/polynomials/Polynomial.toArray:()[D
+       7: astore        4
+       9: aload         4
+      11: arraylength
+      12: iconst_1
+      13: isub
+      14: istore        5
+      16: aload_2
+      17: iload_3
+      18: iload         5
+      20: iadd
+      21: dconst_1
+      22: dastore
+      23: iload         5
+      25: iconst_1
+      26: iadd
+      27: istore        6
+      29: iload         6
+      31: iload_1
+      32: if_icmpge     86
+      35: dconst_1
+      36: dstore        7
+      38: iconst_1
+      39: istore        9
+      41: iload         9
+      43: iload         5
+      45: if_icmpgt     72
+      48: dload         7
+      50: aload_2
+      51: iload         6
+      53: iload         9
+      55: isub
+      56: daload
+      57: aload         4
+      59: iload         9
+      61: daload
+      62: dmul
+      63: dsub
+      64: dstore        7
+      66: iinc          9, 1
+      69: goto          41
+      72: aload_2
+      73: iload_3
+      74: iload         6
+      76: iadd
+      77: dload         7
+      79: dastore
+      80: iinc          6, 1
+      83: goto          29
+      86: return
+
+  public static int defaultLjungBoxLength(int);
+    Code:
+       0: iload_0
+       1: lookupswitch  { // 2
+                     1: 33
+                    12: 28
+               default: 38
+          }
+      28: bipush        24
+      30: goto          41
+      33: bipush        8
+      35: goto          41
+      38: iconst_4
+      39: iload_0
+      40: imul
+      41: ireturn
+
+  private jdplus.toolkit.base.core.regarima.RegArimaUtility();
+    Code:
+       0: aload_0
+       1: invokespecial #308                // Method java/lang/Object."<init>":()V
+       4: new           #313                // class java/lang/UnsupportedOperationException
+       7: dup
+       8: ldc_w         #315                // String This is a utility class and cannot be instantiated
+      11: invokespecial #317                // Method java/lang/UnsupportedOperationException."<init>":(Ljava/lang/String;)V
+      14: athrow
+
+  private static double lambda$regressionEffect$1(double, double, double);
+    Code:
+       0: dload_2
+       1: dload_0
+       2: dload         4
+       4: dmul
+       5: dadd
+       6: dreturn
+
+  private static double lambda$linearizedData$0(double, double, double);
+    Code:
+       0: dload_2
+       1: dload_0
+       2: dload         4
+       4: dmul
+       5: dsub
+       6: dreturn
+}

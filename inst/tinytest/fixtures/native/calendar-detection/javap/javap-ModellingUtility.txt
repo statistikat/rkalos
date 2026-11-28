@@ -1,0 +1,192 @@
+Compiled from "ModellingUtility.java"
+public final class jdplus.toolkit.base.api.timeseries.regression.ModellingUtility {
+  public static final java.lang.String AMI;
+
+  public static final java.lang.String AMI_PREVIOUS;
+
+  public static boolean isAutomaticallyIdentified(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: ldc           #3                  // String ami
+       3: invokevirtual #5                  // Method jdplus/toolkit/base/api/timeseries/regression/Variable.hasAttribute:(Ljava/lang/String;)Z
+       6: ireturn
+
+  public static boolean isOutlier(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: instanceof    #15                 // class jdplus/toolkit/base/api/timeseries/regression/IOutlier
+       7: ireturn
+
+  public static boolean isOutlier(jdplus.toolkit.base.api.timeseries.regression.Variable, boolean);
+    Code:
+       0: aload_0
+       1: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: instanceof    #15                 // class jdplus/toolkit/base/api/timeseries/regression/IOutlier
+       7: ifeq          26
+      10: iload_1
+      11: aload_0
+      12: ldc           #3                  // String ami
+      14: invokevirtual #5                  // Method jdplus/toolkit/base/api/timeseries/regression/Variable.hasAttribute:(Ljava/lang/String;)Z
+      17: if_icmpne     24
+      20: iconst_1
+      21: goto          25
+      24: iconst_0
+      25: ireturn
+      26: iconst_0
+      27: ireturn
+
+  public static boolean isMovingHoliday(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: instanceof    #17                 // class jdplus/toolkit/base/api/timeseries/regression/IMovingHolidayVariable
+       7: ifeq          12
+      10: iconst_1
+      11: ireturn
+      12: aload_0
+      13: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      16: instanceof    #19                 // class jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable
+      19: ifeq          38
+      22: aload_0
+      23: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      26: checkcast     #19                 // class jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable
+      29: astore_1
+      30: aload_1
+      31: invokevirtual #21                 // Method jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable.getVariable:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      34: instanceof    #17                 // class jdplus/toolkit/base/api/timeseries/regression/IMovingHolidayVariable
+      37: ireturn
+      38: iconst_0
+      39: ireturn
+
+  public static boolean isEaster(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: instanceof    #24                 // class jdplus/toolkit/base/api/timeseries/regression/IEasterVariable
+       7: ifeq          12
+      10: iconst_1
+      11: ireturn
+      12: aload_0
+      13: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      16: instanceof    #19                 // class jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable
+      19: ifeq          38
+      22: aload_0
+      23: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      26: checkcast     #19                 // class jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable
+      29: astore_1
+      30: aload_1
+      31: invokevirtual #21                 // Method jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable.getVariable:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      34: instanceof    #24                 // class jdplus/toolkit/base/api/timeseries/regression/IEasterVariable
+      37: ireturn
+      38: iconst_0
+      39: ireturn
+
+  public static boolean isTradingDays(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: instanceof    #26                 // class jdplus/toolkit/base/api/timeseries/regression/ITradingDaysVariable
+       7: ifeq          12
+      10: iconst_1
+      11: ireturn
+      12: aload_0
+      13: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      16: instanceof    #19                 // class jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable
+      19: ifeq          38
+      22: aload_0
+      23: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      26: checkcast     #19                 // class jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable
+      29: astore_1
+      30: aload_1
+      31: invokevirtual #21                 // Method jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable.getVariable:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      34: instanceof    #26                 // class jdplus/toolkit/base/api/timeseries/regression/ITradingDaysVariable
+      37: ireturn
+      38: iconst_0
+      39: ireturn
+
+  public static boolean isLengthOfPeriod(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: instanceof    #28                 // class jdplus/toolkit/base/api/timeseries/regression/ILengthOfPeriodVariable
+       7: ifeq          12
+      10: iconst_1
+      11: ireturn
+      12: aload_0
+      13: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      16: instanceof    #19                 // class jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable
+      19: ifeq          38
+      22: aload_0
+      23: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      26: checkcast     #19                 // class jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable
+      29: astore_1
+      30: aload_1
+      31: invokevirtual #21                 // Method jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable.getVariable:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      34: instanceof    #28                 // class jdplus/toolkit/base/api/timeseries/regression/ILengthOfPeriodVariable
+      37: ireturn
+      38: iconst_0
+      39: ireturn
+
+  public static boolean isDaysRelated(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #30                 // Method isTradingDays:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ifne          14
+       7: aload_0
+       8: invokestatic  #34                 // Method isLengthOfPeriod:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+      11: ifeq          18
+      14: iconst_1
+      15: goto          19
+      18: iconst_0
+      19: ireturn
+
+  public static boolean isCalendar(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokestatic  #30                 // Method isTradingDays:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+       4: ifne          21
+       7: aload_0
+       8: invokestatic  #34                 // Method isLengthOfPeriod:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+      11: ifne          21
+      14: aload_0
+      15: invokestatic  #37                 // Method isMovingHoliday:(Ljdplus/toolkit/base/api/timeseries/regression/Variable;)Z
+      18: ifeq          25
+      21: iconst_1
+      22: goto          26
+      25: iconst_0
+      26: ireturn
+
+  public static boolean isUser(jdplus.toolkit.base.api.timeseries.regression.Variable);
+    Code:
+       0: aload_0
+       1: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+       4: instanceof    #40                 // class jdplus/toolkit/base/api/timeseries/regression/IUserVariable
+       7: ifeq          12
+      10: iconst_1
+      11: ireturn
+      12: aload_0
+      13: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      16: instanceof    #19                 // class jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable
+      19: ifeq          38
+      22: aload_0
+      23: invokevirtual #11                 // Method jdplus/toolkit/base/api/timeseries/regression/Variable.getCore:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      26: checkcast     #19                 // class jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable
+      29: astore_1
+      30: aload_1
+      31: invokevirtual #21                 // Method jdplus/toolkit/base/api/timeseries/regression/ModifiedTsVariable.getVariable:()Ljdplus/toolkit/base/api/timeseries/regression/ITsVariable;
+      34: instanceof    #40                 // class jdplus/toolkit/base/api/timeseries/regression/IUserVariable
+      37: ireturn
+      38: iconst_0
+      39: ireturn
+
+  private jdplus.toolkit.base.api.timeseries.regression.ModellingUtility();
+    Code:
+       0: aload_0
+       1: invokespecial #42                 // Method java/lang/Object."<init>":()V
+       4: new           #48                 // class java/lang/UnsupportedOperationException
+       7: dup
+       8: ldc           #50                 // String This is a utility class and cannot be instantiated
+      10: invokespecial #52                 // Method java/lang/UnsupportedOperationException."<init>":(Ljava/lang/String;)V
+      13: athrow
+}

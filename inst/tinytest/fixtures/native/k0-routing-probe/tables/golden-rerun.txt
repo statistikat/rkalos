@@ -1,0 +1,16 @@
+Frozen-golden rerun at HEAD (ec17543 goldens vs HEAD build)
+MOVED d2-arma12.txt (expected for k>0: D4 post-pivot route ships; in-band)
+MOVED leadgap-airline-x.txt (expected for k>0: D4 post-pivot route ships; in-band)
+MOVED nearni-airline.txt (expected for k>0: D4 post-pivot route ships; in-band)
+MOVED nearur-airline.txt (expected for k>0: D4 post-pivot route ships; in-band)
+BYTE-IDENTICAL real-airline-gaps-x.txt
+MOVED real-airline-noreg.txt (expected for k>0: D4 post-pivot route ships; in-band)
+MOVED real-airline-redundant-x.txt (expected for k>0: D4 post-pivot route ships; in-band)
+MOVED real-airline-x.txt (expected for k>0: D4 post-pivot route ships; in-band)
+MOVED real-airline-zerocol-x.txt (expected for k>0: D4 post-pivot route ships; in-band)
+MOVED slow-seasonal.txt (expected for k>0: D4 post-pivot route ships; in-band)
+MOVED syn-airline12.txt (expected for k>0: D4 post-pivot route ships; in-band)
+MOVED syn-airline4.txt (expected for k>0: D4 post-pivot route ships; in-band)
+MOVED syn-mixed4.txt (expected for k>0: D4 post-pivot route ships; in-band)
+BYTE-IDENTICAL syn-stat-arma21.txt
+BYTE-IDENTICAL syn-stat-sarma11.txt

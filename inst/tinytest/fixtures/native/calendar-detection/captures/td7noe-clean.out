@@ -1,0 +1,38 @@
+specinfo td7noe td=TD7 lp=LeapYear test=Remove autoAdjust=true automatic=false easter=Unused/None fn=Auto aicdiff=0.0000000000000000
+evt 1 push 0 regarimadet -
+evt 2 push 1 automatic model identificationdet -
+evt 3 push 2 log-level testdet -
+evt 4 info 3 -det obj AICC on logs=70.3084; AICC on levels=-5035.57; (AICC-preference)=-2.00000)
+evt 5 pop 2 -det -
+evt 6 push 2 automatic trading days selectiondet -
+evt 7 info 3 -det ATD names=[no td, td7] best=0 ll[0] n=96 eff=83 np=3 ssq=1.2923395272823871e-26 bic2=-60.709804033185390 bicc=-63.923120775856060 aicc=-5045.8664591094220 ll[1] n=96 eff=83 np=10 ssq=1.2151918285825890e-26 bic2=-60.414937282428120 bicc=-63.611999686497650 aicc=-5035.5726449639440
+evt 8 pop 2 -det -
+evt 9 push 2 mean correctiondet -
+evt 10 pop 2 -det -
+evt 11 push 2 outliers selectiondet -
+evt 12 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[91, 0], [81, 0], [77, 0]], va=3.800743465029901)
+evt 13 pop 2 -det -
+evt 14 push 2 automatic arima selectiondet -
+evt 15 info 3 -det obj jdplus.toolkit.base.core.regsarima.regular.IDifferencingModule$Info@55182842
+evt 16 info 3 -det obj ArmaModule.CInfo(models=[jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@34123d65, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@59474f18, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@65fb9ffc, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@3e694b3f, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@1bb5a082], selection=(0,1)(0,1))
+evt 17 pop 2 -det -
+evt 18 push 2 outliers selectiondet -
+evt 19 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[77, 0], [81, 0], [91, 0]], va=3.800743465029901)
+evt 20 pop 2 -det -
+evt 21 push 2 full estimationdet -
+evt 22 pop 2 -det -
+evt 23 pop 1 -det -
+evt 24 pop 0 -det -
+evt 25 push 0 x11det -
+evt 26 pop 0 -det -
+timing td7noe clean elapsed_ms=443
+fact td7noe/clean log false lopTransform None
+fact td7noe/clean serieshead 53.800000000000000 53.363139720814410 51.650000000000000 53.463139720814410 54.000000000000000 53.300000000000000
+fact td7noe/clean variables 3
+var td7noe/clean 0 name=AO (1996-06-01) dim=1 core=AdditiveOutlier
+var td7noe/clean 1 name=AO (1996-10-01) dim=1 core=AdditiveOutlier
+var td7noe/clean 2 name=AO (1997-08-01) dim=1 core=AdditiveOutlier
+fact td7noe/clean armapars -0.97491778976864420 -0.68776364042714930
+fact td7noe/clean orders 0 1 1 0 1 1
+fact td7noe/clean ll 2555.9041414449100 adjll 2555.9041414449100 aicc -5098.7030197319245 ssq 7.5313928253371200e-27 npar 6
+fact td7noe/clean coefs 3.7135490677269640e-14 -5.1262466096468505e-14 6.0387610322582240e-14

@@ -1,0 +1,32 @@
+== syn-stat-sarma11 ==
+COPY-FIDELITY lib==copy0 BYTE-IDENTICAL
+OPTION-II-BIT-IDENTICAL struct3==dense BYTE-IDENTICAL
+FAC1-vs-FAC2: 10c10 < NUMERICS rankchecks=0 exactcert=1 zerocount=0 pivotcount=0 stable=1 rebuilds=0 sqr=1 compressions=479 clipped=0 routes=0 route=0 poststeps=0 postrebuilds=0 --- > NUMERICS rankchecks=0 exactcert=0 zerocount=0 pivotcount=0 stable=0 rebuilds=0 sqr=1 compressions=479 clipped=0 routes=0 route=0 poststeps=0 postrebuilds=0 
+A=/data/home/kowa/seasonaladjustment/tmp_opencode/m15-item30/out/final/dump-syn-stat-sarma11-fac1.txt
+B=/data/home/kowa/seasonaladjustment/tmp_opencode/m15-item30/out/final/dump-syn-stat-sarma11-copy0.txt
+decision-lines-identical=False value-lines=1764 differing(|ref|>=1e-8)=369
+max-rel-dev(|ref|>=1e-8)=6.146e-14 at PRED pair=(0.0027096694835938018, 0.0027096694835939683)
+max-abs-dev(all entries)=1.957e-15 at SUM logfinite pair=(0.09026637777974308, 0.09026637777974504)
+DECISION-DIFF:
+  A: NUMERICS rankchecks=0 exactcert=1 zerocount=0 pivotcount=0 stable=1 rebuilds=0 sqr=1 compressions=479 clipped=0 routes=0 route=0 poststeps=0 postrebuilds=0 
+  B: NUMERICS rankchecks=0 exactcert=0 zerocount=0 pivotcount=0 stable=0 rebuilds=0 sqr=0 compressions=0 clipped=0 routes=0 route=0 poststeps=0 postrebuilds=0
+DECISION-DIFF:
+  A: RES projection=0 historynorm=0 factorinit=6.3071689272736656e-16 postres=0 postrebuildres=0 
+  B: RES projection=0 historynorm=0 factorinit=0 postres=0 postrebuildres=0
+
+== syn-stat-arma21 ==
+COPY-FIDELITY lib==copy0 BYTE-IDENTICAL
+OPTION-II-BIT-IDENTICAL struct3==dense BYTE-IDENTICAL
+FAC1-vs-FAC2: 10c10 < NUMERICS rankchecks=0 exactcert=1 zerocount=0 pivotcount=0 stable=1 rebuilds=0 sqr=1 compressions=479 clipped=0 routes=0 route=0 poststeps=0 postrebuilds=0 --- > NUMERICS rankchecks=0 exactcert=0 zerocount=0 pivotcount=0 stable=0 rebuilds=0 sqr=1 compressions=479 clipped=0 routes=0 route=0 poststeps=0 postrebuilds=0 
+A=/data/home/kowa/seasonaladjustment/tmp_opencode/m15-item30/out/final/dump-syn-stat-arma21-fac1.txt
+B=/data/home/kowa/seasonaladjustment/tmp_opencode/m15-item30/out/final/dump-syn-stat-arma21-copy0.txt
+decision-lines-identical=False value-lines=984 differing(|ref|>=1e-8)=43
+max-rel-dev(|ref|>=1e-8)=5.596e-15 at SUM logfinite pair=(0.11902770642214126, 0.11902770642214193)
+max-abs-dev(all entries)=2.274e-13 at SUM ssq pair=(1588.4169259666946, 1588.4169259666944)
+DECISION-DIFF:
+  A: NUMERICS rankchecks=0 exactcert=1 zerocount=0 pivotcount=0 stable=1 rebuilds=0 sqr=1 compressions=479 clipped=0 routes=0 route=0 poststeps=0 postrebuilds=0 
+  B: NUMERICS rankchecks=0 exactcert=0 zerocount=0 pivotcount=0 stable=0 rebuilds=0 sqr=0 compressions=0 clipped=0 routes=0 route=0 poststeps=0 postrebuilds=0
+DECISION-DIFF:
+  A: RES projection=0 historynorm=0 factorinit=2.0644997738841504e-16 postres=0 postrebuildres=0 
+  B: RES projection=0 historynorm=0 factorinit=0 postres=0 postrebuildres=0
+

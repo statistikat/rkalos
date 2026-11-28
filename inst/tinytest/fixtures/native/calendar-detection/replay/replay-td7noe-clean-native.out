@@ -1,0 +1,69 @@
+specinfo td7noe clean n=96
+status available
+chain init r0 curva=3.800743465029901 pcr=0.94999999999999996 n=96
+chain transformation r0 log_chosen=0 aicc_level=-4967.8890000040928 aicc_log=70.308354516366606
+chain atd0 r0 best=0 changed=1 preadjust=0
+chain meantest0 r0 cval=1.96 tstat=0.77796827505620214 mean_after=0 changed=0
+chain outliers0 r0 cv=3.800743465029901 changed=1 n_outliers=6 rounds=6
+chain accept0 r0 plbox0=0.73966003108183997 rvr0=1.0022262436328671e-14 rtval0=0.026490048372382318 accepted=1 acc[rtval=0.026490048372382318 rvr=1.0022262436328671e-14 lb_p=0.26033996891816003 accepted=1]
+chain round1.refine r1 p=0 q=1 bp=0 bq=1 d=1 bd=1 mean=0 changed=0 fallback=0
+chain round1.outliers r1 cv=3.800743465029901 changed=1 n_outliers=6 rounds=6
+chain round1.pass2 r1 filter=0 plbox=0.73966003108183997 plbox0=0.73966003108183997 rvr=1.0022262436328671e-14 rtval=0.026490048372382318 pcr_after=0.97499999999999998 loop_after=2 curva_after=3.800743465029901 continue_round=1 p2[filter=0 plbox=0.73966003108183997 plbox0=0.73966003108183997 pcr=0.97499999999999998 cont=1]
+chain round1.regtest r1 mean_cutoff=1 changed=0 mean_after=0 removed=[0,0,0,0,0,0] tstats=[6.40872,-3.31285,4.24438,-2.52205,-1.56867,2.17034]
+chain round1.unitroots r1 regular_count=0 seasonal_count=0 regular_fired=0 seasonal_fired=0 regular_margin=nan seasonal_margin=nan p_after=0 d_after=1 bp_after=0 bd_after=1
+chain round1.meantest r1 cval=1.6000000000000001 tstat=490330521950950.38 mean_after=1 changed=0
+chain round1.outliers r1 cv=3.800743465029901 changed=0 n_outliers=0 rounds=0
+chain round1.accept r1 plbox0=0.99901402800042838 rvr0=1.7362752966061454e-14 rtval0=0.025116327195048381 accepted=0 acc[rtval=0.025116327195048381 rvr=1.7362752966061454e-14 lb_p=0.00098597199957162207 accepted=0]
+chain round1.matest r1 scanned=1 abs_theta_at_1=0.00013388175146511472 fired=1 q_after=0 d_after=0 mean_set=1
+chain round1.unitroots r1 regular_count=0 seasonal_count=0 regular_fired=0 seasonal_fired=0 regular_margin=nan seasonal_margin=nan p_after=0 d_after=0 bp_after=0 bd_after=1
+chain round1.matest r1 scanned=0 q_after=0 d_after=0
+chain round1.meanrule r1 rtval0=0.025116327195048381 mean_added=0
+chain round1.cascade r1 status=1 status=-2
+chain final r0 p=0 q=0 bp=0 bq=0 d=0 bd=1 mean=1 log=0 n_outliers=0 log_likelihood=2542.3032044741399 aicc=-5080.4582608001319
+scan outliers0 pos91 type0 t=5.246299038249167 beyond=1
+scan outliers0 pos81 type2 t=-7.8283151993470987 beyond=1
+scan outliers0 pos77 type0 t=7.4384614366294279 beyond=1
+scan outliers0 pos45 type0 t=-6.0704077517647343 beyond=1
+scan outliers0 pos54 type0 t=-5.3959180015686528 beyond=1
+scan outliers0 pos72 type0 t=5.1728360949807817 beyond=1
+scan outliers0 pos18 type0 t=3.7096936260784488 beyond=0
+ostop outliers0 below_cv
+scan round1.outliers pos91 type0 t=5.246299038249167 beyond=1
+scan round1.outliers pos81 type2 t=-7.8283151993470987 beyond=1
+scan round1.outliers pos77 type0 t=7.4384614366294279 beyond=1
+scan round1.outliers pos45 type0 t=-6.0704077517647343 beyond=1
+scan round1.outliers pos54 type0 t=-5.3959180015686528 beyond=1
+scan round1.outliers pos72 type0 t=5.1728360949807817 beyond=1
+scan round1.outliers pos18 type0 t=3.7096936260784488 beyond=0
+ostop round1.outliers below_cv
+scan round1.outliers pos84 type1 t=2.4978245323975785 beyond=0
+ostop round1.outliers below_cv
+eval round1.refine s1/0 p3 q0 bp0 bq0 ll=2539.0806518896347 bic=-60.96971013672389
+eval round1.refine s1/1 p3 q0 bp0 bq1 ll=2546.5330780374002 bic=-61.096047626937555
+eval round1.refine s1/2 p3 q0 bp1 bq0 ll=2544.2085352527524 bic=-61.040034547789418
+eval round1.refine s1/3 p3 q0 bp1 bq1 ll=2539.0630747839632 bic=-60.862808505074057
+eval round1.refine s2/0 p0 q0 bp0 bq1 ll=2533.6418108568591 bic=-60.945131813230425
+eval round1.refine s2/1 p0 q1 bp0 bq1 ll=2550.9576759147953 bic=-61.309142530195196
+eval round1.refine s2/2 p0 q2 bp0 bq1 ll=2551.7782157593297 bic=-61.275675531174365
+eval round1.refine s2/3 p1 q0 bp0 bq1 ll=2543.5311641768544 bic=-61.130190440124331
+eval round1.refine s2/4 p1 q1 bp0 bq1 ll=2533.6163060299305 bic=-60.838039152152703
+eval round1.refine s2/5 p1 q2 bp0 bq1 ll=2533.5709423570352 bic=-60.783707008133575
+eval round1.refine s2/6 p2 q0 bp0 bq1 ll=2543.580225924487 bic=-61.07813360744322
+eval round1.refine s2/7 p2 q1 bp0 bq1 ll=2533.5709426322387 bic=-60.783707014764992
+eval round1.refine s2/8 p2 q2 bp0 bq1 ll=2533.5381664739489 bic=-60.729678184350817
+eval round1.refine s3/0 p0 q1 bp0 bq0 ll=2542.2950003050769 bic=-61.153642402344104
+eval round1.refine s3/1 p0 q1 bp0 bq1 ll=2550.9576759147953 bic=-61.309142530195196
+pref round1.refine 0 p0 q1 bp0 bq1 bic=-61.309142530195196 ll=2550.9576759147953
+pref round1.refine 1 p0 q2 bp0 bq1 bic=-61.275675531174365 ll=2551.7782157593297
+pref round1.refine 2 p0 q1 bp0 bq0 bic=-61.153642402344104 ll=2542.2950003050769
+pref round1.refine 3 p1 q0 bp0 bq1 bic=-61.130190440124331 ll=2543.5311641768544
+pref round1.refine 4 p2 q0 bp0 bq1 bic=-61.07813360744322 ll=2543.580225924487
+step round1.refine cand1 rule0 inc0 moves0
+step round1.refine cand2 rule0 inc0 moves0
+step round1.refine cand3 rule0 inc0 moves0
+step round1.refine cand4 rule0 inc0 moves0
+evt atd0 best=0 names=[no td, td7] ll[0] n=96 eff=83 np=3 ssq=1.2923395272823772e-26 aicc=-5045.8664591094221 ll[1] n=96 eff=83 np=10 ssq=1.2151918285825764e-26 aicc=-5035.5726449639442
+fact log=0 mean=1 orders 0 0 0 0 1 0
+fact ll=2542.3032044741399 aicc=-5080.4582608001319 eff=84
+landed mean=1
+fit_status available

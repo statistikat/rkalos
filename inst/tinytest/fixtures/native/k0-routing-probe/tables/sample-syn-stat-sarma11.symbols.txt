@@ -1,0 +1,15 @@
+total samples 4118
+ 69.11%    2846  kalos::(anonymous namespace)::sandwich(kalos::DenseMatrix const&, kalos::DenseMatrix const&)
+ 19.11%     787  kalos::DenseMatrix::operator()(unsigned long, unsigned long) const
+  6.51%     268  kalos::DenseMatrix::operator()(unsigned long, unsigned long)
+  1.60%      66  kalos::(anonymous namespace)::product(kalos::DenseMatrix const&, std::vector<double, std::allocator<double> > 
+  1.60%      66  kalos::(anonymous namespace)::filter(kalos::MaskedSeries const&, kalos::DiffuseStateSpace const&, std::vector<
+  0.92%      38  DW.ref._ZTISt16invalid_argument
+  0.68%      28  kalos::(anonymous namespace)::joseph(kalos::DenseMatrix const&, std::vector<double, std::allocator<double> > c
+  0.24%      10  kalos::(anonymous namespace)::checked(long double)
+  0.07%       3  sb04px_
+  0.05%       2  sb03mx_
+  0.02%       1  _init
+  0.02%       1  kalos::stationary_initialization(kalos::StationaryStateSpace const&, std::function<void ()> const&)
+  0.02%       1  sb03md_
+  0.02%       1  sb03mv_

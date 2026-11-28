@@ -42,6 +42,7 @@
 
 #include "kalos/detail/fdlibm.hpp"
 #include "kalos/detail/hostlineage.hpp"
+#include "kalos/calendar_generation.hpp"
 
 #include "kalos/detail/ssq_deviances.hpp"
 #include "kalos/final_information.hpp"
@@ -262,6 +263,10 @@ struct Modelling {
   std::optional<Estimation> estimation;  // nullopt == needEstimation()
   std::array<std::vector<double>, 4> last_coefficients;  // desc.arima()
   bool has_coefficients = false;
+  // The ATD calendar state carried by the JVM reference copy (21-I stage
+  // 1): RegSarimaModelling.copyOf snapshots the description, and the td/lp
+  // variables plus the preadjustment flag travel with it.
+  bool td_landed = false, td_lp_column = false, td_preadjust = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -350,6 +355,11 @@ class AutomaticPipeline {
       transformation_prepass();
     }
 
+    // The regAIC calendar step (JVM run offsets 121-126): the ATD firing
+    // right after the log-level test, before the initial mean test. The
+    // stock RSA2c prepass above includes its own ATD/easter tests.
+    if (request_.automatic_trading_days && !calendar_) run_atd("atd0", 0);
+
     stage_ = "meantest";
     // The stock RSA2c prepass above includes the two regAIC tests.
     check_mu(kCheckMuCalc, "meantest0", 0, nullptr);
@@ -358,9 +368,14 @@ class AutomaticPipeline {
       stage_ = "outliers";
       const bool changed =
           process_outliers(curva_, 0, "outliers0", nullptr);
-      if (changed) {
-        stage_ = "estimation";
-        estimate_if_needed();
+      // calc offsets 137-189: a Changed outliers0 jumps past the initial
+      // regression test entirely (if_acmpne 190 against the Changed constant
+      // pre-loaded at 143); only an Unchanged run estimates (if needed) and
+      // fires regressionTest0. The post-round estimation happens either way
+      // (the isAutoModelling estimate at 198-212).
+      stage_ = "estimation";
+      estimate_if_needed();
+      if (!changed) {
         stage_ = "regtest";
         run_regtest(request_.mean_test_initial, "regtest0", 0);
       }
@@ -375,7 +390,7 @@ class AutomaticPipeline {
     }
     stage_ = "estimation";
     estimate_if_needed();
-    reference_ = std::make_unique<Modelling>(model_);
+    reference_ = snapshot_reference();
     stage_ = "accept";
     accept_refresh("accept0", 0, nullptr);
     const bool accepted_airline = last_accept_ && last_accept_->accepted;
@@ -404,6 +419,32 @@ class AutomaticPipeline {
     result_.chain.push_back(std::move(entry));
   }
 
+  // The JVM reference copy (RegSarimaModelling.copyOf): the description -
+  // including the ATD calendar state - and the retained estimation.
+  std::unique_ptr<Modelling> snapshot_reference() {
+    auto snapshot = std::make_unique<Modelling>(model_);
+    snapshot->td_landed = td_landed_;
+    snapshot->td_lp_column = td_lp_column_;
+    snapshot->td_preadjust = td_preadjust_;
+    return snapshot;
+  }
+
+  // Rebuild the working data and the design calendar columns from the live
+  // td state (the JVM recomputes transformData from the description on every
+  // setup, so the data is a pure function of the state).
+  void apply_td_state() {
+    td_factors_.clear();
+    y_ = request_.input;
+    if (td_preadjust_) {
+      td_factors_ = x13_rsa2c_leap_factors(td_domain(), false);
+      for (std::size_t i = 0; i < y_.size(); ++i)
+        y_[i] = detail::fdlibm_log(y_[i] * td_factors_[i]);
+    } else if (model_.desc.log) {
+      for (auto& value : y_) value = detail::fdlibm_log(value);
+    }
+    fill_td_design(td_landed_);
+  }
+
   // ---- the working data ------------------------------------------------------
 
   std::vector<double> y_;  // the transformed (level or log) working series
@@ -412,6 +453,43 @@ class AutomaticPipeline {
   std::optional<X13Rsa2cCalendar> calendar_;
   std::vector<std::vector<double>> calendar_columns_;
   double calendar_adjustment_ = 0, unadjusted_jacobian_ = 0;
+
+  // ---- the CEDM ATD machine (21-I stage 1) -----------------------------------
+  // The live description's calendar state: the "td" variable and, per the LoP
+  // fork (CalendarEffectsDetectionModule.test offsets 108-162), the "lp"
+  // column or the length-of-period preadjustment folded into y_. Mutually
+  // exclusive with the stock calendar_ (automatic TD requests never reach the
+  // stock prepass). sortVariables pins the merged design order: mean, days-
+  // related (td, lp), outliers (ami sorted) - so the td/lp columns enter
+  // calendar_columns_ ahead of the outlier columns, as build_design already
+  // lays out.
+  bool td_landed_ = false, td_lp_column_ = false, td_preadjust_ = false;
+  std::vector<double> td_factors_;  // the preadjust arm's leap factors
+
+  day_clustering td_clustering() const {
+    return static_cast<day_clustering>(request_.td_clustering);
+  }
+  calendar_domain td_domain() const {
+    return {request_.first_year, request_.first_period, kAnnualFrequency,
+            static_cast<int>(request_.input.size())};
+  }
+  // The LoP variable is live when the td spec carries LeapYear; the fork
+  // preadjusts (log && autoAdjust) and otherwise adds the lp column.
+  bool td_fork_preadjusts() const {
+    return request_.td_leap_year && request_.td_auto_adjust && model_.desc.log;
+  }
+  std::size_t td_dim() const {
+    return trading_days_contrast(td_clustering(), td_domain()).size();
+  }
+  void fill_td_design(bool with_td) {
+    calendar_columns_.clear();
+    if (!with_td) return;
+    for (auto& column : trading_days_contrast(td_clustering(), td_domain()))
+      calendar_columns_.push_back(std::move(column));
+    if (request_.td_leap_year && !td_fork_preadjusts())
+      calendar_columns_.push_back(
+          length_of_period_column(calendar_lop::leap_year, td_domain()));
+  }
 
   void fill_calendar_design() {
     calendar_columns_ = x13_rsa2c_calendar_columns(*calendar_, model_.desc.log,
@@ -735,6 +813,28 @@ class AutomaticPipeline {
     TransformationDecisionRequest decision_request;
     decision_request.branch = std::move(branch);
     decision_request.aicc_log_correction = request_.aicc_log_correction;
+    if (request_.automatic_trading_days) {
+      // The spec td/lp variables are in the initial description
+      // (X13SpecDecoder) and readTransformation hands the module
+      // preadjust = autoAdjust ? lp : None: the level branch carries
+      // [td, lp], the log branch drops lp and (under the preadjustment)
+      // estimates on the length-of-period adjusted data.
+      for (const auto& column : trading_days_contrast(td_clustering(), td_domain())) {
+        decision_request.level_columns.push_back(column);
+        decision_request.log_columns.push_back(column);
+      }
+      if (request_.td_leap_year) {
+        decision_request.level_columns.push_back(
+            length_of_period_column(calendar_lop::leap_year, td_domain()));
+        if (request_.td_auto_adjust) {
+          decision_request.log_preadjust_factors =
+              x13_rsa2c_leap_factors(td_domain(), false);
+        } else {
+          decision_request.log_columns.push_back(
+              length_of_period_column(calendar_lop::leap_year, td_domain()));
+        }
+      }
+    }
     TransformationDecisionResult decision =
         decide_transformation(decision_request);
 
@@ -768,6 +868,18 @@ class AutomaticPipeline {
         model_.estimation = std::move(estimation);
         estimation_has_mean_ = false;  // the branch fit is always mean-free
       }
+    }
+    if (request_.automatic_trading_days) {
+      // The description carries the spec td/lp variables from the start (the
+      // CEDM at atd0 only re-tests them): the forked log mode keeps the
+      // preadjustment the log module chose, every other mode carries the lp
+      // column (LogLevelModule offsets 146-162 with the decoder's preadjust).
+      model_.desc.log = decision.log_chosen;
+      td_landed_ = true;
+      td_preadjust_ = decision.log_chosen && request_.td_auto_adjust &&
+          request_.td_leap_year;
+      td_lp_column_ = request_.td_leap_year && !td_preadjust_;
+      apply_td_state();
     }
   }
 
@@ -1003,6 +1115,11 @@ class AutomaticPipeline {
       fold_column(residuals, identity, std::vector<double>(yd_.size(), 1.),
                   coefficients[col++]);
     }
+    // The days-related bucket folds before the outliers (sortVariables:
+    // mean, calendar, ami outliers) - the JVM folds the whole design.
+    for (const std::vector<double>& column : calendar_columns_) {
+      fold_column(residuals, identity, diff_column(column), coefficients[col++]);
+    }
     for (const OutlierVariable& variable : model_.desc.variables) {
       fold_column(residuals, identity, diff_column(outlier_column(variable)),
                   coefficients[col++]);
@@ -1044,16 +1161,155 @@ class AutomaticPipeline {
 
   // ---- the RegressionVariablesTest machine ---------------------------------------
 
+  // ---- the regAIC calendar step (CEDM ATD, 21-I stage 1) -----------------------
+
+  // One CEDM candidate arm: the desc0/desc1 trial of
+  // CalendarEffectsDetectionModule.test. Both arms rebuild the working data
+  // from the original input and the live description's log flag (arm0 always
+  // unadjusted - the desc0 copy takes setPreadjustment(None) whenever the
+  // live description is adjusted); arm1 carries the td contrast columns and
+  // the fork's lp state. Each arm is estimated fresh through the pinned
+  // row-1 recipe at the CEDM processor precision
+  // (RegArimaUtility.processor(true, eps): HannanRissanen starts,
+  // Levenberg-Marquardt, corrected degrees of freedom).
+  struct AtdArm {
+    SarimaEstimationResult fit;
+    double ssq = std::numeric_limits<double>::quiet_NaN();
+    double aicc = std::numeric_limits<double>::quiet_NaN();
+    double effective = 0., parameters = 0.;
+  };
+
+  AtdArm estimate_td_arm(bool with_td) {
+    const std::vector<double> saved_y = y_;
+    const std::vector<std::vector<double>> saved_columns = calendar_columns_;
+    std::vector<double> factors;
+    y_ = request_.input;
+    if (with_td && td_fork_preadjusts()) {
+      // transformData order: the LoP transformation on the level data (the
+      // pinned leap factors), then the log.
+      factors = x13_rsa2c_leap_factors(td_domain(), false);
+      if (model_.desc.log) {
+        for (std::size_t i = 0; i < y_.size(); ++i)
+          y_[i] = detail::fdlibm_log(y_[i] * factors[i]);
+      } else {
+        for (std::size_t i = 0; i < y_.size(); ++i) y_[i] *= factors[i];
+      }
+    } else if (model_.desc.log) {
+      for (auto& value : y_) value = detail::fdlibm_log(value);
+    }
+    fill_td_design(with_td);
+    AtdArm arm;
+    auto request = base_request(request_.td_estimation_eps,
+                                EstimationStartingPoint::HannanRissanen, true);
+    arm.fit = estimate_sarima_fixed(request);
+    // The LikelihoodStatistics surface: the SsqErr at the retained
+    // coefficients (the G2 landing composition), eff = n - d - 12bd,
+    // parameters = arma + design columns + sigma, and the AICC on the
+    // Jacobian-adjusted log-likelihood (the rsa2c accumulator structure:
+    // sum log f over the estimation domain, then minus sum log z).
+    const RegressionLikelihood landing = sarima_regression_likelihood(
+        make_differenced_series(), request.design,
+        arm.fit.coefficients[0], arm.fit.coefficients[1],
+        arm.fit.coefficients[2], arm.fit.coefficients[3], kAnnualFrequency,
+        0, 0);
+    arm.ssq = landing.sum_squared_standardized;
+    const int skip = model_.desc.d + model_.desc.bd * kAnnualFrequency;
+    arm.effective = static_cast<double>(static_cast<int>(y_.size()) - skip);
+    arm.parameters = static_cast<double>(
+        arma_dim_of(arm.fit.coefficients) +
+        static_cast<int>(request.design.columns) + 1);
+    double adjusted = arm.fit.log_likelihood;
+    if (model_.desc.log) {
+      // LogJacobian: plus sum log f (LoP, factors != 1) minus sum z, where
+      // z are the log-transformed working values (= sum log of the level
+      // data, the build_result/input-side convention).
+      double jacobian = 0., zsum = 0.;
+      for (std::size_t i = static_cast<std::size_t>(skip); i < y_.size(); ++i) {
+        if (!factors.empty() && factors[i] != 1.0)
+          jacobian += detail::fdlibm_log(factors[i]);
+        zsum += y_[i];
+      }
+      adjusted += jacobian - zsum;
+    }
+    const double neff = arm.effective, par = arm.parameters;
+    arm.aicc = -2. * (adjusted - neff * par / (neff - par - 1.));
+    y_ = saved_y;
+    calendar_columns_ = saved_columns;
+    return arm;
+  }
+
+  // One regAIC calendar firing. est1 (with td) is estimated first, est0
+  // second (test offsets 163-179); the AICc comparator returns 0 (best=1)
+  // iff aicc1 - aicDiff < aicc0 strictly (dcmpg: NaN answers -1, no td). The
+  // winner's description and estimation replace the live pair wholesale
+  // (RegSarimaModelling.set), so the machine never leaves a cleared
+  // estimation. The module's Changed/Unchanged result is logged only - both
+  // JVM firing points pop it.
+  void run_atd(const char* tag, int round) {
+    stage_ = "atd";
+    const bool was_td = td_landed_;
+    const bool fork_adjust = td_fork_preadjusts();
+    AtdArm with_td = estimate_td_arm(true);
+    AtdArm no_td = estimate_td_arm(false);
+    const bool td_wins =
+        with_td.aicc - request_.td_aicc_diff < no_td.aicc;
+    const AtdArm& winner = td_wins ? with_td : no_td;
+    // Apply the winning description: the td/lp state and the working data.
+    td_landed_ = td_wins;
+    td_lp_column_ = td_wins && request_.td_leap_year && !fork_adjust;
+    td_preadjust_ = td_wins && fork_adjust;
+    apply_td_state();
+    Estimation estimation;
+    estimation.coefficients = winner.fit.coefficients;
+    estimation.status = winner.fit.status;
+    estimation.log_likelihood = winner.fit.log_likelihood;
+    model_.last_coefficients = estimation.coefficients;
+    model_.has_coefficients = true;
+    model_.estimation = std::move(estimation);
+    estimation_has_mean_ = model_.desc.mean;
+    AutoAtdRecord record;
+    record.names = {"no td", trading_days_name(td_clustering())};
+    record.best = td_wins ? 1 : 0;
+    record.arms[0] = {static_cast<double>(request_.input.size()),
+                      no_td.effective, no_td.parameters, no_td.ssq, no_td.aicc};
+    record.arms[1] = {static_cast<double>(request_.input.size()),
+                      with_td.effective, with_td.parameters, with_td.ssq,
+                      with_td.aicc};
+    AutoDecisionRecord entry;
+    entry.stage = tag;
+    entry.round = round;
+    entry.scalars = {{"best", record.best ? 1. : 0.},
+                     {"changed", (td_wins != was_td) ? 1. : 0.},
+                     {"preadjust", td_preadjust_ ? 1. : 0.}};
+    entry.atd = std::move(record);
+    push(std::move(entry));
+  }
+
   bool run_regtest(double mean_cutoff, const char* tag, int round) {
     RegressionVariableTestRequest test;
     test.statistics = landing_statistics();
-    int position = 0;
+    // Coefficient indices count the Griffies mean column when the mean is
+    // on (the pinned bytecode reads tvals[k-1]; the unit's validate() pins
+    // the same convention).
+    int position = model_.desc.mean ? 1 : 0;
     const auto names = calendar_ ? calendar_names() : std::vector<std::string>{};
     for (const auto& name : names) {
       const auto kind = name == "td" ? RegressionVariableKind::trading_days
                       : name == "lp" ? RegressionVariableKind::length_of_period
                                      : RegressionVariableKind::moving_holiday;
       test.variables.push_back({kind, position++, 1});
+    }
+    if (td_landed_) {
+      // The days-related bucket of the sorted description (sortVariables):
+      // the td contrast variable (dim = contrast columns), then the lp
+      // column when the fork added it. position counts design columns.
+      test.variables.push_back({RegressionVariableKind::trading_days, position,
+                                static_cast<int>(td_dim())});
+      position += static_cast<int>(td_dim());
+      if (td_lp_column_) {
+        test.variables.push_back({RegressionVariableKind::length_of_period,
+                                  position++, 1});
+      }
     }
     for (std::size_t i = 0; i < model_.desc.variables.size(); ++i) {
       // ami outliers are never tested by the live machine (kind other); the
@@ -1062,13 +1318,23 @@ class AutomaticPipeline {
           RegressionVariableLayout{RegressionVariableKind::other, position++, 1});
     }
     test.mean_test = mean_cutoff;
-    test.td_test = calendar_ ? 1.96 : 0.;
+    // Builder scalars are constant through the run (decoder): the automatic
+    // TD decode shape (TEST_REMOVE) always carries tdTest 1.96.
+    test.td_test = calendar_ || request_.automatic_trading_days ? 1.96 : 0.;
     test.mh_test = calendar_ ? 1.96 : 0.;
-    test.derived_test = calendar_.has_value();
+    // The decoder sets tdTest(1.96, derived=true) whenever the td spec's
+    // RegressionTestSpec is not None (X13SpecDecoder offsets 429-448): the
+    // automatic-TD decode shape (TEST_REMOVE) always asks for the derived
+    // second life.
+    test.derived_test = calendar_.has_value() || request_.automatic_trading_days;
     test.td_joint = 0.;  // the dead joint branch, unit-rejects nonzero
     test.mean = model_.desc.mean;
-    test.adjusted = calendar_ && calendar_->working_days && model_.desc.log;
+    test.adjusted =
+        (calendar_ && calendar_->working_days && model_.desc.log) ||
+        td_preadjust_;
     test.preadjustment = test.adjusted ? 1 : 0;
+    const std::size_t td_count =
+        td_landed_ ? 1 + (td_lp_column_ ? 1u : 0u) : 0u;
     RegressionVariableTestResult outcome = run_regression_variable_tests(test);
     const bool changed = outcome.changed;
     if (changed) {
@@ -1085,6 +1351,17 @@ class AutomaticPipeline {
           calendar_adjustment_ = unadjusted_jacobian_;
         }
         fill_calendar_design();
+      }
+      for (std::size_t j = names.size(); j < names.size() + td_count; ++j) {
+        if (!outcome.removed[j]) continue;
+        // The derived td/lp pair falls together (the pinned unit's derived
+        // second life); removing the td variable also clears the LoP
+        // preadjustment (the desc keeps preadjustment with the td variable).
+        td_landed_ = false;
+        td_lp_column_ = false;
+        td_preadjust_ = false;
+        apply_td_state();
+        break;
       }
       clear_estimation();
     }
@@ -1259,7 +1536,7 @@ class AutomaticPipeline {
     stage_ = "accept";
     accept_refresh(("round" + std::to_string(round) + ".accept").c_str(),
                    round, "redo");
-    reference_ = std::make_unique<Modelling>(model_);
+    reference_ = snapshot_reference();
   }
 
   // ---- pass2 (the seven-filter reference-restore gate) --------------------------
@@ -1322,13 +1599,18 @@ class AutomaticPipeline {
     if (filter > 0) {
       record.restored = true;
       model_ = *reference_;
+      // The reference description carries the ATD calendar (JVM copyOf).
+      td_landed_ = reference_->td_landed;
+      td_lp_column_ = reference_->td_lp_column;
+      td_preadjust_ = reference_->td_preadjust;
+      apply_td_state();
       plbox = plbox0_;
       stable = true;
     } else {
       rtval0_ = rtval;
       rvr0_ = rvr;
       plbox0_ = plbox;
-      reference_ = std::make_unique<Modelling>(model_);
+      reference_ = snapshot_reference();
     }
     pcr_ += loop_ == 1 ? kPcrLoop1 : kPcrOther;
     ++loop_;
@@ -1443,9 +1725,14 @@ class AutomaticPipeline {
         ArmaRefinementRequest refinement;
         refinement.series = y_;
         refinement.mean = model_.desc.mean;
-        // linearizedData removes the non-mean design columns with the
-        // concentrated-likelihood coefficients; the 21-F unit consumes
-        // exactly those inputs (regressors = the outlier columns).
+        // AutoModellingModule.linearizedData removes the non-mean design
+        // columns with the concentrated-likelihood coefficients; the 21-F
+        // unit consumes exactly those inputs (regressors = the live
+        // description's non-mean columns: the td/lp calendar first - the
+        // sorted days-related bucket - then the ami outlier columns).
+        for (const std::vector<double>& column : calendar_columns_) {
+          refinement.regressors.push_back(column);
+        }
         for (const OutlierVariable& variable : model_.desc.variables) {
           refinement.regressors.push_back(outlier_column(variable));
         }
@@ -1530,7 +1817,11 @@ class AutomaticPipeline {
       }
       stage_ = "estimation";
       estimate_if_needed();
-      // regAIC (stable && loop <= 1): fail-closed no-op (21-I).
+      // The regAIC refire (calc offsets 405-423): fires unless the round is
+      // stable with loop <= 1 (the JVM's skip branch). Stage 1 wires the
+      // calendarTest half only; the easterTest module is null here.
+      if (request_.automatic_trading_days && (!stable || loop_ > 1))
+        run_atd(("round" + std::to_string(round) + ".atd").c_str(), round);
     }
 
     if (need_outliers_) {
@@ -1952,6 +2243,23 @@ class AutomaticPipeline {
       for (std::size_t j = 0; j < record.names.size(); ++j) record.coefficients.push_back(regression.at(col++));
       out.stock_calendar = std::move(record);
     }
+    if (td_landed_) {
+      // The landed calendar variables (fitted model order: td columns, then
+      // the lp column of the fork's column arm), one name entry per column.
+      AutoCalendarLanding record;
+      record.preadjusted = td_preadjust_;
+      for (std::size_t j = 0; j < td_dim(); ++j) {
+        record.names.push_back("td");
+        record.coefficients.push_back(regression.at(col++));
+      }
+      if (td_lp_column_) {
+        record.names.push_back("lp");
+        record.coefficients.push_back(regression.at(col++));
+      }
+      for (const auto& column : calendar_columns_)
+        record.columns.push_back(column);
+      out.auto_calendar = std::move(record);
+    }
     for (const OutlierVariable& variable : model_.desc.variables) {
       AutoVariableRecord record;
       record.name = variable.name;
@@ -1978,6 +2286,18 @@ class AutomaticPipeline {
       double adjusted_log_likelihood = out.log_likelihood;
       if (calendar_) {
         adjusted_log_likelihood += calendar_adjustment_;
+      } else if (out.log && td_preadjust_) {
+        // The ATD preadjust arm: the LoP LogJacobian (sum log f over the
+        // estimation domain, factors != 1 - the rsa2c accumulator
+        // structure) minus the sum log z of the adjusted log series.
+        const std::size_t skip = static_cast<std::size_t>(
+            model_.desc.d + model_.desc.bd * kAnnualFrequency);
+        double jacobian = 0., zsum = 0.;
+        for (std::size_t i = skip; i < y_.size(); ++i) {
+          if (td_factors_[i] != 1.0) jacobian += detail::fdlibm_log(td_factors_[i]);
+          zsum += y_[i];
+        }
+        adjusted_log_likelihood += jacobian - zsum;
       } else if (out.log) {
         const std::size_t skip = static_cast<std::size_t>(
             model_.desc.d + model_.desc.bd * kAnnualFrequency);
@@ -2059,6 +2379,28 @@ class AutomaticPipeline {
         preadjust.variables.push_back({cls, X13Component::calendar_effect, {record.coefficients[i]}, {columns[i]}});
       }
       if (out.log && record.selection.working_days) {
+        preadjust.leap_forward = x13_rsa2c_leap_factors(extended, false);
+        preadjust.leap_reverse = x13_rsa2c_leap_factors(extended, true);
+      }
+    }
+    if (out.auto_calendar) {
+      // The TD landing enters the downstream composition as the days-related
+      // calendar the stock pattern uses: contrast columns (plus the lp
+      // column of the fork's column arm) over the extended calendar, and
+      // the leap factor pair when the preadjust arm is live.
+      const auto& record = *out.auto_calendar;
+      const calendar_domain extended{request_.first_year, request_.first_period,
+          12, static_cast<int>(request_.input.size()) + nf};
+      std::vector<std::vector<double>> columns =
+          trading_days_contrast(td_clustering(), extended);
+      if (td_lp_column_)
+        columns.push_back(
+            length_of_period_column(calendar_lop::leap_year, extended));
+      for (std::size_t i = 0; i < columns.size(); ++i)
+        preadjust.variables.push_back({X13VariableClass::days_related,
+            X13Component::calendar_effect, {record.coefficients[i]},
+            {columns[i]}});
+      if (record.preadjusted) {
         preadjust.leap_forward = x13_rsa2c_leap_factors(extended, false);
         preadjust.leap_reverse = x13_rsa2c_leap_factors(extended, true);
       }
@@ -2255,11 +2597,17 @@ X13AutomaticFitResult fit_monthly(const X13AutomaticRequest& request, bool fixed
     return out;
   }
   if (request.use_calendar_detection || request.use_easter_detection ||
-      request.automatic_trading_days || request.use_user_variables) {
+      request.use_user_variables) {
     out.status =
         "unsupported:x13 automatic fit defers calendar/easter/TD/user "
         "detection (21-I)";
     return out;
+  }
+  if (request.automatic_trading_days &&
+      (request.td_clustering < 0 || request.td_clustering > 8 ||
+       !(request.td_estimation_eps > 0.))) {
+    throw std::invalid_argument(
+        "x13 automatic fit td machine requests an unsupported clustering/eps");
   }
   const auto months = [](int count) -> std::int64_t {
     return count < 0 ? -static_cast<std::int64_t>(count) * kAnnualFrequency : count;

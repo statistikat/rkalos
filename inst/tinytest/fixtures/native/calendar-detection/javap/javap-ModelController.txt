@@ -1,0 +1,238 @@
+Compiled from "ModelController.java"
+public class jdplus.x13.base.core.x13.regarima.ModelController implements jdplus.toolkit.base.core.regsarima.regular.IAmiController {
+  private final double lb;
+
+  private jdplus.toolkit.base.api.stats.StatisticalTest lbtest;
+
+  private double rvr;
+
+  private double rtval;
+
+  public jdplus.x13.base.core.x13.regarima.ModelController(double);
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: dload_1
+       6: putfield      #7                  // Field lb:D
+       9: return
+
+  public jdplus.toolkit.base.api.stats.StatisticalTest getLjungBoxTest();
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field lbtest:Ljdplus/toolkit/base/api/stats/StatisticalTest;
+       4: areturn
+
+  public boolean accept(jdplus.toolkit.base.core.regsarima.regular.RegSarimaModelling);
+    Code:
+       0: aload_1
+       1: invokevirtual #17                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getDescription:()Ljdplus/toolkit/base/core/regsarima/regular/ModelDescription;
+       4: astore_2
+       5: aload_1
+       6: invokevirtual #23                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getEstimation:()Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+       9: astore_3
+      10: aload_3
+      11: invokevirtual #27                 // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.getConcentratedLikelihood:()Ljdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing;
+      14: invokevirtual #33                 // Method jdplus/toolkit/base/core/stats/likelihood/ConcentratedLikelihoodWithMissing.allCoefficients:()Ljdplus/toolkit/base/api/data/DoubleSeq;
+      17: astore        4
+      19: aload_2
+      20: invokevirtual #39                 // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.regarima:()Ljdplus/toolkit/base/core/regarima/RegArimaModel;
+      23: invokevirtual #45                 // Method jdplus/toolkit/base/core/regarima/RegArimaModel.differencedModel:()Ljdplus/toolkit/base/core/regarima/RegArmaModel;
+      26: astore        5
+      28: aload         5
+      30: invokevirtual #51                 // Method jdplus/toolkit/base/core/regarima/RegArmaModel.asLinearModel:()Ljdplus/toolkit/base/core/stats/linearmodel/LinearModel;
+      33: astore        6
+      35: aload         6
+      37: aload         4
+      39: invokevirtual #57                 // Method jdplus/toolkit/base/core/stats/linearmodel/LinearModel.calcResiduals:(Ljdplus/toolkit/base/api/data/DoubleSeq;)Ljdplus/toolkit/base/core/data/DataBlock;
+      42: astore        7
+      44: aload         5
+      46: invokevirtual #63                 // Method jdplus/toolkit/base/core/regarima/RegArmaModel.getArma:()Ljdplus/toolkit/base/core/arima/IArimaModel;
+      49: checkcast     #67                 // class jdplus/toolkit/base/core/sarima/SarimaModel
+      52: astore        8
+      54: iconst_1
+      55: invokestatic  #69                 // InterfaceMethod jdplus/toolkit/base/core/arima/estimation/ArmaFilter.ljungBox:(Z)Ljdplus/toolkit/base/core/arima/estimation/ArmaFilter;
+      58: astore        9
+      60: aload         9
+      62: aload         8
+      64: aload         7
+      66: invokevirtual #75                 // Method jdplus/toolkit/base/core/data/DataBlock.length:()I
+      69: invokeinterface #81,  3           // InterfaceMethod jdplus/toolkit/base/core/arima/estimation/ArmaFilter.prepare:(Ljdplus/toolkit/base/core/arima/IArimaModel;I)I
+      74: istore        10
+      76: iload         10
+      78: invokestatic  #85                 // Method jdplus/toolkit/base/core/data/DataBlock.make:(I)Ljdplus/toolkit/base/core/data/DataBlock;
+      81: astore        11
+      83: aload         9
+      85: aload         7
+      87: aload         11
+      89: invokeinterface #89,  3           // InterfaceMethod jdplus/toolkit/base/core/arima/estimation/ArmaFilter.apply:(Ljdplus/toolkit/base/api/data/DoubleSeq;Ljdplus/toolkit/base/core/data/DataBlock;)V
+      94: aload_1
+      95: invokevirtual #23                 // Method jdplus/toolkit/base/core/regsarima/regular/RegSarimaModelling.getEstimation:()Ljdplus/toolkit/base/core/regarima/RegArimaEstimation;
+      98: invokevirtual #93                 // Method jdplus/toolkit/base/core/regarima/RegArimaEstimation.statistics:()Ljdplus/toolkit/base/core/stats/likelihood/LikelihoodStatistics;
+     101: invokevirtual #97                 // Method jdplus/toolkit/base/core/stats/likelihood/LikelihoodStatistics.getEffectiveObservationsCount:()I
+     104: istore        12
+     106: aload_0
+     107: aload         11
+     109: invokevirtual #102                // Method jdplus/toolkit/base/core/data/DataBlock.ssq:()D
+     112: iload         12
+     114: i2d
+     115: ddiv
+     116: invokestatic  #106                // Method java/lang/Math.sqrt:(D)D
+     119: putfield      #112                // Field rvr:D
+     122: aload         11
+     124: iload         10
+     126: iload         12
+     128: isub
+     129: iconst_0
+     130: invokevirtual #115                // Method jdplus/toolkit/base/core/data/DataBlock.drop:(II)Ljdplus/toolkit/base/core/data/DataBlock;
+     133: astore        11
+     135: aload_0
+     136: aload         11
+     138: invokevirtual #119                // Method calcResStat:(Ljdplus/toolkit/base/core/data/DataBlock;)V
+     141: aload_2
+     142: invokevirtual #123                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.getAnnualFrequency:()I
+     145: istore        13
+     147: aload_0
+     148: aload         11
+     150: iload         13
+     152: iload         12
+     154: invokestatic  #126                // Method calcLbLength:(II)I
+     157: aload_2
+     158: invokevirtual #130                // Method jdplus/toolkit/base/core/regsarima/regular/ModelDescription.getArimaSpec:()Ljdplus/toolkit/base/api/arima/SarimaSpec;
+     161: invokevirtual #134                // Method jdplus/toolkit/base/api/arima/SarimaSpec.freeParametersCount:()I
+     164: invokevirtual #139                // Method calcLb:(Ljdplus/toolkit/base/core/data/DataBlock;II)Z
+     167: ifne          172
+     170: iconst_0
+     171: ireturn
+     172: dconst_1
+     173: aload_0
+     174: getfield      #13                 // Field lbtest:Ljdplus/toolkit/base/api/stats/StatisticalTest;
+     177: invokevirtual #143                // Method jdplus/toolkit/base/api/stats/StatisticalTest.getPvalue:()D
+     180: dsub
+     181: aload_0
+     182: getfield      #7                  // Field lb:D
+     185: dcmpl
+     186: ifle          191
+     189: iconst_0
+     190: ireturn
+     191: iconst_1
+     192: ireturn
+
+  private static int calcLbLength(int, int);
+    Code:
+       0: iload_0
+       1: lookupswitch  { // 2
+                     1: 34
+                    12: 28
+               default: 40
+          }
+      28: bipush        24
+      30: istore_2
+      31: goto          58
+      34: bipush        8
+      36: istore_2
+      37: goto          58
+      40: iconst_4
+      41: iload_0
+      42: imul
+      43: istore_2
+      44: iload_1
+      45: bipush        22
+      47: if_icmpgt     58
+      50: iload_0
+      51: iconst_4
+      52: if_icmpne     58
+      55: bipush        6
+      57: istore_2
+      58: iload_2
+      59: iload_1
+      60: if_icmplt     67
+      63: iload_1
+      64: iconst_2
+      65: idiv
+      66: istore_2
+      67: iload_2
+      68: ireturn
+
+  private boolean calcLb(jdplus.toolkit.base.core.data.DataBlock, int, int);
+    Code:
+       0: aload_1
+       1: invokevirtual #148                // Method jdplus/toolkit/base/core/data/DataBlock.sum:()D
+       4: aload_1
+       5: invokevirtual #75                 // Method jdplus/toolkit/base/core/data/DataBlock.length:()I
+       8: i2d
+       9: ddiv
+      10: dstore        4
+      12: aload_1
+      13: dload         4
+      15: invokevirtual #151                // Method jdplus/toolkit/base/core/data/DataBlock.sub:(D)V
+      18: aload_0
+      19: new           #155                // class jdplus/toolkit/base/core/stats/tests/LjungBox
+      22: dup
+      23: aload_1
+      24: invokespecial #157                // Method jdplus/toolkit/base/core/stats/tests/LjungBox."<init>":(Ljdplus/toolkit/base/api/data/DoubleSeq;)V
+      27: iload_2
+      28: invokevirtual #160                // Method jdplus/toolkit/base/core/stats/tests/LjungBox.autoCorrelationsCount:(I)Ljdplus/toolkit/base/core/stats/tests/LjungBox;
+      31: iload_3
+      32: invokevirtual #164                // Method jdplus/toolkit/base/core/stats/tests/LjungBox.hyperParametersCount:(I)Ljdplus/toolkit/base/core/stats/tests/LjungBox;
+      35: invokevirtual #167                // Method jdplus/toolkit/base/core/stats/tests/LjungBox.build:()Ljdplus/toolkit/base/api/stats/StatisticalTest;
+      38: putfield      #13                 // Field lbtest:Ljdplus/toolkit/base/api/stats/StatisticalTest;
+      41: iconst_1
+      42: ireturn
+      43: astore        4
+      45: iconst_0
+      46: ireturn
+    Exception table:
+       from    to  target type
+           0    42    43   Class java/lang/RuntimeException
+
+  private void calcResStat(jdplus.toolkit.base.core.data.DataBlock);
+    Code:
+       0: aload_1
+       1: invokevirtual #148                // Method jdplus/toolkit/base/core/data/DataBlock.sum:()D
+       4: dstore_2
+       5: aload_1
+       6: invokevirtual #102                // Method jdplus/toolkit/base/core/data/DataBlock.ssq:()D
+       9: dstore        4
+      11: aload_1
+      12: invokevirtual #75                 // Method jdplus/toolkit/base/core/data/DataBlock.length:()I
+      15: istore        6
+      17: dload_2
+      18: iload         6
+      20: i2d
+      21: ddiv
+      22: dstore_2
+      23: dload         4
+      25: iload         6
+      27: i2d
+      28: ddiv
+      29: dload_2
+      30: dload_2
+      31: dmul
+      32: dsub
+      33: dstore        4
+      35: dload         4
+      37: iload         6
+      39: i2d
+      40: ddiv
+      41: invokestatic  #106                // Method java/lang/Math.sqrt:(D)D
+      44: dstore        7
+      46: aload_0
+      47: dload_2
+      48: dload         7
+      50: ddiv
+      51: putfield      #173                // Field rtval:D
+      54: return
+
+  public double getRTval();
+    Code:
+       0: aload_0
+       1: getfield      #173                // Field rtval:D
+       4: dreturn
+
+  public double getRvr();
+    Code:
+       0: aload_0
+       1: getfield      #112                // Field rvr:D
+       4: dreturn
+}

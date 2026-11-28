@@ -1,0 +1,54 @@
+specinfo td2lev td=TD2 lp=LeapYear test=Remove autoAdjust=true automatic=false easter=Unused/None fn=None aicdiff=0.0000000000000000
+evt 1 push 0 regarimadet -
+evt 2 push 1 automatic model identificationdet -
+evt 3 push 2 automatic trading days selectiondet -
+evt 4 info 3 -det ATD names=[no td, td2] best=1 ll[0] n=144 eff=131 np=3 ssq=17740.265559103067 bic2=7.8597606195894220 bicc=4.9828253955441200 aicc=1021.1920255745636 ll[1] n=144 eff=131 np=5 ssq=14748.309121344502 bic2=7.7501436882402760 bicc=4.8725473831225480 aicc=1001.3728365434704
+evt 5 pop 2 -det -
+evt 6 push 2 mean correctiondet -
+evt 7 pop 2 -det -
+evt 8 push 2 outliers selectiondet -
+evt 9 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[], va=3.8898377639404154)
+evt 10 pop 2 -det -
+evt 11 push 2 automatic arima selectiondet -
+evt 12 info 3 -det obj jdplus.toolkit.base.core.regsarima.regular.IDifferencingModule$Info@130d63be
+evt 13 info 3 -det obj ArmaModule.CInfo(models=[jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@351d00c0, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@2a3b5b47, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@55b699ef, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@35d019a3, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@689604d9], selection=(0,0)(1,0))
+evt 14 pop 2 -det -
+evt 15 push 2 automatic trading days selectiondet -
+evt 16 info 3 -det ATD names=[no td, td2] best=1 ll[0] n=144 eff=131 np=3 ssq=19326.435062319460 bic2=7.9464379611395595 bicc=5.0684623003510690 aicc=1032.5467573176315 ll[1] n=144 eff=131 np=5 ssq=14749.702567952862 bic2=7.7548129613518140 bicc=4.8726418604469220 aicc=1001.9845113210820
+evt 17 pop 2 -det -
+evt 18 push 2 outliers selectiondet -
+evt 19 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[135, 1]], va=3.8898377639404154)
+evt 20 pop 2 -det -
+evt 21 warn 2 -det -
+evt 22 push 2 automatic arima selectiondet -
+evt 23 info 3 -det obj jdplus.toolkit.base.core.regsarima.regular.IDifferencingModule$Info@a1153bc
+evt 24 info 3 -det obj ArmaModule.CInfo(models=[jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@47eaca72, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@55141def, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@55182842, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@3270d194, jdplus.x13.base.core.x13.regarima.ArmaModule$RegArmaBic@235834f2], selection=(1,0)(1,0))
+evt 25 pop 2 -det -
+evt 26 push 2 automatic trading days selectiondet -
+evt 27 info 3 -det ATD names=[no td, td2] best=1 ll[0] n=144 eff=132 np=4 ssq=17216.243172373550 bic2=7.8654694858542340 bicc=4.9817794360326140 aicc=1027.0257250723346 ll[1] n=144 eff=132 np=6 ssq=13495.695835399702 bic2=7.7011252872055564 bicc=4.8122787822763710 aicc=999.92372637561530
+evt 28 pop 2 -det -
+evt 29 push 2 outliers selectiondet -
+evt 30 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[135, 2]], va=3.3341355409838878)
+evt 31 pop 2 -det -
+evt 32 warn 2 -det -
+evt 33 push 2 outliers selectiondet -
+evt 34 info 3 -det obj IOutliersDetectionModule.Info(types=[AO, LS, TC], outliers=[[135, 2]], va=3.8898377639404154)
+evt 35 pop 2 -det -
+evt 36 push 2 full estimationdet -
+evt 37 pop 2 -det -
+evt 38 pop 1 -det -
+evt 39 pop 0 -det -
+evt 40 push 0 x11det -
+evt 41 pop 0 -det -
+timing td2lev air elapsed_ms=631
+fact td2lev/air log false lopTransform None
+fact td2lev/air serieshead 112.00000000000000 118.00000000000000 132.00000000000000 129.00000000000000 121.00000000000000 135.00000000000000
+fact td2lev/air variables 4
+var td2lev/air 0 name=const dim=1 core=TrendConstant
+var td2lev/air 1 name=td dim=1 core=GenericTradingDaysVariable
+var td2lev/air 2 name=lp dim=1 core=LengthOfPeriod
+var td2lev/air 3 name=TC (1960-04-01) dim=1 core=TransitoryChange
+fact td2lev/air armapars -0.61089487097025770 -0.30113898141945233 0.17705268181926706 0.21470134165897667 -0.17124627541882936
+fact td2lev/air orders 3 0 1 0 1 1
+fact td2lev/air ll -483.69295927854034 adjll -483.69295927854034 aicc 989.20410037526260 ssq 11638.345355828490 npar 10
+fact td2lev/air coefs 30.218274120374490 -0.81972659659173340 10.943162092151532 43.506553019494810

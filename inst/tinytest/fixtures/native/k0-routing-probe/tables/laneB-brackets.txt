@@ -1,0 +1,12 @@
+== r=1 syn-stat-sarma11 lb=3.22
+   la=3.28
+== r=1 syn-stat-arma21 lb=3.28
+   la=3.28
+== r=2 syn-stat-sarma11 lb=3.28
+   la=3.28
+== r=2 syn-stat-arma21 lb=3.28
+   la=3.28
+== r=3 syn-stat-sarma11 lb=3.28
+   la=3.28
+== r=3 syn-stat-arma21 lb=3.28
+   la=3.28

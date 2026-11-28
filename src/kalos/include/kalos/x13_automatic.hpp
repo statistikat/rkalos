@@ -108,10 +108,21 @@ struct X13AutomaticRequest {
     // ---- RegressionVariablesTest / FinalEstimator cutoffs ----
     double mean_test_initial, mean_test_final;  // 1.96 / 1.0 (0 = no test)
     double tsig;                                // cascade ratioLimit (1.0)
-    // ---- deferred-module flags (21-I): any true answers the explicit
-    // unsupported status; the pinned drivers are not transcribed ----
+    // ---- deferred-module flags (21-I): calendar/easter/user true answer the
+    // explicit unsupported status; the pinned drivers are not transcribed.
+    // automatic_trading_days drives the CEDM ATD machine (21-I stage 1). ----
     bool use_calendar_detection=false, use_easter_detection=false;
     bool automatic_trading_days=false, use_user_variables=false;
+    // ---- the CEDM ATD machine (21-I stage 1). The fields mirror the pinned
+    // decode-table shape (rsa4/rsa5c family: TD2/TD7, LeapYear length of
+    // period, TEST_REMOVE, autoAdjust on, aicdiff 0); the rkalos envelope
+    // mapping supplies them at its re-vendor step. td_clustering is the
+    // calendar_generation day_clustering ordinal (0 = td2 ... 8 = td7);
+    // td_estimation_eps is the CEDM processor precision (the jar's
+    // RegArimaUtility.processor(true, eps) builder default, 1e-5). ----
+    int td_clustering=0;  // 0 = td2 (the rsa4 shape); td7 = 8
+    bool td_leap_year=true, td_auto_adjust=true;
+    double td_aicc_diff=0., td_estimation_eps=1e-5;
     // ---- the decoder X-11 block (G4 surface) ----
     std::vector<X11SeasonalRequest> seasonal;   // Msr allowed here
     int trend_length=0;                         // 0 = automatic Henderson
@@ -161,6 +172,21 @@ struct AutoMaTestRecord {
 struct AutoMeanRuleRecord {
     double rtval0=0.; bool mean_added=false;
 };
+// One CEDM ATD firing (21-I stage 1): the JVM
+// AutomaticTradingRegressionModule.Info — the arms in candidate order
+// ("no td" first, then the trading-days name) with the LikelihoodStatistics
+// the AICc comparator read (SsqErr at the retained coefficients; the AICC on
+// the Jacobian-adjusted log-likelihood) and the winner index (JVM best: 0 =
+// no td, 1 = td).
+struct AutoAtdRecord {
+    std::vector<std::string> names;
+    int best=0;
+    struct Arm {
+        double observations=0., effective=0., parameters=0.;
+        double ssq=0., aicc=0.;
+    };
+    Arm arms[2];
+};
 // One FinalEstimator round: the row-4 estimation, the final-information
 // producer inputs and the cascade status (one entry per cascade.rounds).
 struct AutoCascadeRoundRecord {
@@ -183,8 +209,8 @@ struct AutoCascadeRoundRecord {
 // machine's qualified record for its stage tag; scalars/notes echo the
 // pinned state transitions.
 struct AutoDecisionRecord {
-    // "init" | "transformation" | "meantest0" | "outliers0" | "regtest0" |
-    // "accept0" | "round<k>.refine" | "round<k>.outliers" |
+    // "init" | "transformation" | "atd0" | "meantest0" | "outliers0" | "regtest0" |
+    // "accept0" | "round<k>.refine" | "round<k>.atd" | "round<k>.outliers" |
     // "round<k>.pass2" | "round<k>.regtest" | "round<k>.unitroots" |
     // "round<k>.matest" | "round<k>.meantest" | "round<k>.accept" |
     // "round<k>.meanrule" | "round<k>.cascade" | "final" (k is 1-based).
@@ -211,6 +237,7 @@ struct AutoDecisionRecord {
     std::optional<AutoUnitRootsRecord> unitroots;
     std::optional<AutoMaTestRecord> matest;
     std::optional<AutoMeanRuleRecord> meanrule;
+    std::optional<AutoAtdRecord> atd;
     std::vector<AutoCascadeRoundRecord> cascade; // one per cascade round
 };
 // One selected regression variable of the final description: the pinned
@@ -234,7 +261,8 @@ struct X13StockLikelihood {
     std::vector<double> regression_covariance; // row-major, in fitted model order
     std::vector<double> coefficients; // the final-likelihood regression coefficients
     // in the same fitted model order the covariance uses: the mean first when
-    // the description carries it, then the stock calendar, then the outliers.
+    // the description carries it, then the stock calendar (or the automatic
+    // trading-days calendar, stage 1), then the outliers.
 };
 
 // Stock estimated RSA2c calendar variables precede the outlier variables in model order.
@@ -242,6 +270,18 @@ struct X13StockCalendarFit {
     X13Rsa2cCalendar selection;
     std::vector<std::string> names; // td, lp, easter, in fitted order
     std::vector<double> coefficients;
+};
+
+// The CEDM landing of the automatic trading-days machine (21-I stage 1): the
+// live calendar variables in fitted model order ("td", then "lp" when the
+// column arm is live — the preadjust arm carries td only), their final
+// coefficients and raw-domain columns. preadjusted reports the LoP
+// preadjustment state (the log && autoAdjust fork arm).
+struct AutoCalendarLanding {
+    std::vector<std::string> names;
+    std::vector<double> coefficients;
+    std::vector<std::vector<double>> columns;
+    bool preadjusted=false;
 };
 
 // The result of one automatic-spec or stock estimated fit.
@@ -259,6 +299,7 @@ struct X13AutomaticFitResult {
     // final coefficients, in model order.
     std::vector<AutoVariableRecord> variables;
     std::optional<X13StockCalendarFit> stock_calendar;
+    std::optional<AutoCalendarLanding> auto_calendar;
     // Landing statistics of the final estimation (the G2 recipe at the
     // final point; never bit-claimed).
     std::string estimation_status;

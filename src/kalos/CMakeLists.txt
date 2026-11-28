@@ -260,6 +260,7 @@ if(KALOS_BUILD_TESTS)
     test_calendar_generation
     test_decompose_ucarima
     test_differencing_decision
+    test_diffuse_k0_goldens
     test_diffuse_state_space
     test_estimation_control
     test_estimation_failure_likelihood
@@ -336,6 +337,7 @@ if(KALOS_BUILD_TESTS)
     test_x13_allocation
     test_x13_estimated_templates
     test_x13_automatic
+    test_x13_automatic_td
     test_x13_fit)
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE kalos::kalos)
@@ -348,6 +350,11 @@ if(KALOS_BUILD_TESTS)
     if(test_name STREQUAL "test_x13_fit")
       target_compile_definitions(test_x13_fit PRIVATE
         KALOS_PSEUDO_FIXED="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-nonlog-pseudo/fixed-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_diffuse_k0_goldens")
+      target_compile_definitions(test_diffuse_k0_goldens PRIVATE
+        KALOS_K0_GOLDENS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/k0-structural-goldens/k0-goldens-x86_64.txt"
+        KALOS_K0_CORPUS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/diffuse-steady-state-probe")
     endif()
     if(test_name STREQUAL "test_tramo_outlier_scan")
       target_compile_definitions(${test_name} PRIVATE
@@ -454,6 +461,12 @@ if(KALOS_BUILD_TESTS)
       # One full automatic search with outlier detection on the probe corpus
       # shape runs ~250 s (suite wall time ~5 min single-process); the
       # sanitizer lane multiplies this several-fold.
+      set_tests_properties(${test_name} PROPERTIES TIMEOUT 3600)
+    endif()
+    if(test_name STREQUAL "test_x13_automatic_td")
+      # 21-I stage 1: nine full ATD battery replays (96-156 monthly
+      # observations each, full automatic search per case); generous for the
+      # sanitizer lane.
       set_tests_properties(${test_name} PROPERTIES TIMEOUT 3600)
     endif()
     if(test_name STREQUAL "test_tramo_regression_tests")
