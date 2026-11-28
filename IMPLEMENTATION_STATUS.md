@@ -4,6 +4,100 @@ Updated **2026-11-28**. Persephone uses the independent rkalos package.
 The R package runs without Persephone or Java. Numerical roadmap and canonical reference evidence belong to
 [kalos](../kalos/IMPLEMENTATION_STATUS.md).
 
+## The batched c3706ea re-pin: the X-11 diagnostic battery on both X-13 envelopes, measured at zero movement (2026-11-28)
+
+Version `0.1.0.9034` re-pins the vendored core `69f83bed575d578467c2d6ce1449d11b854246c0` →
+`c3706eac58ac50ac0196a11500926b1ea99b217d` (lock schema 2; verified 222 core,
+112 fixture and 474 evidence files — core up by exactly the two new
+`src/kalos/include/kalos/x11_mstats.hpp`/`src/kalos/src/x11_mstats.cpp` units
+and evidence by exactly the `native/x11-mstats/` battery panel and reference,
+fixtures unmoved). The pin is the kalos ledger tip again. The batch is this
+time a single commit: `c3706ea` publishes the X-11 M-statistics battery — the
+additive `Mstatistics` mirror `kalos::x13_mstats` over a finished
+`X13FitResult` (m1..m11 through the pinned `getM` clamp, `q`, `qm2` and the
+two MDiagnostics grades), replayed in the core against a twelve-case
+double-JVM oracle (the three stock RSA3 template fits and the nine stock
+RSA0/RSA1/RSA2c estimated fits on the x13-refusal-jvm-profiles calendars)
+with bit claims for m4, both grades and the M6 default-table invariant and a
+`max(1e-11, 5e-12*|want|)` tier for the twelve regression-seam-coupled words
+(measured worst 2.4e-13), the D9 default-table seam closed. `33c6c8a` and
+`69f83be` already rode the 9033 pin, so the expectation for this lane was
+again ZERO movement of every certified baseline, and that is what was
+measured.
+
+Vendored churn is exactly the two new core units, `src/kalos/CMakeLists.txt`
+(inert for the R source build), the generated `revision.hpp` and the two lock
+files; the export also carries the two new evidence files into
+`inst/tinytest/fixtures/native/x11-mstats/`. Nothing removed, nothing
+renamed; `python3 tools/sync-core.py --verify` passes on the exported tree.
+
+The new R surface mirrors the battery onto BOTH envelopes the core header
+publishes it on — the automatic route (`native_x13_fit_automatic`) and the
+estimated-template route (`native_x13_estimated_fit`) — a domain established
+from the synced header and a live compile check of the vendored headers
+against both routes' result types, not from prose. The battery answers as the
+list `x11_mstats` carrying `status` plus the thirteen published words under
+the names the core uses (`m1`..`m11` through the clamp, `q`, `qm2`) and the
+grade pair (`q_grade`, `qm2_grade`), gated on the fit's own available status
+(the entry throws outside it) and ABSENT otherwise; its refuse-answers —
+`unsupported:pseudo_additive`, `failed:trend_regression` — pass through
+verbatim with every word at the untouched default, never a partial battery.
+`src/Makevars.in` and `src/Makevars.win.in` OBJECTS gain the one new core
+unit. `capabilities()` stays byte-unchanged (the advertise-bit precedent
+stands); the roxygen return text of the two exported wrappers and their two
+regenerated Rd files carry one sentence each on the new field. The new
+`test-native-x11-mstats.R` (96 assertions, both lanes) pins the two gold
+envelopes — automatic `stock_rsa3_air`, estimated `stock_rsa0_air` —
+BIT-exact against the core entry's output recorded live from the installed
+9034 lanes (the serial and OMP recordings bit-identical; plumbing fidelity —
+the engine-vs-JVM claim is the core's twelve-case replay), re-derives the
+core's tiers across all twelve synced cases at this boundary (m4 word-exact,
+grades exact, the other twelve words inside `max(1e-11, 5e-12*|want|)` with
+measured worst 3.226e-13, inside the core's own 9.4e-13 m6 reading), and pins
+the refuse shapes: the pseudo-additive explicit status with the untouched
+battery and empty grades, and the documented 21-I refusal carrying no battery
+at all.
+
+Qualification from a fresh clone and tarball into fresh lane libraries
+(`tmp_opencode/m14-rkalos`, transplant `TRANSPLANT-IDENTICAL fail=0`): both
+lanes probe `0.1.0.9034` on core `c3706ea…` with the pinned provider
+`OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX
+SINGLE_THREADED`, per-lane parallel fields unchanged,
+`slicot_stationary_initialization = TRUE`. Build surface against the
+certified 9033 lane artifacts, both lanes: g++ 134 → 135 with the single
+addition of the `x11_mstats.cpp` compile, the link-line delta exactly the
+`kalos/src/x11_mstats.o` token, gfortran 8 → 8 identical, `-fopenmp` line
+counts 0 serial and 134 → 135 OMP (the +1 is that same compile) — everything
+else identical. (The m13 raw install logs had been overwritten mid-lane by a
+mis-pathed copy of the lane script; re-running the intact m13 pipeline over
+the untouched 9033 tarball regenerated them byte-identically against the
+surviving certified normalized artifacts, and the m13 lane libraries probe
+9033 again; the audit above uses that verified surface.) The full corpus:
+**310,417/310,417** serial and **310,421/310,421** OMP, 0 failures; the 70
+shared per-file rows are **byte-identical** to the 9033 certified logs in
+both lanes (0 value-diff, 0 byte-diff) and the new file's 96/96/0 is reported
+separately — the totals move by exactly the new file, nothing else. The
+isolated `--native` Java-free smoke passed in both lanes with transcripts
+**byte-identical to the 9033 certified verify logs** — the battery adds
+nothing to the probe surface. The fit-matrix qualification
+(`verify-arma-fits.R --no-timing`, harness + oracle-host-pin overlay, frozen
+oracle JAR hashes live-checked, thread-pinned, installed-lane mode) ran once
+per lane — the harness re-exported from git objects at `c3706ea` per the
+9033 entry's recipe, its six harness-relevant files hash-IDENTICAL to the
+9033-generation record, the host-pin overlay regenerated live: 64 cases + 4
+persistent controls, direct fits 144, **1,517 checks / 0 failures, PASS in
+both lanes**, maxima `coefficient 4.87286502e-07 / regression 8.96039670e-09
+/ objective 1.10276233e-11 / density 1.12549969e-11` — every class
+digit-for-digit at the 9033 readings, the full transcripts **byte-identical**
+to the certified 9033 qual logs: zero movement, no budget consumed, no stop,
+no re-pin. The CI provider fetch pins
+`ref: c3706eac58ac50ac0196a11500926b1ea99b217d`.
+
+Downstream: the persephone3 consumer lane follows — the battery is additive
+on both envelopes under the field name `x11_mstats`, so consumers read it by
+name and nothing existing changes; pykalos carries the same core propagation
+separately.
+
 ## The batched 69f83be re-pin: the stale-likelihood fix and the automatic-route forecast errors, measured at zero movement (2026-11-28)
 
 Version `0.1.0.9033` re-pins the vendored core `6fee68c0a8d1fbe6816f26c06d7a00dbba0a5b8c` →

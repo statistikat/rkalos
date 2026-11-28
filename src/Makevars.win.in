@@ -101,6 +101,7 @@ OBJECTS = RcppExports.o \
   kalos/src/x11_mean_endpoints.o \
   kalos/src/x11_msr.o \
   kalos/src/x11_msr_selection.o \
+  kalos/src/x11_mstats.o \
   kalos/src/x11_musgrave.o \
   kalos/src/x11_normalization.o \
   kalos/src/x11_replacement.o \

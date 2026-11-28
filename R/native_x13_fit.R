@@ -131,6 +131,10 @@
 #'   for forecasts and \code{b} for backcasts. Zero-length extensions
 #'   omit their tables. When available, \code{series_forecast_stdev}
 #'   reports standard errors of the original-series forecasts.
+#'   \code{x11_mstats} reports the X-11 diagnostic battery for an
+#'   available fit: the published statistics \code{m1} to \code{m11},
+#'   \code{q} and \code{qm2}, the quality grades \code{q_grade} and
+#'   \code{qm2_grade}, and the battery's own \code{status}.
 #' @seealso \code{\link{native_x13_estimated_fit}}, \code{\link{capabilities}}
 #' @examples
 #' fit <- native_x13_fit(AirPassengers, seasonal = rep("s3x3", 12),

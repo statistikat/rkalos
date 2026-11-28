@@ -116,6 +116,7 @@ add_library(kalos STATIC
   src/x11_mean_endpoints.cpp
   src/x11_msr.cpp
   src/x11_msr_selection.cpp
+  src/x11_mstats.cpp
   src/x11_musgrave.cpp
   src/x11_normalization.cpp
   src/x11_selection_pass.cpp
@@ -524,6 +525,23 @@ if(KALOS_BUILD_TESTS)
   add_test(NAME test_x13_automatic_diagnostics
            COMMAND test_x13_automatic_diagnostics)
   set_tests_properties(test_x13_automatic_diagnostics PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
+    TIMEOUT 3600)
+  # P4 (X-11 diagnostic battery): the twelve-case double-JVM M-statistics
+  # oracle (m1..m11 through the pinned getM clamp, q, qm2 and the two
+  # MDiagnostics grades; m4 and the M6 preset invariant are bit claims, the
+  # rest a justified 5e-12/1e-11 tolerance tier) over kalos::x13_mstats,
+  # replaying the three stock RSA3 template fits and the nine stock
+  # estimated-template fits on the x13-refusal-jvm-profiles calendars.
+  add_executable(test_x11_mstats tests/test_x11_mstats.cpp)
+  target_link_libraries(test_x11_mstats PRIVATE kalos::kalos)
+  target_compile_definitions(test_x11_mstats PRIVATE
+    KALOS_X11_MSTATS_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x11-mstats/battery-x86_64.txt"
+    KALOS_X13_TEMPLATE_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles")
+  add_test(NAME test_x11_mstats
+           COMMAND test_x11_mstats)
+  set_tests_properties(test_x11_mstats PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
     TIMEOUT 3600)

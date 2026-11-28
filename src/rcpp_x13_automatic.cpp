@@ -3,6 +3,7 @@
 #include "rcpp_monthly_residuals.hpp"
 #include "rcpp_x11_selection_records.hpp"
 #include "kalos/x13_automatic.hpp"
+#include "kalos/x11_mstats.hpp"
 #include <cmath>
 #include <limits>
 #include <cstddef>
@@ -366,6 +367,31 @@ Rcpp::List wrap_estimated_x13(Rcpp::List out, const kalos::X13AutomaticFitResult
     }
     return out;
 }
+// The X-11 diagnostic battery at the R boundary (M14): the pinned Mstatistics
+// surface the X13Document publishes on the automatic and estimated-template
+// lanes — m1..m11 through the pinned getM clamp, q, qm2 and the two
+// MDiagnostics grades — fed by kalos::x13_mstats over the finished fit (the
+// live-compile check established that both routes' results carry it). The
+// battery answers as the list "x11_mstats" with "status" plus the thirteen
+// published words named as the core names them (m1..m11, q, qm2) and the
+// grade pair (q_grade, qm2_grade). The entry's own statuses ("available",
+// "unsupported:pseudo_additive", "failed:trend_regression") pass through
+// verbatim and its refuse-answers carry the untouched default words, never a
+// partial battery. The entry throws std::invalid_argument on a fit that is
+// not available, so the surface is gated on the fit's own available status
+// and stays ABSENT outside that domain.
+void attach_x11_mstats(Rcpp::List& product, const kalos::X13FitResult& fit) {
+    const auto m=kalos::x13_mstats(fit);
+    Rcpp::List battery;
+    battery["status"]=m.status;
+    for(int k=0;k<11;++k)
+        battery["m"+std::to_string(k+1)]=m.published[static_cast<std::size_t>(k)];
+    battery["q"]=m.q;
+    battery["qm2"]=m.qm2;
+    battery["q_grade"]=m.q_grade;
+    battery["qm2_grade"]=m.qm2_grade;
+    product["x11_mstats"]=battery;
+}
 }
 // [[Rcpp::export(name = ".native_x13_fit_automatic")]]
 Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period,
@@ -530,6 +556,13 @@ Rcpp::List native_x13_fit_automatic(SEXP values,SEXP frequency,SEXP start_period
         product["series_forecast_stdev_status"]=errors.status;
         product["series_forecast_stdev"]=errors.standard_errors;
     }
+    if(result.status=="available") {
+        // The X-11 diagnostic battery on the automatic route (M14): the pinned
+        // Mstatistics publication, gated on the fit's own available status —
+        // the core entry throws outside it — and carrying the pseudo-additive
+        // and trend-regression refusals as their explicit verbatim statuses.
+        attach_x11_mstats(product, result.fit);
+    }
     return product;
 }
 
@@ -566,6 +599,12 @@ Rcpp::List native_x13_estimated_fit(const std::vector<double>& observations, int
         model["calendar"] = Rcpp::List::create(Rcpp::_["working_days"] = calendar.selection.working_days,
             Rcpp::_["easter_duration"] = calendar.selection.easter_duration, Rcpp::_["coefficients"] = coefficients);
         product["model"] = model;
+    }
+    if (result.status == "available") {
+        // The X-11 diagnostic battery on the estimated-template route (M14):
+        // the same pinned Mstatistics publication as the automatic entry, on
+        // the same available-status gate the core entry's throw implies.
+        attach_x11_mstats(product, result.fit);
     }
     return product;
 }
